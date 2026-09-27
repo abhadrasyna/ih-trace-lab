@@ -5,7 +5,8 @@
 
 ## What Exists
 
-- (list of files/modules and one line each on what they do — flat list is fine until it gets long; see the Tier 3 note below)
+- `docs/plan/tenant-registry/` — story: canonical MTN tenant-identifier config (Go ID, Matisse Project/Client Tenant ID, Athena Tenant ID, Lightstep project/region, shared-project disambiguation) +
+  a resolver this assistant must consult before any Lightstep/Matisse/Athena MCP call. Not yet implemented — see its `tasks.md` for the first unchecked task (TR-1).
 
 ## Key Decisions
 
