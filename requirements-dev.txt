@@ -1,0 +1,9 @@
+# Development and test dependencies — not needed in production.
+-r requirements.txt
+pytest
+pytest-cov
+ruff
+mypy
+pre-commit
+detect-secrets
+bandit

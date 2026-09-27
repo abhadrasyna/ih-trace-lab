@@ -1,0 +1,38 @@
+<!-- Rename to `schema.md` and keep it ONLY if this story changes persistent-storage schema.
+If the story does not touch storage schema, delete this file. `stories.md` must point here
+("use the exact schema in schema.md"); never inline the schema in stories.md. -->
+
+# <Story title> — schema
+
+<N> table(s) / collection(s) added to / changed in `<storage location>`.
+State your project's own conventions here once they exist (e.g. money as fixed-point text,
+timestamps as UTC ISO strings) — this file inherits whatever your project's storage
+standards doc already says; it does not invent new ones.
+Created by `<idempotent init/migration entry point>` — say whether it is idempotent and
+whether the project has a migration-file mechanism or not.
+
+---
+
+```sql
+-- <one-line purpose>. Written by <writer>; read by <readers>.
+CREATE TABLE IF NOT EXISTS <table_name> (
+    <col>            <type>    -- <meaning / format>
+    <col>            <type>    -- <meaning / format>
+    created_at       <type>,   -- when the row was written
+    UNIQUE (<grain columns>)
+);
+
+CREATE INDEX IF NOT EXISTS idx_<table>_<cols>
+    ON <table_name> (<cols>);
+```
+
+## Registry row to add
+
+<!-- If your project keeps a table/collection registry (writer, cadence, grain, purpose),
+add the row here and say which file it belongs in. Delete this section if the project has
+no such registry. -->
+
+## Existing tables reused (no shape change)
+
+<!-- List any existing tables this story writes to or reads without altering — so a reviewer
+knows the schema above is the complete set of changes. -->

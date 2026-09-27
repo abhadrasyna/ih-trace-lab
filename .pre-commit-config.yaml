@@ -1,0 +1,19 @@
+repos:
+  - repo: local
+    hooks:
+      - id: md-line-length
+        name: "markdown lines must be <=200 chars"
+        language: system
+        entry: python scripts/dev/hooks/check_md_line_length.py
+        files: '\.md$'
+        pass_filenames: true
+
+      - id: md-reflow
+        name: "markdown must be in fill-to-<=200 style (reflow_md)"
+        language: system
+        entry: python scripts/dev/reflow_md.py --check
+        files: '\.md$'
+        pass_filenames: true
+
+# NOTE (phase0): ruff/mypy/pytest-gate/bandit/detect-secrets hooks are deferred
+# until pyproject.toml, tests/unit/, and src/ are (re)added to the python piece.
