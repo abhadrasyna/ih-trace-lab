@@ -185,7 +185,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 
 ---
 
-## PT-7 — `config/data_paths.yaml` + root `data/` tree + continuous-investigation `data/`+`output/` tree + docs-vs-knowledge guide section
+## PT-7 — `config/data_paths.yaml` + root `data/` tree + continuous-investigation `data/`+`output/` tree + filename convention + docs-vs-knowledge guide section
 
 **Grounding:** found during the 2026-09-28 discussion round auditing `applauseInvestigation`, `github_copilot/investigations`, and `ctap-smvod-session-report`. Three prior mistakes this task closes:
 - `applauseInvestigation` already keeps raw tool inputs (`investigations/data/<case-id>/{lightstep,har,athena}`, 1.6GB, gitignored wholesale — confirmed via its own `.gitignore`) and a project-local
@@ -221,6 +221,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
      investigation_without_campaign:  "{investigations_root}/{case_id}"
      investigation_data:              "{investigations_root}/{continuous_investigation_slug}/data/{tool}"
      investigation_output:            "{investigations_root}/{continuous_investigation_slug}/output"
+   filename_date_format: "%Y-%m-%d"     # ISO, prefix position — see the filename-convention point below
    ```
    The last two templates are for a **continuous-investigation submodule** (e.g. `ctap-smvod`), not a campaign/case — found during the same 2026-09-28 round auditing `ctap-smvod-session-report`'s
    `inputCSV/`, which mixes true manual exports with a later step's own re-read Athena output under one folder name. Root `data/`'s `{campaign}/{case_id}/{tool}` split is input-vs-nothing (a case
@@ -256,7 +257,21 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
    **delete** its raw `data/.../​<case-id>/` — do not archive it indefinitely. Grounding fact: one campaign's raw data alone already reached 1.6GB; an archive-forever default does not scale across many
    campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does. This policy does **not** apply to `investigation_data`/`investigation_output` (a continuous-investigation submodule's
    own per-date pipeline tree) — there is no "case close" event on an ongoing daily pipeline; that tree's retention is the submodule's own concern (e.g. a rolling window), not this story's.
-6. Cross-reference `functional-code-taxonomy`'s FCT-7 by name for "the code that reads this config" — do not restate the resolver's function signatures here.
+6. **Filename convention for date-keyed artifacts**, found necessary auditing `ctap-smvod-session-report`'s existing `DDMMYYYY`-suffix files (`athena_session_01082026.csv`) — ambiguous (reads as
+   either DD-MM or MM-DD) and unsortable (a filename *suffix* means `ls`/glob order is alphabetical, not chronological: `_01082026` sorts before `_10072026`, i.e. August before July). Reuses the ISO
+   date already established by `scratch-script-registry`'s `scratch/<YYYY-MM-DD>_<topic>_<purpose>.py` convention rather than inventing a third format, moved to a **prefix** so directory listings sort
+   chronologically for free. Three distinct file categories, not one rule:
+   - **Per-date snapshot** (one file per single date, the common case under `investigation_data`/`investigation_output`): `YYYY-MM-DD_<artifact>.csv` — e.g. `2026-08-01_ctap.csv` inside
+     `data/lightstep/` (tool name dropped from the filename — the parent folder already carries it), `2026-08-01_position_report.csv` inside `output/`.
+   - **Per-range snapshot** (computed once for a fixed range, not re-run daily): `YYYY-MM-DD_YYYY-MM-DD_<artifact>.csv` — e.g. `2026-08-02_2026-08-08_position_report.csv`. A ticket/case tag, if one
+     applies, is a **trailing** suffix, never an infix between metric and dates (`ctap-smvod-session-report`'s existing `position_report_1003_02082026_08082026.csv` buries `1003` mid-name, breaking
+     any simple `<date(s)>_<artifact>` parse) — corrected form: `2026-08-02_2026-08-08_position_report_1003.csv`.
+   - **Cumulative/rollup** (a single file appended with new rows every run, the date living as a *column*, not the filename — this is intentional, not a missing-date bug; confirmed against
+     `aws-access-cli`'s `output/<TENANT>/{monthly,weekly}/adoption_session_report.csv`, where the cadence folder itself signals "this is a rollup" so a bare name is unambiguous there): when there is
+     no cadence folder to carry that signal (e.g. `ctap-smvod`'s flat `output/mtn_escalation_all_dates.csv`), the filename needs an explicit rollup marker — standardize on a trailing `_rollup` (or
+     keep the existing `_all_dates`) tag so it is never mistaken for a per-date snapshot file that simply forgot its date.
+   `aws-access-cli`'s root-level `output/*_21092026.csv` files repeat the same ambiguous `DDMMYYYY`-suffix mistake — cited here as a second confirming negative example, not a pattern to copy.
+7. Cross-reference `functional-code-taxonomy`'s FCT-7 by name for "the code that reads this config" — do not restate the resolver's function signatures here.
 
 **Tests:** none — docs/config-only (the resolver's tests live under FCT-7).
 

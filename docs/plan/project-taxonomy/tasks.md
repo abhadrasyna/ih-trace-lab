@@ -13,8 +13,8 @@ spec.
 - [ ] **PT-4** — `scripts/dev/check_project_taxonomy.py` + tests | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **PT-5** — `AGENTS.md` + `CONTEXT.md` pointer lines | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **PT-6** — same doc: pipeline cron-cutover procedure | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **PT-7** — `config/data_paths.yaml` + root `data/` tree + continuous-investigation `data/`+`output/` tree + docs-vs-knowledge guide section | Owner: AI agent (Copilot CLI) | Model:
-  claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [ ] **PT-7** — `config/data_paths.yaml` + root `data/` tree + continuous-investigation `data/`+`output/` tree + filename convention + docs-vs-knowledge guide section | Owner: AI agent (Copilot CLI)
+  | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 
 ## Story done when
 
@@ -39,11 +39,12 @@ spec.
   removal (crontab is not git-tracked, so this removal has no other record unless logged manually, e.g. one line in `CONTEXT.md` or a dedicated append-only log); (5) states explicitly: never a
   same-day swap.
 - **PT-7** — `config/data_paths.yaml` exists with the 7 templates (`data_with_campaign`, `data_without_campaign`, `knowledge`, `investigation_with_campaign`, `investigation_without_campaign`,
-  `investigation_data`, `investigation_output`); root `.gitignore` excludes `data/`; the guide doc has a `## Input data: config, layout, and knowledge vs. docs` section stating the conditional
-  tool-subfolder rule (HAR-only is normal), the mandatory "Inputs used" case-doc block, the `docs/`-mandatory-vs-`knowledge/`-optional distinction with the `applauseInvestigation` worked example and
-  promotion test, the default delete-on-close-out policy for raw `data/` (explicitly scoped to campaign/case data, not a continuous investigation's own `investigation_data`/`investigation_output`
-  tree), and the source/tool-provenance split (not input-vs-output) for a continuous investigation's per-date pipeline, grounded in the `ctap-smvod-session-report` audit; `structure.md` already
-  reflects all of this from the same discussion round.
+  `investigation_data`, `investigation_output`) plus `filename_date_format`; root `.gitignore` excludes `data/`; the guide doc has a `## Input data: config, layout, and knowledge vs. docs` section
+  stating the conditional tool-subfolder rule (HAR-only is normal), the mandatory "Inputs used" case-doc block, the `docs/`-mandatory-vs-`knowledge/`-optional distinction with the
+  `applauseInvestigation` worked example and promotion test, the default delete-on-close-out policy for raw `data/` (explicitly scoped to campaign/case data, not a continuous investigation's own
+  `investigation_data`/`investigation_output` tree), the source/tool-provenance split (not input-vs-output) for a continuous investigation's per-date pipeline, and the ISO-prefix filename convention
+  (per-date snapshot / per-range snapshot / cumulative-rollup — the third being intentional, not a missing-date bug) grounded in the `ctap-smvod-session-report` and `aws-access-cli` audits;
+  `structure.md` already reflects all of this from the same discussion round.
 
 ## After each task
 

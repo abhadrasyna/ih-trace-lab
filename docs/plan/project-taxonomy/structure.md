@@ -94,12 +94,19 @@ ih-trace-lab/
 │       │   │                                  repeating per-date pipeline, not a campaign/case; split by
 │       │   │                                  *source/tool provenance*, not input-vs-output, because step N's
 │       │   │                                  output is legitimately step N+1's input in a linear chain
-│       │   ├── lightstep/                    true Step 1 manual exports (no live API) — e.g. ctap_*, smvod_*,
-│       │   │                                  smvod_ts_*, one set per date
+│       │   ├── lightstep/                    true Step 1 manual exports (no live API) — ISO-prefix filenames,
+│       │   │                                  tool name dropped (folder already carries it): e.g.
+│       │   │                                  `2026-08-01_ctap.csv`, `2026-08-01_smvod.csv`, `2026-08-01_smvod_ts.csv`
 │       │   └── athena/                       Athena pulls made by this pipeline's own earlier steps, re-read as
-│       │                                      a later step's input — e.g. athena_session_*, debug_states_*
-│       ├── output/                           post-merge deliverables only — e.g. setupsession_with_outcome_*,
-│       │                                      position_report_*, mtn_escalation_*, cdn_correlation_*
+│       │                                      a later step's input — e.g. `2026-08-01_session.csv`,
+│       │                                      `2026-08-01_debug_states.csv`
+│       ├── output/                           post-merge deliverables only, same ISO-prefix filename convention
+│       │                                      — e.g. `2026-08-01_setupsession_with_outcome.csv`,
+│       │                                      `2026-08-01_position_report.csv`; ranges as
+│       │                                      `<start>_<end>_<artifact>.csv` (ticket tag trailing, never infix);
+│       │                                      cumulative rollups (date lives as a row, not the filename) keep a
+│       │                                      `_rollup`/`_all_dates` marker instead of a date — see PT-7's
+│       │                                      filename-convention point for the full rule
 │       ├── debug/                            scratch/sample only, gitignored, never a pipeline dependency
 │       └── knowledge/                        LOCAL staging only — promote reusable bits to root knowledge/
 │
