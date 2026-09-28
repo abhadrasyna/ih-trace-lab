@@ -50,10 +50,11 @@ spec.
   `structure.md` already reflects all of this from the same discussion round.
 - **PT-8** — `.github/skills/investigation-doc-sync/SKILL.md` exists, modeled on `session-close`'s structure, defining: the case-scoped trigger phrase, the cursor-in-deliverable mechanism (marker
   comment in `<case-id>-<topic>.md`, not a transcript-embedded event), the `session_store_sql` content-filtered extraction query (case-id/path match, not whole-session classification), the
-  fresh-subagent write step producing dated findings sections, the separate executive-summary generation pass, and an auto-regenerated session-provenance table with a `Case/Campaign` column
-  (derived from `session_files` path-matching, not `cwd` — `cwd` is captured once per session and stays identical across an entire project, so it cannot disambiguate which case a session touched;
-  grounded in a real `applauseInvestigation/session-info.md` cross-check showing only 8 of 18 sessions ever got manually logged). Marked deferred in `tasks.md` until PT-2 and PT-7 both have SHAs —
-  this task itself only needs to exist as a written spec, not be exercised against a real case.
+  fresh-subagent write step producing dated findings sections, the separate executive-summary generation pass, an auto-regenerated session-provenance table with both `cwd` and a
+  `session_files`-derived `Case/Campaign` column (grounded in a real `applauseInvestigation/session-info.md` cross-check showing only 8 of 18 sessions ever got manually logged, and `cwd` alone
+  being uniform across all 18 today since no session has yet used a nested-launch-directory convention), and a guarantee — demonstrated against the real two-session `7231763` case (11 days
+  apart) — that multiple sessions on the same case/campaign combine into dated sections plus one condensed executive summary, never overwrite each other. Marked deferred in `tasks.md` until PT-2
+  and PT-7 both have SHAs — this task itself only needs to exist as a written spec, not be exercised against a real case.
 
 ## After each task
 
