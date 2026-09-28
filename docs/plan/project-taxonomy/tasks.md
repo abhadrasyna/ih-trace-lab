@@ -50,8 +50,10 @@ spec.
   `structure.md` already reflects all of this from the same discussion round.
 - **PT-8** — `.github/skills/investigation-doc-sync/SKILL.md` exists, modeled on `session-close`'s structure, defining: the case-scoped trigger phrase, the cursor-in-deliverable mechanism (marker
   comment in `<case-id>-<topic>.md`, not a transcript-embedded event), the `session_store_sql` content-filtered extraction query (case-id/path match, not whole-session classification), the
-  fresh-subagent write step producing dated findings sections, and the separate executive-summary generation pass. Marked deferred in `tasks.md` until PT-2 and PT-7 both have SHAs — this task itself
-  only needs to exist as a written spec, not be exercised against a real case.
+  fresh-subagent write step producing dated findings sections, the separate executive-summary generation pass, and an auto-regenerated session-provenance table with a `Case/Campaign` column
+  (derived from `session_files` path-matching, not `cwd` — `cwd` is captured once per session and stays identical across an entire project, so it cannot disambiguate which case a session touched;
+  grounded in a real `applauseInvestigation/session-info.md` cross-check showing only 8 of 18 sessions ever got manually logged). Marked deferred in `tasks.md` until PT-2 and PT-7 both have SHAs —
+  this task itself only needs to exist as a written spec, not be exercised against a real case.
 
 ## After each task
 
