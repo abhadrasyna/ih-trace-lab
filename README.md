@@ -1,11 +1,14 @@
-# <project-name>
+# ih-trace-lab
 
-One paragraph: what this project does and for whom.
+This project's mission is to take the profile of investigative/analysis work already done in `/Users/abhadra/github_copilot` (Synamedia IH/Matisse/Lightstep/Athena debugging: tenant resolution,
+session-report pipelines, HAR/trace correlation, ad hoc scratch analysis scripts) and re-implement the reusable parts here with real engineering discipline — tests, typed Python, a documented pre-task
+protocol (`AGENTS.md`), and a `scratch/` → `scripts/dev/`/`src/` promotion workflow — instead of the copy-pasted-across-repos style that accumulated there over time. `github_copilot` is a **read-only
+reference** for prior art and confirmed domain facts; it is never edited from this project, and it is expected to be replaced by `ih-trace-lab` over time, one story at a time (see `docs/plan/`).
 
 ## Status
 
-Early / active / paused — whatever is true today. Keep this section current; it's the first thing a future session (or a future you) reads.
+Early / active. First story (`docs/plan/tenant-registry/`) not yet implemented; second story (`docs/plan/scratch-script-registry/`) planned. No production code has landed yet.
 
 ## Setup
 
-How to get this running locally. Fill in once there's something to run.
+No runtime dependencies yet (`requirements.txt` starts empty, by design — see its header comment). Dev tooling: `pip install -r requirements-dev.txt`, then `pre-commit install`.
