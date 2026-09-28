@@ -174,11 +174,13 @@ cross-reference it by name.
 
 ---
 
-## FCT-7 — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path resolution
+## FCT-7 — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path AND filename resolution
 
-**Grounding:** found during the 2026-09-28 discussion round designing `project-taxonomy`'s PT-7 (`config/data_paths.yaml`, root `data/` tree, `docs/`-vs-`knowledge/` distinction). The layout debate
-itself (tool-first vs. campaign-first `data/` nesting, whether a `misc/` bucket is needed) changed direction twice in one discussion — concrete evidence that no script should ever hardcode this
-shape; every script must resolve it from `config/data_paths.yaml` through one shared module instead.
+**Grounding:** found during the 2026-09-28 discussion round designing `project-taxonomy`'s PT-7 (`config/data_paths.yaml`, root `data/` tree, `docs/`-vs-`knowledge/` distinction, continuous-
+investigation `data/`+`output/` split, ISO-prefix filename convention). The layout debate itself (tool-first vs. campaign-first `data/` nesting, whether a `misc/` bucket is needed) changed direction
+twice in one discussion — concrete evidence that no script should ever hardcode this shape; every script must resolve *both* directory shape and filename shape from `config/data_paths.yaml` through
+one shared module instead. `PYTHON_DESIGN.md` is deliberately **not** the home for the CSV-naming rule itself — it's a SOLID/pattern reference for shaping classes, not a place for project-specific
+data conventions; the convention's single source of truth stays `config/data_paths.yaml` (PT-7), enforced here via the same DIP seam as directory resolution, not restated as prose in two places.
 
 **Files to change / create:**
 - `src/lib/paths/__init__.py` (per `AGENTS.md`'s package convention)
@@ -188,8 +190,9 @@ shape; every script must resolve it from `config/data_paths.yaml` through one sh
 
 **What to implement (per `PYTHON_DESIGN.md`'s DIP trigger — the config file is the seam, not a hardcoded dict):**
 
-1. `PathConfig` — a small typed data container loaded from `config/data_paths.yaml` (`data_root`, `knowledge_root`, `investigations_root`, `tools: tuple[str, ...]`, and the 5 template strings named
-   in `project-taxonomy`'s PT-7: `data_with_campaign`, `data_without_campaign`, `knowledge`, `investigation_with_campaign`, `investigation_without_campaign`).
+1. `PathConfig` — a small typed data container loaded from `config/data_paths.yaml` (`data_root`, `knowledge_root`, `investigations_root`, `tools: tuple[str, ...]`, `filename_date_format`, and the 7
+   template strings named in `project-taxonomy`'s PT-7: `data_with_campaign`, `data_without_campaign`, `knowledge`, `investigation_with_campaign`, `investigation_without_campaign`,
+   `investigation_data`, `investigation_output`).
 2. `PathResolver(Protocol)` `@runtime_checkable` exposing:
    - `resolve_input_dir(tool: str, case_id: str, campaign: str | None = None) -> Path | None` — formats `data_with_campaign` or `data_without_campaign` depending on whether `campaign` is given, and
      returns `None` (never raises) if the resulting directory does not exist on disk — absence of a saved export for a tool is a normal, expected state (HAR-only cases, manual-only Lightstep/Athena
@@ -198,8 +201,20 @@ shape; every script must resolve it from `config/data_paths.yaml` through one sh
      axis is deliberately tool-first and case-independent, per `structure.md`'s `knowledge/` block.
    - `resolve_investigation_dir(case_id: str, campaign: str | None = None) -> Path` — formats `investigation_with_campaign` or `investigation_without_campaign`; the caller appends the fixed
      `docs/`/`queries/`/`scripts/`/`tests/` skeleton from `project-taxonomy`'s PT-2 — that skeleton is not templated, only the root segment is.
+   - `resolve_investigation_data_dir(slug: str, tool: str) -> Path` — formats `investigation_data`; for a continuous-investigation submodule's own per-date pipeline tree (e.g. `ctap-smvod`'s
+     `data/lightstep/`, `data/athena/`), not a campaign/case — see PT-7's provenance-split rationale. Always returns a path (same "caller creates it" rule as `resolve_knowledge_dir`).
+   - `resolve_investigation_output_dir(slug: str) -> Path` — formats `investigation_output`; the same submodule's deliverables tree.
+   - `format_snapshot_filename(as_of: date, artifact: str, *, extension: str = "csv") -> str` — PT-7's **per-date snapshot** category: `f"{as_of:%Y-%m-%d}_{artifact}.{extension}"`, reading the date
+     format from `filename_date_format`, never a hardcoded `strftime` string at the call site.
+   - `format_range_filename(start: date, end: date, artifact: str, *, tag: str | None = None, extension: str = "csv") -> str` — PT-7's **per-range snapshot** category:
+     `f"{start:%Y-%m-%d}_{end:%Y-%m-%d}_{artifact}.{extension}"`, with `tag` (e.g. a ticket id) appended as a **trailing** segment when given — `..._{artifact}_{tag}.{extension}` — never an infix;
+     this is the fix for `ctap-smvod-session-report`'s existing `position_report_1003_02082026_08082026.csv` shape.
+   - `format_rollup_filename(artifact: str, *, extension: str = "csv") -> str` — PT-7's **cumulative/rollup** category: `f"{artifact}_rollup.{extension}"`, no date — callers use this only when the
+     artifact is genuinely an append-in-place file with the date living as a row, not a per-run snapshot (see PT-7's `aws-access-cli` monthly/weekly confirmation that this is intentional, not a
+     missing-date bug).
 3. A concrete `YamlPathResolver` implementing the `Protocol`, reading `config/data_paths.yaml` via `PathConfig`. No other module in this repo constructs a `data/`, `knowledge/`, or `investigations/`
-   path via raw string concatenation once this exists — that is the enforcement point PT-3's prior-art checklist and FCT-6's registry check both rely on for this specific case.
+   path via raw string concatenation, nor formats a dated CSV filename via a hand-rolled `strftime`/f-string, once this exists — that is the enforcement point PT-3's prior-art checklist and FCT-6's
+   registry check both rely on for this specific case.
 
 **Tests (no network, no real repo paths outside `tmp_path`):**
 - `test_resolve_input_dir_with_campaign_formats_data_with_campaign_template`
@@ -207,6 +222,11 @@ shape; every script must resolve it from `config/data_paths.yaml` through one sh
 - `test_resolve_input_dir_returns_none_when_directory_absent` — the core contract: a missing HAR/Lightstep/Athena folder is `None`, not an exception.
 - `test_resolve_knowledge_dir_ignores_campaign_and_case_id` — confirms the tool-first axis takes no case/campaign arguments even if accidentally passed.
 - `test_resolve_investigation_dir_with_and_without_campaign`
+- `test_resolve_investigation_data_dir_formats_investigation_data_template`
+- `test_resolve_investigation_output_dir_formats_investigation_output_template`
+- `test_format_snapshot_filename_uses_iso_prefix`
+- `test_format_range_filename_appends_tag_as_trailing_segment_not_infix`
+- `test_format_rollup_filename_has_no_date`
 - `test_conforming_stub_satisfies_path_resolver_protocol` / `test_non_conforming_stub_does_not_satisfy_protocol` (matches FCT-2's existing `Protocol`-conformance test pattern).
 
 **Commit:** `feat(functional-code-taxonomy): add src/lib/paths config-driven resolver`

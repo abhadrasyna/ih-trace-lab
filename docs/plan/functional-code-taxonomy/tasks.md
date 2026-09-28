@@ -14,8 +14,8 @@ spec.
 - [ ] **FCT-5** — `CONTEXT.md` pointer line | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **FCT-6** — `scripts/dev/generate_code_registry.py` + doc section: cross-project registry + delegated duplicate-check | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
   confirms tests green | SHA: <—>
-- [ ] **FCT-7** — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path resolution | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms
-  tests green | SHA: <—>
+- [ ] **FCT-7** — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path AND filename resolution | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review:
+  human confirms tests green | SHA: <—>
 
 ## Story done when
 
@@ -34,9 +34,11 @@ spec.
   listing every script under `investigations/*/scripts`, `experiments/*/scripts`, `src/pipelines`, `src/tools`, and every `src/lib/*` module; its tests cover a fixture tree with two near-duplicate
   scripts and confirm the registry surfaces both. The guide doc states the delegated duplicate-check convention (a sub-agent checks this registry before any new script is written) that
   `project-taxonomy`'s PT-3 depends on.
-- **FCT-7** — `src/lib/paths/protocols.py` defines the `PathResolver` `Protocol` (`resolve_input_dir`, `resolve_knowledge_dir`, `resolve_investigation_dir`) and a concrete `YamlPathResolver` reading
-  `config/data_paths.yaml` (owned by `project-taxonomy`'s PT-7); tests confirm `resolve_input_dir` returns `None` (never raises) when a tool's directory is absent, that `resolve_knowledge_dir` ignores
-  campaign/case-id, and that both the with-campaign and without-campaign templates format correctly; a `Protocol`-conformance test pair matches FCT-2's existing pattern.
+- **FCT-7** — `src/lib/paths/protocols.py` defines the `PathResolver` `Protocol` (`resolve_input_dir`, `resolve_knowledge_dir`, `resolve_investigation_dir`, `resolve_investigation_data_dir`,
+  `resolve_investigation_output_dir`, `format_snapshot_filename`, `format_range_filename`, `format_rollup_filename`) and a concrete `YamlPathResolver` reading `config/data_paths.yaml`'s 7 templates +
+  `filename_date_format` (owned by `project-taxonomy`'s PT-7); tests confirm `resolve_input_dir` returns `None` (never raises) when a tool's directory is absent, that `resolve_knowledge_dir` ignores
+  campaign/case-id, that all directory templates format correctly, that `format_snapshot_filename`/`format_range_filename` produce the ISO-prefix shapes PT-7 defines (range tag trailing, never
+  infix), and that `format_rollup_filename` carries no date; a `Protocol`-conformance test pair matches FCT-2's existing pattern.
 
 ## After each task
 
