@@ -27,28 +27,41 @@ Resolve `T` (the transcript path) in this order:
 Extract, don't reconstruct — read only what each check below needs, never the whole transcript.
 
 Copilot CLI's `events.jsonl` schema: one JSON object per line, top-level fields `type`, `data`, `id`, `parentId`, `timestamp`. Assistant turns are `type=="assistant.message"`; `.data.content` is the
-turn's visible text, `.data.toolRequests[]` is the array of tool calls that turn made, each shaped `{toolCallId, name, arguments, type, toolTitle}`. A `type=="skill.invoked"` event marks exactly when
-*this* skill was invoked — use its `timestamp` as a cutoff so the audit covers the work session being closed, not this audit's own tool calls.
+turn's visible text, `.data.toolRequests[]` is the array of tool calls that turn made, each shaped `{toolCallId, name, arguments, type, toolTitle}`. Each `type=="skill.invoked"` event marks exactly
+when this skill was invoked — a transcript may contain more than one (a session can be closed several times), so use the **two most recent** as a `[PREV_CUTOFF, CUTOFF)` window: this audit's scope is
+the work done since the *previous* close, not the whole transcript again. Re-scanning from the start of the file on every close would re-report and double-increment
+`suggestions.md`/`session_audit.jsonl` for a segment an earlier close already logged.
 
 ```bash
-# cutoff: timestamp this skill was invoked (excludes the audit's own actions from the log below)
-CUTOFF=$(jq -r 'select(.type=="skill.invoked") | .timestamp' "$T" | tail -1)
+# the two most recent skill.invoked timestamps: CUTOFF = this invocation, PREV_CUTOFF = the one before it (if any)
+mapfile -t INVOCATIONS < <(jq -r 'select(.type=="skill.invoked") | .timestamp' "$T" | tail -2)
+if [ "${#INVOCATIONS[@]}" -eq 2 ]; then
+  PREV_CUTOFF="${INVOCATIONS[0]}"; CUTOFF="${INVOCATIONS[1]}"
+else
+  PREV_CUTOFF=""; CUTOFF="${INVOCATIONS[0]}"
+fi
 
-# tool calls in invocation order, before the cutoff: tool name + a short arg summary
-jq -r --arg cutoff "$CUTOFF" 'select(.timestamp < $cutoff) | select(.type=="assistant.message") |
+# tool calls in invocation order, within the window: tool name + a short arg summary
+jq -r --arg prev "$PREV_CUTOFF" --arg cutoff "$CUTOFF" \
+  'select(($prev == "" or .timestamp >= $prev) and .timestamp < $cutoff) | select(.type=="assistant.message") |
   .data.toolRequests[]? |
   "\(.name)\t\((.arguments.file_path // .arguments.path // .arguments.qualified_name // .arguments.query //
   .arguments.pattern // .arguments.subagent_type // .arguments.skill //
   (.arguments.command // .arguments|tostring))[0:120])"' "$T"
 
-# visible assistant text, same cutoff — needed for Step 2's "CONTEXT.md ✓" and go-ahead checks
-jq -r --arg cutoff "$CUTOFF" 'select(.timestamp < $cutoff) | select(.type=="assistant.message") | .data.content' "$T"
+# visible assistant text, same window — needed for Step 2's "CONTEXT.md ✓" and go-ahead checks
+jq -r --arg prev "$PREV_CUTOFF" --arg cutoff "$CUTOFF" \
+  'select(($prev == "" or .timestamp >= $prev) and .timestamp < $cutoff) | select(.type=="assistant.message") | .data.content' "$T"
 
 # latest commit (confirms Step 5c, gives the SHA for the report)
 git -C <repo> log --oneline -5
 ```
 
-If `CUTOFF` comes back empty (this skill wasn't invoked as a nested `skill.invoked` event, e.g. running against an already-closed transcript), skip the cutoff filter and use the whole file.
+If `CUTOFF` comes back empty (this skill wasn't invoked as a nested `skill.invoked` event, e.g. running against an already-closed transcript), skip the window filter and use the whole file. If
+`PREV_CUTOFF` is empty (this is the first close of this transcript), the window is simply "everything before `CUTOFF`", same as before.
+
+State explicitly in the final report when a `PREV_CUTOFF` was applied (e.g. "audits only the segment since the last close at <timestamp>") so a reader isn't left assuming the whole session was
+re-scored.
 
 From the tool-call list, derive: which files were read (and at what `view_range`, to tell a genuine re-read from a scoped re-read of a changed region); which bash commands ran (test runner, `git
 commit`, `git add`); which skills were invoked (`commit`). This list is the sole source of truth for Step 2 — do not fall back to inference about what "probably" happened.
