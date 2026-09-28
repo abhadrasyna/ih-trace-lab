@@ -10,6 +10,12 @@
 - `docs/plan/query-catalog/` — story: `queries/athena/` + `queries/lightstep/` deduplicated, parameterized-template query catalog (harvested from `github_copilot`'s 3 `QUERY_CATALOG.md` files +
   `lightstep-query-templates.md`), plus a ported (not yet run) Athena DDL-cache under `knowledge/`. Not yet implemented — see its `tasks.md` for the first unchecked task (QC-1). Its DDL-cache task
   (QC-4) depends on `tenant-registry` landing first for any live Athena discovery.
+- `docs/plan/project-taxonomy/` — story: classifies work into 5 categories (pipeline, continuous investigation, one-off investigation, tool, experiment), per-category folder skeleton, the
+  submodule-vs-plain-folder rule, and a new-work checklist with a mandatory prior-art search step — informed by a `github_copilot` audit (read-only reference). Not yet implemented — see its `tasks.md`
+  for the first unchecked task (PT-1).
+- `docs/plan/functional-code-taxonomy/` — story: target `src/lib/{auth,athena,csv_io,report_render,har,curl_to_python}/` module map replacing 3 duplicated Athena executors and 8+ duplicated CSV
+  writers found in `github_copilot`; ports `PYTHON_DESIGN.md`'s DIP/OCP triggers into `Protocol` skeletons for `athena` and `report_render`. Not yet implemented — see its `tasks.md` for the first
+  unchecked task (FCT-1). Sibling to `project-taxonomy` (categories vs. shared code) and `query-catalog` (SQL text vs. execution code).
 
 ## Key Decisions
 
