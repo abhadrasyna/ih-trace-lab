@@ -1,10 +1,10 @@
 # Target folder/file structure
 
-Single source of truth for the end-state layout this pair of stories (`project-taxonomy` + `functional-code-taxonomy`) builds toward. Every task in either story's `stories.md` that touches file/folder
-layout points here instead of re-describing the tree inline — if this file and a task spec ever disagree, this file wins (update the task spec, not this file, unless a new discussion round explicitly
-changes the target layout — see the Invariant at the bottom).
+Single source of truth for the end-state layout the three stories that touch file/folder layout (`project-taxonomy`, `functional-code-taxonomy`, `query-catalog`) build toward. Every task in any
+of their `stories.md` that touches file/folder layout points here instead of re-describing the tree inline — if this file and a task spec ever disagree, this file wins (update the task spec, not
+this file, unless a new discussion round explicitly changes the target layout — see the Invariant at the bottom).
 
-Legend: `[PT-N]` / `[FCT-N]` = the task that creates or last defines that node. Nothing below exists yet — both stories are plan-only as of this pass.
+Legend: `[PT-N]` / `[FCT-N]` / `[QC-N]` = the task that creates or last defines that node. Nothing below exists yet — all three stories are plan-only as of this pass.
 
 ```
 ih-trace-lab/
@@ -74,20 +74,22 @@ ih-trace-lab/
 │   │   │   │                                  one, unlike knowledge/ below
 │   │   │   ├── <case-id>-executive-summary.md
 │   │   │   └── archive/                      closed cases move here (case-level close-out)
-│   │   ├── queries/
-│   │   │   └── QUERY_CATALOG.md
 │   │   ├── scripts/                          [PT-2, Rule A] thin, direct child — no inner `investigations/` wrap;
 │   │   │                                      imports src/lib/* (no local athena_runner/.venv/pytest.ini duplicated
 │   │   │                                      per project — see mtn-zm's 4th Athena executor as the cautionary example)
-│   │   └── tests/
+│   │   └── tests/                            no `queries/` here — see root `queries/` below; Athena/Lightstep query
+│   │                                          templates are cross-campaign facts (same axis as root `knowledge/`),
+│   │                                          not per-case ones, so they never live under `investigations/*`
 │   ├── <case-id>/                            [PT-2, revised Rule B] standalone case, no campaign yet — same
-│   │   │                                      docs/queries/scripts/tests skeleton as above, minus the campaign layer;
-│   │   │                                      promoted (renamed) to <campaign-slug>/<case-id>/ once a 2nd related
-│   │   │                                      case appears — raw inputs live in root data/<case-id>/, not here
-│   │   └── docs/  queries/  scripts/  tests/
+│   │   │                                      docs/scripts/tests skeleton as above (no `queries/` — see root
+│   │   │                                      `queries/` below), minus the campaign layer; promoted (renamed) to
+│   │   │                                      <campaign-slug>/<case-id>/ once a 2nd related case appears — raw
+│   │   │                                      inputs live in root data/<case-id>/, not here
+│   │   └── docs/  scripts/  tests/
 │   └── <continuous-investigation-slug>/      e.g. `ctap-smvod` — real submodule (own remote, own git root)
 │       ├── .github/copilot-instructions.md   loads independently — own `git rev-parse --show-toplevel` (verified)
-│       ├── docs/  queries/  scripts/
+│       ├── docs/  scripts/                   queries go in root `queries/` (below), not a local `queries/` — same
+│       │                                      cross-campaign-facts reasoning as the campaign/case cases above
 │       └── knowledge/                        LOCAL staging only — promote reusable bits to root knowledge/
 │
 ├── experiments/                                category: experiment — only created once promoted from scratch/
@@ -103,11 +105,26 @@ ih-trace-lab/
 │                                               pre-write duplicate-check now covers every new script, not just
 │                                               scratch probes
 │
+├── queries/                                    [QC-1..3] cross-campaign, deduplicated Athena/Lightstep query
+│   │                                            catalog — same axis as knowledge/ below, not investigations/*;
+│   │                                            replaces the old per-campaign investigations/*/queries/QUERY_CATALOG.md
+│   │                                            pattern, which let the same query shape get re-typed per campaign
+│   ├── athena/
+│   │   ├── index.md                          [QC-2] one row per distinct query shape — check this before writing
+│   │   │                                      any new Athena SQL
+│   │   └── <slug>.sql                        [QC-2] parameterized template ({{placeholder}} params), never a
+│   │                                          literal one-off; header comment: purpose/tables/params/source
+│   └── lightstep/
+│       ├── index.md                          [QC-3] same pattern, keyed on service/operation/attribute
+│       └── <slug>.md                         [QC-3] native TQL block, already parameterized in source form
+│
 └── knowledge/                                  [PT-7] tool-first, cross-campaign, OPTIONAL — the opposite axis from
     │                                            data/ and investigations/*/docs/ (case-first, always written)
     ├── lightstep/                             e.g. "span attribute X is unreliable for platform detection" — true
     ├── athena/                                 regardless of which case discovered it; promote only case-independent
-    └── har/                                    mechanism facts (see the promotion test in the paragraph below)
+    │                                            mechanism facts (see the promotion test in the paragraph below);
+    │                                            <project>-athena-<db>-tables.md DDL caches [QC-4] also live here
+    └── har/                                    (Lightstep/HAR knowledge caches follow the same convention)
 ```
 
 `knowledge/<tool>/` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation
@@ -119,5 +136,5 @@ household/device IDs? If yes → `knowledge/<tool>/`. If it only makes sense wit
 
 ## Invariant
 
-If a future discussion round changes the target layout, update this file in the same turn as any resulting `tasks.md`/`stories.md` edits in either story — this file and both stories' task specs must
-never describe two different end states.
+If a future discussion round changes the target layout, update this file in the same turn as any resulting `tasks.md`/`stories.md` edits in any of the three stories — this file and all three
+stories' task specs must never describe two different end states.
