@@ -185,15 +185,19 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 
 ---
 
-## PT-7 — `config/data_paths.yaml` + root `data/` tree + docs-vs-knowledge guide section
+## PT-7 — `config/data_paths.yaml` + root `data/` tree + continuous-investigation `data/`+`output/` tree + docs-vs-knowledge guide section
 
-**Grounding:** found during the 2026-09-28 discussion round auditing `applauseInvestigation` and `github_copilot/investigations`. Two prior mistakes this task closes:
+**Grounding:** found during the 2026-09-28 discussion round auditing `applauseInvestigation`, `github_copilot/investigations`, and `ctap-smvod-session-report`. Three prior mistakes this task closes:
 - `applauseInvestigation` already keeps raw tool inputs (`investigations/data/<case-id>/{lightstep,har,athena}`, 1.6GB, gitignored wholesale — confirmed via its own `.gitignore`) and a project-local
   `knowledge/` with genuinely reusable findings (`lightstep-span-attributes-by-service.md`, `applause-csv-household-id-gotchas.md`) — a case-independent-knowledge folder PT-2's skeleton table never
   accounted for on the one-off-investigation row.
 - `github_copilot/investigations` (a separate, older project) shows the failure mode of *not* having any convention: ad hoc top-level buckets invented per data-type (`athenaCSV/`, `spancsv/`,
   `xmls_or_mpd/`, `har/`), zero case-id/campaign grouping, ~25 unrelated HAR files flat in one folder distinguishable only by inconsistent filenames. This is the negative example the design below
   prevents, not a variant to reconcile with.
+- `ctap-smvod-session-report` (a continuous-investigation submodule, not a campaign/case) mixes a true manual input (3 hand-exported Lightstep CSVs/day — no live API) with a later pipeline step's
+  own Athena output, re-read as the next step's input, under one undifferentiated `inputCSV/` folder name. Its `aws-access-cli` sibling (pure pipeline, no persisted input — queries Athena live and
+  writes straight to `output/<TENANT>/{daily,monthly,weekly}/`) confirms this input/output ambiguity is specific to a chained, per-date pipeline and does not apply to a pipeline with no manual Step
+  1. This is why `investigation_data`/`investigation_output` below split by *source/tool provenance*, not input-vs-output.
 
 **Files to change / create:**
 - `docs/guides/project-taxonomy.md` — append a new `## Input data: config, layout, and knowledge vs. docs` section
@@ -215,8 +219,15 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
      knowledge:                        "{knowledge_root}/{tool}"
      investigation_with_campaign:     "{investigations_root}/{campaign}"
      investigation_without_campaign:  "{investigations_root}/{case_id}"
+     investigation_data:              "{investigations_root}/{continuous_investigation_slug}/data/{tool}"
+     investigation_output:            "{investigations_root}/{continuous_investigation_slug}/output"
    ```
-   `functional-code-taxonomy`'s FCT-7 owns the `src/lib/paths/` resolver that reads this file — this task only owns the config file and the guide prose; do not duplicate resolver code here.
+   The last two templates are for a **continuous-investigation submodule** (e.g. `ctap-smvod`), not a campaign/case — found during the same 2026-09-28 round auditing `ctap-smvod-session-report`'s
+   `inputCSV/`, which mixes true manual exports with a later step's own re-read Athena output under one folder name. Root `data/`'s `{campaign}/{case_id}/{tool}` split is input-vs-nothing (a case
+   either has saved data for a tool or it doesn't); `investigation_data`'s split is *source/tool provenance*, not input-vs-output — because in a repeating per-date pipeline, step N's output is
+   legitimately step N+1's input, and forcing a rename between an "inputs" and "outputs" folder mid-chain for that reason alone buys nothing. Deliverables (post-merge, final per-date reports) stay
+   in `investigation_output`, never in `investigation_data` — only raw/intermediate per-tool pulls belong under `investigation_data/{tool}`. `functional-code-taxonomy`'s FCT-7 owns the
+   `src/lib/paths/` resolver that reads this file — this task only owns the config file and the guide prose; do not duplicate resolver code here.
 2. **Root `data/` tree**, gitignored wholesale in one root `.gitignore` line (`data/`) — replacing the per-project duplicated `.gitignore` lines the reference projects each reinvented:
    - `data/<campaign-slug>/<case-id>/{har,lightstep,athena}/` for a campaign case.
    - `data/<case-id>/{har,lightstep,athena}/` for a standalone case (no `misc/` wrapper — see PT-2's revised Rule B); promoted to the campaign form once a 2nd related case appears, identical promotion
@@ -243,7 +254,8 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
      specifics → stays in `docs/`.
 5. **Close-out policy** (default, stated as adjustable per campaign if a real recurring re-verification need shows up): once a case's `docs/` write-up (and any `knowledge/` promotion) is complete,
    **delete** its raw `data/.../​<case-id>/` — do not archive it indefinitely. Grounding fact: one campaign's raw data alone already reached 1.6GB; an archive-forever default does not scale across many
-   campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does.
+   campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does. This policy does **not** apply to `investigation_data`/`investigation_output` (a continuous-investigation submodule's
+   own per-date pipeline tree) — there is no "case close" event on an ongoing daily pipeline; that tree's retention is the submodule's own concern (e.g. a rolling window), not this story's.
 6. Cross-reference `functional-code-taxonomy`'s FCT-7 by name for "the code that reads this config" — do not restate the resolver's function signatures here.
 
 **Tests:** none — docs/config-only (the resolver's tests live under FCT-7).

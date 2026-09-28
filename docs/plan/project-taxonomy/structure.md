@@ -90,6 +90,17 @@ ih-trace-lab/
 │       ├── .github/copilot-instructions.md   loads independently — own `git rev-parse --show-toplevel` (verified)
 │       ├── docs/  scripts/                   queries go in root `queries/` (below), not a local `queries/` — same
 │       │                                      cross-campaign-facts reasoning as the campaign/case cases above
+│       ├── data/                             [PT-7, revised 2026-09-28] LOCAL, not root `data/` — this is a
+│       │   │                                  repeating per-date pipeline, not a campaign/case; split by
+│       │   │                                  *source/tool provenance*, not input-vs-output, because step N's
+│       │   │                                  output is legitimately step N+1's input in a linear chain
+│       │   ├── lightstep/                    true Step 1 manual exports (no live API) — e.g. ctap_*, smvod_*,
+│       │   │                                  smvod_ts_*, one set per date
+│       │   └── athena/                       Athena pulls made by this pipeline's own earlier steps, re-read as
+│       │                                      a later step's input — e.g. athena_session_*, debug_states_*
+│       ├── output/                           post-merge deliverables only — e.g. setupsession_with_outcome_*,
+│       │                                      position_report_*, mtn_escalation_*, cdn_correlation_*
+│       ├── debug/                            scratch/sample only, gitignored, never a pipeline dependency
 │       └── knowledge/                        LOCAL staging only — promote reusable bits to root knowledge/
 │
 ├── experiments/                                category: experiment — only created once promoted from scratch/
