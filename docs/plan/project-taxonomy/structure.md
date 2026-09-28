@@ -119,19 +119,21 @@ ih-trace-lab/
 │       └── <slug>.md                         [QC-3] native TQL block, already parameterized in source form
 │
 └── knowledge/                                  [PT-7] tool-first, cross-campaign, OPTIONAL — the opposite axis from
-    │                                            data/ and investigations/*/docs/ (case-first, always written)
-    ├── lightstep/                             e.g. "span attribute X is unreliable for platform detection" — true
-    ├── athena/                                 regardless of which case discovered it; promote only case-independent
-    │                                            mechanism facts (see the promotion test in the paragraph below);
-    │                                            <project>-athena-<db>-tables.md DDL caches [QC-4] also live here
-    └── har/                                    (Lightstep/HAR knowledge caches follow the same convention)
+    │                                            data/ and investigations/*/docs/ (case-first, always written); flat
+    │                                            files, no per-tool subfolders — an open-ended tool set (a new tool
+    │                                            is just a new filename prefix) stays a cheap-to-scan single directory
+    ├── lightstep-<topic>.md                  e.g. `lightstep-span-attributes-by-service.md` — "span attribute X is
+    │                                          unreliable for platform detection", regardless of which case found it
+    ├── <project>-athena-<db>-tables.md       [QC-4] DDL cache, one file per Athena database — promote only
+    │                                          case-independent mechanism facts (see the promotion test below)
+    └── har-<topic>.md                        e.g. `har-csv-household-id-gotchas.md` — same convention, HAR side
 ```
 
-`knowledge/<tool>/` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation
+`knowledge/<tool>-<topic>.md` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation
 produces one, it is what gets shared outside this project to explain what happened, and it stays tied to that case's
 ticket/household/device IDs forever. `knowledge/` is an optional, opportunistic side-effect — most cases produce
 nothing for it. Promotion test: would this fact still be true and useful on a *different* ticket, with different
-household/device IDs? If yes → `knowledge/<tool>/`. If it only makes sense with this ticket's specifics → it stays in
+household/device IDs? If yes → `knowledge/<tool>-<topic>.md`. If it only makes sense with this ticket's specifics → it stays in
 `docs/`. Never write to `knowledge/` just to "use" the folder — a small, high-signal `knowledge/` is the point.
 
 ## Invariant
