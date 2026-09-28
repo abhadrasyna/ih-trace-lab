@@ -6,29 +6,52 @@ description: Generate an end-of-session protocol-compliance and token-efficiency
 # Session Close Skill
 
 > Invoke at the end of any work session to produce a protocol-compliance and token-efficiency report. Trigger phrases: "session close", "close the session", "end of session report". Goal: honest
-> self-audit — a diagnostic, not a trophy. Steps skipped need accurate labels, not post-hoc rationalization. **Runs on a transcript, not "this conversation."** The invoking prompt supplies an absolute
-> path to a session's `.jsonl` transcript. This skill never inherits the session it audits — invoke it as a fresh subagent so the audit's own cost stays a bounded extraction against a file, not a full
-> context clone. If no transcript path was given, ask for one; do not guess.
+> self-audit — a diagnostic, not a trophy. Steps skipped need accurate labels, not post-hoc rationalization. **Runs on a transcript, not "this conversation."** This skill never inherits the session it
+> audits — invoke it as a fresh subagent so the audit's own cost stays a bounded extraction against a file, not a full context clone.
+
+## Locating the transcript
+
+Copilot CLI writes every session's event log to `~/.copilot/session-state/<session-id>/events.jsonl` — there is no other location and no other filename; never `find`-scan the wider filesystem for it.
+Resolve `T` (the transcript path) in this order:
+
+1. **Known session folder** — if the invoking context already states a session folder (e.g. a `<session_context>` block earlier in this conversation, or a session id passed explicitly), use `<that
+   folder>/events.jsonl` directly. This is the common case and costs zero extra tool calls.
+2. **Not known** — run `ls -t ~/.copilot/session-state/*/events.jsonl | head -1` (mtime-sorted, one directory deep, not a recursive `find`) to get the most recently modified transcript. Use this only
+   when step 1 gives nothing.
+3. **Still ambiguous** (e.g. auditing a specific past session, not "this" one) — ask the user for the session id or folder; do not guess which of several candidates is meant.
 
 ---
 
 ## Step 1 — Build the session's action log from the transcript
 
-Extract, don't reconstruct — read only what each check below needs, never the whole transcript. `T` = the transcript path.
+Extract, don't reconstruct — read only what each check below needs, never the whole transcript.
+
+Copilot CLI's `events.jsonl` schema: one JSON object per line, top-level fields `type`, `data`, `id`, `parentId`, `timestamp`. Assistant turns are `type=="assistant.message"`; `.data.content` is the
+turn's visible text, `.data.toolRequests[]` is the array of tool calls that turn made, each shaped `{toolCallId, name, arguments, type, toolTitle}`. A `type=="skill.invoked"` event marks exactly when
+*this* skill was invoked — use its `timestamp` as a cutoff so the audit covers the work session being closed, not this audit's own tool calls.
 
 ```bash
-# tool calls in invocation order: tool name + a short arg summary
-jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") |
-  "\(.name)\t\((.input.file_path // .input.qualified_name // .input.query //
-  .input.pattern // .input.subagent_type // .input.skill //
-  (.input.command|tostring))[0:120])"' "$T"
+# cutoff: timestamp this skill was invoked (excludes the audit's own actions from the log below)
+CUTOFF=$(jq -r 'select(.type=="skill.invoked") | .timestamp' "$T" | tail -1)
+
+# tool calls in invocation order, before the cutoff: tool name + a short arg summary
+jq -r --arg cutoff "$CUTOFF" 'select(.timestamp < $cutoff) | select(.type=="assistant.message") |
+  .data.toolRequests[]? |
+  "\(.name)\t\((.arguments.file_path // .arguments.path // .arguments.qualified_name // .arguments.query //
+  .arguments.pattern // .arguments.subagent_type // .arguments.skill //
+  (.arguments.command // .arguments|tostring))[0:120])"' "$T"
+
+# visible assistant text, same cutoff — needed for Step 2's "CONTEXT.md ✓" and go-ahead checks
+jq -r --arg cutoff "$CUTOFF" 'select(.timestamp < $cutoff) | select(.type=="assistant.message") | .data.content' "$T"
 
 # latest commit (confirms Step 5c, gives the SHA for the report)
 git -C <repo> log --oneline -5
 ```
 
-From the tool-call list, derive: which files were read; which bash commands ran (test runner, `git commit`, `git add`); which skills were invoked (`commit`). This list is the sole source of truth for
-Step 2 — do not fall back to inference about what "probably" happened.
+If `CUTOFF` comes back empty (this skill wasn't invoked as a nested `skill.invoked` event, e.g. running against an already-closed transcript), skip the cutoff filter and use the whole file.
+
+From the tool-call list, derive: which files were read (and at what `view_range`, to tell a genuine re-read from a scoped re-read of a changed region); which bash commands ran (test runner, `git
+commit`, `git add`); which skills were invoked (`commit`). This list is the sole source of truth for Step 2 — do not fall back to inference about what "probably" happened.
 
 ---
 
@@ -65,6 +88,8 @@ them until they exist. -->
 - Step 3 was skipped — implementation started immediately after CONTEXT.md read with no plan stated
 - SHA was not confirmed after commit (`commit` skill Step 5 skipped)
 - CONTEXT.md was not updated after new files or modules were added
+- CONTEXT.md was read (a `view`/`cat` on it appears in the tool-call log) but the literal string `CONTEXT.md ✓` never appears in any extracted assistant-text turn — silent compliance is
+  indistinguishable from a skipped step on review, so it still scores as a Step 1 violation
 
 ---
 
