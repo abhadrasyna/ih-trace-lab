@@ -135,7 +135,7 @@ cross-reference it by name.
 
 1. One new bullet, same style as the existing `tenant-registry`/`query-catalog` bullets: story slug, one-line summary (six-module shared-lib map + three `Protocol` skeletons replacing quadruplicated
    Athena execution, duplicated CSV/report writing, and quadruplicated HAR-entry loading, plus a cross-project script registry), current status (reference the first unchecked task id at the time this
-   task runs, or "implemented" if FCT-1 through FCT-6 are all done).
+   task runs, or "implemented" if FCT-1 through FCT-7 are all done).
 
 **Tests:** none — docs-only.
 
@@ -171,3 +171,42 @@ cross-reference it by name.
 - One test confirming the generator runs against an empty fixture tree without error (mirrors PT-4's own "runs against the current empty `ih-trace-lab` tree" requirement).
 
 **Commit:** `feat(functional-code-taxonomy): add cross-project script registry and duplicate-check convention`
+
+---
+
+## FCT-7 — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path resolution
+
+**Grounding:** found during the 2026-09-28 discussion round designing `project-taxonomy`'s PT-7 (`config/data_paths.yaml`, root `data/` tree, `docs/`-vs-`knowledge/` distinction). The layout debate
+itself (tool-first vs. campaign-first `data/` nesting, whether a `misc/` bucket is needed) changed direction twice in one discussion — concrete evidence that no script should ever hardcode this
+shape; every script must resolve it from `config/data_paths.yaml` through one shared module instead.
+
+**Files to change / create:**
+- `src/lib/paths/__init__.py` (per `AGENTS.md`'s package convention)
+- `src/lib/paths/protocols.py`
+- `src/lib/paths/config.py` — loads and validates `config/data_paths.yaml`
+- `tests/lib/paths/test_protocols.py`, `tests/lib/paths/__init__.py` if not already created by another story
+
+**What to implement (per `PYTHON_DESIGN.md`'s DIP trigger — the config file is the seam, not a hardcoded dict):**
+
+1. `PathConfig` — a small typed data container loaded from `config/data_paths.yaml` (`data_root`, `knowledge_root`, `investigations_root`, `tools: tuple[str, ...]`, and the 5 template strings named
+   in `project-taxonomy`'s PT-7: `data_with_campaign`, `data_without_campaign`, `knowledge`, `investigation_with_campaign`, `investigation_without_campaign`).
+2. `PathResolver(Protocol)` `@runtime_checkable` exposing:
+   - `resolve_input_dir(tool: str, case_id: str, campaign: str | None = None) -> Path | None` — formats `data_with_campaign` or `data_without_campaign` depending on whether `campaign` is given, and
+     returns `None` (never raises) if the resulting directory does not exist on disk — absence of a saved export for a tool is a normal, expected state (HAR-only cases, manual-only Lightstep/Athena
+     queries), not an error condition. Callers branch on `None` explicitly.
+   - `resolve_knowledge_dir(tool: str) -> Path` — formats `knowledge`; always returns a path (creating the directory is the caller's job, not the resolver's), never takes a `campaign`/`case_id` — this
+     axis is deliberately tool-first and case-independent, per `structure.md`'s `knowledge/` block.
+   - `resolve_investigation_dir(case_id: str, campaign: str | None = None) -> Path` — formats `investigation_with_campaign` or `investigation_without_campaign`; the caller appends the fixed
+     `docs/`/`queries/`/`scripts/`/`tests/` skeleton from `project-taxonomy`'s PT-2 — that skeleton is not templated, only the root segment is.
+3. A concrete `YamlPathResolver` implementing the `Protocol`, reading `config/data_paths.yaml` via `PathConfig`. No other module in this repo constructs a `data/`, `knowledge/`, or `investigations/`
+   path via raw string concatenation once this exists — that is the enforcement point PT-3's prior-art checklist and FCT-6's registry check both rely on for this specific case.
+
+**Tests (no network, no real repo paths outside `tmp_path`):**
+- `test_resolve_input_dir_with_campaign_formats_data_with_campaign_template`
+- `test_resolve_input_dir_without_campaign_formats_data_without_campaign_template`
+- `test_resolve_input_dir_returns_none_when_directory_absent` — the core contract: a missing HAR/Lightstep/Athena folder is `None`, not an exception.
+- `test_resolve_knowledge_dir_ignores_campaign_and_case_id` — confirms the tool-first axis takes no case/campaign arguments even if accidentally passed.
+- `test_resolve_investigation_dir_with_and_without_campaign`
+- `test_conforming_stub_satisfies_path_resolver_protocol` / `test_non_conforming_stub_does_not_satisfy_protocol` (matches FCT-2's existing `Protocol`-conformance test pattern).
+
+**Commit:** `feat(functional-code-taxonomy): add src/lib/paths config-driven resolver`

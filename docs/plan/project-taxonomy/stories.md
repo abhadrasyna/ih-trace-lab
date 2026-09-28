@@ -47,18 +47,21 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 1. A `## Folder skeleton per category` table, columns `Category | Required files | Notes`, one row per PT-1 category:
    - Pipeline: `scripts/` (imports `src/lib/*` from `docs/plan/functional-code-taxonomy/`), `tests/`, a doc stating the schedule (what runs when, e.g. a cron expression or trigger description) — no
      `investigations/docs` (nothing to write up, it is not a case).
-   - Continuous investigation: `AGENTS.md`-delta (or `.github/copilot-instructions.md` if a submodule), `session-info.md`, `TODO.md`, `investigations/{docs,data,queries}`, local `knowledge/` staging.
+   - Continuous investigation: `AGENTS.md`-delta (or `.github/copilot-instructions.md` if a submodule), `session-info.md`, `TODO.md`, `investigations/{docs,queries}`, local `knowledge/` staging. Raw
+     inputs use the same root `data/` tree PT-7 defines (this is disk-only, gitignored — a submodule boundary doesn't block reaching it).
    - One-off investigation: lives under the top-level `investigations/` category bucket, applying two rules found during the follow-up audit of `applauseInvestigation` and `vod-playback-timing-probe`
      (both independently reinvented the same nesting mistake):
-     - **Rule A (no double wrap):** a project's own case-artifact folders — `docs/`, `data/`, `queries/`, `scripts/` — live directly at that project's own root (`investigations/<slug>/docs/`, etc.).
-       Never re-wrap them in an inner folder also named `investigations/` (i.e. never `investigations/<slug>/investigations/{docs,data,...}`) — that stutter is exactly the bug found in both audited
-       projects.
-     - **Rule B (campaign, not per-case folder):** a `<slug>` under `investigations/` names a recurring campaign or relationship (e.g. `applause` for the ongoing 3rd-party-testing relationship,
-       `mtn-zm-device` for the Zambia device investigation), created once. Individual incoming cases (ticket/incident IDs) become flat, ID-prefixed files inside that campaign's `docs/`
-       (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) and, for bulky raw exports only, an ID-named subfolder under `data/<case-id>/` — never a new subfolder under `docs/`, and never a new
-       top-level slug per incoming case. A case with no known campaign yet goes into a shared `investigations/misc/` catch-all until a second related case justifies promoting it to a named campaign
-       (mirrors `scratch/`'s existing convergence-before-promotion principle). Require an explicit close-out step per case (move its docs to `docs/archive/`) — do not leave closed cases mixed with
-       open ones.
+     - **Rule A (no double wrap):** a project's own case-artifact folders — `docs/`, `queries/`, `scripts/` — live directly at that project's own root (`investigations/<slug>/docs/`, etc.). Never
+       re-wrap them in an inner folder also named `investigations/` (i.e. never `investigations/<slug>/investigations/{docs,...}`) — that stutter is exactly the bug found in both audited projects.
+       Raw tool inputs (`har`/`lightstep`/`athena`) do **not** live under `investigations/` at all — see PT-7's root `data/` tree.
+     - **Rule B (campaign, not per-case folder; revised by the 2026-09-28 discussion round — supersedes the original `misc/`-catch-all wording):** a `<slug>` under `investigations/` names a
+       recurring campaign or relationship (e.g. `applause` for the ongoing 3rd-party-testing relationship, `mtn-zm-device` for the Zambia device investigation), created once. Individual incoming
+       cases (ticket/incident IDs) become flat, ID-prefixed files inside that campaign's `docs/` (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) — never a new subfolder under `docs/`. A
+       case with **no known campaign yet** is **not** wrapped in a `misc/` catch-all — it sits directly as `investigations/<case-id>/` (same `docs/queries/scripts/tests` skeleton, minus the campaign
+       layer). Once a second related case appears, promote by renaming/moving it to `investigations/<campaign-slug>/<case-id>/` — the same promotion mechanic a `misc/` bucket would have required
+       anyway, just without an extra directory nobody needs. This mirrors `scratch/`'s existing convergence-before-promotion principle. Require an explicit close-out step per case (move its docs to
+       `docs/archive/`) — do not leave closed cases mixed with open ones. Raw inputs for a standalone case follow the identical promotion rule in PT-7's `data/<case-id>/` → `data/<campaign-slug>/
+       <case-id>/`.
    - Tool: `src/`, `tests/`, its own `README.md`, no `investigations/` (it is not a case-tracking folder).
    - Experiment: starts in `scratch/` per this project's existing convergence rule (`scratch/SCRATCH.md`) — only gets a dedicated folder under `experiments/` if/when it converges past a single
      session's throwaway probe; never starts as its own top-level folder.
@@ -66,8 +69,8 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
    it needs instructions distinct from the root's) when it is a **pipeline**, **continuous investigation**, or **tool** (independent commit cadence, benefits from scoped instructions); it stays a
    **plain folder** under the root repo when it is a **one-off investigation** or **experiment** (short-lived, no benefit from a separate remote, and per `CONTEXT.md`'s constraint this project has no
    folders yet needing that split — state this is the rule for *future* work, not a migration list).
-3. Update `structure.md`'s `investigations/` block in the same commit so it shows: `investigations/misc/`, at least one campaign example (`<campaign-slug>/{docs/{<case-id>-*.md, archive/}, data/<case-
-   id>/, queries/, scripts/, tests/}`) and one continuous-investigation submodule example — matching this table row for row.
+3. Update `structure.md`'s `investigations/` block in the same commit so it shows: a standalone `investigations/<case-id>/` example, at least one campaign example (`<campaign-slug>/{docs/{<case-id>-
+   *.md, archive/}, queries/, scripts/, tests/}` — no `data/` here, see PT-7), and one continuous-investigation submodule example — matching this table row for row.
 4. Cross-reference `docs/plan/functional-code-taxonomy/` by name for "what code a pipeline/tool/investigation's `scripts/`/`src/` folder should import" — do not restate that story's module layout
    here.
 
@@ -122,7 +125,8 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
    `PYTHON_DESIGN.md`'s DI treatment).
 2. `classify_dir(path: Path) -> str | None` — checks a top-level directory against `CATEGORY_MARKERS`, returns the matched category name or `None` if no marker matches.
 3. `find_unclassified_dirs(root: Path, ignore: tuple[str, ...]) -> list[Path]` — lists top-level directories under `root` excluding a fixed ignore set (`.git`, `docs`, `scripts`, `tests`, `scratch`,
-   `logs`, `tmp`, `tooling`, `.github`) whose `classify_dir` result is `None`.
+   `logs`, `tmp`, `tooling`, `.github`, `config`, `data`, `knowledge` — the last three are cross-cutting infra defined by PT-7, not a category instance to classify) whose `classify_dir` result is
+   `None`.
 4. `main()` — `argparse` with `--root` (default: repo root); prints each unclassified directory with a one-line hint to run PT-3's checklist before deciding its category; exits non-zero only if asked
    with `--strict` (default off — this is advisory, not a commit-blocking gate, since no folders exist yet to enforce against).
 
@@ -146,7 +150,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 1. `AGENTS.md`: one sentence pointing to `docs/guides/project-taxonomy.md` as the reference for classifying new work and picking its folder skeleton before creating any new top-level folder. No
    taxonomy content duplicated into `AGENTS.md` itself.
 2. `CONTEXT.md`: one new bullet under "What Exists" in the same style as the existing `tenant-registry`/`query-catalog` bullets — story slug, one-line summary, current status (implemented once PT-1
-   through PT-6 are all checked; reference the first unchecked task id if not yet fully done at the time this task runs).
+   through PT-7 are all checked; reference the first unchecked task id if not yet fully done at the time this task runs).
 
 **Tests:** none — docs-only.
 
@@ -178,3 +182,70 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 **Tests:** none — docs-only.
 
 **Commit:** `docs(project-taxonomy): add pipeline cron-cutover procedure`
+
+---
+
+## PT-7 — `config/data_paths.yaml` + root `data/` tree + docs-vs-knowledge guide section
+
+**Grounding:** found during the 2026-09-28 discussion round auditing `applauseInvestigation` and `github_copilot/investigations`. Two prior mistakes this task closes:
+- `applauseInvestigation` already keeps raw tool inputs (`investigations/data/<case-id>/{lightstep,har,athena}`, 1.6GB, gitignored wholesale — confirmed via its own `.gitignore`) and a project-local
+  `knowledge/` with genuinely reusable findings (`lightstep-span-attributes-by-service.md`, `applause-csv-household-id-gotchas.md`) — a case-independent-knowledge folder PT-2's skeleton table never
+  accounted for on the one-off-investigation row.
+- `github_copilot/investigations` (a separate, older project) shows the failure mode of *not* having any convention: ad hoc top-level buckets invented per data-type (`athenaCSV/`, `spancsv/`,
+  `xmls_or_mpd/`, `har/`), zero case-id/campaign grouping, ~25 unrelated HAR files flat in one folder distinguishable only by inconsistent filenames. This is the negative example the design below
+  prevents, not a variant to reconcile with.
+
+**Files to change / create:**
+- `docs/guides/project-taxonomy.md` — append a new `## Input data: config, layout, and knowledge vs. docs` section
+- `config/data_paths.yaml` — new file
+- `.gitignore` (repo root) — new file if it doesn't exist, or one appended line
+- `structure.md` (this story's own folder) — already updated in this same discussion round (see the `data/`, `config/`, and `knowledge/` blocks)
+
+**What to implement:**
+
+1. **`config/data_paths.yaml`** is the single source of truth for input-data shape — scripts never hardcode it:
+   ```yaml
+   data_root: data
+   knowledge_root: knowledge
+   investigations_root: investigations
+   tools: [har, lightstep, athena]
+   templates:
+     data_with_campaign:              "{data_root}/{campaign}/{case_id}/{tool}"
+     data_without_campaign:           "{data_root}/{case_id}/{tool}"
+     knowledge:                        "{knowledge_root}/{tool}"
+     investigation_with_campaign:     "{investigations_root}/{campaign}"
+     investigation_without_campaign:  "{investigations_root}/{case_id}"
+   ```
+   `functional-code-taxonomy`'s FCT-7 owns the `src/lib/paths/` resolver that reads this file — this task only owns the config file and the guide prose; do not duplicate resolver code here.
+2. **Root `data/` tree**, gitignored wholesale in one root `.gitignore` line (`data/`) — replacing the per-project duplicated `.gitignore` lines the reference projects each reinvented:
+   - `data/<campaign-slug>/<case-id>/{har,lightstep,athena}/` for a campaign case.
+   - `data/<case-id>/{har,lightstep,athena}/` for a standalone case (no `misc/` wrapper — see PT-2's revised Rule B); promoted to the campaign form once a 2nd related case appears, identical promotion
+     mechanic to `investigations/<case-id>/` → `investigations/<campaign-slug>/<case-id>/`.
+   - Each tool subfolder (`har/`, `lightstep/`, `athena/`) is present **only if that tool was actually used and something was saved** — a HAR-only case is normal, not a gap. A manual/interactive
+     Lightstep or Athena query that produced nothing worth saving on disk leaves no folder here; if a manual query *did* produce something worth keeping (a screenshot, a copy-pasted export), it still
+     goes in the matching tool subfolder, tagged as manual in its filename or a short note, so the resolver still finds it.
+3. **Mandatory "Inputs used" block** in every case doc (`investigations/*/docs/<case-id>-*.md`), stating for each of the three tools whether it was used, and if so, saved-to-disk vs. manual-only —
+   e.g.:
+   ```
+   - HAR: yes (data/<campaign-or-case-id>/<case-id>/har/)
+   - Lightstep: manual query only, not saved — see "Lightstep findings" section below
+   - Athena: no
+   ```
+   This is mandatory, not optional prose, because absence of a saved-CSV folder is otherwise indistinguishable from "wasn't checked" — a methodology gap, not a file-presence gap.
+4. **`docs/` vs. `knowledge/` distinction**, stated explicitly with the worked example found in `applauseInvestigation`:
+   - `investigations/*/docs/<case-id>-*.md` is the **mandatory, per-case deliverable** — every investigation produces one, it is what gets shared outside this project to explain what happened, and it
+     stays tied to that case's ticket/household/device IDs forever. Cite `applauseInvestigation/investigations/docs/7231547-android-secure-decoder-failure.md` as the concrete example: household ID,
+     device ID, ticket status, per-case timeline — useless to any other case except as precedent.
+   - `knowledge/<tool>/` is an **optional, opportunistic side-effect** — most cases produce nothing for it; never write to it just to "use" the folder. Cite
+     `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md` as the concrete example: it names the case it was gathered during (7231547) in its own header, while being written so
+     that ticket number is irrelevant to using it — e.g. "`deviceType` tag is unreliable for platform detection, confirmed via HAR cross-check" is true on any future case touching that service.
+   - **Promotion test:** would this fact still be true and useful on a *different* ticket, with different household/device IDs? If yes → `knowledge/<tool>/`. If it only makes sense with this ticket's
+     specifics → stays in `docs/`.
+5. **Close-out policy** (default, stated as adjustable per campaign if a real recurring re-verification need shows up): once a case's `docs/` write-up (and any `knowledge/` promotion) is complete,
+   **delete** its raw `data/.../​<case-id>/` — do not archive it indefinitely. Grounding fact: one campaign's raw data alone already reached 1.6GB; an archive-forever default does not scale across many
+   campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does.
+6. Cross-reference `functional-code-taxonomy`'s FCT-7 by name for "the code that reads this config" — do not restate the resolver's function signatures here.
+
+**Tests:** none — docs/config-only (the resolver's tests live under FCT-7).
+
+**Commit:** `docs(project-taxonomy): add config/data_paths.yaml, root data/ tree, and docs-vs-knowledge guide section`

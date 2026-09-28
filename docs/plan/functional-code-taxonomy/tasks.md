@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: FCT-1, FCT-2, FCT-3, FCT-4, FCT-5, FCT-6.**
+**Open: FCT-1, FCT-2, FCT-3, FCT-4, FCT-5, FCT-6, FCT-7.**
 
 - [ ] **FCT-1** — `docs/guides/functional-code-taxonomy.md`: six-module map + replaced-originals evidence + shared-vs-specific test | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review:
   human diff review | SHA: <—>
@@ -14,6 +14,8 @@ spec.
 - [ ] **FCT-5** — `CONTEXT.md` pointer line | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **FCT-6** — `scripts/dev/generate_code_registry.py` + doc section: cross-project registry + delegated duplicate-check | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
   confirms tests green | SHA: <—>
+- [ ] **FCT-7** — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path resolution | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms
+  tests green | SHA: <—>
 
 ## Story done when
 
@@ -32,6 +34,9 @@ spec.
   listing every script under `investigations/*/scripts`, `experiments/*/scripts`, `src/pipelines`, `src/tools`, and every `src/lib/*` module; its tests cover a fixture tree with two near-duplicate
   scripts and confirm the registry surfaces both. The guide doc states the delegated duplicate-check convention (a sub-agent checks this registry before any new script is written) that
   `project-taxonomy`'s PT-3 depends on.
+- **FCT-7** — `src/lib/paths/protocols.py` defines the `PathResolver` `Protocol` (`resolve_input_dir`, `resolve_knowledge_dir`, `resolve_investigation_dir`) and a concrete `YamlPathResolver` reading
+  `config/data_paths.yaml` (owned by `project-taxonomy`'s PT-7); tests confirm `resolve_input_dir` returns `None` (never raises) when a tool's directory is absent, that `resolve_knowledge_dir` ignores
+  campaign/case-id, and that both the with-campaign and without-campaign templates format correctly; a `Protocol`-conformance test pair matches FCT-2's existing pattern.
 
 ## After each task
 

@@ -12,6 +12,10 @@ ih-trace-lab/
 ├── CONTEXT.md                                tracks story status in "What Exists"
 ├── pyproject.toml                            testpaths/coverage/lint list src/, investigations/, experiments/ — not src/ alone
 │
+├── config/
+│   └── data_paths.yaml                       [PT-7] single source of truth for data_root/knowledge_root/investigations_root
+│                                              path templates — src/lib/paths reads this, never hardcodes shape
+│
 ├── docs/
 │   ├── guides/
 │   │   ├── project-taxonomy.md               [PT-1/2/3/6] categories, skeletons, Rule A/B, cron-cutover, script-level
@@ -35,7 +39,11 @@ ih-trace-lab/
 │   │   │   └── protocols.py                  [FCT-2] HarEntryLoader Protocol — replaces the 4x-duplicated HAR-entries
 │   │   │                                      loader (applauseInvestigation, vod-playback-timing-probe x2); seeded from
 │   │   │                                      vod-asset-ingestion-mapping's scripts/lib/har_parser.py
-│   │   └── curl_to_python/                   deferred
+│   │   ├── curl_to_python/                   deferred
+│   │   └── paths/
+│   │       └── protocols.py                  [FCT-7] PathResolver Protocol — reads config/data_paths.yaml, exposes
+│   │                                          resolve_input_dir/resolve_knowledge_dir/resolve_investigation_dir;
+│   │                                          scripts never hardcode data/knowledge/investigations shape
 │   ├── tools/                                 category: tool
 │   │   └── <tool-slug>/
 │   └── pipelines/                             category: pipeline
@@ -43,28 +51,43 @@ ih-trace-lab/
 │           ├── scripts/                      thin — imports src/lib/*
 │           └── tests/
 │
+├── data/                                       [PT-7] raw tool inputs — root .gitignore'd wholesale (disposable,
+│   │                                            never committed); shape driven by config/data_paths.yaml, not hardcoded
+│   ├── <campaign-slug>/                       campaign case — e.g. `applause`, `mtn-zm-device`
+│   │   └── <case-id>/
+│   │       ├── har/                          present only if this tool was actually used and saved — a HAR-only
+│   │       ├── lightstep/                    case is normal, not a gap; manual/interactive Lightstep or Athena
+│   │       └── athena/                       queries that produced nothing worth saving leave no folder here —
+│   │                                          see the case doc's "Inputs used" block for the methodology record
+│   └── <case-id>/                            [PT-2, revised Rule B] standalone case, no campaign yet — no `misc/`
+│                                              wrapper; promoted (renamed) to <campaign-slug>/<case-id>/ above once
+│                                              a 2nd related case appears
+│       ├── har/  lightstep/  athena/
+│
 ├── investigations/                            category: continuous + one-off investigation
-│   ├── misc/                                 [PT-2, Rule B] catch-all until a 2nd related case justifies a named
-│   │   │                                      campaign slug
-│   │   └── docs/
 │   ├── <campaign-slug>/                      [PT-2, Rule B] e.g. `applause` (was applauseInvestigation), `mtn-zm-device`
 │   │   │                                      (was mtn-zm-session-device-investigation) — one slug per campaign/
 │   │   │                                      relationship, not per case
 │   │   ├── docs/
-│   │   │   ├── <case-id>-<topic>.md          flat, ID-prefixed — no per-case subfolder [PT-2, Rule B]
+│   │   │   ├── <case-id>-<topic>.md          flat, ID-prefixed — no per-case subfolder [PT-2, Rule B]; mandatory
+│   │   │   │                                  deliverable per case (shared outside this project) — every case gets
+│   │   │   │                                  one, unlike knowledge/ below
 │   │   │   ├── <case-id>-executive-summary.md
 │   │   │   └── archive/                      closed cases move here (case-level close-out)
-│   │   ├── data/
-│   │   │   └── <case-id>/                    per-case subfolder only for bulky raw exports
 │   │   ├── queries/
 │   │   │   └── QUERY_CATALOG.md
 │   │   ├── scripts/                          [PT-2, Rule A] thin, direct child — no inner `investigations/` wrap;
 │   │   │                                      imports src/lib/* (no local athena_runner/.venv/pytest.ini duplicated
 │   │   │                                      per project — see mtn-zm's 4th Athena executor as the cautionary example)
 │   │   └── tests/
+│   ├── <case-id>/                            [PT-2, revised Rule B] standalone case, no campaign yet — same
+│   │   │                                      docs/queries/scripts/tests skeleton as above, minus the campaign layer;
+│   │   │                                      promoted (renamed) to <campaign-slug>/<case-id>/ once a 2nd related
+│   │   │                                      case appears — raw inputs live in root data/<case-id>/, not here
+│   │   └── docs/  queries/  scripts/  tests/
 │   └── <continuous-investigation-slug>/      e.g. `ctap-smvod` — real submodule (own remote, own git root)
 │       ├── .github/copilot-instructions.md   loads independently — own `git rev-parse --show-toplevel` (verified)
-│       ├── docs/  data/  queries/  scripts/
+│       ├── docs/  queries/  scripts/
 │       └── knowledge/                        LOCAL staging only — promote reusable bits to root knowledge/
 │
 ├── experiments/                                category: experiment — only created once promoted from scratch/
@@ -80,8 +103,19 @@ ih-trace-lab/
 │                                               pre-write duplicate-check now covers every new script, not just
 │                                               scratch probes
 │
-└── knowledge/                                  promoted, cross-cutting reusable findings (future — no content yet)
+└── knowledge/                                  [PT-7] tool-first, cross-campaign, OPTIONAL — the opposite axis from
+    │                                            data/ and investigations/*/docs/ (case-first, always written)
+    ├── lightstep/                             e.g. "span attribute X is unreliable for platform detection" — true
+    ├── athena/                                 regardless of which case discovered it; promote only case-independent
+    └── har/                                    mechanism facts (see the promotion test in the paragraph below)
 ```
+
+`knowledge/<tool>/` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation
+produces one, it is what gets shared outside this project to explain what happened, and it stays tied to that case's
+ticket/household/device IDs forever. `knowledge/` is an optional, opportunistic side-effect — most cases produce
+nothing for it. Promotion test: would this fact still be true and useful on a *different* ticket, with different
+household/device IDs? If yes → `knowledge/<tool>/`. If it only makes sense with this ticket's specifics → it stays in
+`docs/`. Never write to `knowledge/` just to "use" the folder — a small, high-signal `knowledge/` is the point.
 
 ## Invariant
 
