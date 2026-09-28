@@ -3,6 +3,9 @@
 > One task per session. Find the first unchecked item in `tasks.md`. That is your only task. Full implementation rules live in `AGENTS.md` and `PYTHON_DESIGN.md`. After each task: set `SHA:` on the
 > task line + tick the box, update the story status summary, add one line to your backlog/session-log file.
 
+See `structure.md` (this story's own folder) for the canonical target tree every task below must stay consistent with — it is the single source of truth for layout; if it and any task spec below ever
+disagree, `structure.md` wins and the task spec must be corrected to match.
+
 ---
 
 ## PT-1 — `docs/guides/project-taxonomy.md`: five categories + `github_copilot` examples
@@ -33,10 +36,11 @@
 
 ---
 
-## PT-2 — same doc: per-category folder skeleton + submodule-vs-plain-folder rule
+## PT-2 — same doc + `structure.md`: per-category folder skeleton (Rule A/Rule B) + submodule-vs-plain-folder rule
 
 **Files to change / create:**
 - `docs/guides/project-taxonomy.md` — append to the file created in PT-1
+- `structure.md` (this story's own folder) — update so its tree matches this task's skeleton table exactly (see `## Target folder structure` cross-reference below)
 
 **What to implement:**
 
@@ -44,43 +48,63 @@
    - Pipeline: `scripts/` (imports `src/lib/*` from `docs/plan/functional-code-taxonomy/`), `tests/`, a doc stating the schedule (what runs when, e.g. a cron expression or trigger description) — no
      `investigations/docs` (nothing to write up, it is not a case).
    - Continuous investigation: `AGENTS.md`-delta (or `.github/copilot-instructions.md` if a submodule), `session-info.md`, `TODO.md`, `investigations/{docs,data,queries}`, local `knowledge/` staging.
-   - One-off investigation: same skeleton as continuous investigation but with a required `investigations/docs/<case>-executive-summary.md` and an explicit close-out step (archive once the case closes
-     — do not leave it open-ended).
+   - One-off investigation: lives under the top-level `investigations/` category bucket, applying two rules found during the follow-up audit of `applauseInvestigation` and `vod-playback-timing-probe`
+     (both independently reinvented the same nesting mistake):
+     - **Rule A (no double wrap):** a project's own case-artifact folders — `docs/`, `data/`, `queries/`, `scripts/` — live directly at that project's own root (`investigations/<slug>/docs/`, etc.).
+       Never re-wrap them in an inner folder also named `investigations/` (i.e. never `investigations/<slug>/investigations/{docs,data,...}`) — that stutter is exactly the bug found in both audited
+       projects.
+     - **Rule B (campaign, not per-case folder):** a `<slug>` under `investigations/` names a recurring campaign or relationship (e.g. `applause` for the ongoing 3rd-party-testing relationship,
+       `mtn-zm-device` for the Zambia device investigation), created once. Individual incoming cases (ticket/incident IDs) become flat, ID-prefixed files inside that campaign's `docs/`
+       (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) and, for bulky raw exports only, an ID-named subfolder under `data/<case-id>/` — never a new subfolder under `docs/`, and never a new
+       top-level slug per incoming case. A case with no known campaign yet goes into a shared `investigations/misc/` catch-all until a second related case justifies promoting it to a named campaign
+       (mirrors `scratch/`'s existing convergence-before-promotion principle). Require an explicit close-out step per case (move its docs to `docs/archive/`) — do not leave closed cases mixed with
+       open ones.
    - Tool: `src/`, `tests/`, its own `README.md`, no `investigations/` (it is not a case-tracking folder).
-   - Experiment: starts in `scratch/` per this project's existing convergence rule (`scratch/SCRATCH.md`) — only gets a dedicated folder if/when it converges into a tool or gets absorbed into a
-     pipeline/investigation; never starts as its own top-level folder.
+   - Experiment: starts in `scratch/` per this project's existing convergence rule (`scratch/SCRATCH.md`) — only gets a dedicated folder under `experiments/` if/when it converges past a single
+     session's throwaway probe; never starts as its own top-level folder.
 2. A `## Submodule vs. plain folder` section stating the rule found during the 2026-09-28 audit: a folder becomes a real git submodule (own `.git`, own remote, own `.github/copilot-instructions.md` if
    it needs instructions distinct from the root's) when it is a **pipeline**, **continuous investigation**, or **tool** (independent commit cadence, benefits from scoped instructions); it stays a
    **plain folder** under the root repo when it is a **one-off investigation** or **experiment** (short-lived, no benefit from a separate remote, and per `CONTEXT.md`'s constraint this project has no
    folders yet needing that split — state this is the rule for *future* work, not a migration list).
-3. Cross-reference `docs/plan/functional-code-taxonomy/` by name for "what code a pipeline/tool/investigation's `scripts/`/`src/` folder should import" — do not restate that story's module layout
+3. Update `structure.md`'s `investigations/` block in the same commit so it shows: `investigations/misc/`, at least one campaign example (`<campaign-slug>/{docs/{<case-id>-*.md, archive/}, data/<case-
+   id>/, queries/, scripts/, tests/}`) and one continuous-investigation submodule example — matching this table row for row.
+4. Cross-reference `docs/plan/functional-code-taxonomy/` by name for "what code a pipeline/tool/investigation's `scripts/`/`src/` folder should import" — do not restate that story's module layout
    here.
 
 **Tests:** none — docs-only.
 
-**Commit:** `docs(project-taxonomy): add folder skeletons and submodule-vs-folder rule`
+**Commit:** `docs(project-taxonomy): add folder skeletons, Rule A/B, and submodule-vs-folder rule`
 
 ---
 
-## PT-3 — same doc: new-investigation checklist with mandatory prior-art search
+## PT-3 — same doc: new-work checklist (new folder AND new script) with mandatory prior-art search
 
 **Files to change / create:**
 - `docs/guides/project-taxonomy.md` — append to the file created in PT-1/PT-2
 
 **What to implement:**
 
-1. A `## Starting new work` checklist, numbered:
-   1. Classify the work against the PT-1 category definitions — if it doesn't clearly fit one, stop and ask (per this project's global "don't assume — ask" rule) rather than picking the closest label.
-   2. Delegate a sub-agent (the `explore` or `task` agent type — bounded, read-only) to search, in order: `docs/guides/`, `knowledge/` (once it exists as a folder), and `/Users/abhadra/github_copilot`
-      (read-only reference) for prior art answering the same or a closely related question. Give the sub-agent the concrete question, not just a category name.
-   3. If the sub-agent finds a match: reuse or extend it; do not create a new top-level folder duplicating it.
-   4. If no match: create the folder using PT-2's skeleton for the classified category.
-2. State explicitly why step 2 is delegated rather than done inline — same rationale as `docs/plan/scratch-script-registry/prompt.md`'s duplicate-check delegation (keeps the search cost off the main
-   session's context, makes it a named auditable step) — this checklist is that same pattern applied at whole-project scope instead of single-script scope; do not re-justify it differently.
+1. A `## Starting new work` checklist covering two triggers — creating a new top-level folder, and writing any new script inside an existing one — because auditing actual HAR-parsing code found the
+   identical loader function reimplemented four times across three projects (twice within the same project) even though every one of those projects nominally followed a "thin script, import shared
+   lib" convention; the convention alone did not stop the duplication, so the checklist must fire per-script, not just per-folder:
+   1. **New top-level folder:** classify the work against the PT-1 category definitions — if it doesn't clearly fit one, stop and ask (per this project's global "don't assume — ask" rule) rather than
+      picking the closest label.
+   2. **New top-level folder:** delegate a sub-agent (the `explore` or `task` agent type — bounded, read-only) to search, in order: `docs/guides/`, `knowledge/` (once it exists as a folder), and
+      `/Users/abhadra/github_copilot` (read-only reference) for prior art answering the same or a closely related question. Give the sub-agent the concrete question, not just a category name.
+   3. **New script (any category):** before writing it, delegate a sub-agent to check `docs/plan/functional-code-taxonomy/`'s FCT-6 cross-project script registry (once it exists) for an existing
+      script or `src/lib/*` module doing the same or closely related thing — e.g. HAR-entry loading, CSV/report writing, Athena querying. Give the sub-agent the concrete operation the script performs,
+      not the project name.
+   4. If either search finds a match: reuse or extend it; do not create a new top-level folder, or a new script, duplicating it.
+   5. If no match: create the folder using PT-2's skeleton for the classified category, or write the script importing `src/lib/*` as normal.
+2. State explicitly why steps 2 and 3 are delegated rather than done inline — same rationale as `docs/plan/scratch-script-registry/prompt.md`'s duplicate-check delegation (keeps the search cost off
+   the main session's context, makes it a named auditable step) — this checklist is that same pattern applied at whole-project scope *and* at per-script scope, not just single-script scope inside
+   `scratch/`; do not re-justify it differently.
+3. Cross-reference `docs/plan/functional-code-taxonomy/`'s "shared vs. specific" test (FCT-1) as the follow-up question once a match or near-match is found: if the found code operates on a domain
+   mechanism (Athena, CSV/report I/O, HAR parsing) rather than a campaign/case-specific business rule, it belongs in `src/lib/`, not copied into a new script — do not restate that test here.
 
 **Tests:** none — docs-only.
 
-**Commit:** `docs(project-taxonomy): add new-work checklist with prior-art search`
+**Commit:** `docs(project-taxonomy): add new-work checklist covering folders and scripts`
 
 ---
 

@@ -6,8 +6,10 @@ spec.
 **Open: PT-1, PT-2, PT-3, PT-4, PT-5, PT-6.**
 
 - [ ] **PT-1** — `docs/guides/project-taxonomy.md`: five categories + `github_copilot` examples | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **PT-2** — same doc: per-category folder skeleton + submodule-vs-plain-folder rule | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **PT-3** — same doc: new-investigation checklist with mandatory prior-art search | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [ ] **PT-2** — same doc + `structure.md`: per-category folder skeleton (Rule A/Rule B) + submodule-vs-plain-folder rule | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff
+  review | SHA: <—>
+- [ ] **PT-3** — same doc: new-work checklist (new folder AND new script) with mandatory prior-art search | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
+  <—>
 - [ ] **PT-4** — `scripts/dev/check_project_taxonomy.py` + tests | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **PT-5** — `AGENTS.md` + `CONTEXT.md` pointer lines | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **PT-6** — same doc: pipeline cron-cutover procedure | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
@@ -16,11 +18,15 @@ spec.
 
 - **PT-1** — `docs/guides/project-taxonomy.md` exists with a named, one-paragraph definition for each of: pipeline, continuous investigation, one-off investigation, tool, experiment — each citing the
   specific `github_copilot` folder it is modeled on.
-- **PT-2** — The same doc has a table (one row per category) listing required files/folders for that category, and a short decision rule stating exactly when new work becomes a git submodule vs. a
-  plain folder (the "own instructions file / independent cadence" test from `prompt.md`'s findings).
-- **PT-3** — The same doc has a checklist a session follows before creating any new top-level folder: (1) pick a category via the PT-1 decision tree, (2) delegate a sub-agent to search `docs/guides/`,
-  `knowledge/` (once it exists), and `/Users/abhadra/github_copilot` (read-only) for prior art on the same question, (3) only create the folder if no reusable prior art is found or reuse/extend what
-  is found instead.
+- **PT-2** — The same doc has a table (one row per category) listing required files/folders for that category, applying **Rule A** (a category's case-artifact folders — `docs/`, `data/`, `queries/`,
+  `scripts/` — live directly at the project's own root; never re-wrapped in an inner folder also named `investigations/`) and **Rule B** (a slug under `investigations/` names a recurring campaign,
+  created once; individual incoming cases are flat, ID-prefixed files/subfolders within that campaign's `docs/`/`data/`, never a new subfolder or new top-level slug per case; unaffiliated cases go in
+  `investigations/misc/` until a second related case justifies promoting them to a named campaign); a short decision rule stating exactly when new work becomes a git submodule vs. a plain folder (the
+  "own instructions file / independent cadence" test from `prompt.md`'s findings); and `structure.md` updated in the same commit so it matches the table exactly.
+- **PT-3** — The same doc has a checklist a session follows before **either** creating any new top-level folder **or** writing any new script inside an existing one: (1) pick a category via the PT-1
+  decision tree (folder case only), (2) delegate a sub-agent to search `docs/guides/`, `knowledge/` (once it exists), `/Users/abhadra/github_copilot` (read-only), and — for the new-script case —
+  `functional-code-taxonomy`'s FCT-6 cross-project script registry for prior art on the same question, (3) only create the folder/script if no reusable prior art is found, or reuse/extend what is
+  found instead.
 - **PT-4** — `python scripts/dev/check_project_taxonomy.py` runs against the repo root, lists top-level dirs, and flags any that match none of the PT-2 category markers; its tests cover a fixture tree
   with one matching and one unmatched directory.
 - **PT-5** — `AGENTS.md` gained one pointer line to `docs/guides/project-taxonomy.md`; `CONTEXT.md`'s "What Exists" list gained one line describing this story's status.

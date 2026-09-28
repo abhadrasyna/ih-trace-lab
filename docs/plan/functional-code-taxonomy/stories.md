@@ -3,6 +3,9 @@
 > One task per session. Find the first unchecked item in `tasks.md`. That is your only task. Full implementation rules live in `AGENTS.md` and `PYTHON_DESIGN.md`. After each task: set `SHA:` on the
 > task line + tick the box, update the story status summary, add one line to your backlog/session-log file.
 
+See `docs/plan/project-taxonomy/structure.md` for the canonical target folder tree this story's `src/lib/*` modules and FCT-6's registry must stay consistent with — do not restate that tree here;
+cross-reference it by name.
+
 ---
 
 ## FCT-1 — `docs/guides/functional-code-taxonomy.md`: six-module map + replaced-originals evidence
@@ -23,10 +26,20 @@
      `athena_runner/adoption/report_store.py`), `applauseInvestigation/scripts/analyze_athena_playback.py`, `mtn-zm-session-device-investigation` (multiple scripts), and
      `mtn-network-traffic/scripts/curl_timer/report.py`.
    - **`src/lib/report_render/`** — table/markdown/summary rendering shared by any pipeline/investigation report runner, built on `csv_io`.
-   - **`src/lib/har/`** — HAR capture parsing, shared by `mtn-network-traffic` and `vod-playback-timing-probe`-style network-timing work.
+   - **`src/lib/har/`** — HAR capture entry-loading and normalization. Replaces the identical "load `har["log"]["entries"]`" loader function found duplicated four times, function-body-level (not just
+     by name): `applauseInvestigation/scripts/analyze_har.py::iter_entries()`, `vod-playback-timing-probe/scripts/extract_content_ids_from_har.py::_load_entries()`, `vod-playback-timing-
+     probe/scripts/summarize_har_playbacks.py::_load_entries()` (a *second* copy inside the same project), and `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()` (the one
+     project that isolated it — a usable seed, not a throwaway).
    - **`src/lib/curl_to_python/`** — the curl-command-to-Python-code converter itself (from `mtn-network-traffic`), reusable across any future traffic-capture project rather than being that one
      project's private script.
 3. Each subsection ends with one line: "not yet implemented — first real port happens when a follow-up story needs it" (this story only maps the target, per its own Scope guard).
+4. A `## Shared vs. specific test` section stating the rule precisely, since it is what `project-taxonomy`'s PT-3 checklist and FCT-6's registry check both invoke when a search finds a near-match:
+   logic belongs in `src/lib/` **if and only if** it operates on a domain mechanism — a technical concern that is the same regardless of which campaign/case/pipeline is asking (Athena query execution,
+   CSV/report I/O, HAR entry parsing, curl-command parsing, AWS SSO refresh). Logic stays local to one project's `scripts/` **if** it encodes a campaign- or case-specific business rule — which fields
+   matter for *this* ticket, what counts as an anomaly for *this* customer, how *this* report should be titled. The test is not "does another project already have similar code" (that is just evidence
+   a shared module is now overdue) — it is "would a second, unrelated project plausibly need the exact same logic to answer a *different* business question." If yes, it is a `src/lib/` candidate *by
+   definition*, regardless of which project needs it first; do not wait for a second occurrence before extracting a *newly written* domain-mechanism function (the "wait for evidence" YAGNI stance in
+   this story's Scope guard applies to which modules get built now, not to whether a brand-new domain-mechanism function should be written directly in `src/lib/` when its nature is already obvious).
 
 **Tests:** none — docs-only.
 
@@ -34,34 +47,43 @@
 
 ---
 
-## FCT-2 — `src/lib/athena/protocols.py` + `src/lib/report_render/protocols.py`: `Protocol` skeletons + tests
+## FCT-2 — `src/lib/{athena,report_render,har}/protocols.py`: `Protocol` skeletons + tests
 
 **Files to change / create:**
-- `src/lib/__init__.py`, `src/lib/athena/__init__.py`, `src/lib/report_render/__init__.py` (per `AGENTS.md`'s package convention — every new package directory needs an `__init__.py`)
+- `src/lib/__init__.py`, `src/lib/athena/__init__.py`, `src/lib/report_render/__init__.py`, `src/lib/har/__init__.py` (per `AGENTS.md`'s package convention — every new package directory needs an
+  `__init__.py`)
 - `src/lib/athena/protocols.py`
 - `src/lib/report_render/protocols.py`
-- `tests/lib/athena/test_protocols.py`, `tests/lib/report_render/test_protocols.py`, plus any missing `__init__.py` under `tests/`
+- `src/lib/har/protocols.py`
+- `tests/lib/athena/test_protocols.py`, `tests/lib/report_render/test_protocols.py`, `tests/lib/har/test_protocols.py`, plus any missing `__init__.py` under `tests/`
 
 **What to implement (per `PYTHON_DESIGN.md`'s DIP and OCP/Strategy triggers — interfaces only, no bodies beyond `...`, type hints on every signature):**
 
 1. `src/lib/athena/protocols.py`:
    - `QueryResult` — a small typed data container (e.g. `dataclass` or `TypedDict`) holding at least `query_execution_id: str`, `rows: list[dict[str, str]]`, `state: str`.
    - `AthenaClient(Protocol)` `@runtime_checkable` — the DIP seam: `start_query(sql: str, params: Mapping[str, str]) -> str` (returns execution id), `poll_status(execution_id: str) -> str`,
-     `fetch_results(execution_id: str) -> QueryResult`. This is what every one of the three duplicated originals should have received via `__init__` instead of constructing `boto3.client("athena")`
+     `fetch_results(execution_id: str) -> QueryResult`. This is what every one of the four duplicated originals should have received via `__init__` instead of constructing `boto3.client("athena")`
      itself — the DIP trigger from `PYTHON_DESIGN.md` applied directly.
-   - Docstring on the `Protocol` stating explicitly which three `github_copilot` originals this seam is meant to replace (cross-reference FCT-1, do not re-describe them).
+   - Docstring on the `Protocol` stating explicitly which four `github_copilot` originals this seam is meant to replace (cross-reference FCT-1, do not re-describe them).
 2. `src/lib/report_render/protocols.py`:
    - `ReportRenderer(Protocol)` `@runtime_checkable` — the OCP/Strategy seam: `render(rows: list[dict[str, str]]) -> str`. A new output format (CSV, markdown table, summary text) is a new implementer
      of this `Protocol`, never a new `elif` branch inside one function — the OCP trigger from `PYTHON_DESIGN.md` applied directly.
    - Docstring naming this as the Strategy pattern per `PYTHON_DESIGN.md`'s "Named patterns" section, cross-referencing FCT-1's `csv_io`/`report_render` split (rendering is a `Strategy` over already
      read/normalized rows; `csv_io` owns getting rows in/out of files, not formatting them).
+3. `src/lib/har/protocols.py`:
+   - `HarEntry` — a small typed data container for one normalized HAR log entry (at least `url: str`, `method: str`, `status: int`, `started_datetime: str`).
+   - `HarEntryLoader(Protocol)` `@runtime_checkable` — the SRP/duplication seam: `load_entries(har_path: Path) -> list[HarEntry]`. This is the seam every one of the four duplicated
+     `iter_entries`/`_load_entries`/`load_json_entries` functions should have shared instead of each project (and, in `vod-playback-timing-probe`'s case, each *script*) reimplementing the same
+     `har["log"]["entries"]` walk. Docstring seeds its shape from `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()` (read-only reference — inspect its field names, do not
+     copy its code verbatim) and names all four duplicated originals this seam replaces.
 
 **Tests (no network, no real files outside `tmp_path` where relevant):**
 - `test_protocols.py` (athena): `test_conforming_stub_satisfies_athena_client_protocol` (a minimal hand-written class implementing all three methods passes `isinstance(stub, AthenaClient)`) /
   `test_non_conforming_stub_does_not_satisfy_protocol` (a class missing one method fails the `isinstance` check).
 - `test_protocols.py` (report_render): `test_conforming_stub_satisfies_report_renderer_protocol` / `test_non_conforming_stub_does_not_satisfy_protocol`.
+- `test_protocols.py` (har): `test_conforming_stub_satisfies_har_entry_loader_protocol` / `test_non_conforming_stub_does_not_satisfy_protocol`.
 
-**Commit:** `feat(functional-code-taxonomy): add athena and report_render Protocol skeletons`
+**Commit:** `feat(functional-code-taxonomy): add athena, report_render, and har Protocol skeletons`
 
 ---
 
@@ -111,9 +133,41 @@
 
 **What to implement:**
 
-1. One new bullet, same style as the existing `tenant-registry`/`query-catalog` bullets: story slug, one-line summary (six-module shared-lib map + two `Protocol` skeletons replacing triplicated Athena
-   execution and duplicated CSV/report writing), current status (reference the first unchecked task id at the time this task runs, or "implemented" if FCT-1 through FCT-4 are all done).
+1. One new bullet, same style as the existing `tenant-registry`/`query-catalog` bullets: story slug, one-line summary (six-module shared-lib map + three `Protocol` skeletons replacing quadruplicated
+   Athena execution, duplicated CSV/report writing, and quadruplicated HAR-entry loading, plus a cross-project script registry), current status (reference the first unchecked task id at the time this
+   task runs, or "implemented" if FCT-1 through FCT-6 are all done).
 
 **Tests:** none — docs-only.
 
 **Commit:** `docs(functional-code-taxonomy): add CONTEXT.md entry`
+
+---
+
+## FCT-6 — `scripts/dev/generate_code_registry.py` + doc section: cross-project registry + delegated duplicate-check
+
+**Files to change / create:**
+- `scripts/dev/generate_code_registry.py` — new file
+- `tests/dev/test_generate_code_registry.py` — new file, using a fixture tree under `tmp_path` (no scan of the real repo in tests)
+- `docs/guides/functional-code-taxonomy.md` — append a `## Cross-project script registry` section
+
+**What to implement:**
+
+1. `scripts/dev/generate_code_registry.py`: walks `investigations/*/scripts`, `experiments/*/scripts`, `src/pipelines`, `src/tools`, and `src/lib/*`, and writes a registry file (mirroring
+   `docs/plan/scratch-script-registry/`'s existing registry format and generator style exactly — read that story's generator before writing this one; do not invent a new format) listing, per script:
+   path, top-level function/class names, and a short docstring-derived summary if present. This generalizes that story's scratch-only registry to every new-script location named in
+   `project-taxonomy`'s PT-3 checklist.
+2. The registry generator does not attempt semantic duplicate detection itself (that is a sub-agent's job, per point 3) — it only produces the searchable inventory a sub-agent greps/reads before
+   writing a new script.
+3. `## Cross-project script registry` section in the guide doc: states the delegated duplicate-check convention `project-taxonomy`'s PT-3 step 3 invokes — before writing any new script, delegate a
+   sub-agent to search this registry (and `src/lib/*`'s existing modules) for a function performing the same or closely related operation, giving it the concrete operation name (e.g. "load HAR log
+   entries", "write a CSV report"), not the project name. Cross-reference FCT-1's "shared vs. specific" test for what to do when a near-match is found: promote to `src/lib/` if the match is a domain
+   mechanism, leave as-is if it is genuinely campaign/case-specific.
+4. Cite the concrete evidence motivating this generalization in the doc section: all four duplicated Athena executors and all four duplicated HAR-entry loaders existed inside projects that already
+   claimed to follow a "thin script, import shared lib" convention — the convention alone did not prevent the duplication; a registry + mandatory delegated check is what makes reuse the fast path.
+
+**Tests:**
+- `test_generate_code_registry.py`: fixture tree with two near-duplicate scripts (same function name/signature, different bodies) under two different fixture project folders; assert the generated
+  registry lists both, and that a human/sub-agent reading it would spot the name collision without needing to open either file's body.
+- One test confirming the generator runs against an empty fixture tree without error (mirrors PT-4's own "runs against the current empty `ih-trace-lab` tree" requirement).
+
+**Commit:** `feat(functional-code-taxonomy): add cross-project script registry and duplicate-check convention`
