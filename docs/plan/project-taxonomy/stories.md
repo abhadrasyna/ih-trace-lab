@@ -8,7 +8,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 
 ---
 
-## PT-1 — `docs/guides/project-taxonomy.md`: five categories + `github_copilot` examples
+## PT-1 — `docs/guides/project-taxonomy.md`: four categories + `github_copilot` examples
 
 **Files to change / create:**
 - `docs/guides/project-taxonomy.md` — new file
@@ -16,27 +16,29 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 **What to implement:**
 
 1. Header matching `docs/guides/git-multi-account-auth.md`'s tone (short intro paragraph, no plan-tracking checkboxes — this is a reference doc, not a story file).
-2. A `## Categories` section defining exactly five categories, one paragraph each:
-   - **Pipeline** — recurring, scheduled data collection/reporting with no open-ended investigation question. Example: `github_copilot/aws-access-cli` (cron-scheduled Athena adoption/session reports,
-     SSO refresh).
-   - **Continuous investigation** — an open-ended, ongoing data-gathering + analysis effort tied to a live product question, expected to run for months. Example:
-     `github_copilot/ctap-smvod-session-report` (already a submodule).
-   - **One-off investigation** — a bounded case with a start and an end (a specific incident, a specific third-party report). Example: `github_copilot/applauseInvestigation`,
-     `github_copilot/mtn-zm-session-device-investigation`.
+2. A `## Categories` section defining exactly four categories, one paragraph each — revised by the 2026-09-28 discussion round, which dropped a fifth "continuous investigation" category after
+   concluding a git submodule boundary (`ctap-smvod-session-report`'s actual shape) solves no use case here (no git hook or workflow was found that depends on it) and the only real difference from a
+   normal campaign — a recurring per-date `data/`+`output/` pipeline instead of a bounded case — is already handled by PT-7's config-driven path templates, not a separate category:
+   - **Pipeline** — recurring, scheduled data collection/reporting with no open-ended investigation question, and no case docs (nothing to write up). Example: `github_copilot/aws-access-cli`
+     (cron-scheduled Athena adoption/session reports, SSO refresh).
+   - **Investigation** — a campaign or case tied to a live product question. Two shapes share one skeleton (see PT-2): a **bounded case** with a start and an end (a specific incident, a specific
+     third-party report — e.g. `github_copilot/applauseInvestigation`, `github_copilot/mtn-zm-session-device-investigation`), or a **recurring, no-close-event campaign** running an ongoing per-date
+     pipeline alongside its case docs (e.g. `github_copilot/ctap-smvod-session-report`, folded in here as a plain folder — no submodule). A campaign is one or the other, stated via an optional
+     `RETENTION.md` marker (see PT-2), not a separate top-level category.
    - **Tool** — reusable software with its own interface/protocol, actively maintained and enhanced across many callers. Example: `github_copilot/oasis-athena-mcp` (MCP server),
      `github_copilot/mtn-network-traffic` (curl-to-Python converter).
    - **Experiment** — a short-lived probe answering one narrow question, expected to be thrown away or absorbed once answered. Example: `github_copilot/vod-asset-ingestion-mapping`,
      `github_copilot/vod-playback-timing-probe`.
-3. Each category paragraph ends with one sentence distinguishing it from its nearest neighbor (pipeline vs. continuous investigation: scheduled+no open question vs. open question; one-off vs.
-   experiment: bounded real-world case vs. throwaway probe) — this is the actual test a session applies, not just a label.
+3. Each category paragraph ends with one sentence distinguishing it from its nearest neighbor (pipeline vs. investigation: no open question+no docs vs. open question+mandatory docs; investigation's
+   two shapes: case-close-out vs. rolling retention; investigation vs. experiment: real product question vs. throwaway probe) — this is the actual test a session applies, not just a label.
 
 **Tests:** none — docs-only.
 
-**Commit:** `docs(project-taxonomy): define the five project categories`
+**Commit:** `docs(project-taxonomy): define the four project categories`
 
 ---
 
-## PT-2 — same doc + `structure.md`: per-category folder skeleton (Rule A/Rule B) + submodule-vs-plain-folder rule
+## PT-2 — same doc + `structure.md`: per-category folder skeleton (Rule A/Rule B)
 
 **Files to change / create:**
 - `docs/guides/project-taxonomy.md` — append to the file created in PT-1
@@ -47,36 +49,39 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 1. A `## Folder skeleton per category` table, columns `Category | Required files | Notes`, one row per PT-1 category:
    - Pipeline: `scripts/` (imports `src/lib/*` from `docs/plan/functional-code-taxonomy/`), `tests/`, a doc stating the schedule (what runs when, e.g. a cron expression or trigger description) — no
      `investigations/docs` (nothing to write up, it is not a case).
-   - Continuous investigation: `AGENTS.md`-delta (or `.github/copilot-instructions.md` if a submodule), `session-info.md`, `TODO.md`, `investigations/{docs,queries}`, local `knowledge/` staging. Raw
-     inputs use the same root `data/` tree PT-7 defines (this is disk-only, gitignored — a submodule boundary doesn't block reaching it).
-   - One-off investigation: lives under the top-level `investigations/` category bucket, applying two rules found during the follow-up audit of `applauseInvestigation` and `vod-playback-timing-probe`
+   - Investigation: lives under the top-level `investigations/` category bucket, applying two rules found during the follow-up audit of `applauseInvestigation` and `vod-playback-timing-probe`
      (both independently reinvented the same nesting mistake):
      - **Rule A (no double wrap):** a project's own case-artifact folders — `docs/`, `queries/`, `scripts/` — live directly at that project's own root (`investigations/<slug>/docs/`, etc.). Never
        re-wrap them in an inner folder also named `investigations/` (i.e. never `investigations/<slug>/investigations/{docs,...}`) — that stutter is exactly the bug found in both audited projects.
        Raw tool inputs (`har`/`lightstep`/`athena`) do **not** live under `investigations/` at all — see PT-7's root `data/` tree.
      - **Rule B (campaign, not per-case folder; revised by the 2026-09-28 discussion round — supersedes the original `misc/`-catch-all wording):** a `<slug>` under `investigations/` names a
-       recurring campaign or relationship (e.g. `applause` for the ongoing 3rd-party-testing relationship, `mtn-zm-device` for the Zambia device investigation), created once. Individual incoming
-       cases (ticket/incident IDs) become flat, ID-prefixed files inside that campaign's `docs/` (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) — never a new subfolder under `docs/`. A
-       case with **no known campaign yet** is **not** wrapped in a `misc/` catch-all — it sits directly as `investigations/<case-id>/` (same `docs/queries/scripts/tests` skeleton, minus the campaign
-       layer). Once a second related case appears, promote by renaming/moving it to `investigations/<campaign-slug>/<case-id>/` — the same promotion mechanic a `misc/` bucket would have required
-       anyway, just without an extra directory nobody needs. This mirrors `scratch/`'s existing convergence-before-promotion principle. Require an explicit close-out step per case (move its docs to
-       `docs/archive/`) — do not leave closed cases mixed with open ones. Raw inputs for a standalone case follow the identical promotion rule in PT-7's `data/<case-id>/` → `data/<campaign-slug>/
-       <case-id>/`.
+       recurring campaign or relationship (e.g. `applause` for the ongoing 3rd-party-testing relationship, `mtn-zm-device` for the Zambia device investigation, `ctap-smvod` for the recurring
+       per-date pipeline — folded in as a plain folder, no submodule; see the "Continuous investigations are plain folders" point below), created once. Individual incoming cases (ticket/incident
+       IDs) become flat, ID-prefixed files inside that campaign's `docs/` (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) — never a new subfolder under `docs/`. A campaign running a
+       recurring, no-close-event pipeline uses dated files instead (`<date>-<topic>.md`) and gains the optional `data/{tool}` + `output/` siblings PT-7 defines, plus an optional `RETENTION.md`
+       one-liner stating it never closes (default: campaigns close per-case; only state this file when that default doesn't apply). A case with **no known campaign yet** is **not** wrapped in a
+       `misc/` catch-all — it sits directly as `investigations/<case-id>/` (same `docs/queries/scripts/tests` skeleton, minus the campaign layer). Once a second related case appears, promote by
+       renaming/moving it to `investigations/<campaign-slug>/<case-id>/` — the same promotion mechanic a `misc/` bucket would have required anyway, just without an extra directory nobody needs.
+       This mirrors `scratch/`'s existing convergence-before-promotion principle. Require an explicit close-out step per bounded case (move its docs to `docs/archive/`) — do not leave closed cases
+       mixed with open ones; a recurring campaign has no such step (see `RETENTION.md` above). Raw inputs for a standalone case follow the identical promotion rule in PT-7's `data/<case-id>/` →
+       `data/<campaign-slug>/<case-id>/`.
    - Tool: `src/`, `tests/`, its own `README.md`, no `investigations/` (it is not a case-tracking folder).
    - Experiment: starts in `scratch/` per this project's existing convergence rule (`scratch/SCRATCH.md`) — only gets a dedicated folder under `experiments/` if/when it converges past a single
      session's throwaway probe; never starts as its own top-level folder.
-2. A `## Submodule vs. plain folder` section stating the rule found during the 2026-09-28 audit: a folder becomes a real git submodule (own `.git`, own remote, own `.github/copilot-instructions.md` if
-   it needs instructions distinct from the root's) when it is a **pipeline**, **continuous investigation**, or **tool** (independent commit cadence, benefits from scoped instructions); it stays a
-   **plain folder** under the root repo when it is a **one-off investigation** or **experiment** (short-lived, no benefit from a separate remote, and per `CONTEXT.md`'s constraint this project has no
-   folders yet needing that split — state this is the rule for *future* work, not a migration list).
-3. Update `structure.md`'s `investigations/` block in the same commit so it shows: a standalone `investigations/<case-id>/` example, at least one campaign example (`<campaign-slug>/{docs/{<case-id>-
-   *.md, archive/}, queries/, scripts/, tests/}` — no `data/` here, see PT-7), and one continuous-investigation submodule example — matching this table row for row.
+2. A `## Continuous investigations are plain folders` section stating the rule reached during the 2026-09-28 discussion round: `ctap-smvod-session-report`'s existing submodule boundary (own
+   `.git`, own remote) was audited for any concrete benefit — no git hook, workflow, or independent-review need was found that depends on it; its only real structural difference from a bounded-case
+   campaign is a recurring `data/`+`output/` pipeline tree, which PT-7's config-driven path templates already resolve without needing a separate git root. Everything in this project — pipeline,
+   investigation (bounded or recurring), tool, experiment — is therefore a **plain folder** by default; a real git submodule is only justified by an *external* fact independent of category (e.g. a
+   different team owns the remote, or the code is already published elsewhere), decided case-by-case, never assumed from a category label.
+3. Update `structure.md`'s `investigations/` block in the same commit so it shows: a standalone `investigations/<case-id>/` example, a bounded-case campaign example (`<campaign-slug>/{docs/{<case-
+   id>-*.md, archive/}, queries/, scripts/, tests/}` — no `data/` here, see PT-7), and a recurring-campaign example with the optional `data/`, `output/`, `RETENTION.md` siblings — matching this
+   table row for row.
 4. Cross-reference `docs/plan/functional-code-taxonomy/` by name for "what code a pipeline/tool/investigation's `scripts/`/`src/` folder should import" — do not restate that story's module layout
    here.
 
 **Tests:** none — docs-only.
 
-**Commit:** `docs(project-taxonomy): add folder skeletons, Rule A/B, and submodule-vs-folder rule`
+**Commit:** `docs(project-taxonomy): add folder skeletons and Rule A/B (drop submodule category)`
 
 ---
 
@@ -185,7 +190,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 
 ---
 
-## PT-7 — `config/data_paths.yaml` + root `data/` tree + continuous-investigation `data/`+`output/` tree + filename convention + docs-vs-knowledge guide section
+## PT-7 — `config/data_paths.yaml` + root `data/` tree + recurring-campaign `data/`+`output/` tree + filename convention + docs-vs-knowledge guide section
 
 **Grounding:** found during the 2026-09-28 discussion round auditing `applauseInvestigation`, `github_copilot/investigations`, and `ctap-smvod-session-report`. Three prior mistakes this task closes:
 - `applauseInvestigation` already keeps raw tool inputs (`investigations/data/<case-id>/{lightstep,har,athena}`, 1.6GB, gitignored wholesale — confirmed via its own `.gitignore`) and a project-local
@@ -194,10 +199,11 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 - `github_copilot/investigations` (a separate, older project) shows the failure mode of *not* having any convention: ad hoc top-level buckets invented per data-type (`athenaCSV/`, `spancsv/`,
   `xmls_or_mpd/`, `har/`), zero case-id/campaign grouping, ~25 unrelated HAR files flat in one folder distinguishable only by inconsistent filenames. This is the negative example the design below
   prevents, not a variant to reconcile with.
-- `ctap-smvod-session-report` (a continuous-investigation submodule, not a campaign/case) mixes a true manual input (3 hand-exported Lightstep CSVs/day — no live API) with a later pipeline step's
-  own Athena output, re-read as the next step's input, under one undifferentiated `inputCSV/` folder name. Its `aws-access-cli` sibling (pure pipeline, no persisted input — queries Athena live and
-  writes straight to `output/<TENANT>/{daily,monthly,weekly}/`) confirms this input/output ambiguity is specific to a chained, per-date pipeline and does not apply to a pipeline with no manual Step
-  1. This is why `investigation_data`/`investigation_output` below split by *source/tool provenance*, not input-vs-output.
+- `ctap-smvod-session-report` (a git submodule found, by the same round's later discussion, to buy no concrete benefit from that submodule boundary — folded into a plain recurring-campaign folder,
+  see PT-2) mixes a true manual input (3 hand-exported Lightstep CSVs/day — no live API) with a later pipeline step's own Athena output, re-read as the next step's input, under one undifferentiated
+  `inputCSV/` folder name. Its `aws-access-cli` sibling (pure pipeline, no persisted input — queries Athena live and writes straight to `output/<TENANT>/{daily,monthly,weekly}/`) confirms this
+  input/output ambiguity is specific to a chained, per-date pipeline and does not apply to a pipeline with no manual Step 1. This is why `investigation_data`/`investigation_output` below split by
+  *source/tool provenance*, not input-vs-output.
 
 **Files to change / create:**
 - `docs/guides/project-taxonomy.md` — append a new `## Input data: config, layout, and knowledge vs. docs` section
@@ -219,15 +225,16 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
      knowledge:                        "{knowledge_root}/{tool}"
      investigation_with_campaign:     "{investigations_root}/{campaign}"
      investigation_without_campaign:  "{investigations_root}/{case_id}"
-     investigation_data:              "{investigations_root}/{continuous_investigation_slug}/data/{tool}"
-     investigation_output:            "{investigations_root}/{continuous_investigation_slug}/output"
+     investigation_data:              "{investigations_root}/{campaign}/data/{tool}"
+     investigation_output:            "{investigations_root}/{campaign}/output"
    filename_date_format: "%Y-%m-%d"     # ISO, prefix position — see the filename-convention point below
    ```
-   The last two templates are for a **continuous-investigation submodule** (e.g. `ctap-smvod`), not a campaign/case — found during the same 2026-09-28 round auditing `ctap-smvod-session-report`'s
-   `inputCSV/`, which mixes true manual exports with a later step's own re-read Athena output under one folder name. Root `data/`'s `{campaign}/{case_id}/{tool}` split is input-vs-nothing (a case
-   either has saved data for a tool or it doesn't); `investigation_data`'s split is *source/tool provenance*, not input-vs-output — because in a repeating per-date pipeline, step N's output is
-   legitimately step N+1's input, and forcing a rename between an "inputs" and "outputs" folder mid-chain for that reason alone buys nothing. Deliverables (post-merge, final per-date reports) stay
-   in `investigation_output`, never in `investigation_data` — only raw/intermediate per-tool pulls belong under `investigation_data/{tool}`. `functional-code-taxonomy`'s FCT-7 owns the
+   The last two templates are for a **campaign running a recurring, no-close-event pipeline** (e.g. `ctap-smvod` — a plain folder, not a submodule; see PT-2), not a bounded case — found during the
+   same 2026-09-28 round auditing `ctap-smvod-session-report`'s `inputCSV/`, which mixes true manual exports with a later step's own re-read Athena output under one folder name. Root `data/`'s
+   `{campaign}/{case_id}/{tool}` split is input-vs-nothing (a case either has saved data for a tool or it doesn't); `investigation_data`'s split is *source/tool provenance*, not input-vs-output —
+   because in a repeating per-date pipeline, step N's output is legitimately step N+1's input, and forcing a rename between an "inputs" and "outputs" folder mid-chain for that reason alone buys
+   nothing. Deliverables (post-merge, final per-date reports) stay in `investigation_output`, never in `investigation_data` — only raw/intermediate per-tool pulls belong under
+   `investigation_data/{tool}`. `functional-code-taxonomy`'s FCT-7 owns the
    `src/lib/paths/` resolver that reads this file — this task only owns the config file and the guide prose; do not duplicate resolver code here.
 2. **Root `data/` tree**, gitignored wholesale in one root `.gitignore` line (`data/`) — replacing the per-project duplicated `.gitignore` lines the reference projects each reinvented:
    - `data/<campaign-slug>/<case-id>/{har,lightstep,athena}/` for a campaign case.
@@ -255,8 +262,9 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
      specifics → stays in `docs/`.
 5. **Close-out policy** (default, stated as adjustable per campaign if a real recurring re-verification need shows up): once a case's `docs/` write-up (and any `knowledge/` promotion) is complete,
    **delete** its raw `data/.../​<case-id>/` — do not archive it indefinitely. Grounding fact: one campaign's raw data alone already reached 1.6GB; an archive-forever default does not scale across many
-   campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does. This policy does **not** apply to `investigation_data`/`investigation_output` (a continuous-investigation submodule's
-   own per-date pipeline tree) — there is no "case close" event on an ongoing daily pipeline; that tree's retention is the submodule's own concern (e.g. a rolling window), not this story's.
+   campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does. This policy does **not** apply to `investigation_data`/`investigation_output` (a recurring campaign's own per-date
+   pipeline tree, signposted by its optional `RETENTION.md`, per PT-2) — there is no "case close" event on an ongoing daily pipeline; that tree's retention is that campaign's own concern (e.g. a
+   rolling window), not this story's.
 6. **Filename convention for date-keyed artifacts**, found necessary auditing `ctap-smvod-session-report`'s existing `DDMMYYYY`-suffix files (`athena_session_01082026.csv`) — ambiguous (reads as
    either DD-MM or MM-DD) and unsortable (a filename *suffix* means `ls`/glob order is alphabetical, not chronological: `_01082026` sorts before `_10072026`, i.e. August before July). Reuses the ISO
    date already established by `scratch-script-registry`'s `scratch/<YYYY-MM-DD>_<topic>_<purpose>.py` convention rather than inventing a third format, moved to a **prefix** so directory listings sort

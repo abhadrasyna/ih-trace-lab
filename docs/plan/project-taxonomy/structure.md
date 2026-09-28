@@ -69,51 +69,61 @@ ih-trace-lab/
 │                                              a 2nd related case appears
 │       ├── har/  lightstep/  athena/
 │
-├── investigations/                            category: continuous + one-off investigation
+├── investigations/                            category: investigation (bounded case or recurring campaign — no
+│   │                                            separate "continuous investigation" category; a submodule buys
+│   │                                            nothing here, see the 2026-09-28 discussion round's conclusion)
 │   ├── <campaign-slug>/                      [PT-2, Rule B] e.g. `applause` (was applauseInvestigation), `mtn-zm-device`
-│   │   │                                      (was mtn-zm-session-device-investigation) — one slug per campaign/
-│   │   │                                      relationship, not per case
+│   │   │                                      (was mtn-zm-session-device-investigation), `ctap-smvod` (was a
+│   │   │                                      separate-remote submodule — plain folder now, no benefit found from
+│   │   │                                      the submodule boundary) — one slug per campaign/relationship, not per
+│   │   │                                      case
 │   │   ├── docs/
 │   │   │   ├── <case-id>-<topic>.md          flat, ID-prefixed — no per-case subfolder [PT-2, Rule B]; mandatory
-│   │   │   │                                  deliverable per case (shared outside this project) — every case gets
-│   │   │   │                                  one, unlike knowledge/ below
+│   │   │   │                                  deliverable per bounded case (shared outside this project) — every
+│   │   │   │                                  case gets one, unlike knowledge/ below
 │   │   │   ├── <case-id>-executive-summary.md
-│   │   │   └── archive/                      closed cases move here (case-level close-out)
+│   │   │   ├── <date>-<topic>.md             for a campaign running a recurring/no-close-event pipeline (was
+│   │   │   │                                  "continuous investigation"): dated sections replace case-id sections
+│   │   │   │                                  — e.g. `2026-08-01-position-report.md`
+│   │   │   └── archive/                      closed *bounded* cases move here (case-level close-out); a recurring
+│   │   │                                      campaign has no case-level close-out — see RETENTION.md below
 │   │   ├── scripts/                          [PT-2, Rule A] thin, direct child — no inner `investigations/` wrap;
 │   │   │                                      imports src/lib/* (no local athena_runner/.venv/pytest.ini duplicated
 │   │   │                                      per project — see mtn-zm's 4th Athena executor as the cautionary example)
-│   │   └── tests/                            no `queries/` here — see root `queries/` below; Athena/Lightstep query
-│   │                                          templates are cross-campaign facts (same axis as root `knowledge/`),
-│   │                                          not per-case ones, so they never live under `investigations/*`
-│   ├── <case-id>/                            [PT-2, revised Rule B] standalone case, no campaign yet — same
-│   │   │                                      docs/scripts/tests skeleton as above (no `queries/` — see root
-│   │   │                                      `queries/` below), minus the campaign layer; promoted (renamed) to
-│   │   │                                      <campaign-slug>/<case-id>/ once a 2nd related case appears — raw
-│   │   │                                      inputs live in root data/<case-id>/, not here
-│   │   └── docs/  scripts/  tests/
-│   └── <continuous-investigation-slug>/      e.g. `ctap-smvod` — real submodule (own remote, own git root)
-│       ├── .github/copilot-instructions.md   loads independently — own `git rev-parse --show-toplevel` (verified)
-│       ├── docs/  scripts/                   queries go in root `queries/` (below), not a local `queries/` — same
-│       │                                      cross-campaign-facts reasoning as the campaign/case cases above
-│       ├── data/                             [PT-7, revised 2026-09-28] LOCAL, not root `data/` — this is a
-│       │   │                                  repeating per-date pipeline, not a campaign/case; split by
-│       │   │                                  *source/tool provenance*, not input-vs-output, because step N's
-│       │   │                                  output is legitimately step N+1's input in a linear chain
-│       │   ├── lightstep/                    true Step 1 manual exports (no live API) — ISO-prefix filenames,
-│       │   │                                  tool name dropped (folder already carries it): e.g.
-│       │   │                                  `2026-08-01_ctap.csv`, `2026-08-01_smvod.csv`, `2026-08-01_smvod_ts.csv`
-│       │   └── athena/                       Athena pulls made by this pipeline's own earlier steps, re-read as
-│       │                                      a later step's input — e.g. `2026-08-01_session.csv`,
-│       │                                      `2026-08-01_debug_states.csv`
-│       ├── output/                           post-merge deliverables only, same ISO-prefix filename convention
-│       │                                      — e.g. `2026-08-01_setupsession_with_outcome.csv`,
-│       │                                      `2026-08-01_position_report.csv`; ranges as
-│       │                                      `<start>_<end>_<artifact>.csv` (ticket tag trailing, never infix);
-│       │                                      cumulative rollups (date lives as a row, not the filename) keep a
-│       │                                      `_rollup`/`_all_dates` marker instead of a date — see PT-7's
-│       │                                      filename-convention point for the full rule
-│       ├── debug/                            scratch/sample only, gitignored, never a pipeline dependency
-│       └── knowledge/                        LOCAL staging only — promote reusable bits to root knowledge/
+│   │   ├── tests/                            no `queries/` here — see root `queries/` below; Athena/Lightstep query
+│   │   │                                      templates are cross-campaign facts (same axis as root `knowledge/`),
+│   │   │                                      not per-case ones, so they never live under `investigations/*`
+│   │   ├── data/                             OPTIONAL [PT-7] — present only if this campaign runs a recurring
+│   │   │   │                                  per-date pipeline (was the continuous-investigation-only local
+│   │   │   │                                  `data/`); absent entirely for a normal bounded-case campaign, which
+│   │   │   │                                  uses root `data/<campaign-slug>/<case-id>/` instead. Split by
+│   │   │   │                                  *source/tool provenance*, not input-vs-output, because step N's
+│   │   │   │                                  output is legitimately step N+1's input in a linear chain
+│   │   │   ├── lightstep/                    true Step 1 manual exports (no live API) — ISO-prefix filenames,
+│   │   │   │                                  tool name dropped (folder already carries it): e.g.
+│   │   │   │                                  `2026-08-01_ctap.csv`, `2026-08-01_smvod.csv`, `2026-08-01_smvod_ts.csv`
+│   │   │   └── athena/                       Athena pulls made by this pipeline's own earlier steps, re-read as
+│   │   │                                      a later step's input — e.g. `2026-08-01_session.csv`,
+│   │   │                                      `2026-08-01_debug_states.csv`
+│   │   ├── output/                           OPTIONAL [PT-7] — present only alongside `data/` above; post-merge
+│   │   │                                      deliverables only, same ISO-prefix filename convention — e.g.
+│   │   │                                      `2026-08-01_setupsession_with_outcome.csv`,
+│   │   │                                      `2026-08-01_position_report.csv`; ranges as
+│   │   │                                      `<start>_<end>_<artifact>.csv` (ticket tag trailing, never infix);
+│   │   │                                      cumulative rollups (date lives as a row, not the filename) keep a
+│   │   │                                      `_rollup`/`_all_dates` marker instead of a date — see PT-7's
+│   │   │                                      filename-convention point for the full rule
+│   │   └── RETENTION.md                      OPTIONAL, one line — e.g. "rolling, no close-out; see PT-7 close-out
+│   │                                          policy exception" — only present if this campaign never closes (has
+│   │                                          `data/`+`output/` above); a normal bounded-case campaign has no such
+│   │                                          file and follows the default close-out (docs written → raw data
+│   │                                          deleted)
+│   └── <case-id>/                            [PT-2, revised Rule B] standalone case, no campaign yet — same
+│       │                                      docs/scripts/tests skeleton as above (no `queries/` — see root
+│       │                                      `queries/` below), minus the campaign layer; promoted (renamed) to
+│       │                                      <campaign-slug>/<case-id>/ once a 2nd related case appears — raw
+│       │                                      inputs live in root data/<case-id>/, not here
+│       └── docs/  scripts/  tests/
 │
 ├── experiments/                                category: experiment — only created once promoted from scratch/
 │   └── <experiment-slug>/                    e.g. `vod-asset-ingestion-mapping`, `vod-playback-timing-probe`-style
