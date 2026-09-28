@@ -12,7 +12,9 @@
   (QC-4) depends on `tenant-registry` landing first for any live Athena discovery.
 - `docs/plan/project-taxonomy/` — story: classifies work into 5 categories (pipeline, continuous investigation, one-off investigation, tool, experiment), per-category folder skeleton (Rule A: no
   double `investigations/` wrap; Rule B: campaign slug + flat ID-prefixed cases), the submodule-vs-plain-folder rule, a new-work checklist covering both new folders and new scripts, and a pipeline
-  cron-cutover procedure (for `aws-access-cli`-style live crontab migrations) — informed by a `github_copilot` audit (read-only reference). `structure.md` in this story's folder is the canonical
+  cron-cutover procedure (for `aws-access-cli`-style live crontab migrations) — informed by a `github_copilot` audit (read-only reference); also specs (PT-8, deferred until PT-2/PT-7 land) an
+  `investigation-doc-sync` skill, modeled on `session-close`, that syncs case docs from `session_store_sql` via a case-scoped, content-filtered, cursor-in-deliverable mechanism rather than a manual
+  mid-investigation dump. `structure.md` in this story's folder is the canonical
   target-tree reference both this story and `functional-code-taxonomy` point to. Not yet implemented — see its `tasks.md` for the first unchecked task (PT-1).
 - `docs/plan/functional-code-taxonomy/` — story: target `src/lib/{auth,athena,csv_io,report_render,har,curl_to_python}/` module map replacing 4 duplicated Athena executors, 8+ duplicated CSV writers,
   and 4 duplicated HAR-entry loaders found in `github_copilot`; ports `PYTHON_DESIGN.md`'s DIP/OCP/SRP triggers into `Protocol` skeletons for `athena`, `report_render`, and `har`; adds a cross-project

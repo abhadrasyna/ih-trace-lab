@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: PT-1, PT-2, PT-3, PT-4, PT-5, PT-6, PT-7.**
+**Open: PT-1, PT-2, PT-3, PT-4, PT-5, PT-6, PT-7, PT-8.**
 
 - [ ] **PT-1** — `docs/guides/project-taxonomy.md`: five categories + `github_copilot` examples | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **PT-2** — same doc + `structure.md`: per-category folder skeleton (Rule A/Rule B) + submodule-vs-plain-folder rule | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff
@@ -15,6 +15,9 @@ spec.
 - [ ] **PT-6** — same doc: pipeline cron-cutover procedure | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **PT-7** — `config/data_paths.yaml` + root `data/` tree + continuous-investigation `data/`+`output/` tree + filename convention + docs-vs-knowledge guide section | Owner: AI agent (Copilot CLI)
   | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [ ] **PT-8** — `.github/skills/investigation-doc-sync/SKILL.md`: cross-session, content-filtered case-doc sync | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review |
+  SHA: <—> | **Deferred: do not start until PT-2 and PT-7 have both landed** (needs the real `investigations/<slug>/docs/` tree and `config/data_paths.yaml` templates to resolve case-doc paths
+  against — nothing to sync into before then)
 
 ## Story done when
 
@@ -45,6 +48,10 @@ spec.
   `investigation_data`/`investigation_output` tree), the source/tool-provenance split (not input-vs-output) for a continuous investigation's per-date pipeline, and the ISO-prefix filename convention
   (per-date snapshot / per-range snapshot / cumulative-rollup — the third being intentional, not a missing-date bug) grounded in the `ctap-smvod-session-report` and `aws-access-cli` audits;
   `structure.md` already reflects all of this from the same discussion round.
+- **PT-8** — `.github/skills/investigation-doc-sync/SKILL.md` exists, modeled on `session-close`'s structure, defining: the case-scoped trigger phrase, the cursor-in-deliverable mechanism (marker
+  comment in `<case-id>-<topic>.md`, not a transcript-embedded event), the `session_store_sql` content-filtered extraction query (case-id/path match, not whole-session classification), the
+  fresh-subagent write step producing dated findings sections, and the separate executive-summary generation pass. Marked deferred in `tasks.md` until PT-2 and PT-7 both have SHAs — this task itself
+  only needs to exist as a written spec, not be exercised against a real case.
 
 ## After each task
 

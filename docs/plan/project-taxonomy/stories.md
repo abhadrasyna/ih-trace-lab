@@ -276,3 +276,43 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 **Tests:** none — docs/config-only (the resolver's tests live under FCT-7).
 
 **Commit:** `docs(project-taxonomy): add config/data_paths.yaml, root data/ tree, and docs-vs-knowledge guide section`
+
+---
+
+## PT-8 — `.github/skills/investigation-doc-sync/SKILL.md`: cross-session, content-filtered case-doc sync
+
+**Deferred:** do not start until PT-2 and PT-7 have both landed — this task syncs findings *into* the real `investigations/<slug>/docs/<case-id>-*.md` tree and resolves paths via
+`config/data_paths.yaml`'s templates; neither exists before then.
+
+**Grounding:** found during a 2026-09-28 discussion round on how PT-2's mandatory case docs (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) actually get written without either (a)
+deferring all write-up to investigation close (loses the ability to hand off a paused case — see the `Status: IN PROGRESS` pattern already in `applauseInvestigation`'s docs) or (b) manual
+mid-investigation formatting discipline drifting in style session to session. Modeled directly on this repo's own `session-close` skill (`.github/skills/session-close/SKILL.md`), which proves
+Copilot CLI already persists every tool call and assistant turn to `~/.copilot/session-state/<session-id>/events.jsonl` for free — no manual dump needed, only an extraction pass. Differs from
+`session-close` in one load-bearing way: `session-close` audits *one bounded session's transcript*; an investigation spans *many* sessions, most of which have nothing to do with any given case, so
+the trigger must be content-filtered (does this window reference case X's path/ticket-id?), never session-filtered (is this whole session an investigation?).
+
+**Files to change / create:**
+- `.github/skills/investigation-doc-sync/SKILL.md` — new file
+
+**What to implement:**
+
+1. **Trigger phrase, explicit and case-scoped** — e.g. "investigation checkpoint `<case-id>`" (mirroring `session-close`'s trigger-phrase convention) — invoked only when the analyst knows
+   case-specific work just happened; never auto-fired at every session end.
+2. **Cursor lives in the deliverable, not the transcript** — a marker comment at the top of `<case-id>-<topic>.md`, e.g. `<!-- last-synced: 2026-09-14T10:22:00Z -->`. `session-close` finds its
+   window via `skill.invoked` events inside one transcript; that breaks here because the relevant sessions differ each invocation. Each run reads this timestamp as the cursor and rewrites it after
+   syncing.
+3. **Extraction filters by content, across sessions** — query `session_store_sql` (`local` scope; `tool_executions`/`session_files`/`turns`) for rows with `started_at`/`timestamp` after the cursor
+   whose arguments or file paths contain the case-id or its resolved data path (`investigations/<slug>/data/<case-id>` per `config/data_paths.yaml`, or the bare ticket number in an Athena/Lightstep
+   query argument) — regardless of which session emitted them. A session contributing zero matching rows (e.g. an unrelated docs/refactoring session) is silently skipped, not flagged as an error.
+4. **Fresh subagent does the writing** — per `session-close`'s own stated reason (bounded extraction cost, not a full context clone): a subagent receives only the matched rows, appends one new dated
+   `## <finding> (<date>)` section per distinct finding to `<case-id>-<topic>.md` (finding + evidence table + a bolded conclusion sentence — the style already established in
+   `applauseInvestigation/investigations/docs/7231763-android-resume-watching-latency.md`), and updates the cursor.
+5. **Executive summary is a separate, cheaper pass** — once `<case-id>-<topic>.md` has multiple dated sections, generating `<case-id>-executive-summary.md` condenses that already-clean markdown
+   file (headline finding, ruled-out table, recommendation — per `7231763-executive-summary.md`'s and `7232657-executive-summary.md`'s shape), not the raw transcript — invoked as its own trigger
+   phrase (e.g. "investigation summary `<case-id>`"), typically at close-out, not every checkpoint.
+6. Cross-reference `docs/plan/project-taxonomy/structure.md`'s `investigations/` block and PT-7's "Inputs used" mandatory block by name — this skill populates those files, it does not redefine
+   their shape.
+
+**Tests:** none — a skill file, not application code; verification is a real invocation against a fixture case once PT-2/PT-7 land (out of scope for this task itself).
+
+**Commit:** `docs(project-taxonomy): add investigation-doc-sync skill (deferred until PT-2/PT-7 land)`
