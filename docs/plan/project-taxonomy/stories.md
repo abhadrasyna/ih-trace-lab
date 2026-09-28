@@ -122,8 +122,35 @@
 1. `AGENTS.md`: one sentence pointing to `docs/guides/project-taxonomy.md` as the reference for classifying new work and picking its folder skeleton before creating any new top-level folder. No
    taxonomy content duplicated into `AGENTS.md` itself.
 2. `CONTEXT.md`: one new bullet under "What Exists" in the same style as the existing `tenant-registry`/`query-catalog` bullets — story slug, one-line summary, current status (implemented once PT-1
-   through PT-4 are all checked; reference the first unchecked task id if not yet fully done at the time this task runs).
+   through PT-6 are all checked; reference the first unchecked task id if not yet fully done at the time this task runs).
 
 **Tests:** none — docs-only.
 
 **Commit:** `docs(project-taxonomy): point AGENTS.md and CONTEXT.md at the new guide`
+
+---
+
+## PT-6 — same doc: pipeline cron-cutover procedure
+
+**Files to change / create:**
+- `docs/guides/project-taxonomy.md` — append a new `## Pipeline cron-cutover procedure` section
+
+**What to implement:**
+
+1. Open with the concrete grounding fact (do not generalize it away): `aws-access-cli` has three live system-crontab entries (daily/weekly/monthly report jobs) hardcoding its current
+   `github_copilot/aws-access-cli` path and `.venv`. Crontab is not git-tracked — no diff/PR review ever sees an edit to it, unlike every other change this project makes.
+2. State the procedure as a numbered, mandatory checklist for any future story that ports a **pipeline**-category project (per PT-1) to a new location:
+   1. Add the new cron entry pointing at the ported script's new path/venv, writing output to a distinct log file (e.g. suffix `_v2`). Do not edit or remove the old entry yet — both run in parallel.
+   2. Let both run for at least one full cycle of that job's own schedule before comparing anything — a daily job needs several daily runs, a weekly job needs at least 2 weekly runs, a monthly job
+      needs at least 1 monthly run. A shorter window has not actually exercised the job's real schedule.
+   3. Diff the two jobs' output for every run in that window — row counts, key metrics, or a full content diff depending on the report type. This must be a script or a delegated sub-agent check, not
+      manual eyeballing, since these are unattended automated reports and a person is not watching every run.
+   4. Only after N consecutive matching runs (state a default, e.g. 3, adjustable per job), remove the old crontab entry. Because crontab has no other change record, log the removal manually — one
+      line in `CONTEXT.md` or a dedicated append-only log naming the job, the date, and the verification window that justified it.
+   5. State explicitly, as the closing rule: **never a same-day swap.** A same-day cutover risks a silently broken daily/weekly/monthly report going unnoticed for a full cycle, which is strictly worse
+      than the duplication this taxonomy exists to remove.
+3. One closing sentence noting this procedure is documentation only here — no pipeline has been ported yet, so no crontab edit happens as part of this task or this story.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(project-taxonomy): add pipeline cron-cutover procedure`

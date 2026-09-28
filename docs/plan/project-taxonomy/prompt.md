@@ -22,14 +22,21 @@ concrete, checkable reason to prefer submodules for anything with its own cadenc
 This story does not touch `github_copilot` (read-only, per `CONTEXT.md`) — it distills the taxonomy `ih-trace-lab` should use going forward, informed by that audit, as the profile of work this project
 is meant to re-implement with discipline (see root `README.md`'s mission statement).
 
+`aws-access-cli` additionally has three live system-crontab entries pointing at its scripts (a daily, a weekly, a monthly report job — each hardcoding the `github_copilot/aws-access-cli` path and its
+own `.venv`). Crontab is not git-tracked, so no diff/PR review ever sees an edit to it — whenever a pipeline like this eventually gets ported to `ih-trace-lab`, swapping the cron entry to the new path
+on the same day the code lands risks a silently broken daily/weekly/monthly report going unnoticed for a full cycle. PT-6 documents the parallel-run-then-flip procedure this migration must follow; it
+does not execute any migration now — no pipeline has been ported yet.
+
 ## Scope guard
 
 **In scope:** a taxonomy doc (`docs/guides/project-taxonomy.md`) naming the categories, a per-category folder skeleton, the submodule-vs-plain-folder decision rule, a "start a new
-investigation/project" checklist with a mandatory prior-art search step, one lightweight audit script checking existing top-level dirs against the taxonomy, `AGENTS.md`/`CONTEXT.md` pointer lines.
+investigation/project" checklist with a mandatory prior-art search step, one lightweight audit script checking existing top-level dirs against the taxonomy, a documented pipeline cron-cutover
+procedure, `AGENTS.md`/`CONTEXT.md` pointer lines.
 
-**Out of scope:** any change under `/Users/abhadra/github_copilot` (read-only reference, never edited from this project); the shared-code module layout that replaces duplicated Athena/CSV logic — that
-is `docs/plan/functional-code-taxonomy/`'s job, this story only decides *what kind of project* a piece of work is, not *what library code it imports*; converting any existing `ih-trace-lab` folder
-into a submodule (no such folders exist yet — this story defines the rule for when a *future* one should be).
+**Out of scope:** any change under `/Users/abhadra/github_copilot` (read-only reference, never edited from this project); any actual edit to the live system crontab (PT-6 is a documented procedure for
+a *future* pipeline-migration story to follow, not something this story executes); the shared-code module layout that replaces duplicated Athena/CSV logic — that is
+`docs/plan/functional-code-taxonomy/`'s job, this story only decides *what kind of project* a piece of work is, not *what library code it imports*; converting any existing `ih-trace-lab` folder into a
+submodule (no such folders exist yet — this story defines the rule for when a *future* one should be).
 
 ## Session-start load hints
 
@@ -49,14 +56,17 @@ into a submodule (no such folders exist yet — this story defines the rule for 
   created.
 - **PT-4** — `scripts/dev/check_project_taxonomy.py`: lightweight audit script listing top-level dirs and flagging any without a recognizable category marker, plus tests.
 - **PT-5** — `AGENTS.md` + `CONTEXT.md`: one-line pointers to the new guide.
+- **PT-6** — Same doc, pipeline cron-cutover procedure: a mandatory parallel-run-then-flip checklist for migrating any live system-crontab entry (e.g. `aws-access-cli`'s three existing cron jobs) to a
+  ported pipeline, since crontab edits are not git-tracked and a same-day swap risks a silent broken report going unnoticed for a full cycle.
 
 ## Definition of done
 
-- `docs/guides/project-taxonomy.md` exists, covers PT-1/PT-2/PT-3 content, and is internally consistent with `docs/plan/functional-code-taxonomy/`'s module layout (no contradicting folder-skeleton
-  claims between the two docs).
+- `docs/guides/project-taxonomy.md` exists, covers PT-1/PT-2/PT-3/PT-6 content, and is internally consistent with `docs/plan/functional-code-taxonomy/`'s module layout (no contradicting
+  folder-skeleton claims between the two docs).
 - `scripts/dev/check_project_taxonomy.py` runs against the current (empty) `ih-trace-lab` tree without error and its tests are green.
 - `AGENTS.md` and `CONTEXT.md` each gained exactly one new pointer line; no taxonomy content duplicated into either.
 - No file under `/Users/abhadra/github_copilot` was created, edited, or deleted by this story.
+- No live system crontab entry is modified by this story — PT-6 only documents the procedure a future pipeline-migration story must follow.
 
 ## Perspectives not covered
 
