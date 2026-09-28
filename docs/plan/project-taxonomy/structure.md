@@ -44,8 +44,13 @@ ih-trace-lab/
 │   │       └── protocols.py                  [FCT-7] PathResolver Protocol — reads config/data_paths.yaml, exposes
 │   │                                          resolve_input_dir/resolve_knowledge_dir/resolve_investigation_dir;
 │   │                                          scripts never hardcode data/knowledge/investigations shape
-│   ├── tools/                                 category: tool
-│   │   └── <tool-slug>/
+│   ├── tools/                                 category: tool — reusable software with its own interface/protocol,
+│   │   │                                      actively maintained/enhanced across many callers (not a case-tracking
+│   │   │                                      folder, so no investigations/)
+│   │   └── <tool-slug>/                      e.g. an oasis-athena-mcp equivalent, once ported
+│   │       ├── src/                          [PT-2] imports src/lib/* where applicable
+│   │       ├── tests/                        [PT-2]
+│   │       └── README.md                     [PT-2] its own — distinct from the reusable src/lib/* Protocol docs
 │   └── pipelines/                             category: pipeline
 │       └── <pipeline-slug>/                  e.g. an aws-access-cli equivalent, once ported (see PT-6 cron-cutover)
 │           ├── scripts/                      thin — imports src/lib/*
