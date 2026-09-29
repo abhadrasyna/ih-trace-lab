@@ -219,3 +219,64 @@ gitignored `data/`) stays out of scope — case docs and folder conventions aren
 **Tests:** none — docs-only.
 
 **Commit:** `docs(applause-knowledge-harvest): add knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`
+
+---
+
+## RKH-8 — `knowledge/mtn-adoption-playback-outcome-classification-gap.md`
+
+**Grounding:** three dated, read-only investigation docs under `/Users/abhadra/github_copilot/aws-access-cli/docs/` (never edited): `2026-09-10-adoption-session-reconciliation.md` (session-level
+reconciliation of the 189-session ZA/`unified_e6auj7k7` day that first surfaced the gap), `2026-09-15-adoption-metrics-column-overview-and-gap-analysis.md` (adoption-report column definitions plus a
+month-wide, household-level gap quantification — 460 sessions/171 households in `INCOMPLETE_NO_DESTROY`, 54/31 in `PLAY`+`PLAYER_ERROR`, 2/2 in `PLAY`+`TIMEOUT`), and
+`2026-09-16-vsf-ebvs-session-examples-and-classification-gap.md` (session-ID-level confirmation with concrete `sessionId` examples, both a mislabeled-VSF case and genuinely-incomplete cases, plus a
+candidate `COALESCE` fix). Reclassified out of `aws-access-cli`'s infra-folder exclusion (see prompt.md's folder backlog): the CLI/automation code itself stays excluded, but these three docs are
+genuine investigation findings, not code documentation.
+
+**Files to change / create:**
+- `knowledge/mtn-adoption-playback-outcome-classification-gap.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before trusting `unified_sessions`-derived adoption metrics (`vsf_unique_hhid`, `ebvs_unique_hhid`, or any `playback_outcome` column) at face value, or
+   before writing a new per-session `playback_outcome` classification query against `unified_e6auj7k7`/any tenant's `unified_sessions` table.
+2. **The four adoption-report event/outcome definitions** (Attempts = `REQUEST_VIEWING` exists; Success = `PLAY` + `endreason='DESTROY'`; VSF = `REQUEST_VIEWING` + `endreason='PLAYER_ERROR'`; EBVS =
+   derived `playback_outcome` of `'EBVS'`) and the standard per-session `playback_outcome` `COALESCE` classification query (`PLAY.endreason`, else `'EBVS'` if any `DESTROY` row exists, else
+   `'INCOMPLETE_NO_DESTROY'`) — quoted once, verbatim, as the shared root cause.
+3. **The classification gap itself**: the `COALESCE` never inspects `REQUEST_VIEWING`'s own `endreason`, so a genuine VSF (request-stage failure, no `PLAY` row, no `DESTROY` row) is silently
+   misclassified as `INCOMPLETE_NO_DESTROY` by the per-session query, even though the separate `vsf_unique_hhid`/`vsf_sessions.py` metric (which checks `REQUEST_VIEWING` directly) counts it correctly
+   — the two are never reconciled against each other. State the three uncounted/misclassified buckets found (VSF folded into `INCOMPLETE_NO_DESTROY`; `PLAY`+`PLAYER_ERROR` post-start failures; `PLAY`+
+   `TIMEOUT`) with their confirmed 2026-09 monthly counts.
+4. **One confirmed session-level example each** for (a) a mislabeled VSF (`abr-vod-e55ef9e4-...`, "Cleaning House") and (b) genuinely-incomplete sessions (the strict triple-negative filter excluding
+   `PLAY`, `DESTROY`, and any `PLAYER_ERROR` row), plus the note that debug-table cross-referencing (`e6auj7k7_ccl_debug_events`, keyed by `json_extract_scalar(eventdata, '$.sessionid')`, no
+   `parent_session_id` column) showed the 2026-09-10 "unexplained" sessions had genuine ongoing player activity (`PLAYER_BUFFER_LEVEL`/`PLAYER_STATE_CHANGE`/`APP_KEEPALIVE`, one reaching `PLAYER_EOF`)
+   — i.e. still-in-progress at capture time, not failures.
+5. **The candidate fix**, quoted as a candidate/not-yet-applied `COALESCE` variant adding an explicit `VSF` branch (`REQUEST_VIEWING` + `endreason='PLAYER_ERROR'`) ahead of the `INCOMPLETE_NO_DESTROY`
+   fallback — state plainly that it has not been applied to any production query/script, this is a documented caveat only.
+6. **One "Related, not yet harvested" pointer** to `ctap-smvod-session-report/queries/athena_session_outcome.md` §8, noting it uses the identical unfixed `COALESCE` query as its production
+   `playback_outcome` column and shares the same gap — deferred to that folder's own future `RKH-N` task per this story's backlog table, not summarized here.
+7. **Source line** at the bottom naming all three exact source doc paths and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(aws-access-cli-knowledge-harvest): add knowledge/mtn-adoption-playback-outcome-classification-gap.md`
+
+---
+
+## RKH-9 — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` (edit)
+
+**Grounding:** the existing root-ported `knowledge/mtn-athena-unified_e6auj7k7-tables.md` already documents the `unified_sessions` table's schema and mentions the registered `playback-outcome` query
+(`athena_runner.queries.playback_outcome`) near its `unified_sessions` section, but says nothing about the classification gap RKH-8 documents — this is the linkage found in this story's spec-authoring
+step 2.
+
+**Files to change / create:**
+- `knowledge/mtn-athena-unified_e6auj7k7-tables.md` — edit only, near its existing `unified_sessions`/playback-outcome mentions (the two lines identified during spec-authoring, around the table's
+  column list and its `playback-outcome` query cross-reference)
+
+**What to implement:**
+
+1. Add one cross-link sentence pointing to `knowledge/mtn-adoption-playback-outcome-classification-gap.md` (RKH-8) wherever this file currently mentions the `playback-outcome` query or per-session
+   outcome classification, stating that a known VSF-misclassification gap exists in that query and is documented there — do not duplicate any of RKH-8's findings, counts, or SQL here.
+2. No other content in this file changes.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(aws-access-cli-knowledge-harvest): cross-link mtn-athena-unified_e6auj7k7-tables.md to RKH-8`

@@ -75,6 +75,12 @@ call.
   `e6auj7k7_ccl_debug_events` bridge-key semantics from `investigations/queries/QUERY_CATALOG.md`, plus the HAR-derived Device ID recovery gotcha and cross-tenant Household ID collision caution from
   `investigations/docs/*.md`; the SQL query shapes themselves are left to the separate `query-catalog` story's QC-2 task, not duplicated here.
 
+**Batch 3 (`aws-access-cli/`, reclassified out of the infra-folder exclusion below — the CLI/automation code itself stays excluded, but its `docs/2026-09-*.md` investigation findings do not):**
+- **RKH-8** — `knowledge/mtn-adoption-playback-outcome-classification-gap.md`: harvest the submodule's three dated investigation docs on the `unified_sessions` per-session `playback_outcome`
+  classification gap (VSF sessions silently folded into `INCOMPLETE_NO_DESTROY`), with a "not yet harvested" pointer to `ctap-smvod-session-report`'s identical-gap query.
+- **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` (edit, depends on RKH-8 landing first): cross-link the existing root-ported table-schema file to RKH-8's new gap-analysis file, no
+  content duplicated.
+
 ## Definition of done
 
 - `knowledge/vod-asset-field-mapping.md` states the four-ID-family navigation table and the ADI→API/Mongo field correspondences clearly enough to answer "which OpsHub/HAR/Lightstep/Mongo field does
@@ -90,8 +96,9 @@ call.
 ## Folder backlog
 
 Tracks every `github_copilot/*` candidate folder this story could eventually cover. `status` is the only field that changes as the story progresses: `not started` → `spec'd` (RKH-N task(s) exist in
-`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`aws-access-cli`, `config`, `copilot`, `investigations`, `knowledge`, `plan`, `scratch`,
-`scripts`, `sre`) are deliberately excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd.
+`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`config`, `copilot`, `investigations`, `knowledge`, `plan`, `scratch`, `scripts`, `sre`)
+are deliberately excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd. `aws-access-cli` was reclassified out of this exclusion (see its
+row below): its automation/CLI code stays out of scope, but its dated `docs/2026-09-*.md` investigation write-ups do not.
 
 | Folder | Status | Notes |
 | --- | --- | --- |
@@ -107,6 +114,9 @@ missed by the first spec pass |
 | `shaka-6001-sa-error-analysis` | not started | thin folder (`scripts/`, `output/`, one `session-info.md`) — likely a single-task batch or may not warrant one at all |
 | `vod-playback-timing-probe` | not started | has `docs/`, `investigations/`, `AGENTS.md` — check against root `knowledge/mpd-shaka-restrictions-analysis.md` |
 | `smarttv-mtntv` | not started | only `scripts/` + `downloaded/`, no `docs/`/`README` seen — confirm real knowledge exists; may end up excluded like infra folders above |
+| `aws-access-cli` | spec'd (RKH-8, RKH-9 not yet executed) | initially listed as excluded infra below, then reclassified: its `docs/2026-09-*.md` holds genuine dated investigation findings (adoption
+`playback_outcome` classification gap) distinct from its Athena-automation-CLI role; `docs/database-abstraction/` and `docs/plans/` are its own internal refactor-story docs, not reusable domain
+knowledge, and stay out of scope |
 
 ## Adding a new folder (spec-authoring mode)
 

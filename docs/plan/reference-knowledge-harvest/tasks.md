@@ -4,7 +4,7 @@ Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task
 spec. This list grows: a new `RKH-N` gets appended each time another `github_copilot/*` folder is next up for harvesting — don't assume RKH-1/RKH-2 (the `vod-asset-ingestion-mapping/` batch) is the
 whole story.
 
-**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7.**
+**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7, RKH-8, RKH-9.**
 
 - [ ] **RKH-1** — `knowledge/vod-asset-field-mapping.md`: harvest ID-navigation + field-mapping docs from `vod-asset-ingestion-mapping/` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
   Review: human diff review | SHA: <—>
@@ -23,6 +23,11 @@ whole story.
 - [ ] **RKH-7** — `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`: harvest `applauseInvestigation/investigations/queries/QUERY_CATALOG.md`'s "Known bridge keys" section + the HAR-derived Device
   ID recovery gotcha from `applauseInvestigation/investigations/docs/*.md` — the `investigations/` subfolder missed by the RKH-3–6 spec pass | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
   Review: human diff review | SHA: <—>
+- [ ] **RKH-8** — `knowledge/mtn-adoption-playback-outcome-classification-gap.md`: harvest
+  `aws-access-cli/docs/{2026-09-10-adoption-session-reconciliation,2026-09-15-adoption-metrics-column-overview-and-gap-analysis,2026-09-16-vsf-ebvs-session-examples-and-classification-gap}.md`
+  | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [ ] **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` (edit): cross-link to RKH-8's new file | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
+  <—> | Depends on: RKH-8 (creates the file this task links to)
 
 ## Story done when
 
@@ -48,6 +53,12 @@ whole story.
   bridge keys" section, adds the HAR-derived Device ID recovery gotcha (citing 7231547/7231763/7231859) and the cross-tenant Household ID collision caution (citing 7231547), states the SQL query
   shapes themselves are out of scope (pointing to the `query-catalog` story's QC-2 output instead, no duplication), and leaves `investigations/docs/*.md`'s remaining case write-ups and
   `investigations/README.md`'s folder-org convention untouched as out of scope.
+- **RKH-8** — `knowledge/mtn-adoption-playback-outcome-classification-gap.md` exists, preserves the shared `playback_outcome` `COALESCE` classification query, the VSF-misclassification gap it causes
+  (VSF sessions silently folded into `INCOMPLETE_NO_DESTROY`), the confirmed monthly counts (460/171 `INCOMPLETE_NO_DESTROY`, 54/31 `PLAY`+`PLAYER_ERROR`, 2/2 `PLAY`+`TIMEOUT`), one session-level
+  example of a mislabeled VSF and one of a genuinely-incomplete session, the not-yet-applied candidate fix, and a "Related, not yet harvested" pointer to `ctap-smvod-session-report`'s identical-gap
+  query — without duplicating any SQL belonging to the `query-catalog` story.
+- **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` gains one cross-link sentence to RKH-8's new file near its existing `unified_sessions`/`playback-outcome` mentions, with no other
+  content changed and no duplication of RKH-8's findings.
 
 ## After each task
 
