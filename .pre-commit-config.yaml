@@ -15,5 +15,13 @@ repos:
         files: '\.md$'
         pass_filenames: true
 
+      - id: py-code-review
+        name: "AI review of staged .py changes (code-reviewer agent)"
+        language: system
+        entry: python scripts/dev/hooks/review_py_with_copilot.py
+        files: '\.py$'
+        pass_filenames: true
+        verbose: true
+
 # NOTE (phase0): ruff/mypy/pytest-gate/bandit/detect-secrets hooks are deferred
 # until pyproject.toml, tests/unit/, and src/ are (re)added to the python piece.
