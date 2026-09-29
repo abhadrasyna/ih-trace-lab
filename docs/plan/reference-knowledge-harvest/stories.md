@@ -362,3 +362,188 @@ semantics** (what `sssc`/`crc`/`bytes` mean, how to read one block), which `ctap
 **Tests:** none — docs-only.
 
 **Commit:** `docs(ctap-smvod-session-report-knowledge-harvest): add knowledge/mtn-sa-cdn-log-correlation-methodology.md`
+
+---
+
+## RKH-12 — `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/investigations/docs/` — read-only source, never edited. Four dated case docs (2026-07-24), all **missing from this folder's own `investigations/README.md`
+case-index table** — a stale-index gap in the read-only source, not something to fix there:
+- `20260724-mtn-sa-onetv1-4032-vod-drm-license-flow-analysis.md` — MTN SA (tenant `iye9omdf`) two-title comparison: a stalled *Bilal* capture (client never called the PlayReady `laUrl` sm-vod already
+  returned) vs. a successful *Skyf* end-to-end license acquisition, cross-checked against Lightstep on shared `fcId`.
+- `20260724-mtn-vs-timplay-vod-flow-comparison.md` — side-by-side MTN SA (`iye9omdf`) vs. TIM Play/mileto (`iljyxcc3`) VOD flow diffs: CTAP API version path, content-instance-ID format, `laUrl`
+  segment shape, Iris SSAI ad-insertion wrapping (MTN only), `_links` completeness, trickModes restrictions, and the confirmed double-vs-single PlayReady license-POST count.
+- `20260724-timplay-mileto-vod-ctap-sm-vod-mdrm-trace-analysis.md` — TIM Play/mileto full `ctap`→`sm-vod`→policy/data→`go-mdrmfe`→`license.global.multidrm.synamedia.com` trace, with device/household
+  identifiers and FCIDs pulled from Lightstep span tags (the HAR itself only carries opaque redacted `x-syna-sessionobject`).
+- `20260724-timplay-tenant-configuration-ltv-playback-analysis.md` — TIM Play (Brazil, tenant `iljyxcc3`) tenant/config identifier reference (CTAP/mDRM base URLs, static-config CDN, Youbora QoS
+  account) from a single live-linear LTV capture.
+
+**Scope guard note:** this task covers only these four docs. `investigations/docs/`'s other case write-ups (Kinesis, session-refresh, MPD explainer, PlayReady failure, recommendation-relevance,
+season-truncation, etc.) are already covered by other RKH-N tasks in this batch or are out of scope for this pass.
+
+**Files to change / create:**
+- `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before comparing an MTN SA (`iye9omdf`) vs. a TIM Play/mileto (`iljyxcc3`) VOD DRM/playsession flow, or before assuming CTAP/mDRM response shapes are
+   tenant-invariant.
+2. **Port the MTN SA 4032 case findings as-is**: the two-capture same-device/different-title framing, the key finding that the stalled *Bilal* capture never called the `laUrl` sm-vod already returned
+   (client-side stall or truncated capture, not a backend failure), and the successful *Skyf* end-to-end trace cross-check via shared `fcId`.
+3. **Port the MTN-vs-TIM-Play comparison tables as-is**: CTAP API version path (`/ctap/v1/` vs `/ctap/r1.6.0/`), content-instance-ID format (AXP vs CDC catalog), `contentInstanceId` vs `contentId`
+   field naming, `laUrl` segment shape (full UUID vs short numeric ingest ID), Iris SSAI ad-insertion wrapping present only on MTN, `_links` completeness difference, trickModes restriction difference,
+   and the confirmed double-vs-single PlayReady license-POST count with the open (unresolved) question on why MTN fires it twice.
+4. **Port the TIM Play/mileto full-trace findings as-is**: the `ctap`→`sm-vod`→policy/data→`go-mdrmfe`→`license.global.multidrm.synamedia.com` service chain, the device/household/session identifier
+   table, and the note that these identifiers are only visible in the clear via Lightstep span tags (`sessionInfo.*`/`session.*`/`drmAuthToken.*`), not the HAR (which redacts `x-syna-sessionobject`).
+5. **Port the TIM Play tenant-configuration reference as-is**: the CTAP/mDRM base URL pattern (`api-<tenant>.go.synamedia.com/...`), the static-config/asset CDN, the Youbora QoS account/plugin fields,
+   and the auth-carrier note (`x-syna-sessionobject`, redacted at HAR-capture-tool source, not by analysis).
+6. **Add a stale-index note**: state plainly that these four docs are absent from `investigations/README.md`'s own case-index table as of this harvest, without editing that read-only file.
+7. **Source line** at the bottom naming the four exact source paths and the "read-only reference, not a shared codebase" note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(investigations-knowledge-harvest): add knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md`
+
+---
+
+## RKH-13 — `knowledge/mtn-tenant-identifiers-and-code-flow.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/investigations/docs/ITZUu4aBswL.md` + `ITZUu4aBswL_code_flow.md` — read-only source, never edited. `investigations/README.md`'s own case-index flags
+`ITZUu4aBswL.md` as the "source of truth for MTN tenant IDs." `ITZUu4aBswL.md` is a single-session HAR analysis (140 requests, login → home → movies → VOD playback → settings) with a quick-reference
+identifier table (primary tenant `iye9omdf`, auth tenant `1z5vo5g2`, Iris ad tenant `sun902py`, household/profile/device/play-session IDs, Kinesis stream `datastream-e6auj7k7`, a confirmed
+Kinesis-vs-CTAP country mismatch `ZA` vs `USA`) plus sections on Kinesis stream decoding, cookies, manifests/DASH-MPD/DRM, and tokens. `_code_flow.md` is the companion debugging cookbook: full
+client↔Lightstep code-flow trace across mDRM Widevine license acquisition, client-identity/device-registration, and GO-platform CTAP/session-guard/go-mdrmfe, including an identity-lifecycle timeline,
+per-service Lightstep project/service catalogue, and common-failure-modes section.
+
+**Cross-story note:** this overlaps conceptually with `ih-trace-lab`'s own not-yet-implemented `docs/plan/tenant-registry/` story (a tenant-ID resolver). Per explicit user decision, harvest it here
+rather than defer — the resulting file must forward-note that `tenant-registry` should consult it once that story's implementation begins, rather than silently duplicating scope.
+
+**Files to change / create:**
+- `knowledge/mtn-tenant-identifiers-and-code-flow.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before looking up an MTN SA tenant/auth/ad-tenant ID, before tracing a Widevine/PlayReady license acquisition end-to-end, or before assuming client
+   identity IDs (household/device/profile) are all available from HAR alone (some are Lightstep-span-only, per `_code_flow.md` §2.13).
+2. **Port the quick-identifier-reference table as-is** from `ITZUu4aBswL.md` (primary tenant `iye9omdf`, auth tenant `1z5vo5g2`, Iris ad tenant `sun902py`, household/profile/device IDs, play-session
+   ID, Kinesis stream name, AWS Cognito identity, app/client-lib versions, the confirmed Kinesis-vs-CTAP country mismatch) and the session-overview summary (140 requests, 0 HTTP errors, 3 aborted).
+3. **Port the Kinesis/cookies/manifest/DRM/token section summaries as-is** (duplicate-batch bug in the Kinesis stream, the 3 cookies and their missing `HttpOnly`/`Secure` flags, the 4 manifest types,
+   Widevine+PlayReady dual-DRM with the `brRef: LOW` SD-cap explanation, the 5 decoded token types and their lifetimes) at reference-table depth, not full narrative — link back to the source doc for
+   deeper JSON/payload detail rather than reproducing it verbatim.
+4. **Port the full code-flow trace as-is** from `_code_flow.md`: the mDRM Widevine license-acquisition two-leg flow, the client-identity/device-registration flow with its identity-lifecycle timeline
+   (§2.13, when each ID becomes available), the GO-platform CTAP/session-guard/go-mdrmfe service chain with its Lightstep project/service catalogue, the two-layer-DRM-architecture explanation, the
+   Lightstep debugging pivots, and the common-failure-modes list — preserving the table-of-contents structure so it stays usable as a lookup reference, not just prose.
+5. **Add the tenant-registry forward-note**: state plainly that `docs/plan/tenant-registry/` (not yet implemented in this repo) should consult this file once its tenant-ID resolver work begins, rather
+   than re-deriving these facts independently.
+6. **Source line** at the bottom naming the exact source paths (`investigations/docs/ITZUu4aBswL.md`, `ITZUu4aBswL_code_flow.md`) and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(investigations-knowledge-harvest): add knowledge/mtn-tenant-identifiers-and-code-flow.md`
+
+---
+
+## RKH-14 — port `ctap-shared-content-default-limit.md`, `mpd-shaka-restrictions-analysis.md`, `recommendation-engine-thinkanalytics.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/knowledge/{ctap-shared-content-default-limit,mpd-shaka-restrictions-analysis,recommendation-engine-thinkanalytics}.md` — read-only source, never edited.
+These three files already exist at the root `knowledge/` level in `github_copilot` and are already substantively grounded in `investigations/docs/*.md` case content (confirmed by grep against
+`github_copilot/knowledge/*.md` earlier in this story's spec-authoring pass) — this task mirrors RKH-2's porting pattern (copy the existing distillation into `ih-trace-lab/knowledge/`, correcting
+nothing unless a factual error is found) rather than re-deriving them from the underlying `investigations/docs/*.md` cases a second time.
+
+**Depends on:** RKH-12 (creates `mtn-sa-timplay-drm-cross-tenant-trace-analysis.md`, which these three ports should cross-link to where their underlying case docs overlap — e.g.
+`mpd-shaka-restrictions-analysis.md`'s DASH/MPD analysis and RKH-12's MTN-vs-TIM-Play manifest-URL/CDN-wrapping differences).
+
+**Files to change / create:**
+- `knowledge/ctap-shared-content-default-limit.md` — new file (ported)
+- `knowledge/mpd-shaka-restrictions-analysis.md` — new file (ported)
+- `knowledge/recommendation-engine-thinkanalytics.md` — new file (ported)
+
+**What to implement:**
+
+1. **Port each of the three files verbatim** into `ih-trace-lab/knowledge/`, preserving their existing structure, findings, and any "Related" pointers they already contain.
+2. **Add one cross-link sentence to each**, near its existing case-doc references, pointing to `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md` (RKH-12) where the underlying
+   `investigations/docs/*.md` cases overlap (MPD/DASH manifest handling, tenant-specific CDN/ad-insertion wrapping) — stating plainly which file owns which detail, no content duplicated between them.
+3. **Do not** re-derive or expand any of the three files' existing analysis beyond the cross-link addition — this task is a port, not a rewrite.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(investigations-knowledge-harvest): port ctap-shared-content-default-limit/mpd-shaka-restrictions-analysis/recommendation-engine-thinkanalytics`
+
+---
+
+## RKH-15 — `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/investigations/instructions/{lightstep-mcp-tool-notes,client-identity-investigation,device-flow-analysis,oauth-session-guard-interleave,
+drm-cross-region-investigation}.md` — read-only source, never edited. These are executable "paste into Copilot Chat and provide `<PARAM>`" playbook prompts, a different shape from this story's other
+`knowledge/*.md` outputs — per explicit user decision, **distill** (extract the reusable facts/methodology into a reference doc) rather than port the full executable prompt/invocation text as-is.
+- `lightstep-mcp-tool-notes.md` — shared hard-rules reference for the 4 Lightstep MCP tools (`query_spans` for discovery, `query_timeseries` for aggregation via its `spans count | delta | filter ... |
+  group_by [...], sum` pipeline syntax, `get_stored_trace` for full per-span detail needing a hex span ID and expected-404-on-sampling caveat, `list_attributes` flagged as broken — do not call it).
+- `client-identity-investigation.md` — householdId-driven client-identity lookup, chainable from `device-flow-analysis.md` step 8.
+- `device-flow-analysis.md` — `PROJECT_ID`+`DEVICE_ID`-driven device-flow trace.
+- `oauth-session-guard-interleave.md` — `DEVICE_ID`+`LOOKBACK`-driven Matisse OAuth ⇄ CTAP session-guard interleaved timeline.
+- `drm-cross-region-investigation.md` — DRM/license investigation playbook explaining why EU `go-mdrmfe` and US `mcs-mdrm-production` traces are **not** linked by a shared trace_id/span_id (two
+  independent regional Lightstep projects) and must be correlated by shared business attributes + time window instead.
+
+**Files to change / create:**
+- `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before writing a new Lightstep MCP query, before tracing a device/household/OAuth-session identity flow, or before assuming a DRM trace propagates across
+   the EU/US regional boundary.
+2. **Distill the Lightstep MCP tool hard rules**: the 4-tool selection table (`query_spans`/`query_timeseries`/`get_stored_trace`/`list_attributes`-broken) and the pipeline-syntax-only-on-
+   `query_timeseries` rule, stated as reusable facts rather than reproducing the full instructions file's invocation wrapper.
+3. **Distill the client-identity and device-flow methodology**: the householdId-driven lookup approach, the `PROJECT_ID`+`DEVICE_ID` device-flow-trace approach, and the step-8 chaining relationship
+   between them (device-flow-analysis can hand off into client-identity-investigation).
+4. **Distill the OAuth ⇄ session-guard interleave methodology**: the `DEVICE_ID`+`LOOKBACK`-window approach and why an interleaved timeline (not a single trace) is needed to correlate Matisse OAuth
+   token issuance against CTAP session-guard activity.
+5. **Distill the DRM cross-region investigation methodology**: the two-independent-regional-Lightstep-projects fact (no shared trace_id/span_id across `go-mdrmfe` EU and `mcs-mdrm-production` US), and
+   the correlate-by-business-attribute-and-time-window technique this forces — cross-link to RKH-12's MTN-vs-TIM-Play trace analysis and RKH-13's `_code_flow.md` port as worked examples of this exact
+   technique in action, rather than re-deriving a new example here.
+6. **Do not port** the "paste this file into Copilot CLI chat" invocation wrappers or the `Usage`/standalone-trigger-phrase sections themselves — those remain executable playbooks in
+   `github_copilot/investigations/instructions/`, out of scope for this reference-doc distillation.
+7. **Source line** at the bottom naming the five exact source paths and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(investigations-knowledge-harvest): add knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md`
+
+---
+
+## RKH-16 — `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/investigations/instructions/{har-playback-flow-analysis,kinesis-stream-analysis,mpd-analysis,device-ua-playsession-analysis}.md` — read-only source, never
+edited. Same distill-not-port treatment as RKH-15, per user decision.
+- `har-playback-flow-analysis.md` — parses a browser HAR captured during playback and produces a per-session event timeline (Play Tap to first frame), a full-playback-flow comparison table across
+  sessions, and root-cause observations.
+- `kinesis-stream-analysis.md` — parses a HAR's AWS Kinesis `PutRecords` calls (the client-side analytics/telemetry SDK shipping `APPLICATION`/`ACTION`/`PLAYER` events to a `datastream-*` stream),
+  producing a flattened, deduplicated, per-session-grouped markdown output.
+- `mpd-analysis.md` — DASH-manifest analysis rules, auto-triggered on any `.mpd`/DASH-manifest input; explicitly inlines its own non-MTN-specific rules while pointing to
+  `knowledge/mpd-shaka-restrictions-analysis.md` (RKH-14's port) for deeper Shaka-source references, worked examples, and the MTN-only DRM-authorization-race section.
+- `device-ua-playsession-analysis.md` — given a `YYYYMMDD.csv` of device IDs, queries Lightstep for `createPlaySession` spans in a given project/region, groups by `http.user_agent`, and extracts
+  Android/Chrome version, saving a `{date}_user_agent.csv` output.
+
+**Depends on:** RKH-14 (creates the ported `mpd-shaka-restrictions-analysis.md` this task must cross-link to instead of duplicating DASH/Shaka detail — `mpd-analysis.md` itself already establishes
+this exact division of labor in its source form).
+
+**Files to change / create:**
+- `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before parsing a raw HAR capture for a playback-flow timeline, before decoding a Kinesis `PutRecords` telemetry stream from a HAR, or before analyzing a
+   device-ID CSV for user-agent/browser-version breakdowns via Lightstep.
+2. **Distill the HAR playback-flow-analysis methodology**: the Play-Tap-to-first-frame per-session timeline approach, the cross-session comparison-table shape, and the root-cause-observation framing
+   (what's slow and why) as reusable facts.
+3. **Distill the Kinesis stream-analysis methodology**: the `PutRecords`-call-extraction approach, the `APPLICATION`/`ACTION`/`PLAYER` event-type taxonomy, and the flattened/deduplicated/
+   per-session-grouped output shape.
+4. **Distill the MPD/DASH-manifest analysis rules**: state which rules are reusable/non-MTN-specific here, and add the explicit cross-link to `knowledge/mpd-shaka-restrictions-analysis.md` (RKH-14)
+   for the deeper Shaka-source references, worked examples, and MTN-only DRM-authorization-race section — do not duplicate that file's content here.
+5. **Distill the device/UA/play-session CSV-analysis methodology**: the `YYYYMMDD.csv` input-format convention, the `createPlaySession`-span Lightstep query approach, the `http.user_agent` grouping
+   and Android/Chrome version extraction, and the `{date}_user_agent.csv` output convention.
+6. **Do not port** the "paste this file"/`gh copilot suggest -t shell` invocation wrappers themselves — those remain executable playbooks in `github_copilot/investigations/instructions/`.
+7. **Source line** at the bottom naming the four exact source paths and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(investigations-knowledge-harvest): add knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md`

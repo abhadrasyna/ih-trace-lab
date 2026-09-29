@@ -92,6 +92,22 @@ call.
 - **RKH-11** — `knowledge/mtn-sa-cdn-log-correlation-methodology.md`: harvest the submodule's raw CDN-log field reference and MTN network-team escalation criteria from `LEGEND.md`'s "CDN log fields"
   section and `docs/STATUS.md`, cross-linked to (not duplicating) `knowledge/ctap-smvod-pipeline.md`'s existing content-UUID-matching algorithm pitfalls.
 
+**Batch 5 (root `investigations/` — reclassified out of the infra-folder exclusion, same treatment as `aws-access-cli`; the root case-index folder itself, not a submodule):**
+- **RKH-12** — `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md`: harvest the four 2026-07-24 DRM/trace-analysis docs (`docs/20260724-mtn-sa-onetv1-4032-vod-drm-license-flow-analysis.md`,
+  `docs/20260724-mtn-vs-timplay-vod-flow-comparison.md`, `docs/20260724-timplay-mileto-vod-ctap-sm-vod-mdrm-trace-analysis.md`, `docs/20260724-timplay-tenant-configuration-ltv-playback-analysis.md`)
+  that are missing from `investigations/README.md`'s own case-index table — a stale-index gap flagged during spec-authoring, not fixed at the source (read-only).
+- **RKH-13** — `knowledge/mtn-tenant-identifiers-and-code-flow.md`: harvest `docs/ITZUu4aBswL.md` + `docs/ITZUu4aBswL_code_flow.md` (flagged in the case index as "source of truth for MTN tenant IDs";
+  full HAR→code-flow trace covering login, VOD playback, mDRM Widevine license, Kinesis analytics), with a forward-note that `docs/plan/tenant-registry/` (this repo's own not-yet-implemented story)
+  should consult this file once its resolver work begins.
+- **RKH-14** — port `github_copilot/knowledge/{ctap-shared-content-default-limit,mpd-shaka-restrictions-analysis,recommendation-engine-thinkanalytics}.md` into `ih-trace-lab/knowledge/` as-is (3
+  files, one task, same porting pattern as RKH-2), cross-linked to RKH-12 where underlying case docs overlap.
+- **RKH-15** — `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md`: distill the reusable facts/methodology (not the full executable playbook prompts) from
+  `instructions/{lightstep-mcp-tool-notes,client-identity-investigation,device-flow-analysis,oauth-session-guard-interleave,drm-cross-region-investigation}.md` — MCP query syntax hard rules,
+  householdId→clientId resolution steps, device/CTAP flow tracing, OAuth⇄session-guard interleave rules, EU⇄US DRM trace-correlation technique.
+- **RKH-16** — `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md`: distill the reusable facts/methodology from
+  `instructions/{har-playback-flow-analysis,kinesis-stream-analysis,mpd-analysis,device-ua-playsession-analysis}.md` — HAR playback-flow reconstruction approach, Kinesis `PutRecords` decode/flatten
+  rules, MPD/DASH analysis rules (cross-linked to RKH-14's ported `mpd-shaka-restrictions-analysis.md` instead of duplicating), device/UA CSV analysis approach.
+
 ## Definition of done
 
 - `knowledge/vod-asset-field-mapping.md` states the four-ID-family navigation table and the ADI→API/Mongo field correspondences clearly enough to answer "which OpsHub/HAR/Lightstep/Mongo field does
@@ -107,13 +123,22 @@ call.
   (playback-outcome taxonomy, lifecycle/error schema, missing-row methodology, CDN log field semantics, MTN escalation criteria) without duplicating
   `knowledge/mtn-adoption-playback-outcome-classification-gap.md`'s (RKH-8) classification-gap analysis or `knowledge/ctap-smvod-pipeline.md`'s (RKH-2/RKH-6) content-UUID-matching algorithm pitfalls —
   link to both instead.
+- `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md` exists, preserves the four 2026-07-24 docs' cross-tenant DRM/session findings (MTN SA `iye9omdf` vs. TIM Play/mileto `iljyxcc3`), and
+  flags the source folder's stale case-index gap without editing the read-only source.
+- `knowledge/mtn-tenant-identifiers-and-code-flow.md` exists, preserves `ITZUu4aBswL.md`/`_code_flow.md`'s tenant-ID facts and full HAR→code-flow trace, and forward-notes `docs/plan/tenant-registry/`
+  as the eventual consumer.
+- `knowledge/ctap-shared-content-default-limit.md`, `knowledge/mpd-shaka-restrictions-analysis.md`, and `knowledge/recommendation-engine-thinkanalytics.md` exist in `ih-trace-lab`, ported as-is,
+  cross-linked to RKH-12 where their underlying case docs overlap.
+- `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md` and `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md` exist, each distilling their five/four source
+  playbooks' reusable facts and methodology (not the full executable prompt text) without duplicating each other or RKH-14's ported `mpd-shaka-restrictions-analysis.md`.
 
 ## Folder backlog
 
 Tracks every `github_copilot/*` candidate folder this story could eventually cover. `status` is the only field that changes as the story progresses: `not started` → `spec'd` (RKH-N task(s) exist in
-`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`config`, `copilot`, `investigations`, `knowledge`, `plan`, `scratch`, `scripts`, `sre`)
-are deliberately excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd. `aws-access-cli` was reclassified out of this exclusion (see its
-row below): its automation/CLI code stays out of scope, but its dated `docs/2026-09-*.md` investigation write-ups do not.
+`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`config`, `copilot`, `knowledge`, `plan`, `scratch`, `scripts`, `sre`) are deliberately
+excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd. `aws-access-cli` and the root `investigations/` folder were both reclassified out of
+this exclusion (see their rows below): `aws-access-cli`'s automation/CLI code stays out of scope, but its dated `docs/2026-09-*.md` investigation write-ups do not; `investigations/`'s `data/`, `har/`,
+`scripts/`, `athenaCSV/`, `spancsv/`, and `xmls_or_mpd/` stay out of scope, but its `docs/` case write-ups and `instructions/` playbooks do not.
 
 | Folder | Status | Notes |
 | --- | --- | --- |
@@ -134,6 +159,9 @@ classification-gap query, so RKH-10/RKH-11 are scoped to the two remaining un-cl
 | `aws-access-cli` | spec'd (RKH-8, RKH-9 not yet executed) | initially listed as excluded infra below, then reclassified: its `docs/2026-09-*.md` holds genuine dated investigation findings (adoption
 `playback_outcome` classification gap) distinct from its Athena-automation-CLI role; `docs/database-abstraction/` and `docs/plans/` are its own internal refactor-story docs, not reusable domain
 knowledge, and stay out of scope |
+| `investigations` (root, not a submodule) | spec'd (RKH-12, RKH-13, RKH-14, RKH-15, RKH-16 not yet executed) | initially listed as excluded infra, then reclassified: `docs/` (case write-ups, several
+already promoted to root `knowledge/*.md`) and `instructions/` (9 executable Copilot playbook-prompts, none yet promoted) both hold genuine reusable content; `data/`, `har/`, `scripts/`, `athenaCSV/`,
+`spancsv/`, `xmls_or_mpd/` stay out of scope (raw/gitignored artifacts and analysis scripts, not knowledge docs) |
 
 ## Adding a new folder (spec-authoring mode)
 
