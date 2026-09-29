@@ -3,8 +3,12 @@
 > The ongoing, docs-only vehicle for pulling reusable knowledge out of `github_copilot`'s ~13 read-only investigation folders into `ih-trace-lab/knowledge/`, one folder at a time. This is not a
 > one-off — new tasks (`RKH-3`, `RKH-4`, ...) get appended here each time a new source folder is next up for harvesting. The first batch (`RKH-1`/`RKH-2`) covers `vod-asset-ingestion-mapping/`.
 
-Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
-task id) before writing any code. One task per session. Complete it fully. Stop.
+Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. This story has two modes — pick the one matching what you were asked to do, never both in the same session:
+
+- **Default / execution mode** (no folder named): read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same task id) before writing
+  any code. One task per session. Complete it fully. Stop.
+- **Spec-authoring mode** (a `github_copilot/*` folder is named, e.g. "harvest `applauseInvestigation` next"): do **not** touch `knowledge/*.md`. Instead follow "Adding a new folder (spec-authoring
+  mode)" below to append new `RKH-N` task(s) to `tasks.md`/`stories.md`. Stop once that spec is committed — do not execute the freshly-spec'd task in the same session.
 
 ## Why this story exists
 
@@ -63,6 +67,46 @@ call.
 - `knowledge/vod-asset-ingestion-pipeline.md` and `knowledge/ctap-smvod-pipeline.md` exist in `ih-trace-lab`, matching the source distillations but with the MongoDB-gap claim corrected and a
   cross-link to `knowledge/vod-asset-field-mapping.md` (no duplicated field tables between the three files — link, don't repeat).
 - `knowledge/vod-asset-ingestion-pipeline.md` carries one clearly-flagged "Related, not yet harvested" pointer to `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md`.
+
+## Folder backlog
+
+Tracks every `github_copilot/*` candidate folder this story could eventually cover. `status` is the only field that changes as the story progresses: `not started` → `spec'd` (RKH-N task(s) exist in
+`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`aws-access-cli`, `config`, `copilot`, `investigations`, `knowledge`, `plan`, `scratch`,
+`scripts`, `sre`) are deliberately excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd.
+
+| Folder | Status | Notes |
+| --- | --- | --- |
+| `vod-asset-ingestion-mapping` | spec'd (RKH-1, RKH-2 not yet executed) | first batch |
+| `applauseInvestigation` | not started | holds `knowledge/lightstep-span-attributes-by-service.md`; RKH-1/RKH-2 left a pointer — that becomes this folder's cross-check when spec'ing |
+| `ctap-smvod-session-report` | not started | has `docs/`, `BLUEPRINT.md`, `LEGEND.md`, query catalog — likely overlaps root `knowledge/ctap-smvod-pipeline.md`, check for conflicts before porting |
+| `astro-events-household-report` | not started | has `QUERY_CATALOG.md` + `queries/` — check against root `knowledge/astro-athena-default-tables.md` |
+| `mtn-zm-session-device-investigation` | not started | has `docs/` + tests — check for a matching root `knowledge/mtn-sa-service-correlation-maps.md`-style file |
+| `mtn-network-traffic` | not started | has `docs/` — no obvious root `knowledge/*.md` link yet, may end up a single-task batch |
+| `oasis-athena-mcp` | not started | small tool/library (`src/`, `pyproject.toml`) as well as investigation aid — confirm it has real reusable knowledge (vs. just code) before spec'ing |
+| `shaka-6001-sa-error-analysis` | not started | thin folder (`scripts/`, `output/`, one `session-info.md`) — likely a single-task batch or may not warrant one at all |
+| `vod-playback-timing-probe` | not started | has `docs/`, `investigations/`, `AGENTS.md` — check against root `knowledge/mpd-shaka-restrictions-analysis.md` |
+| `smarttv-mtntv` | not started | only `scripts/` + `downloaded/`, no `docs/`/`README` seen — confirm real knowledge exists; may end up excluded like infra folders above |
+
+## Adding a new folder (spec-authoring mode)
+
+**Input:** `SOURCE_FOLDER` — one folder name from the backlog table above, named by whoever starts the session (e.g. "harvest `applauseInvestigation` next"). Refuse if it's not in the table, or is
+already `harvested`/`spec'd`, or is one of the excluded infra folders — ask instead of guessing.
+
+1. **Confirm classification** — open `SOURCE_FOLDER` and check it actually has its own `docs/`/`README`/knowledge-bearing files (not just `scripts/`/`output/`). If it turns out to be infra-only, say
+   so, update its backlog row to note the exclusion, commit that one-line correction, and stop — do not spec a task for it.
+2. **Find linkage** — `grep`/scan `/Users/abhadra/github_copilot/knowledge/*.md` for any file that already references `SOURCE_FOLDER` (by name, by shared span names, or by shared field names). List
+   what's found; if nothing references it, the batch is a single task (harvest-only, no port/correct half).
+3. **Inventory `SOURCE_FOLDER`'s own docs** — read its `README`/`STATUS`/`docs/*.md`/case-index equivalents. Separate: (a) content genuinely reusable here (field/property mappings, ID rules, gotchas,
+   query templates, span-attribute references) → goes in the harvest task; (b) content that actually belongs to a *different* backlog folder's future task → leave one labeled "Related, not yet
+   harvested" pointer sentence, do not summarize or copy it.
+4. **Decide the split** — default 2 tasks (own field-mapping/knowledge doc + port/correct any root distillation found in step 2); collapse to 1 if step 2 found nothing; if it looks like more than 2
+   are needed, stop and ask before proceeding.
+5. **Append, don't rewrite** — add new `RKH-N`(+1) rows to `tasks.md` (same `Owner | Model | Review | SHA` row shape as RKH-1/RKH-2) and new sections to `stories.md` (same
+   grounding/files-to-change/what-to-implement/tests/commit shape as the RKH-1 section). Update this file's "Task overview" section to add the new batch, and flip `SOURCE_FOLDER`'s backlog row to
+   `spec'd`. Do not edit RKH-1/RKH-2's existing content.
+6. **Reflow, commit, verify** — run `scripts/dev/reflow_md.py` on every touched file, stage, commit (message: `docs(plan): spec RKH-N/RKH-N+1 for <SOURCE_FOLDER>`), then run `git show
+   HEAD:docs/plan/reference-knowledge-harvest/tasks.md` (and `stories.md`) to confirm the new content actually landed at `HEAD` — do not trust `git status`/`git diff --cached` alone. Stop; do not
+   execute the new task in this same session.
 
 ## Perspectives not covered
 
