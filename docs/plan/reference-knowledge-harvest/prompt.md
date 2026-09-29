@@ -55,6 +55,10 @@ call.
   `query-catalog` story, not this one (read-only source, do not edit).
 - `/Users/abhadra/github_copilot/applauseInvestigation/investigations/docs/{7231547-android-secure-decoder-failure,7231763-android-resume-watching-latency,7231859-android-micro-drama-e7504}.md` — the
   three issues confirming RKH-7's HAR-derived Device ID recovery gotcha (read-only source, do not edit).
+- `aws-access-cli/docs/{2026-09-10-adoption-session-reconciliation,2026-09-15-adoption-metrics-column-overview-and-gap-analysis,2026-09-16-vsf-ebvs-session-examples-and-classification-gap}.md` (under
+  `/Users/abhadra/github_copilot/`) — the three dated investigation docs confirming RKH-8's `playback_outcome` classification gap (read-only source, do not edit).
+- `/Users/abhadra/github_copilot/ctap-smvod-session-report/LEGEND.md`, `BLUEPRINT.md`, `analyze_playback_outcome.md` — RKH-10's playback-outcome/error-taxonomy sources; and `LEGEND.md`'s "CDN log
+  fields" section + `docs/STATUS.md`'s MTN escalation criteria — RKH-11's CDN-methodology sources (all read-only, do not edit).
 
 ## Task overview
 
@@ -81,6 +85,13 @@ call.
 - **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` (edit, depends on RKH-8 landing first): cross-link the existing root-ported table-schema file to RKH-8's new gap-analysis file, no
   content duplicated.
 
+**Batch 4 (`ctap-smvod-session-report/`):**
+- **RKH-10** — `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md`: harvest the submodule's own `playback_outcome` value taxonomy, `state_sequence`/`APP_KEEPALIVE` lifecycle gotchas,
+  `PLAYER_ERROR` raw-eventdata/Shaka-error schema, "missing"-row investigation methodology, and `householdId` anomaly-scan gotcha from `LEGEND.md`/`BLUEPRINT.md`/`analyze_playback_outcome.md` —
+  explicitly deferring the classification-gap analysis itself to `aws-access-cli`'s RKH-8 (same identical query, already pointed at from there) rather than duplicating it.
+- **RKH-11** — `knowledge/mtn-sa-cdn-log-correlation-methodology.md`: harvest the submodule's raw CDN-log field reference and MTN network-team escalation criteria from `LEGEND.md`'s "CDN log fields"
+  section and `docs/STATUS.md`, cross-linked to (not duplicating) `knowledge/ctap-smvod-pipeline.md`'s existing content-UUID-matching algorithm pitfalls.
+
 ## Definition of done
 
 - `knowledge/vod-asset-field-mapping.md` states the four-ID-family navigation table and the ADI→API/Mongo field correspondences clearly enough to answer "which OpsHub/HAR/Lightstep/Mongo field does
@@ -92,6 +103,10 @@ call.
   findings without an issue-specific framing baked into the file's stated purpose.
 - `knowledge/mtn-sa-service-correlation-maps.md` exists and its `session-guard` "no edges" gap is cross-linked (not duplicated) to `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`;
   `knowledge/ctap-smvod-pipeline.md` gains a cross-link to the same file plus `knowledge/mtn-sa-lightstep-query-templates.md` for shared `ctap`/`sm-vod` detail.
+- `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md` and `knowledge/mtn-sa-cdn-log-correlation-methodology.md` exist, each preserving `ctap-smvod-session-report`'s own findings
+  (playback-outcome taxonomy, lifecycle/error schema, missing-row methodology, CDN log field semantics, MTN escalation criteria) without duplicating
+  `knowledge/mtn-adoption-playback-outcome-classification-gap.md`'s (RKH-8) classification-gap analysis or `knowledge/ctap-smvod-pipeline.md`'s (RKH-2/RKH-6) content-UUID-matching algorithm pitfalls —
+  link to both instead.
 
 ## Folder backlog
 
@@ -106,7 +121,9 @@ row below): its automation/CLI code stays out of scope, but its dated `docs/2026
 | `applauseInvestigation` | spec'd (RKH-3, RKH-4, RKH-5, RKH-6, RKH-7 not yet executed) | 3 own knowledge files (span attributes, query templates, CSV/household-ID gotchas) split one-per-task,
 RKH-6 porting/cross-linking `mtn-sa-service-correlation-maps.md` and `ctap-smvod-pipeline.md`, and RKH-7 covering the `investigations/` subfolder (Athena bridge keys + HAR Device ID recovery gotcha)
 missed by the first spec pass |
-| `ctap-smvod-session-report` | not started | has `docs/`, `BLUEPRINT.md`, `LEGEND.md`, query catalog — likely overlaps root `knowledge/ctap-smvod-pipeline.md`, check for conflicts before porting |
+| `ctap-smvod-session-report` | spec'd (RKH-10, RKH-11 not yet executed) | has `docs/`, `BLUEPRINT.md`, `LEGEND.md`, query catalog — the root `knowledge/ctap-smvod-pipeline.md` overlap flagged
+below was already fully claimed by RKH-2/RKH-6 (session/CDN-matching-algorithm facts) and `aws-access-cli`'s RKH-8 already reserves a pointer to this folder's identical `playback_outcome`
+classification-gap query, so RKH-10/RKH-11 are scoped to the two remaining un-claimed knowledge domains: playback-outcome/error taxonomy and raw CDN log field semantics |
 | `astro-events-household-report` | not started | has `QUERY_CATALOG.md` + `queries/` — check against root `knowledge/astro-athena-default-tables.md` |
 | `mtn-zm-session-device-investigation` | not started | has `docs/` + tests — check for a matching root `knowledge/mtn-sa-service-correlation-maps.md`-style file |
 | `mtn-network-traffic` | not started | has `docs/` — no obvious root `knowledge/*.md` link yet, may end up a single-task batch |

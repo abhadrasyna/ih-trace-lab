@@ -280,3 +280,85 @@ step 2.
 **Tests:** none — docs-only.
 
 **Commit:** `docs(aws-access-cli-knowledge-harvest): cross-link mtn-athena-unified_e6auj7k7-tables.md to RKH-8`
+
+---
+
+## RKH-10 — `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/ctap-smvod-session-report/` — read-only source, never edited. Three of its own docs, not the root `knowledge/ctap-smvod-pipeline.md` distillation (already
+fully claimed by RKH-2/RKH-6, do not re-touch it here): `LEGEND.md`'s "Playback outcome" + "Error detail + lifecycle" + "Raw `eventdata` schema — `PLAYER_ERROR` events" sections (the
+`playback_outcome` value taxonomy, `state_sequence` lifecycle-string convention, and the nested Shaka-error/`playerstatesnapshot` JSON schema, confirmed against a 48-row 27 Jul 2026 sample);
+`BLUEPRINT.md` Step 4's `APP_KEEPALIVE`-position-in-milliseconds gotcha (this one eventid's `position` field is milliseconds, every other eventid's is seconds — `scripts/merge_session_outcome.py`'s
+`parse_position_seconds()` converts it, but any new ad-hoc query against `e6auj7k7_ccl_debug_events` needs to know this); and `analyze_playback_outcome.md`'s "missing (no `unified_sessions` row)"
+root-cause-investigation methodology plus its `householdId` anomaly-scan gotcha (raw Auth0/social-login identity strings like `google-oauth2|<id>` leaking through instead of a resolved ~52-char opaque
+householdId token, and shared IPs across such anomalous IDs signalling a test/lab rig).
+
+**Scope guard note:** this folder's own `queries/athena_session_outcome.md` §8 documents the **identical unfixed `playback_outcome` `COALESCE` classification query** (and the same
+`INCOMPLETE_NO_DESTROY` ambiguity) that `aws-access-cli`'s not-yet-executed **RKH-8** (`knowledge/mtn-adoption-playback-outcome-classification-gap.md`) already carries a "Related, not yet harvested"
+pointer to. Do not re-derive or duplicate RKH-8's VSF-misclassification gap analysis or its confirmed counts here — this task only states the `playback_outcome` **value taxonomy** as this folder's own
+`LEGEND.md` documents it (a narrower, purely descriptive claim), and leaves a forward pointer noting RKH-8 (once it lands) is where the classification-gap analysis itself belongs.
+
+**Files to change / create:**
+- `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before interpreting a `playback_outcome`/`state_sequence`/`error_codes` value from `unified_e6auj7k7` data, or before writing a new query against
+   `e6auj7k7_ccl_debug_events`'s `PLAYER_ERROR`/`APP_KEEPALIVE` events.
+2. **Port the `playback_outcome` value table as-is** (`DESTROY`/`PLAYER_ERROR`/`EBVS`/`INCOMPLETE_NO_DESTROY`/blank, each with its meaning) and the `outcome_match_status` values, plus one pointer
+   sentence: "the classification query producing these values has a confirmed VSF-misclassification gap — see `knowledge/mtn-adoption-playback-outcome-classification-gap.md` (RKH-8) once it lands, do
+   not duplicate its analysis here."
+3. **Port the `state_sequence` lifecycle-string convention as-is** (chronological arrow-joined states, e.g. `CREATE->BUFFERING->PLAYING->BUFFERING->ERROR(1003)->DESTROY->STOPPED`, errors rendered
+   inline) and the `APP_KEEPALIVE`-position-is-milliseconds gotcha (every other eventid's `position` is seconds), citing `parse_position_seconds()` as the existing conversion point to know about
+   before writing a new one.
+4. **Port the `PLAYER_ERROR` raw `eventdata` schema as-is**: the two-schema-shapes-may-coexist caveat (older flat-string `errordescription` vs. newer nested-object shape), the confirmed
+   `errorcode`-equals-`shakaerror.code` relationship (with the 3/48 string-app-level-code exception), the Shaka `category`/`severity`/`code`/`message` taxonomy table (linking to Shaka's own
+   `shaka.util.Error` API docs rather than re-explaining it), the `playerstatesnapshot` HTML5 `readystate`/`networkstate` enum tables, and the startup-vs-mid-playback-failure distinction they enable
+   for the same `errorcode`.
+5. **Port the "missing (no `unified_sessions` row)" investigation methodology as-is**: split into (a) has-debug-events-but-no-unified_sessions-row vs. (b) no-trace-anywhere; the day-boundary
+   partition-cutoff check; and report-the-mix-not-just-the-percentage framing.
+6. **Port the `householdId` anomaly-scan gotcha as-is**: the ~52-char opaque-token normal format, the Auth0/social-login-string leak pattern, and the shared-IP-across-anomalous-IDs test-rig signal.
+7. **Source line** at the bottom naming the exact submodule path (`ctap-smvod-session-report/{LEGEND.md,BLUEPRINT.md,analyze_playback_outcome.md}`) and the "read-only reference, not a shared codebase"
+   note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(ctap-smvod-session-report-knowledge-harvest): add knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md`
+
+---
+
+## RKH-11 — `knowledge/mtn-sa-cdn-log-correlation-methodology.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/ctap-smvod-session-report/LEGEND.md`'s "CDN log fields" section (`cdnReport/results_sa_*` raw CDN-team exports) — read-only source, never edited. Field
+reference (`timestamp`/`stms`/`ttfb`/`ttms`/`sssc`/`pssc`/`crc`/`bytes`/`url`), cache-hit-vs-origin-fetch interpretation, the `ERR_CLIENT_ABORT` `bytes=0` (benign cancel) vs. `bytes>0` (mid-transfer
+network-instability signal) distinction with Miltos Margaronis's confirmed real-data counts (126/145 vs. 19/145) and reasoning quotes, the fixed ±5-minute analysis-window methodology, the quick
+classification table, and `docs/STATUS.md`'s "MTN network-team escalation criteria (16 Jul 2026)" section (trigger conditions, practical sequence, and its "not yet done" status as of that entry — flag
+this as time-of-writing, not necessarily current).
+
+**Scope guard note:** `knowledge/ctap-smvod-pipeline.md` (RKH-2/RKH-6's output) already covers this same folder's CDN **content-UUID-matching pitfalls** (dense-burst greedy-match bug, shared-IP
+content-UUID disambiguation via manifest-timestamp anchoring) in its §4/§5 — do not re-port that algorithm-level detail here, cross-link to it instead. This task is scoped to the **raw CDN log field
+semantics** (what `sssc`/`crc`/`bytes` mean, how to read one block), which `ctap-smvod-pipeline.md` does not cover at all.
+
+**Files to change / create:**
+- `knowledge/mtn-sa-cdn-log-correlation-methodology.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before interpreting a raw CDN-team access-log export (`cdnReport/results_sa_*`-style, IP + time-window blocks) for a playback-failure investigation, or
+   before deciding whether a failure is network-path, CDN, or origin.
+2. **Port the field reference table as-is** (`timestamp`/`stms`/`ttfb`/`ttms`/`sssc`/`pssc`/`crc`/`bytes`/`url`) and the file-structure note (one block per `(IP, sessionId)` pair, ± 5 min window,
+   zero-data-row blocks are a meaningful finding not a parsing gap).
+3. **Port the interpretation sections as-is**: cache-hit (`sssc=0`) vs. origin-fetch (`sssc!=0`, `stms==ttfb==ttms` tell) with the confirmed `results_sa_20260707` counts (2,321/~2,700 cache hits); the
+   ttfb-vs-ttms-gap interpretation (large gap → slow/large transfer, not slow origin); the zero-CDN-row-block meaning (network issue **before** the CDN, with likely causes list); the
+   `ERR_CLIENT_ABORT` `bytes=0`-vs-`bytes>0` distinction with Miltos's confirmed counts and both reasoning quotes; the ±5-minute-window methodology and its confirmed-exact-match note; and the quick
+   classification table.
+4. **Port the "MTN network-team escalation criteria" section as-is** (trigger conditions a/b/c, practical sequence using `correlate_cdn_ips.py`'s `root_cause_hint`/`mtn_escalation` columns), with an
+   explicit caveat that its "not yet done" status is as recorded in `docs/STATUS.md` on 16 Jul 2026 and may be stale — re-check the submodule's own `docs/STATUS.md` if current escalation status
+   matters.
+5. **Add one cross-link sentence** to `knowledge/ctap-smvod-pipeline.md` §4/§5 (RKH-2/RKH-6's output) for the content-UUID-matching algorithm-level pitfalls (dense-burst, shared-IP disambiguation) —
+   state plainly this file covers raw log-field semantics, that file covers the matching algorithm, no content duplicated between them. Do not edit `ctap-smvod-pipeline.md` itself in this task.
+6. **Source line** at the bottom naming the exact source paths (`ctap-smvod-session-report/LEGEND.md` "CDN log fields" section, `docs/STATUS.md`'s escalation-criteria entry) and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(ctap-smvod-session-report-knowledge-harvest): add knowledge/mtn-sa-cdn-log-correlation-methodology.md`

@@ -4,7 +4,7 @@ Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task
 spec. This list grows: a new `RKH-N` gets appended each time another `github_copilot/*` folder is next up for harvesting — don't assume RKH-1/RKH-2 (the `vod-asset-ingestion-mapping/` batch) is the
 whole story.
 
-**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7, RKH-8, RKH-9.**
+**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7, RKH-8, RKH-9, RKH-10, RKH-11.**
 
 - [ ] **RKH-1** — `knowledge/vod-asset-field-mapping.md`: harvest ID-navigation + field-mapping docs from `vod-asset-ingestion-mapping/` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
   Review: human diff review | SHA: <—>
@@ -28,6 +28,10 @@ whole story.
   | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` (edit): cross-link to RKH-8's new file | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
   <—> | Depends on: RKH-8 (creates the file this task links to)
+- [ ] **RKH-10** — `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md`: harvest `ctap-smvod-session-report/{LEGEND.md,BLUEPRINT.md,analyze_playback_outcome.md}`'s `playback_outcome`/
+  `state_sequence`/`PLAYER_ERROR` error-schema/`householdId`-anomaly findings | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [ ] **RKH-11** — `knowledge/mtn-sa-cdn-log-correlation-methodology.md`: harvest `ctap-smvod-session-report/LEGEND.md`'s "CDN log fields" section + `docs/STATUS.md`'s MTN escalation criteria | Owner:
+  AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 
 ## Story done when
 
@@ -59,6 +63,12 @@ whole story.
   query — without duplicating any SQL belonging to the `query-catalog` story.
 - **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` gains one cross-link sentence to RKH-8's new file near its existing `unified_sessions`/`playback-outcome` mentions, with no other
   content changed and no duplication of RKH-8's findings.
+- **RKH-10** — `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md` exists, preserves the `playback_outcome` value taxonomy, the `state_sequence` lifecycle-string convention and
+  `APP_KEEPALIVE`-position-is-milliseconds gotcha, the `PLAYER_ERROR` raw `eventdata`/Shaka-error/`playerstatesnapshot` schema, the "missing" root-cause methodology, and the `householdId` anomaly-scan
+  gotcha — without duplicating RKH-8's (not-yet-landed) VSF-misclassification gap analysis, which it only forward-points to.
+- **RKH-11** — `knowledge/mtn-sa-cdn-log-correlation-methodology.md` exists, preserves the raw CDN log field reference, cache-hit/origin-fetch and `ERR_CLIENT_ABORT` interpretation, the ±5-minute
+  window methodology, and the MTN escalation criteria (with its "not yet done" status flagged as time-of-writing) — cross-linked to (not duplicating) `knowledge/ctap-smvod-pipeline.md`'s existing
+  content-UUID-matching algorithm pitfalls.
 
 ## After each task
 
