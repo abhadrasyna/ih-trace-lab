@@ -21,10 +21,11 @@
   and 4 duplicated HAR-entry loaders found in `github_copilot`; ports `PYTHON_DESIGN.md`'s DIP/OCP/SRP triggers into `Protocol` skeletons for `athena`, `report_render`, and `har`; adds a cross-project
   script registry generalizing `scratch-script-registry`'s duplicate-check pattern beyond `scratch/`. Not yet implemented — see its `tasks.md` for the first unchecked task (FCT-1). Sibling to
   `project-taxonomy` (categories vs. shared code) and `query-catalog` (SQL text vs. execution code).
-- `docs/plan/vod-asset-knowledge-harvest/` — story: docs-only harvest of `github_copilot`'s `vod-asset-ingestion-mapping/` submodule (VOD asset ADI↔OpsHub↔HAR↔Lightstep↔MongoDB field mapping,
-  ID-navigation cheat sheet) plus the root `knowledge/{vod-asset-ingestion-pipeline,ctap-smvod-pipeline}.md` distillations, into `knowledge/` here — deliberately narrow (one investigation folder +
-  root `knowledge/` only per story; `applauseInvestigation`'s `lightstep-span-attributes-by-service.md` is left as a pointer, not harvested, for its own future story). Not yet implemented — see its
-  `tasks.md` for the first unchecked task (VAK-1).
+- `docs/plan/reference-knowledge-harvest/` — story: the ongoing, docs-only vehicle for harvesting reusable knowledge out of `github_copilot`'s ~13 read-only investigation folders into
+  `ih-trace-lab/knowledge/`, one folder per `RKH-N` task, never bundling folders together. First batch (`RKH-1`/`RKH-2`) covers `vod-asset-ingestion-mapping/` (VOD asset
+  ADI↔OpsHub↔HAR↔Lightstep↔MongoDB field mapping, ID-navigation cheat sheet) plus the root `knowledge/{vod-asset-ingestion-pipeline,ctap-smvod-pipeline}.md` distillations that reference it;
+  `applauseInvestigation`'s `lightstep-span-attributes-by-service.md` is left as a pointer, not harvested, for a future `RKH-N` task. Not yet implemented — see its `tasks.md` for the first unchecked
+  task (RKH-1).
 
 ## Key Decisions
 

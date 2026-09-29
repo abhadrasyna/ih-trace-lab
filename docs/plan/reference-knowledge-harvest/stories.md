@@ -1,6 +1,8 @@
-# Vod asset knowledge harvest — per-task specs
+# Reference knowledge harvest — per-task specs
 
-## VAK-1 — `knowledge/vod-asset-field-mapping.md`
+> Task specs are appended per `RKH-N`, one per `github_copilot/*` source folder harvested. RKH-1/RKH-2 below are the first batch, scoped to `vod-asset-ingestion-mapping/`.
+
+## RKH-1 — `knowledge/vod-asset-field-mapping.md`
 
 **Grounding:** `vod-asset-ingestion-mapping/docs/opshub-asset-id-mapping.md` (ID navigation), `docs/ctap-query-mapping.md` (ADI→API field table, incl. §5 series fields), `docs/mongodb-mapping.md`
 (API/ADI→Mongo), and `data/opshubs/common-field-mapping-overview.md`/`-details.md` (the auto-generated, value-matched, per-Asset-Class matrix across OpsHub Assets/Status, `contentInstances`, Lightstep
@@ -33,7 +35,7 @@
 
 ---
 
-## VAK-2 — `knowledge/vod-asset-ingestion-pipeline.md` + `knowledge/ctap-smvod-pipeline.md`
+## RKH-2 — `knowledge/vod-asset-ingestion-pipeline.md` + `knowledge/ctap-smvod-pipeline.md`
 
 **Grounding:** `/Users/abhadra/github_copilot/knowledge/vod-asset-ingestion-pipeline.md` and `/Users/abhadra/github_copilot/knowledge/ctap-smvod-pipeline.md` — both read-only sources, never edited.
 The former's "Open gap" section is stale: it states the ADI→MongoDB→CTAP chain "has not yet been mapped at the MongoDB layer", but `vod-asset-ingestion-mapping/docs/STATUS.md`'s "2026-08-31 (series,
@@ -48,14 +50,14 @@ not the stale claim.
 
 1. **Port `vod-asset-ingestion-pipeline.md` largely as-is** (its "Distilled facts" section holds up — Content ID vs. Package Asset ID, ADI-is-the-source/API-is-curated-subset, duration precision,
    `X_Break_Position`, resume-position-is-session-not-ADI-content) but:
-   - Replace the "Open gap" section with a short "Status" note: MongoDB layer mapping is done (link to VAK-1's `knowledge/vod-asset-field-mapping.md` and to
+   - Replace the "Open gap" section with a short "Status" note: MongoDB layer mapping is done (link to RKH-1's `knowledge/vod-asset-field-mapping.md` and to
      `vod-asset-ingestion-mapping/docs/STATUS.md`'s stage-6 entry); the one remaining open item across both tracked assets (TAAMA movie, `TIME_47_0001400000` series episode) is the DRM/mDRM Lightstep
      layer, not yet captured for either.
    - Add a **"Related, not yet harvested"** callout pointing to `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md` — one sentence stating what it is (per-service Lightstep
      tag/attribute reference, covers `ctap`/`sm-vod`/`session-guard` among 9 services) and that it is deferred to a future `applauseInvestigation`-scoped harvest story, noting that story should also
      extend it with the 4 services (`vodcontent-get`, `favm`, `viewinghistory-viewing-history`, `tstv-capture-bc`) only seen in this submodule's own trace JSONs, not in that file today. Do not
      summarize or copy that file's contents here — pointer only.
-   - Replace the "Distilled facts" links that currently point at `vod-asset-ingestion-mapping/docs/*.md` sub-paths with a single link to VAK-1's `knowledge/vod-asset-field-mapping.md` where the
+   - Replace the "Distilled facts" links that currently point at `vod-asset-ingestion-mapping/docs/*.md` sub-paths with a single link to RKH-1's `knowledge/vod-asset-field-mapping.md` where the
      content now duplicates it, to avoid two knowledge files each claiming to be the field-mapping reference.
 2. **Port `ctap-smvod-pipeline.md` as-is** (session/CDN correlation facts — `sessionId`/`abr-vod-<uuid>` join key, Athena `unified_sessions`/`e6auj7k7_ccl_debug_events` tables, CDN content-UUID
    location on the SM-VOD `streamingSession` span, dense-burst/shared-IP CDN matching pitfalls, §6 process conventions) — this file's content is not stale and is directly relevant since it shares the
