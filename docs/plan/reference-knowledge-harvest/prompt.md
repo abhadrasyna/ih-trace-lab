@@ -54,11 +54,19 @@ call.
 
 ## Task overview
 
-**This batch (`vod-asset-ingestion-mapping/`):**
+**Batch 1 (`vod-asset-ingestion-mapping/`):**
 - **RKH-1** — `knowledge/vod-asset-field-mapping.md`: harvest the submodule's own docs (ID-navigation table + ADI→API→Mongo field tables + the auto-generated common-field-mapping matrix summary) into
   one distilled, ih-trace-lab-native knowledge file.
 - **RKH-2** — `knowledge/vod-asset-ingestion-pipeline.md` + `knowledge/ctap-smvod-pipeline.md`: port both root `github_copilot/knowledge/` distillations, correct the stale MongoDB-gap claim,
   cross-link to RKH-1's output, and add the explicit "not yet harvested" pointer to `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md`.
+
+**Batch 2 (`applauseInvestigation/`):**
+- **RKH-3** — `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`: harvest the submodule's per-service Lightstep tag/attribute reference as-is, generalized beyond its single-issue framing, with
+  a "not yet covered" note for the 4 services named in `mtn-sa-service-correlation-maps.md`'s call graph.
+- **RKH-4** — `knowledge/mtn-sa-lightstep-query-templates.md`: harvest the submodule's generic reusable Lightstep query shapes, cross-linked to RKH-3 for tag names instead of repeating them.
+- **RKH-5** — `knowledge/applause-csv-household-id-gotchas.md`: harvest the submodule's two Household-ID/Device-ID CSV data-quality findings as-is.
+- **RKH-6** — `knowledge/mtn-sa-service-correlation-maps.md` (new) + `knowledge/ctap-smvod-pipeline.md` (edit, depends on RKH-2/RKH-3 landing first): port the root service-correlation-maps
+  distillation and cross-link its `session-guard` "no edges" gap to RKH-3's detailed findings; cross-link `ctap-smvod-pipeline.md`'s shared `ctap`/`sm-vod` join-key facts to RKH-3/RKH-4.
 
 ## Definition of done
 
@@ -67,6 +75,10 @@ call.
 - `knowledge/vod-asset-ingestion-pipeline.md` and `knowledge/ctap-smvod-pipeline.md` exist in `ih-trace-lab`, matching the source distillations but with the MongoDB-gap claim corrected and a
   cross-link to `knowledge/vod-asset-field-mapping.md` (no duplicated field tables between the three files — link, don't repeat).
 - `knowledge/vod-asset-ingestion-pipeline.md` carries one clearly-flagged "Related, not yet harvested" pointer to `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md`.
+- `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`, `knowledge/mtn-sa-lightstep-query-templates.md`, and `knowledge/applause-csv-household-id-gotchas.md` exist, each preserving its source's
+  findings without an issue-specific framing baked into the file's stated purpose.
+- `knowledge/mtn-sa-service-correlation-maps.md` exists and its `session-guard` "no edges" gap is cross-linked (not duplicated) to `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`;
+  `knowledge/ctap-smvod-pipeline.md` gains a cross-link to the same file plus `knowledge/mtn-sa-lightstep-query-templates.md` for shared `ctap`/`sm-vod` detail.
 
 ## Folder backlog
 
@@ -77,7 +89,8 @@ Tracks every `github_copilot/*` candidate folder this story could eventually cov
 | Folder | Status | Notes |
 | --- | --- | --- |
 | `vod-asset-ingestion-mapping` | spec'd (RKH-1, RKH-2 not yet executed) | first batch |
-| `applauseInvestigation` | not started | holds `knowledge/lightstep-span-attributes-by-service.md`; RKH-1/RKH-2 left a pointer — that becomes this folder's cross-check when spec'ing |
+| `applauseInvestigation` | spec'd (RKH-3, RKH-4, RKH-5, RKH-6 not yet executed) | 3 own knowledge files (span attributes, query templates, CSV/household-ID gotchas) split one-per-task, plus RKH-6
+porting/cross-linking `mtn-sa-service-correlation-maps.md` and `ctap-smvod-pipeline.md`, which share span/field names with it |
 | `ctap-smvod-session-report` | not started | has `docs/`, `BLUEPRINT.md`, `LEGEND.md`, query catalog — likely overlaps root `knowledge/ctap-smvod-pipeline.md`, check for conflicts before porting |
 | `astro-events-household-report` | not started | has `QUERY_CATALOG.md` + `queries/` — check against root `knowledge/astro-athena-default-tables.md` |
 | `mtn-zm-session-device-investigation` | not started | has `docs/` + tests — check for a matching root `knowledge/mtn-sa-service-correlation-maps.md`-style file |

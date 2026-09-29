@@ -68,3 +68,115 @@ not the stale claim.
 **Tests:** none — docs-only.
 
 **Commit:** `docs(vod-asset-knowledge-harvest): port + correct vod-asset-ingestion-pipeline.md and ctap-smvod-pipeline.md`
+
+---
+
+## RKH-3 — `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md` — read-only source, never edited. Built against `mcs-go-prod-iye9omdf-eu` (MTN
+SA, EU) via `get_stored_trace` across 9 services (universal fields, `FCID`/`deviceType` near-universal-but-inconsistent shapes, `session-guard`, `sm-vod`, `sm-linear`/`sm-tstv`, `ctap`,
+`channellineup`, `households-api`/`households-core`/`households-transformer`/`households-notifications-generator`, known noise, group-by recommendations).
+
+**Files to change / create:**
+- `knowledge/mtn-sa-lightstep-span-attributes-by-service.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header**, same convention as other root `knowledge/*.md` files: consult this before writing any Lightstep `query_spans`/`query_timeseries` filter or `group_by` against
+   `mcs-go-prod-iye9omdf-eu`, to know which tag name/casing each service actually uses.
+2. **Port every section as-is** — universal fields, the `FCID`/`deviceType`/`http.user_agent` near-universal-but-inconsistent-shape caveats, and each service-specific section (`session-guard`'s
+   snake_case casing + near-zero span duration + `http.request_time`/`http.upstream_response_time` real-timing tags; `sm-vod`'s `sessionId`/`contentId` formats and `session.result` pass/fail signal;
+   `sm-linear`/`sm-tstv`'s failure signature; `ctap`'s `sessionInfo.*` prefix and cross-tenant OR-filter caution; `channellineup`/`households-*`). Preserve the "known noise" (Kinesis
+   `ResourceNotFoundException`, `deviceType=PC` unreliability) and "group-by field recommendations" sections.
+3. **Generalize the framing** — the source opens with "gathered while investigating Applause issue 7231547"; keep that as source attribution at the bottom, not as the file's stated purpose (this
+   file's purpose is now the general per-service tag reference, reusable across any MTN SA issue, matching this workspace's non-issue-scoped `knowledge/` convention).
+4. **Add one "Not yet covered" note** listing the 4 services named in `knowledge/mtn-sa-service-correlation-maps.md`'s call-graph (`vodcontent-get`, `favm`, `viewinghistory-viewing-history`,
+   `tstv-capture-bc`) as services with no tag-level entry here yet — state explicitly that filling this in from `vod-asset-ingestion-mapping/`'s own trace JSONs is out of scope for this task (scope
+   guard: one source folder per task) and left for a future task if that submodule is ever revisited for this purpose. Do not open or read that submodule's trace files in this task.
+5. **Source line** at the bottom naming the exact submodule path and "read-only reference, not a shared codebase" note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(applause-knowledge-harvest): add knowledge/mtn-sa-lightstep-span-attributes-by-service.md`
+
+---
+
+## RKH-4 — `knowledge/mtn-sa-lightstep-query-templates.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/applauseInvestigation/knowledge/lightstep-query-templates.md` — read-only source, never edited. Generic reusable Lightstep query shapes for
+`mcs-go-prod-iye9omdf-eu`: "Big Picture" cross-service overview, sm-vod Session Inventory, latency templates (CTAP route percentiles, cross-service latency, playsessions latency isolation, exact FCID
+trace-pull), session-guard request-vs-upstream, and go-mdrmfe EU latency.
+
+**Files to change / create:**
+- `knowledge/mtn-sa-lightstep-query-templates.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before writing a new Lightstep TQL query for an MTN SA investigation, to reuse an established shape instead of guessing syntax.
+2. **Port every template as-is**, preserving each template's purpose note, exact TQL, tool name (`query_timeseries`/`query_spans`/`get_stored_trace`), any confirmed-finding example numbers (they're
+   evidence the syntax actually works, not just a hypothetical), and the "save exports as" path convention (kept as a documented convention, not as an instruction to create those directories here).
+3. **Replace the source's own internal cross-link** (`knowledge/lightstep-span-attributes-by-service.md`, relative to the submodule) with a link to `knowledge/mtn-sa-lightstep-span-attributes-by-
+   service.md` (RKH-3's output) — don't repeat which services expose which tag names here, link out.
+4. **Source line** at the bottom naming the exact submodule path and read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(applause-knowledge-harvest): add knowledge/mtn-sa-lightstep-query-templates.md`
+
+---
+
+## RKH-5 — `knowledge/applause-csv-household-id-gotchas.md`
+
+**Grounding:** `/Users/abhadra/github_copilot/applauseInvestigation/knowledge/applause-csv-household-id-gotchas.md` — read-only source, never edited. Two data-quality findings from the MTN SA
+Household/Device ID scheme: (1) a ticket's `Household ID` CSV column can actually contain the Device ID, space-split; (2) Household ID prefix similarity (even 42/53 characters matching) is not a
+same-household signal.
+
+**Files to change / create:**
+- `knowledge/applause-csv-household-id-gotchas.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before trusting any `Household ID`/`Device ID` field from an Applause-style CSV export at face value, or before inferring "same household" from a partial
+   string match.
+2. **Port both findings as-is**, preserving the confirmed example values (the two-token CSV field that concatenates to an exact Device ID match; the 42-character shared prefix confirmed to be a
+   different household) and each finding's "Action" guidance sentence.
+3. **Source line** at the bottom naming the exact submodule path, the original issue numbers (7231859, 7232657, 7232351) as provenance, and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(applause-knowledge-harvest): add knowledge/applause-csv-household-id-gotchas.md`
+
+---
+
+## RKH-6 — `knowledge/mtn-sa-service-correlation-maps.md` (new) + `knowledge/ctap-smvod-pipeline.md` (edit)
+
+**Depends on:** RKH-2 (must have already created `knowledge/ctap-smvod-pipeline.md`) and RKH-3 (must have already created `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`) — do this task
+after both, not before.
+
+**Grounding:** `/Users/abhadra/github_copilot/knowledge/mtn-sa-service-correlation-maps.md` — read-only source, never edited. A Lightstep service-diagram-derived call-graph for all three MTN SA
+production projects (GO/IH, Matisse, mDRM). Its §3/§4 lists `session-guard` among ~69 services with no captured call-graph edges ("client/gateway-invoked leaf... invisible to this method") without
+further detail — `applauseInvestigation`'s span-attributes file (RKH-3) has the actual detailed `session-guard` tag/latency findings (edge reverse-proxy in front of CTAP, snake_case tags, near-zero
+span duration, real timing in `http.request_time`/`http.upstream_response_time`) that this gap-listing didn't have access to. Also grounded in `knowledge/ctap-smvod-pipeline.md` (RKH-2's output) §2/§4
+which document the same `ctap`/`sm-vod` `sessionId`/`contentId` join-key formats independently confirmed in `applauseInvestigation`'s span-attributes file — cross-check both for conflicts before
+cross-linking (none found as of this spec: both describe `sessionId` = `abr-vod-<uuid>` and CTAP-internal `contentId` in the `<uuid>~WLDP_WLDP<digits>` family, consistently).
+
+**Files to change / create:**
+- `knowledge/mtn-sa-service-correlation-maps.md` — new file (port of the root distillation)
+- `knowledge/ctap-smvod-pipeline.md` — edit (created by RKH-2; add a cross-link, do not otherwise restructure)
+
+**What to implement:**
+
+1. **Port `mtn-sa-service-correlation-maps.md` largely as-is** (§1 method, §2 platform inventory, §3 observed correlation graph, §4 coverage-gap table, §5 regenerating/extending, §6 Matisse, §7 mDRM)
+   — this file is not stale, no factual correction needed.
+2. **Annotate the `session-guard` mention in §4's coverage-gap table** with a footnote/inline link to `knowledge/mtn-sa-lightstep-span-attributes-by-service.md` (RKH-3) stating that although this
+   method shows no call-graph edge for `session-guard`, its actual request/tag-level behavior (edge reverse-proxy in front of CTAP, real timing fields) is documented there — don't duplicate that
+   detail here, link only.
+3. **Edit `knowledge/ctap-smvod-pipeline.md`** (RKH-2's output) to add one cross-link sentence in its §2 (`sessionId` join key) and/or §4 (CDN content-UUID on the SM-VOD span) pointing to
+   `knowledge/mtn-sa-lightstep-span-attributes-by-service.md` (RKH-3) and `knowledge/mtn-sa-lightstep-query-templates.md` (RKH-4) for the full per-service tag reference and query shapes — no table
+   duplication, no restructure of the rest of the file.
+4. **Source line** at the bottom of the new file naming the exact root `github_copilot/knowledge/` path and read-only note; update `ctap-smvod-pipeline.md`'s existing source footer to note the added
+   cross-link, not a re-harvest.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(applause-knowledge-harvest): add knowledge/mtn-sa-service-correlation-maps.md, cross-link ctap-smvod-pipeline.md`
