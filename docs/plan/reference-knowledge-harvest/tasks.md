@@ -4,7 +4,7 @@ Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task
 spec. This list grows: a new `RKH-N` gets appended each time another `github_copilot/*` folder is next up for harvesting — don't assume RKH-1/RKH-2 (the `vod-asset-ingestion-mapping/` batch) is the
 whole story.
 
-**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6.**
+**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7.**
 
 - [ ] **RKH-1** — `knowledge/vod-asset-field-mapping.md`: harvest ID-navigation + field-mapping docs from `vod-asset-ingestion-mapping/` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
   Review: human diff review | SHA: <—>
@@ -20,6 +20,9 @@ whole story.
 - [ ] **RKH-6** — `knowledge/mtn-sa-service-correlation-maps.md` (new) + `knowledge/ctap-smvod-pipeline.md` (edit): port + cross-link root distillations that share span/field names with
   `applauseInvestigation` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—> | Depends on: RKH-2 (creates `ctap-smvod-pipeline.md`), RKH-3 (creates the
   span-attributes file this task cross-links to)
+- [ ] **RKH-7** — `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`: harvest `applauseInvestigation/investigations/queries/QUERY_CATALOG.md`'s "Known bridge keys" section + the HAR-derived Device
+  ID recovery gotcha from `applauseInvestigation/investigations/docs/*.md` — the `investigations/` subfolder missed by the RKH-3–6 spec pass | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
+  Review: human diff review | SHA: <—>
 
 ## Story done when
 
@@ -41,6 +44,10 @@ whole story.
 - **RKH-6** — `knowledge/mtn-sa-service-correlation-maps.md` exists in `ih-trace-lab` (ported from the root distillation), its §4 "no edges" `session-guard` entry is annotated with a cross-link to
   RKH-3's detailed session-guard findings instead of listing it as unexplained, and `knowledge/ctap-smvod-pipeline.md` (created by RKH-2) gains a cross-link to RKH-3/RKH-4 for `ctap`/`sm-vod` tag- and
   query-level detail — no field-table duplication introduced between the three files.
+- **RKH-7** — `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md` exists, preserves the `unified_sessions`/`e6auj7k7_ccl_debug_events` bridge-key/schema semantics from `QUERY_CATALOG.md`'s "Known
+  bridge keys" section, adds the HAR-derived Device ID recovery gotcha (citing 7231547/7231763/7231859) and the cross-tenant Household ID collision caution (citing 7231547), states the SQL query
+  shapes themselves are out of scope (pointing to the `query-catalog` story's QC-2 output instead, no duplication), and leaves `investigations/docs/*.md`'s remaining case write-ups and
+  `investigations/README.md`'s folder-org convention untouched as out of scope.
 
 ## After each task
 

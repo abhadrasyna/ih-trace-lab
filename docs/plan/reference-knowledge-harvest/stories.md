@@ -180,3 +180,42 @@ cross-linking (none found as of this spec: both describe `sessionId` = `abr-vod-
 **Tests:** none — docs-only.
 
 **Commit:** `docs(applause-knowledge-harvest): add knowledge/mtn-sa-service-correlation-maps.md, cross-link ctap-smvod-pipeline.md`
+
+---
+
+## RKH-7 — `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`
+
+**Grounding:** two read-only sources inside `applauseInvestigation/investigations/` (missed by the RKH-3–6 spec pass, which only inventoried `applauseInvestigation/knowledge/*.md`):
+- `/Users/abhadra/github_copilot/applauseInvestigation/investigations/queries/QUERY_CATALOG.md`'s **"Known bridge keys"** section — prose schema/field semantics for `unified_e6auj7k7.unified_sessions`
+  (`parent_session_id` = `sessionId`, `user_id` = Household ID, `device_id` = Device ID, `endreason` on the `event_type = 'PLAY'` row = the real playback outcome) and
+  `unified_e6auj7k7.e6auj7k7_ccl_debug_events` (`eventid = 'PLAYER_ERROR'` rows carry `errorcode`/`errordescription` not present on `unified_sessions`; no first-class `device_id` column, so `clientid`
+  must be split client-side as `<deviceId>:<householdId>` — the split-index convention itself is flagged in the source as unreconciled per `ctap-smvod-session-report`'s notes).
+- `/Users/abhadra/github_copilot/applauseInvestigation/investigations/docs/{7231547-android-secure-decoder-failure,7231763-android-resume-watching-latency,7231859-android-micro-drama-e7504}.md` —
+  three independent issues where Device ID was missing from the Applause ticket/CSV export and was instead recovered from the HAR's CDN MPD URL `deviceId` query param, confirmed against an
+  independently-supplied Household ID. Also `7231547`'s note that a loose OR filter across household/device IDs surfaced a row belonging to an unrelated household/tenant during exploration
+  (`11de5f09da8b5fe22a8497dae6001fbb488529799167a12e489c9e53d84ac4d2`), never used in a real scoped query.
+
+**Out of scope for this task:** the SQL query text itself (the `unified_sessions` full-day dump, the `debug_events` PLAYER-class dump, the SAST→UTC timestamp-correlation technique) is already slated
+for harvest by the separate `query-catalog` story's QC-2 task (`queries/athena/`, sourced from this same `QUERY_CATALOG.md` among 3 total). This file states schema/field **semantics and gotchas only**
+— do not port or repeat SQL blocks here, to avoid duplicating QC-2's job. The rest of `investigations/` (`docs/*.md` case write-ups beyond the one gotcha above, `README.md`'s folder-org convention,
+gitignored `data/`) stays out of scope — case docs and folder conventions aren't reusable domain knowledge for this story.
+
+**Files to change / create:**
+- `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before writing a new Athena query against `unified_e6auj7k7` tables for an MTN SA case, or before trusting a ticket's Household ID/Device ID fields at
+   face value.
+2. **Port the "Known bridge keys" bullets as-is**: the `unified_sessions` join-key/outcome semantics, the `e6auj7k7_ccl_debug_events` PLAYER_ERROR-detail semantics, and the `clientid` split-convention
+   caveat (state it as an open/unreconciled gotcha, don't resolve it here).
+3. **Add the HAR-derived Device ID recovery gotcha**, citing all three confirming issue numbers (7231547, 7231763, 7231859) as provenance.
+4. **Add the cross-tenant Household ID collision caution**, citing 7231547 as the confirmed example, with an "Action" sentence (always scope Athena queries to both Household ID and Device ID together,
+   never one alone via a loose OR).
+5. **One clearly-labeled pointer** to the `query-catalog` story's `queries/athena/` output for the actual SQL shapes referenced by these bridge keys (once that story lands) — don't wait on it, just
+   note it as related.
+6. **Source line** at the bottom naming both exact source paths (the `QUERY_CATALOG.md` bridge-keys section; the three `investigations/docs/*.md` files) and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(applause-knowledge-harvest): add knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`

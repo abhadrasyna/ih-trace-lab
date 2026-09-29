@@ -51,6 +51,10 @@ call.
   edit).
 - `/Users/abhadra/github_copilot/knowledge/vod-asset-ingestion-pipeline.md`, `/Users/abhadra/github_copilot/knowledge/ctap-smvod-pipeline.md` — the two root-level distillations being harvested
   (read-only source, do not edit).
+- `/Users/abhadra/github_copilot/applauseInvestigation/investigations/queries/QUERY_CATALOG.md` — read only its "Known bridge keys" section for RKH-7; its SQL blocks belong to the separate
+  `query-catalog` story, not this one (read-only source, do not edit).
+- `/Users/abhadra/github_copilot/applauseInvestigation/investigations/docs/{7231547-android-secure-decoder-failure,7231763-android-resume-watching-latency,7231859-android-micro-drama-e7504}.md` — the
+  three issues confirming RKH-7's HAR-derived Device ID recovery gotcha (read-only source, do not edit).
 
 ## Task overview
 
@@ -67,6 +71,9 @@ call.
 - **RKH-5** — `knowledge/applause-csv-household-id-gotchas.md`: harvest the submodule's two Household-ID/Device-ID CSV data-quality findings as-is.
 - **RKH-6** — `knowledge/mtn-sa-service-correlation-maps.md` (new) + `knowledge/ctap-smvod-pipeline.md` (edit, depends on RKH-2/RKH-3 landing first): port the root service-correlation-maps
   distillation and cross-link its `session-guard` "no edges" gap to RKH-3's detailed findings; cross-link `ctap-smvod-pipeline.md`'s shared `ctap`/`sm-vod` join-key facts to RKH-3/RKH-4.
+- **RKH-7** — `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`: harvest the submodule's `investigations/` subfolder (missed by the RKH-3–6 spec pass) — the Athena `unified_sessions`/
+  `e6auj7k7_ccl_debug_events` bridge-key semantics from `investigations/queries/QUERY_CATALOG.md`, plus the HAR-derived Device ID recovery gotcha and cross-tenant Household ID collision caution from
+  `investigations/docs/*.md`; the SQL query shapes themselves are left to the separate `query-catalog` story's QC-2 task, not duplicated here.
 
 ## Definition of done
 
@@ -89,8 +96,9 @@ Tracks every `github_copilot/*` candidate folder this story could eventually cov
 | Folder | Status | Notes |
 | --- | --- | --- |
 | `vod-asset-ingestion-mapping` | spec'd (RKH-1, RKH-2 not yet executed) | first batch |
-| `applauseInvestigation` | spec'd (RKH-3, RKH-4, RKH-5, RKH-6 not yet executed) | 3 own knowledge files (span attributes, query templates, CSV/household-ID gotchas) split one-per-task, plus RKH-6
-porting/cross-linking `mtn-sa-service-correlation-maps.md` and `ctap-smvod-pipeline.md`, which share span/field names with it |
+| `applauseInvestigation` | spec'd (RKH-3, RKH-4, RKH-5, RKH-6, RKH-7 not yet executed) | 3 own knowledge files (span attributes, query templates, CSV/household-ID gotchas) split one-per-task,
+RKH-6 porting/cross-linking `mtn-sa-service-correlation-maps.md` and `ctap-smvod-pipeline.md`, and RKH-7 covering the `investigations/` subfolder (Athena bridge keys + HAR Device ID recovery gotcha)
+missed by the first spec pass |
 | `ctap-smvod-session-report` | not started | has `docs/`, `BLUEPRINT.md`, `LEGEND.md`, query catalog — likely overlaps root `knowledge/ctap-smvod-pipeline.md`, check for conflicts before porting |
 | `astro-events-household-report` | not started | has `QUERY_CATALOG.md` + `queries/` — check against root `knowledge/astro-athena-default-tables.md` |
 | `mtn-zm-session-device-investigation` | not started | has `docs/` + tests — check for a matching root `knowledge/mtn-sa-service-correlation-maps.md`-style file |
