@@ -8,7 +8,8 @@
 - [ ] `tenant-registry` — canonical MTN tenant config + resolver. Blocks `query-catalog` QC-4 (Athena DDL-cache needs live tenant resolution).
 - [ ] `project-taxonomy` — category definitions, folder skeletons, `config/data_paths.yaml`. Blocks `pipeline-migration` (PT-1/2/6/7).
 - [ ] `functional-code-taxonomy` — `src/lib/*` module map + `Protocol` skeletons. Blocks `src-lib-migration` (FCT-1/2/7).
-- [ ] `scratch-script-registry` — `SCRIPTS.md` generator + promotion CLI. No dependents among the stories below; independent.
+- [ ] `scratch-script-registry` — `SCRIPTS.md` generator + promotion CLI. In progress: SSR-1 done, SSR-2 next. No dependents among the stories below; independent.
+  - 2026-09-30: SSR-1 landed `scripts/dev/generate_scripts_registry.py`; root `SCRIPTS.md` remains intentionally deferred to SSR-7.
 - [ ] `reference-knowledge-harvest` — ongoing docs-only harvest from `github_copilot`. No dependents among the stories below; independent, can run indefinitely in parallel.
 
 ## Phase 1 — Query catalog
