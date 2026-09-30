@@ -1,0 +1,25 @@
+opcos:
+  - code: SA
+    name: South Africa
+    go_id: iye9omdf
+    lightstep_project: mcs-go-prod-iye9omdf-eu
+    lightstep_region: EU
+    shared_project: false
+    disambiguation_attribute: null
+    matisse_project_id: 1z5vo5g2
+    matisse_client_tenant_id: rxviifsu
+    athena_tenant_id: e6auj7k7
+    athena_profile: clarissa-insights-product
+    athena_region: eu-central-1
+  - code: GH
+    name: Ghana
+    go_id: apbyfj9d
+    lightstep_project: mcs-go-prod-mtn-1-eu
+    lightstep_region: EU
+    shared_project: true
+    disambiguation_attribute: sessionInfo.busUnitId
+    matisse_project_id: 0800cgn3
+    matisse_client_tenant_id: hkq8wgfy
+    athena_tenant_id: is1aldzq
+    athena_profile: clarissa-insights-product
+    athena_region: eu-central-1

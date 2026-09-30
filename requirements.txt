@@ -1,2 +1,3 @@
 # Runtime dependencies, pinned. Add entries as the project actually needs them —
 # this starts empty; do not pre-populate speculatively.
+PyYAML==6.0.1

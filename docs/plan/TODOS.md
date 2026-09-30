@@ -5,7 +5,13 @@
 
 ## Phase 0 — Foundation (no blocking dependencies, parallelizable)
 
-- [ ] `tenant-registry` — canonical MTN tenant config + resolver. Blocks `query-catalog` QC-4 (Athena DDL-cache needs live tenant resolution).
+- [x] `tenant-registry` — canonical MTN tenant config + resolver. Unblocks `query-catalog` QC-4's live tenant resolution dependency.
+  - 2026-09-30: TR-1 landed in `2140cc8`; the scratch probe recorded dedicated vs shared Lightstep resolution and the human-confirmed MCP results.
+  - 2026-09-30: TR-2 landed in `78880e5`; `config/tenants.yaml` is now the canonical MTN tenant registry for the four confirmed opcos.
+  - 2026-09-30: TR-3 landed in `7ad3b7d`; `src/tenant_registry/` now loads YAML-backed tenant configs and builds per-system query contexts.
+  - 2026-09-30: TR-4 landed in `77a6e79`; `scripts/resolve_tenant.py` now resolves any known id to Lightstep, Matisse, or Athena JSON context.
+  - 2026-09-30: TR-5 landed in `14aa88b`; the CLI-first tenant-resolution protocol is now documented and enforced from `AGENTS.md`.
+  - 2026-09-30: TR-6 landed in `ea62e1e`; pytest now covers registry lookup, shared-project guards, query targets, and the CLI.
 - [x] `project-taxonomy` — category definitions, folder skeletons, `config/data_paths.yaml`. Blocks `pipeline-migration` (PT-1/2/6/7).
   - 2026-09-30: PT-1 through PT-8 landed (`5e2abfd`..`e3fa1e2`, bookkeeping `5147979`), merged to `main` in `299e8a4`.
 - [ ] `functional-code-taxonomy` — `src/lib/*` module map + `Protocol` skeletons. Blocks `src-lib-migration` (FCT-1/2/7).
@@ -38,7 +44,7 @@
 
 ## Phase 1 — Query catalog
 
-- [ ] `query-catalog` — QC-1/2/3/5/6 have no dependency; QC-4 (DDL-cache) waits on `tenant-registry` landing.
+- [ ] `query-catalog` — QC-1/2/3/5/6 have no dependency; QC-4's former `tenant-registry` blocker is now satisfied.
 
 ## Phase 2 — Reference diagrams (of the *original* `github_copilot` code)
 
