@@ -44,7 +44,7 @@ class PathConfig:
         payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         templates = payload.get("templates")
         if not isinstance(templates, dict):
-            raise ValueError("config/data_paths.yaml must define a templates mapping")
+            raise TypeError("config/data_paths.yaml must define a templates mapping")
 
         missing_root_keys = [key for key in ("data_root", "knowledge_root", "investigations_root", "tools", "filename_date_format") if key not in payload]
         if missing_root_keys:
@@ -156,7 +156,7 @@ class YamlPathResolver(PathResolver):
 
     def _validate_tool(self, tool: Any) -> str:
         if not isinstance(tool, str):
-            raise ValueError("tool must be a string")
+            raise TypeError("tool must be a string")
         if tool not in self._config.tools:
             raise ValueError(f"unknown tool {tool!r}; expected one of {self._config.tools}")
         self._reject_traversal("tool", tool)
@@ -164,7 +164,7 @@ class YamlPathResolver(PathResolver):
 
     def _validate_path_segment(self, name: str, value: Any) -> str:
         if not isinstance(value, str):
-            raise ValueError(f"{name} must be a string")
+            raise TypeError(f"{name} must be a string")
         self._reject_traversal(name, value)
         return value
 

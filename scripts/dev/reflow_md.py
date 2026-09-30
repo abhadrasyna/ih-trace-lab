@@ -114,9 +114,7 @@ def _is_structural(line: str, base_indent: str = "") -> bool:
     if stripped.startswith("|"):
         return True
     remainder = line.removeprefix(base_indent)
-    if _INDENTED_CODE_RE.match(remainder):
-        return True
-    return False
+    return bool(_INDENTED_CODE_RE.match(remainder))
 
 
 def _reflow_list_item(lines: list[str], start: int, width: int) -> tuple[list[str], int]:

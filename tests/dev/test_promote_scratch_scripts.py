@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import subprocess
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -22,7 +22,7 @@ def _init_git_repo(root: Path) -> None:
 
 
 def _dated_name(days_ago: int, slug: str) -> str:
-    stamp = (date.today() - timedelta(days=days_ago)).isoformat()
+    stamp = (datetime.now(timezone.utc).date() - timedelta(days=days_ago)).isoformat()
     return f"{stamp}_{slug}.py"
 
 

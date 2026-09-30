@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 import subprocess
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 if __package__ in (None, ""):
@@ -38,7 +38,7 @@ def find_promotion_candidates(scratch_dir: Path, min_age_days: int) -> list[Path
     if min_age_days < 0:
         raise ValueError("min_age_days must be >= 0")
 
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
     candidates: list[tuple[date, Path]] = []
     for relative_path in find_scripts(scratch_dir.parent, scratch_dir.name):
         script_path = scratch_dir.parent / relative_path

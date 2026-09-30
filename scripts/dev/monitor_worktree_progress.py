@@ -27,7 +27,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 CHECKBOX_RE = re.compile(r"^-\s*\[( |x|X)\]\s*\*\*([A-Za-z0-9_-]+)\*\*")
@@ -120,7 +120,7 @@ def check_story(story: str, worktree_root: Path, plan_root: Path) -> Snapshot | 
     done, pending = parse_tasks_file(worktree / plan_root / story / TASKS_FILE_NAME)
     return Snapshot(
         story=story,
-        timestamp=datetime.now().isoformat(timespec="seconds"),
+        timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         head_sha=sha,
         head_subject=subject,
         dirty=bool(dirty_files),
@@ -199,7 +199,7 @@ def main() -> int:
                 snap = check_story(story, args.worktree_root, args.plan_root)
                 if snap is None:
                     reason = describe_missing_worktree(story, args.plan_root)
-                    print(f"[{datetime.now().isoformat(timespec='seconds')}] {story}: {reason}")
+                    print(f"[{datetime.now(timezone.utc).isoformat(timespec='seconds')}] {story}: {reason}")
                     continue
                 print(format_snapshot(snap, previous.get(story)))
                 previous[story] = snap
