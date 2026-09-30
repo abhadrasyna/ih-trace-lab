@@ -50,9 +50,9 @@
 
 ## Phase 2 — Reference diagrams (of the *original* `github_copilot` code)
 
-- [ ] `reference-folder-diagrams` — needs `reference-code-gap-migration`'s GAP-1 decisions (already closed — `mpd`/`crypto_signing` promotion calls exist) to cite in RFD-6/RFD-7. Produces
-      `docs/reference-diagrams/*.md`, read-only-reference-only, no migration code touched. Best done early so its diagrams can *inform* the migration epics below, not just document them after the
-      fact.
+- [x] `reference-folder-diagrams` — complete: `scripts/reference_diagram/` now renders per-project internal-import flowcharts, and `docs/reference-diagrams/` covers every in-scope reference folder
+      plus the index page linking back to `docs/reference-architecture.md`.
+  - 2026-09-30: RFD-1 through RFD-10 landed (`02beb49`..`79aea36`), adding the per-project generator mode, 12 folder-level diagram pages, and the final index/exclusion note.
 
 ## Phase 3 — Src-lib migration (real implementations)
 

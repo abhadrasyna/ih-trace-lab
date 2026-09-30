@@ -1,18 +1,23 @@
 """Tests for scripts/reference_diagram/lib.py."""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from reference_diagram.lib import (
     ProjectStats,
+    build_internal_import_graph,
     discover_projects,
     extract_top_level_import_names,
     find_python_files,
     link_cross_project_imports,
     own_top_level_names,
     render_mermaid,
+    render_project_flowchart,
     render_report,
 )
 
@@ -122,6 +127,78 @@ def test_link_cross_project_imports_skips_ambiguous_alias(tmp_path: Path) -> Non
     projects = discover_projects(tmp_path)
     link_cross_project_imports(projects)
     assert projects["consumer"].imported_projects == set()
+
+
+# --- build_internal_import_graph / render_project_flowchart --------------------
+
+def test_build_internal_import_graph_happy_path(tmp_path: Path) -> None:
+    _write(tmp_path / "sample" / "pkg" / "__init__.py")
+    _write(tmp_path / "sample" / "pkg" / "helper.py", "VALUE = 1\n")
+    _write(tmp_path / "sample" / "pkg" / "runner.py", "from .helper import VALUE\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    runner = tmp_path / "sample" / "pkg" / "runner.py"
+    helper = tmp_path / "sample" / "pkg" / "helper.py"
+    assert graph[runner] == {helper}
+
+
+def test_build_internal_import_graph_resolves_absolute_same_project_imports(tmp_path: Path) -> None:
+    _write(tmp_path / "sample" / "pkg" / "__init__.py")
+    _write(tmp_path / "sample" / "pkg" / "helper.py", "VALUE = 1\n")
+    _write(tmp_path / "sample" / "pkg" / "runner.py", "from pkg.helper import VALUE\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    assert graph[tmp_path / "sample" / "pkg" / "runner.py"] == {tmp_path / "sample" / "pkg" / "helper.py"}
+
+
+def test_build_internal_import_graph_no_edges_for_external_imports(tmp_path: Path) -> None:
+    _write(tmp_path / "sample" / "runner.py", "import os\nfrom collections import defaultdict\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    assert graph[tmp_path / "sample" / "runner.py"] == set()
+
+
+def test_build_internal_import_graph_supports_src_layout_imports(tmp_path: Path) -> None:
+    _write(tmp_path / "sample" / "src" / "pkg" / "__init__.py")
+    _write(tmp_path / "sample" / "src" / "pkg" / "helper.py", "VALUE = 1\n")
+    _write(tmp_path / "sample" / "src" / "pkg" / "runner.py", "from pkg.helper import VALUE\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    assert graph[tmp_path / "sample" / "src" / "pkg" / "runner.py"] == {tmp_path / "sample" / "src" / "pkg" / "helper.py"}
+
+
+def test_build_internal_import_graph_supports_sys_path_rooted_imports(tmp_path: Path) -> None:
+    _write(tmp_path / "sample" / "scripts" / "pkg" / "__init__.py")
+    _write(tmp_path / "sample" / "scripts" / "pkg" / "helper.py", "VALUE = 1\n")
+    _write(tmp_path / "sample" / "scripts" / "pkg" / "runner.py", "from pkg.helper import VALUE\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    assert graph[tmp_path / "sample" / "scripts" / "pkg" / "runner.py"] == {
+        tmp_path / "sample" / "scripts" / "pkg" / "helper.py"
+    }
+
+
+def test_build_internal_import_graph_drops_ambiguous_module_aliases(tmp_path: Path) -> None:
+    _write(tmp_path / "sample" / "pkg" / "__init__.py")
+    _write(tmp_path / "sample" / "pkg" / "helper.py", "VALUE = 1\n")
+    _write(tmp_path / "sample" / "src" / "pkg" / "__init__.py")
+    _write(tmp_path / "sample" / "src" / "pkg" / "helper.py", "VALUE = 2\n")
+    _write(tmp_path / "sample" / "runner.py", "from pkg.helper import VALUE\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    assert graph[tmp_path / "sample" / "runner.py"] == set()
+
+
+def test_render_project_flowchart_happy_path(tmp_path: Path) -> None:
+    root = tmp_path / "sample"
+    a = root / "runner.py"
+    b = root / "helper.py"
+    project = ProjectStats(name="sample", root_dir=root, py_files=[a, b])
+    rendered = render_project_flowchart(project, {a: {b}, b: set()})
+    assert rendered.startswith("```mermaid\nflowchart TD\n")
+    assert 'runner.py"]' in rendered
+    assert 'helper.py"]' in rendered
+    assert "-->" in rendered
 
 
 # --- render_mermaid / render_report --------------------------------------------

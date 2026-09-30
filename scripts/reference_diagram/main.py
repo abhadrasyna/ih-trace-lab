@@ -16,7 +16,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from reference_diagram.lib import discover_projects, link_cross_project_imports, render_report
+from reference_diagram.lib import (
+    build_internal_import_graph,
+    discover_projects,
+    link_cross_project_imports,
+    render_project_report,
+    render_report,
+)
 
 
 def main() -> None:
@@ -26,6 +32,10 @@ def main() -> None:
         type=Path,
         required=True,
         help="Root of the reference repo to scan (e.g. /Users/abhadra/github_copilot)",
+    )
+    parser.add_argument(
+        "--project",
+        help="Single top-level project folder to render as an internal-import flowchart",
     )
     parser.add_argument(
         "--out",
@@ -40,12 +50,21 @@ def main() -> None:
         parser.error(f"--source {source} is not a directory")
 
     projects = discover_projects(source)
-    link_cross_project_imports(projects)
-    report = render_report(projects, source)
+    if args.project:
+        project = projects.get(args.project)
+        if project is None:
+            parser.error(f"--project {args.project!r} was not found under {source}")
+        report = render_project_report(project, source, build_internal_import_graph(project))
+    else:
+        link_cross_project_imports(projects)
+        report = render_report(projects, source)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(report, encoding="utf-8")
-    print(f"Wrote {args.out} ({len(projects)} projects)")
+    if args.project:
+        print(f"Wrote {args.out} ({args.project})")
+    else:
+        print(f"Wrote {args.out} ({len(projects)} projects)")
 
 
 if __name__ == "__main__":

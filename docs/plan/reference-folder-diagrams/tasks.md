@@ -3,18 +3,18 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: RFD-1.**
+**Open: none — story complete.**
 
-- [ ] **RFD-1** — Extend `scripts/reference_diagram/` with a per-project script-dependency flowchart mode | Owner: AI agent | Model: n/a | Review: `py-code-review` hook | SHA: <—>
-- [ ] **RFD-2** — Tier-1 diagrams: applauseInvestigation, astro-events-household-report, shaka-6001-sa-error-analysis, root `scripts/` | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-3** — `vod-asset-ingestion-mapping` hand-authored field/ID-mapping diagram | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-4** — `mtn-zm-session-device-investigation` flowchart + outcome-classification state diagram | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-5** — `mtn-network-traffic` + root `investigations` flowcharts | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-6** — `vod-playback-timing-probe` CLI-chain flowchart + `mpd` convergence diagram | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-7** — `smarttv-mtntv` convergence diagram (→ `crypto_signing`) | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-8** — `aws-access-cli` flowchart + orchestration sequence diagram | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-9** — `ctap-smvod-session-report` sequence diagram + data-flow flowchart | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
-- [ ] **RFD-10** — Index page linking every diagram; note `oasis-athena-mcp` exclusion | Owner: AI agent | Model: n/a | Review: none | SHA: <—>
+- [x] **RFD-1** — Extend `scripts/reference_diagram/` with a per-project script-dependency flowchart mode | Owner: AI agent | Model: n/a | Review: `py-code-review` hook | SHA: 02beb49
+- [x] **RFD-2** — Tier-1 diagrams: applauseInvestigation, astro-events-household-report, shaka-6001-sa-error-analysis, root `scripts/` | Owner: AI agent | Model: n/a | Review: none | SHA: be1643a
+- [x] **RFD-3** — `vod-asset-ingestion-mapping` hand-authored field/ID-mapping diagram | Owner: AI agent | Model: n/a | Review: none | SHA: e8f5616
+- [x] **RFD-4** — `mtn-zm-session-device-investigation` flowchart + outcome-classification state diagram | Owner: AI agent | Model: n/a | Review: none | SHA: 93b93c1
+- [x] **RFD-5** — `mtn-network-traffic` + root `investigations` flowcharts | Owner: AI agent | Model: n/a | Review: none | SHA: b12c702
+- [x] **RFD-6** — `vod-playback-timing-probe` CLI-chain flowchart + `mpd` convergence diagram | Owner: AI agent | Model: n/a | Review: none | SHA: 0be3b4c
+- [x] **RFD-7** — `smarttv-mtntv` convergence diagram (→ `crypto_signing`) | Owner: AI agent | Model: n/a | Review: none | SHA: 5cf7a12
+- [x] **RFD-8** — `aws-access-cli` flowchart + orchestration sequence diagram | Owner: AI agent | Model: n/a | Review: none | SHA: 9ccd050
+- [x] **RFD-9** — `ctap-smvod-session-report` sequence diagram + data-flow flowchart | Owner: AI agent | Model: n/a | Review: none | SHA: ae77a86
+- [x] **RFD-10** — Index page linking every diagram; note `oasis-athena-mcp` exclusion | Owner: AI agent | Model: n/a | Review: none | SHA: 79aea36
 
 ## Story done when
 

@@ -111,6 +111,141 @@ def _regex_scan_imports(source: str) -> set[str]:
     return set(pattern.findall(source))
 
 
+def build_internal_import_graph(project: ProjectStats) -> dict[Path, set[Path]]:
+    """Return a file->same-project-imported-files graph for one project."""
+    module_index = _build_module_index(project)
+    graph = {py_file: set() for py_file in sorted(project.py_files)}
+    for py_file in graph:
+        imported_files, used_fallback = _resolve_internal_import_paths(py_file, project, module_index)
+        if used_fallback and py_file not in project.unparsable_files:
+            project.unparsable_files.append(py_file)
+        for imported_file in imported_files:
+            if imported_file != py_file:
+                graph[py_file].add(imported_file)
+    return graph
+
+
+def _build_module_index(project: ProjectStats) -> dict[str, Path]:
+    project_alias = project.name.replace("-", "_")
+    candidates_by_name: dict[str, set[Path]] = {}
+    for py_file in project.py_files:
+        module_name = _module_name_for_file(project.root_dir, py_file)
+        for candidate in _candidate_module_names(module_name):
+            candidates_by_name.setdefault(candidate, set()).add(py_file)
+            candidates_by_name.setdefault(f"{project_alias}.{candidate}", set()).add(py_file)
+
+    module_index: dict[str, Path] = {}
+    for candidate, paths in candidates_by_name.items():
+        if len(paths) == 1:
+            module_index[candidate] = next(iter(paths))
+    return module_index
+
+
+def _candidate_module_names(module_name: str) -> set[str]:
+    if not module_name:
+        return set()
+    names = {module_name}
+    parts = module_name.split(".")
+    if parts[0] in GENERIC_MODULE_NAMES and len(parts) > 1:
+        names.add(".".join(parts[1:]))
+    return names
+
+
+def _module_name_for_file(project_root: Path, py_file: Path) -> str:
+    rel = py_file.relative_to(project_root)
+    parts = list(rel.parts)
+    if parts[-1] == "__init__.py":
+        return ".".join(parts[:-1])
+    parts[-1] = py_file.stem
+    return ".".join(parts)
+
+
+def _resolve_internal_import_paths(
+    py_file: Path,
+    project: ProjectStats,
+    module_index: dict[str, Path],
+) -> tuple[set[Path], bool]:
+    source = py_file.read_text(encoding="utf-8", errors="ignore")
+    try:
+        tree = ast.parse(source, filename=str(py_file))
+    except (SyntaxError, ValueError):
+        return set(), True
+
+    resolved: set[Path] = set()
+    module_name = _module_name_for_file(project.root_dir, py_file)
+    package_name = _package_name_for_file(py_file, module_name)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                target = _resolve_absolute_import(alias.name, module_index)
+                if target is not None:
+                    resolved.add(target)
+        elif isinstance(node, ast.ImportFrom):
+            resolved.update(_resolve_import_from(node, package_name, module_index))
+    return resolved, False
+
+
+def _package_name_for_file(py_file: Path, module_name: str) -> str:
+    if py_file.name == "__init__.py":
+        return module_name
+    if "." not in module_name:
+        return ""
+    return module_name.rsplit(".", 1)[0]
+
+
+def _resolve_absolute_import(name: str, module_index: dict[str, Path]) -> Path | None:
+    parts = name.split(".")
+    for width in range(len(parts), 0, -1):
+        candidate = ".".join(parts[:width])
+        if candidate in module_index:
+            return module_index[candidate]
+    return None
+
+
+def _resolve_import_from(
+    node: ast.ImportFrom,
+    package_name: str,
+    module_index: dict[str, Path],
+) -> set[Path]:
+    base_parts = _relative_base_parts(package_name, node.level)
+    if base_parts is None:
+        return set()
+
+    resolved: set[Path] = set()
+    module_parts = node.module.split(".") if node.module else []
+    module_base = ".".join([*base_parts, *module_parts]).strip(".")
+
+    for alias in node.names:
+        candidates: list[str] = []
+        if alias.name == "*":
+            if module_base:
+                candidates.append(module_base)
+        elif module_base:
+            candidates.extend([f"{module_base}.{alias.name}", module_base])
+        else:
+            candidates.append(alias.name)
+
+        for candidate in candidates:
+            target = _resolve_absolute_import(candidate, module_index)
+            if target is not None:
+                resolved.add(target)
+                break
+    return resolved
+
+
+def _relative_base_parts(package_name: str, level: int) -> list[str] | None:
+    if level <= 0:
+        return []
+    package_parts = package_name.split(".") if package_name else []
+    if level == 1:
+        return package_parts
+    up_levels = level - 1
+    if up_levels > len(package_parts):
+        return None
+    return package_parts[: len(package_parts) - up_levels]
+
+
 def link_cross_project_imports(projects: dict[str, ProjectStats]) -> None:
     """Mutate each ProjectStats.imported_projects with sibling project names it imports from.
 
@@ -188,6 +323,25 @@ def render_mermaid(projects: dict[str, ProjectStats]) -> str:
     return "\n".join(lines)
 
 
+def render_project_flowchart(project: ProjectStats, edges: dict[Path, set[Path]]) -> str:
+    """Render a Mermaid flowchart of same-project imports for one project."""
+    node_ids: dict[str, str] = {}
+    lines = ["```mermaid", "flowchart TD"]
+    for py_file in sorted(edges):
+        rel_path = py_file.relative_to(project.root_dir).as_posix()
+        node_id = _mermaid_node_id(rel_path, node_ids)
+        lines.append(f'    {node_id}["{_mermaid_label(rel_path)}"]')
+
+    for py_file in sorted(edges):
+        source_id = node_ids[py_file.relative_to(project.root_dir).as_posix()]
+        for imported_file in sorted(edges[py_file]):
+            target_id = node_ids[imported_file.relative_to(project.root_dir).as_posix()]
+            lines.append(f"    {source_id} --> {target_id}")
+
+    lines.append("```")
+    return "\n".join(lines)
+
+
 def render_report(projects: dict[str, ProjectStats], root: Path) -> str:
     """Render the full markdown report: title, Mermaid diagram, and a per-project file-count table.
 
@@ -228,4 +382,40 @@ def render_report(projects: dict[str, ProjectStats], root: Path) -> str:
         fallback_count = len(stats.unparsable_files) or "—"
         lines.append(f"| `{_table_cell(name)}` | {stats.file_count} | {imports} | {fallback_count} |")
     lines.append("")
+    return "\n".join(lines)
+
+
+def render_project_report(project: ProjectStats, root: Path, edges: dict[Path, set[Path]]) -> str:
+    """Render a markdown report for one project's internal import graph."""
+    total_edges = sum(len(targets) for targets in edges.values())
+    lines = [
+        f"# Reference diagram — {project.name}",
+        "",
+        f"Auto-generated by `scripts/reference_diagram/main.py` — do not edit the generated sections by hand; re-run the generator instead after `{root.name}/{project.name}` changes.",
+        "",
+        f"Scanned `{root.name}/{project.name}`: {project.file_count} Python files (excluding `.venv`, `.git`, `__pycache__`, `.obsidian`, `node_modules`) and detected {total_edges} same-project import edge(s).",
+        "",
+    ]
+    if project.unparsable_files:
+        lines.extend(
+            [
+                f"⚠️ {len(project.unparsable_files)} file(s) failed to parse as Python, so their same-project imports could not be resolved for this diagram.",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Internal import flowchart",
+            "",
+            render_project_flowchart(project, edges),
+            "",
+        ]
+    )
+    if not total_edges:
+        lines.extend(
+            [
+                "_No same-project imports were detected; files either stand alone or only import stdlib/third-party modules._",
+                "",
+            ]
+        )
     return "\n".join(lines)
