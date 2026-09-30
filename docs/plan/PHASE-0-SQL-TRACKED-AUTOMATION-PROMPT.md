@@ -90,6 +90,6 @@ STEP 9 — Once all 4 stories are either done or paused-with-a-clear-reason, upd
   you. Don't assume future runs will auto-advance once a dependency's todo flips to `done`.
 - The `todos` table's value here is a shared status board across stories, not automation — treat it as a lightweight audit/dashboard layer, same spirit as `TODOS.md` but queryable mid-run.
 - Cross-session visibility limitation still applies: `list_agents`/`read_agent` from a *different* CLI session won't see these agents. Monitor via the worktree on disk, e.g.
-  `scratch/2026-09-30_worktree_progress_monitor.py --worktree ../wt-<story> --tasks-file docs/plan/<story>/tasks.md --watch --interval 300`.
+  `scripts/dev/monitor_worktree_progress.py --story <story> [--story <story> ...] --watch --interval 300`.
 - Decide staged vs. parallel launch for the 3 non-dependent stories up front (STEP 1) based on the pilot's ~15min/~94-tool-call-per-story cost — don't default to "launch all 3 at once" without
   considering that multiplier.

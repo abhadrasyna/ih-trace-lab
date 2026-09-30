@@ -17,7 +17,8 @@
 
 - **`list_agents`/`read_agent` only see agents in the *current* CLI session.** A background agent launched in a different session (or by the user directly pasting a prompt elsewhere) is invisible to
   these tools. The only reliable cross-session monitoring method is inspecting the worktree directly on disk: `git log`, `git status --short`, grepping `tasks.md` checkboxes. Automated via
-  `scratch/2026-09-30_worktree_progress_monitor.py --worktree <path> --tasks-file <path> --watch --interval <seconds>`.
+  `scripts/dev/monitor_worktree_progress.py --story <story> [--story <story> ...] --watch --interval <seconds>` (promoted from `scratch/` once reused for a second batch, per the convergence rule;
+  supports tracking several stories at once).
 - **Background `task` agents do not get a discoverable per-agent transcript.** There is no separate `session-state/<agent_id>/events.jsonl` — their activity is embedded in the orchestrating session's
   own transcript. File-based `session-close` (resolving a transcript by session folder) cannot audit a specific background agent's work. Replacement: have the agent self-report and self-score against
   the `AGENTS.md` Tier 0 checklist (CONTEXT.md read + stated first, scope confirmed, tests written, CONTEXT.md updated, tests green, commit executed with SHA) inline in its final message; record that
