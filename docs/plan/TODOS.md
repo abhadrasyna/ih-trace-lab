@@ -6,7 +6,8 @@
 ## Phase 0 — Foundation (no blocking dependencies, parallelizable)
 
 - [ ] `tenant-registry` — canonical MTN tenant config + resolver. Blocks `query-catalog` QC-4 (Athena DDL-cache needs live tenant resolution).
-- [ ] `project-taxonomy` — category definitions, folder skeletons, `config/data_paths.yaml`. Blocks `pipeline-migration` (PT-1/2/6/7).
+- [x] `project-taxonomy` — category definitions, folder skeletons, `config/data_paths.yaml`. Blocks `pipeline-migration` (PT-1/2/6/7).
+  - 2026-09-30: PT-1 through PT-8 landed (`5e2abfd`..`e3fa1e2`, bookkeeping `5147979`), merged to `main` in `299e8a4`.
 - [ ] `functional-code-taxonomy` — `src/lib/*` module map + `Protocol` skeletons. Blocks `src-lib-migration` (FCT-1/2/7).
 - [x] `scratch-script-registry` — `SCRIPTS.md` generator + promotion CLI. Complete through SSR-7; no dependents among the stories below; independent.
   - 2026-09-30: SSR-1 landed in `e564794`; root `SCRIPTS.md` remains intentionally deferred to SSR-7.
