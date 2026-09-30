@@ -99,6 +99,7 @@ Delete this whole section if the project doesn't touch Athena/tenant investigati
 
 <!-- INSERT: athena -->
 
+- Before any Lightstep/Matisse/Athena MCP call, run `python scripts/resolve_tenant.py ...` first and follow `docs/guides/tenant-resolution.md`; never guess tenant ids or project context.
 <!-- INSERT: investigations -->
 
 ## Git conventions
