@@ -140,11 +140,14 @@ call.
 ## Folder backlog
 
 Tracks every `github_copilot/*` candidate folder this story could eventually cover. `status` is the only field that changes as the story progresses: `not started` → `spec'd` (RKH-N task(s) exist in
-`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`config`, `copilot`, `knowledge`, `plan`, `scratch`, `scripts`) are deliberately
-excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd. `aws-access-cli`, the root `investigations/` folder, and `sre` were all reclassified
-out of this exclusion (see their rows below): `aws-access-cli`'s automation/CLI code stays out of scope, but its dated `docs/2026-09-*.md` investigation write-ups do not; `investigations/`'s `data/`,
-`har/`, `scripts/`, `athenaCSV/`, `spancsv/`, and `xmls_or_mpd/` stay out of scope, but its `docs/` case write-ups and `instructions/` playbooks do not; `sre`'s `data/*.csv` (raw Jira exports) and
-`reports/*.md` (dated generated report outputs) stay out of scope, but its `docs/*.md` (Jira project structure, custom fields, quarterly query templates) does not.
+`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked); a folder can also land on `excluded (no reusable knowledge)` if review finds nothing worth harvesting.
+Infra folders (`config`, `copilot`, `knowledge`, `plan`, `scratch`, `scripts`) are deliberately excluded from this table — they hold no project-specific investigation knowledge of their own and are
+never spec'd. `aws-access-cli`, the root `investigations/` folder, and `sre` were all reclassified out of this exclusion (see their rows below): `aws-access-cli`'s automation/CLI code stays out of
+scope, but its dated `docs/2026-09-*.md` investigation write-ups do not; `investigations/`'s `data/`, `har/`, `scripts/`, `athenaCSV/`, `spancsv/`, and `xmls_or_mpd/` stay out of scope, but its
+`docs/` case write-ups and `instructions/` playbooks do not; `sre`'s `data/*.csv` (raw Jira exports) and `reports/*.md` (dated generated report outputs) stay out of scope, but its `docs/*.md` (Jira
+project structure, custom fields, quarterly query templates) does not. `astro-events-household-report`, `mtn-zm-session-device-investigation`, `mtn-network-traffic`, `oasis-athena-mcp`,
+`shaka-6001-sa-error-analysis`, `vod-playback-timing-probe`, and `smarttv-mtntv` were reviewed and found to hold no reusable knowledge beyond tool/usage docs or their own internal plan stories — see
+their rows below for the per-folder reasoning.
 
 | Folder | Status | Notes |
 | --- | --- | --- |
@@ -155,13 +158,18 @@ missed by the first spec pass |
 | `ctap-smvod-session-report` | spec'd (RKH-10, RKH-11 not yet executed) | has `docs/`, `BLUEPRINT.md`, `LEGEND.md`, query catalog — the root `knowledge/ctap-smvod-pipeline.md` overlap flagged
 below was already fully claimed by RKH-2/RKH-6 (session/CDN-matching-algorithm facts) and `aws-access-cli`'s RKH-8 already reserves a pointer to this folder's identical `playback_outcome`
 classification-gap query, so RKH-10/RKH-11 are scoped to the two remaining un-claimed knowledge domains: playback-outcome/error taxonomy and raw CDN log field semantics |
-| `astro-events-household-report` | not started | has `QUERY_CATALOG.md` + `queries/` — check against root `knowledge/astro-athena-default-tables.md` |
-| `mtn-zm-session-device-investigation` | not started | has `docs/` + tests — check for a matching root `knowledge/mtn-sa-service-correlation-maps.md`-style file |
-| `mtn-network-traffic` | not started | has `docs/` — no obvious root `knowledge/*.md` link yet, may end up a single-task batch |
-| `oasis-athena-mcp` | not started | small tool/library (`src/`, `pyproject.toml`) as well as investigation aid — confirm it has real reusable knowledge (vs. just code) before spec'ing |
-| `shaka-6001-sa-error-analysis` | not started | thin folder (`scripts/`, `output/`, one `session-info.md`) — likely a single-task batch or may not warrant one at all |
-| `vod-playback-timing-probe` | not started | has `docs/`, `investigations/`, `AGENTS.md` — check against root `knowledge/mpd-shaka-restrictions-analysis.md` |
-| `smarttv-mtntv` | not started | only `scripts/` + `downloaded/`, no `docs/`/`README` seen — confirm real knowledge exists; may end up excluded like infra folders above |
+| `astro-events-household-report` | excluded (no reusable knowledge) | reviewed `QUERY_CATALOG.md`/`README.md`/`queries/*.md` — confirmed no usable distillable knowledge beyond what the
+`query-catalog` story already covers; not spec'd |
+| `mtn-zm-session-device-investigation` | excluded (no reusable knowledge) | reviewed `README.md` + `docs/multi-investigation-config/{prompt,tasks,stories}.md` — its own internal plan story, not
+investigation findings; confirmed no usable knowledge; not spec'd |
+| `mtn-network-traffic` | excluded (no reusable knowledge) | reviewed `README.md`, `docs/usage.md`, `output/run1.md` — thin usage doc + one generated output run; confirmed no usable knowledge;
+not spec'd |
+| `oasis-athena-mcp` | excluded (no reusable knowledge) | reviewed `README.md`, `CONTRIBUTING.md`, `docs/{table-ddl-knowledge-guide,mcp-server-setup}.md`, `docs/plans/athena-mcp-server/*.md` —
+tool/setup docs and its own internal plan story, not reusable investigation knowledge; confirmed no usable knowledge; not spec'd |
+| `shaka-6001-sa-error-analysis` | excluded (no reusable knowledge) | thin folder (`scripts/`, `output/`, one `session-info.md`) — confirmed no usable knowledge; not spec'd |
+| `vod-playback-timing-probe` | excluded (no reusable knowledge) | reviewed `README.md`, `QUICKSTART.md`, `AGENTS.md`, `docs/{usage,contributing}.md`,
+`docs/plans/segment-timeline-and-reporting-gaps.md` — tool/usage docs and its own internal plan story, not reusable investigation knowledge; confirmed no usable knowledge; not spec'd |
+| `smarttv-mtntv` | excluded (no reusable knowledge) | confirmed: only `scripts/` + `downloaded/`, no `docs/`/`README` at all; treated like an infra folder; not spec'd |
 | `aws-access-cli` | spec'd (RKH-8, RKH-9 not yet executed) | initially listed as excluded infra below, then reclassified: its `docs/2026-09-*.md` holds genuine dated investigation findings (adoption
 `playback_outcome` classification gap) distinct from its Athena-automation-CLI role; `docs/database-abstraction/` and `docs/plans/` are its own internal refactor-story docs, not reusable domain
 knowledge, and stay out of scope |
