@@ -4,47 +4,47 @@ Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task
 spec. This list grows: a new `RKH-N` gets appended each time another `github_copilot/*` folder is next up for harvesting — don't assume RKH-1/RKH-2 (the `vod-asset-ingestion-mapping/` batch) is the
 whole story.
 
-**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7, RKH-8, RKH-9, RKH-10, RKH-11, RKH-12, RKH-13, RKH-14, RKH-15, RKH-16, RKH-17.**
+**Open: none — story complete.**
 
-- [ ] **RKH-1** — `knowledge/vod-asset-field-mapping.md`: harvest ID-navigation + field-mapping docs from `vod-asset-ingestion-mapping/` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
-  Review: human diff review | SHA: <—>
-- [ ] **RKH-2** — `knowledge/vod-asset-ingestion-pipeline.md` + `knowledge/ctap-smvod-pipeline.md`: port + correct root `knowledge/` distillations, add applauseInvestigation pointer | Owner: AI agent
-  (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **RKH-3** — `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`: harvest `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md` | Owner: AI agent (Copilot CLI) | Model:
-  claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **RKH-4** — `knowledge/mtn-sa-lightstep-query-templates.md`: harvest `applauseInvestigation/knowledge/lightstep-query-templates.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
-  Review: human diff review | SHA: <—>
-- [ ] **RKH-5** — `knowledge/applause-csv-household-id-gotchas.md`: harvest `applauseInvestigation/knowledge/applause-csv-household-id-gotchas.md` | Owner: AI agent (Copilot CLI) | Model:
+- [x] **RKH-1** — `knowledge/vod-asset-field-mapping.md`: harvest ID-navigation + field-mapping docs from `vod-asset-ingestion-mapping/` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
+  Review: human diff review | SHA: 6cf4a9a
+- [x] **RKH-2** — `knowledge/vod-asset-ingestion-pipeline.md` + `knowledge/ctap-smvod-pipeline.md`: port + correct root `knowledge/` distillations, add applauseInvestigation pointer | Owner: AI agent
+  (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 3703905
+- [x] **RKH-3** — `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`: harvest `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md` | Owner: AI agent (Copilot CLI) | Model:
+  claude-sonnet-5 | Review: human diff review | SHA: 1c07a74
+- [x] **RKH-4** — `knowledge/mtn-sa-lightstep-query-templates.md`: harvest `applauseInvestigation/knowledge/lightstep-query-templates.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
+  Review: human diff review | SHA: 872dfd3
+- [x] **RKH-5** — `knowledge/applause-csv-household-id-gotchas.md`: harvest `applauseInvestigation/knowledge/applause-csv-household-id-gotchas.md` | Owner: AI agent (Copilot CLI) | Model:
   claude-sonnet-5
-  | Review: human diff review | SHA: <—>
-- [ ] **RKH-6** — `knowledge/mtn-sa-service-correlation-maps.md` (new) + `knowledge/ctap-smvod-pipeline.md` (edit): port + cross-link root distillations that share span/field names with
-  `applauseInvestigation` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—> | Depends on: RKH-2 (creates `ctap-smvod-pipeline.md`), RKH-3 (creates the
+  | Review: human diff review | SHA: 665b18d
+- [x] **RKH-6** — `knowledge/mtn-sa-service-correlation-maps.md` (new) + `knowledge/ctap-smvod-pipeline.md` (edit): port + cross-link root distillations that share span/field names with
+  `applauseInvestigation` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 720b5d0 | Depends on: RKH-2 (creates `ctap-smvod-pipeline.md`), RKH-3 (creates the
   span-attributes file this task cross-links to)
-- [ ] **RKH-7** — `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`: harvest `applauseInvestigation/investigations/queries/QUERY_CATALOG.md`'s "Known bridge keys" section + the HAR-derived Device
+- [x] **RKH-7** — `knowledge/mtn-sa-athena-bridge-keys-and-gotchas.md`: harvest `applauseInvestigation/investigations/queries/QUERY_CATALOG.md`'s "Known bridge keys" section + the HAR-derived Device
   ID recovery gotcha from `applauseInvestigation/investigations/docs/*.md` — the `investigations/` subfolder missed by the RKH-3–6 spec pass | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
-  Review: human diff review | SHA: <—>
-- [ ] **RKH-8** — `knowledge/mtn-adoption-playback-outcome-classification-gap.md`: harvest
+  Review: human diff review | SHA: 6f00d6d
+- [x] **RKH-8** — `knowledge/mtn-adoption-playback-outcome-classification-gap.md`: harvest
   `aws-access-cli/docs/{2026-09-10-adoption-session-reconciliation,2026-09-15-adoption-metrics-column-overview-and-gap-analysis,2026-09-16-vsf-ebvs-session-examples-and-classification-gap}.md`
-  | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` (edit): cross-link to RKH-8's new file | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
-  <—> | Depends on: RKH-8 (creates the file this task links to)
-- [ ] **RKH-10** — `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md`: harvest `ctap-smvod-session-report/{LEGEND.md,BLUEPRINT.md,analyze_playback_outcome.md}`'s `playback_outcome`/
-  `state_sequence`/`PLAYER_ERROR` error-schema/`householdId`-anomaly findings | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **RKH-11** — `knowledge/mtn-sa-cdn-log-correlation-methodology.md`: harvest `ctap-smvod-session-report/LEGEND.md`'s "CDN log fields" section + `docs/STATUS.md`'s MTN escalation criteria | Owner:
-  AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **RKH-12** — `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md`: harvest the four undocumented 2026-07-24 docs from root `investigations/docs/` (MTN SA 4032 DRM flow, TIM Play mileto
-  trace, MTN-vs-TIM-Play comparison, TIM Play tenant-config/LTV analysis) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **RKH-13** — `knowledge/mtn-tenant-identifiers-and-code-flow.md`: harvest root `investigations/docs/ITZUu4aBswL.md` + `_code_flow.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
-  Review: human diff review | SHA: <—>
-- [ ] **RKH-14** — port `github_copilot/knowledge/{ctap-shared-content-default-limit,mpd-shaka-restrictions-analysis,recommendation-engine-thinkanalytics}.md` into `ih-trace-lab/knowledge/` | Owner:
-  AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—> | Depends on: RKH-12 (creates the file these ports cross-link to)
-- [ ] **RKH-15** — `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md`: distill root `investigations/instructions/{lightstep-mcp-tool-notes,client-identity-investigation,
-  device-flow-analysis,oauth-session-guard-interleave,drm-cross-region-investigation}.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **RKH-16** — `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md`: distill root `investigations/instructions/{har-playback-flow-analysis,kinesis-stream-analysis,mpd-analysis,
-  device-ua-playsession-analysis}.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—> | Depends on: RKH-14 (creates the ported
+  | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 06fa795
+- [x] **RKH-9** — `knowledge/mtn-athena-unified_e6auj7k7-tables.md` (edit): cross-link to RKH-8's new file | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
+  6eefb65 | Depends on: RKH-8 (creates the file this task links to)
+- [x] **RKH-10** — `knowledge/mtn-sa-playback-outcome-and-error-taxonomy.md`: harvest `ctap-smvod-session-report/{LEGEND.md,BLUEPRINT.md,analyze_playback_outcome.md}`'s `playback_outcome`/
+  `state_sequence`/`PLAYER_ERROR` error-schema/`householdId`-anomaly findings | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 4f2194c
+- [x] **RKH-11** — `knowledge/mtn-sa-cdn-log-correlation-methodology.md`: harvest `ctap-smvod-session-report/LEGEND.md`'s "CDN log fields" section + `docs/STATUS.md`'s MTN escalation criteria | Owner:
+  AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 753f29d
+- [x] **RKH-12** — `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md`: harvest the four undocumented 2026-07-24 docs from root `investigations/docs/` (MTN SA 4032 DRM flow, TIM Play mileto
+  trace, MTN-vs-TIM-Play comparison, TIM Play tenant-config/LTV analysis) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: f7af858
+- [x] **RKH-13** — `knowledge/mtn-tenant-identifiers-and-code-flow.md`: harvest root `investigations/docs/ITZUu4aBswL.md` + `_code_flow.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
+  Review: human diff review | SHA: 10f4eb0
+- [x] **RKH-14** — port `github_copilot/knowledge/{ctap-shared-content-default-limit,mpd-shaka-restrictions-analysis,recommendation-engine-thinkanalytics}.md` into `ih-trace-lab/knowledge/` | Owner:
+  AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: a9e4613 | Depends on: RKH-12 (creates the file these ports cross-link to)
+- [x] **RKH-15** — `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md`: distill root `investigations/instructions/{lightstep-mcp-tool-notes,client-identity-investigation,
+  device-flow-analysis,oauth-session-guard-interleave,drm-cross-region-investigation}.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 509f8ae
+- [x] **RKH-16** — `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md`: distill root `investigations/instructions/{har-playback-flow-analysis,kinesis-stream-analysis,mpd-analysis,
+  device-ua-playsession-analysis}.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 815cfe3 | Depends on: RKH-14 (creates the ported
   `mpd-shaka-restrictions-analysis.md` this task cross-links to instead of duplicating)
-- [ ] **RKH-17** — `knowledge/sre-jira-project-reference.md`: harvest `sre/docs/{sre-jira-knowledge,SRE_Quarterly_Jira_Query_Prompt}.md` (Jira project SRE structure, custom-field IDs, skills
-  reference, quarterly JQL templates) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [x] **RKH-17** — `knowledge/sre-jira-project-reference.md`: harvest `sre/docs/{sre-jira-knowledge,SRE_Quarterly_Jira_Query_Prompt}.md` (Jira project SRE structure, custom-field IDs, skills
+  reference, quarterly JQL templates) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: c264a75
 
 ## Story done when
 
