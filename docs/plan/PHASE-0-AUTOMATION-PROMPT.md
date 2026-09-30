@@ -27,26 +27,27 @@ STEP 0 — Isolate each story in its own worktree (prevents 5 parallel agents fr
     - reference-knowledge-harvest -> ../wt-reference-knowledge-harvest (branch plan/reference-knowledge-harvest)
   Use `git worktree add <path> -b <branch>` for each.
 
-STEP 1 — Launch 5 background general-purpose agents in one batch (model: claude-sonnet-5, matching every task line's own "Model:" column). Give each agent this exact brief, substituting its
-  own story/worktree:
+STEP 1 — Launch 5 background general-purpose agents in one batch. Give each agent this exact brief, substituting its own story/worktree:
 
     "Work in <worktree-path>. Read docs/plan/<story>/prompt.md, tasks.md, and stories.md. Work top-down through EVERY unchecked task in tasks.md, not just the first — this run is unattended,
     not paused for per-task review. For each task: implement exactly what stories.md specifies for that task id, run any tests it names, commit with one commit per task (message states the
     task id), then set that task's SHA on its tasks.md line and tick its checkbox, and update CONTEXT.md's bullet for this story if the task instructs that. Follow this project's AGENTS.md and
-    CONTEXT.md conventions throughout (no throwaway scripts, pinned deps, reflowed markdown, etc.).
+    CONTEXT.md conventions throughout.
 
     Stop early, before finishing all tasks, ONLY if: (a) a test fails and you cannot resolve it after a reasonable attempt, (b) a task's own spec requires a human-only confirmation step you
     cannot perform (tenant-registry's TR-1 is a known example: 'human confirms MCP query result matches expected opco' — a live Lightstep MCP call whose data-correctness only a human can judge),
     or (c) the task spec is genuinely ambiguous and guessing would risk silently-wrong output. If you stop early, report exactly which task and why, and leave every later task in that story
     unchecked and untouched.
 
-    When done (or stopped early), report: which task ids you completed with their commit SHAs, which task id (if any) you stopped at and why, and confirm no file under
-    /Users/abhadra/github_copilot was touched."
+    When done (or stopped early), report: which task ids you completed with their commit SHAs, which task id (if any) you stopped at and why, confirm no file under
+    /Users/abhadra/github_copilot was touched, and include a self-summarized diff for this story — per completed task: files touched, line counts (+/-), and a one-line rationale. Do not
+    paste raw diff hunks in this summary; I will pull the actual diff myself only for branches that need closer inspection."
 
 STEP 2 — Wait for each agent's completion notification (do not poll). Read each agent's final report once it finishes or pauses.
 
-STEP 3 — For each of the 5 branches, pull its full commit log and diff (`git log <branch> --oneline` / `git diff main...<branch>`) and present it to me as a consolidated per-story review —
-  this replaces the normal per-task "human diff review" gate, since I've chosen a batched review for this run.
+STEP 3 — For each of the 5 branches, present me the agent's self-summarized diff (from its final report) as a consolidated per-story review — this replaces the normal per-task "human diff
+  review" gate, since I've chosen a batched review for this run. Only pull the branch's actual `git log`/`git diff` on demand, for a specific branch I ask to inspect more closely — do not
+  fetch full diffs for all 5 branches by default.
 
 STEP 4 — After I approve a given branch (I may ask for fixes first — send those back to that story's agent via write_agent, do not start a new agent for the same story), merge that branch into
   main, remove its worktree (`git worktree remove`), and delete the branch.
@@ -68,3 +69,5 @@ Do not proceed past STEP 0 without first telling me the worktree/branch plan and
 - `tenant-registry` is expected to pause at TR-1 — that's correct behavior, not a bug. Its remaining tasks (TR-2..TR-6) resume only after you've confirmed the live MCP round-trip is opco-correct.
 - Five agents write to five separate worktree directories, but they still share this machine's resources (CPU, any shared venv/test cache) — if runs seem to interfere, stagger launches instead of a
   single batch.
+- STEP 3's review deliberately uses each agent's self-summarized diff, not raw `git diff` dumps, to avoid pulling ~5 branches' worth of full diff text into the orchestrating session's context. Fetch
+  the actual diff only for a branch you decide needs closer inspection.
