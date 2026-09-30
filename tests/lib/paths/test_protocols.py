@@ -4,6 +4,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 from src.lib.paths.config import PathConfig, YamlPathResolver
 from src.lib.paths.protocols import PathResolver
 
@@ -124,6 +126,20 @@ def test_resolve_input_dir_returns_none_when_directory_absent(tmp_path: Path) ->
     resolver = _build_resolver(tmp_path)
 
     assert resolver.resolve_input_dir("lightstep", "7231547", campaign="applause") is None
+
+
+def test_resolve_input_dir_rejects_unknown_tool(tmp_path: Path) -> None:
+    resolver = _build_resolver(tmp_path)
+
+    with pytest.raises(ValueError, match="unknown tool"):
+        resolver.resolve_input_dir("matisse", "7231547")
+
+
+def test_resolve_input_dir_rejects_path_traversal_case_id(tmp_path: Path) -> None:
+    resolver = _build_resolver(tmp_path)
+
+    with pytest.raises(ValueError, match="case_id must be a single path segment"):
+        resolver.resolve_input_dir("athena", "../../etc", campaign="applause")
 
 
 def test_resolve_knowledge_dir_ignores_campaign_and_case_id(tmp_path: Path) -> None:
