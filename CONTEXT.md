@@ -16,8 +16,9 @@
   `functional-code-taxonomy`.
 - `docs/plan/functional-code-taxonomy/` — story: target `src/lib/{auth,athena,csv_io,report_render,har,curl_to_python}/` module map replacing 4 duplicated Athena executors, 8+ duplicated CSV writers,
   and 4 duplicated HAR-entry loaders found in `github_copilot`; ports `PYTHON_DESIGN.md`'s DIP/OCP/SRP triggers into `Protocol` skeletons for `athena`, `report_render`, and `har`; adds a cross-project
-  script registry generalizing `scratch-script-registry`'s duplicate-check pattern beyond `scratch/`. Not yet implemented — see its `tasks.md` for the first unchecked task (FCT-1). Sibling to
-  `project-taxonomy` (categories vs. shared code) and `query-catalog` (SQL text vs. execution code).
+  script registry generalizing `scratch-script-registry`'s duplicate-check pattern beyond `scratch/`. In progress on `plan/functional-code-taxonomy`: FCT-1 through FCT-5 are implemented locally, FCT-6
+  is next in implementation order, and the trailing checkbox/SHA bookkeeping pass is still pending. Sibling to `project-taxonomy` (categories vs. shared code) and `query-catalog` (SQL text vs.
+  execution code).
 - `docs/plan/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
   `scripts/dev/promote_scratch_scripts.py` provides manual promotion with registry refresh; `scratch/SCRATCH.md`, `AGENTS.md`, and the repo-local `.github/skills/session-close/SKILL.md` enforce the
   delegated duplicate-check and close-out regeneration workflow; `tests/dev/` covers both CLIs.
