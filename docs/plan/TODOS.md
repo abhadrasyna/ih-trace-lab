@@ -8,7 +8,9 @@
 - [ ] `tenant-registry` — canonical MTN tenant config + resolver. Blocks `query-catalog` QC-4 (Athena DDL-cache needs live tenant resolution).
 - [x] `project-taxonomy` — category definitions, folder skeletons, `config/data_paths.yaml`. Blocks `pipeline-migration` (PT-1/2/6/7).
   - 2026-09-30: PT-1 through PT-8 landed (`5e2abfd`..`e3fa1e2`, bookkeeping `5147979`), merged to `main` in `299e8a4`.
-- [ ] `functional-code-taxonomy` — `src/lib/*` module map + `Protocol` skeletons. Blocks `src-lib-migration` (FCT-1/2/7).
+- [x] `functional-code-taxonomy` — `src/lib/*` module map + `Protocol` skeletons. Complete through FCT-7; `src-lib-migration` is now unblocked on the functional-code-taxonomy side.
+  - 2026-09-30: FCT-1 through FCT-7 landed (`8dba2f5`..`303f4ac`), adding the shared-lib guide, `athena`/`report_render`/`har` Protocol skeletons, the code registry generator, and the YAML-backed path
+    resolver.
 - [x] `scratch-script-registry` — `SCRIPTS.md` generator + promotion CLI. Complete through SSR-7; no dependents among the stories below; independent.
   - 2026-09-30: SSR-1 landed in `e564794`; root `SCRIPTS.md` remains intentionally deferred to SSR-7.
   - 2026-09-30: SSR-2 landed in `501f818`; manual promotion and age-based candidate listing now exist.
@@ -48,8 +50,8 @@
 
 ## Phase 3 — Src-lib migration (real implementations)
 
-- [ ] `src-lib-migration` epic — blocked on `functional-code-taxonomy` FCT-1 (module map), FCT-2 (`athena`/`report_render`/`har` Protocols), FCT-7 (`PathResolver`). Six stories inside land in any
-      order once unblocked, except `auth-lib-migration` additionally depends on `athena-lib-integration` (reuses its `sso_auth` shape).
+- [ ] `src-lib-migration` epic — unblocked by `functional-code-taxonomy`; its six stories can now land in any order, except `auth-lib-migration` additionally depends on `athena-lib-integration`
+      (reuses its `sso_auth` shape).
 
 ## Phase 4 — Pipeline migration
 
