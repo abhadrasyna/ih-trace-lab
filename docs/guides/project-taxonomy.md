@@ -60,3 +60,22 @@ Use this checklist before either creating a new top-level folder or writing a ne
 Steps 2 and 3 are delegated for the same reason documented in `docs/plan/scratch-script-registry/prompt.md`: the search cost stays out of the main session context, and the duplicate-check remains a
 named, auditable step instead of an easy-to-skip intention. Once a match or near-match is found, apply `docs/plan/functional-code-taxonomy/`'s shared-vs-specific test: domain-mechanism code belongs in
 `src/lib/`, not as another copied local script.
+
+## Pipeline cron-cutover procedure
+
+`github_copilot/aws-access-cli` currently has three live system-crontab entries for daily, weekly, and monthly report jobs, each hardcoding that repo's path and `.venv`. Crontab is not git-tracked, so
+an edit there gets none of the diff or review visibility the code itself receives.
+
+Use this checklist whenever a future story ports a pipeline-category project to a new location:
+
+1. Add the new cron entry pointing at the ported script's new path and venv, and send it to a distinct log file such as a `_v2` variant. Do not edit or remove the old entry yet; both jobs run in
+   parallel first.
+2. Let both entries run for at least one full cycle of that job's real schedule before comparing results. Daily work needs several daily runs, weekly work needs at least two weekly runs, and monthly
+   work needs at least one monthly run.
+3. Diff the two jobs' output for every run in that window, using row counts, key metrics, or a full content diff as the report demands. This must be a script or delegated sub-agent check, not manual
+   eyeballing.
+4. Only after a default of three consecutive matching runs, adjusted upward if the job needs it, remove the old crontab entry. Because crontab has no built-in change record, log that removal manually
+   in `CONTEXT.md` or a dedicated append-only log with the job name, date, and verification window.
+5. **Never a same-day swap.** A same-day cutover risks a silently broken daily, weekly, or monthly report going unnoticed for a full cycle, which is worse than a temporary duplicate run.
+
+This section is documentation only in this story. No pipeline has been ported yet, so this task does not edit any live crontab entry.
