@@ -40,7 +40,8 @@ If the plan touches more than 2 files, wait for explicit go-ahead.
 
 Work above a single-sitting fix is tracked as a story (one coherent goal) or epic (2+ related stories) under `docs/plan/<slug>/` — see `docs/plan/README.md` for the file-set conventions and
 `docs/plan/_TEMPLATE/README.md` for how to start one (`cp -r docs/plan/_TEMPLATE/story docs/plan/<slug>`). Structure and checkbox consistency are enforced at commit time by the
-`docs-plan-story-structure`/`docs-plan-checkbox-consistency` pre-commit hooks (see `tooling/docs-plan/`) — a malformed plan folder fails the commit, not a later review.
+`docs-plan-story-structure`/`docs-plan-checkbox-consistency` pre-commit hooks (see `tooling/docs-plan/`) — a malformed plan folder fails the commit, not a later review. Before creating any new
+top-level work folder, classify it with `docs/guides/project-taxonomy.md` and use that guide's folder skeleton for the chosen category.
 <!-- INSERT: tier1 -->
 
 ## Step 4 — Tests are mandatory
