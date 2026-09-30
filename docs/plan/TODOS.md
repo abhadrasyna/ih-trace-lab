@@ -15,7 +15,7 @@
   - 2026-09-30: SSR-4 landed in `615998a`; pytest now covers both registry/promotion CLIs, with package markers added for `tests/` and `tests/dev/`.
   - 2026-09-30: SSR-5 landed in `97278de`; `AGENTS.md` now carries the single pointer back to `scratch/SCRATCH.md`'s registry section.
   - 2026-09-30: SSR-6 landed in `ea76445`; the repo-local `session-close` override now conditionally regenerates `SCRIPTS.md`.
-  - 2026-09-30: SSR-7 regenerated and committed root `SCRIPTS.md`, closing the story.
+  - 2026-09-30: SSR-7 landed in `622dfdf`; root `SCRIPTS.md` is now committed, closing the story.
 - [ ] `reference-knowledge-harvest` — ongoing docs-only harvest from `github_copilot`. No dependents among the stories below; independent, can run indefinitely in parallel.
 
 ## Phase 1 — Query catalog
