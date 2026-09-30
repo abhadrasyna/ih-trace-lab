@@ -46,6 +46,11 @@
   protocol of its own) — each of the 10 sub-stories has its own `prompt.md`/`tasks.md`/`stories.md` and first unchecked task (all currently their own `<PREFIX>-1` audit task). Not yet implemented
   beyond GAP-1 — see `README.md`'s Stories table for which sub-story to pick up next.
 
+- `docs/plan/reference-folder-diagrams/` — story: extends `scripts/reference_diagram/` (which already produced the flat `docs/reference-architecture.md` overview) with per-`github_copilot`-folder
+  Mermaid diagrams — convergence flowcharts, orchestration sequence diagrams, and one state diagram (`mtn-zm-session-device-investigation`'s outcome classifier) — so `reference-code-gap-migration`'s
+  tiering and its two module-promotion decisions (`src/lib/mpd/`, `src/lib/crypto_signing/`) are visible, not just prose. Docs/tooling only, no migration implementation. Not yet implemented — see its
+  `tasks.md` for the first unchecked task (RFD-1).
+
 ## Key Decisions
 
 See `DECISIONS.md` for the append-only rationale log — created on the first real architecture decision, not before. Until that file exists, there is nothing to point to here.
