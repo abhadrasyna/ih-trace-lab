@@ -108,6 +108,11 @@ call.
   `instructions/{har-playback-flow-analysis,kinesis-stream-analysis,mpd-analysis,device-ua-playsession-analysis}.md` — HAR playback-flow reconstruction approach, Kinesis `PutRecords` decode/flatten
   rules, MPD/DASH analysis rules (cross-linked to RKH-14's ported `mpd-shaka-restrictions-analysis.md` instead of duplicating), device/UA CSV analysis approach.
 
+**Batch 6 (`sre`, reclassified out of the infra-folder exclusion — its `data/`/`reports/` raw exports and dated skill-run outputs stay excluded, but its `docs/*.md` knowledge does not):**
+- **RKH-17** — `knowledge/sre-jira-project-reference.md`: harvest `sre/docs/{sre-jira-knowledge,SRE_Quarterly_Jira_Query_Prompt}.md` — Jira project SRE's daily-operational-story/Q2-epic-driven-work
+  structure, key custom-field IDs, days-based story-points convention, Initiative→Epic→Story hierarchy plus generalized quarterly JQL templates, and the `/sre*` skills reference table; no root
+  `knowledge/*.md` currently references this folder, so it is a single harvest-only task.
+
 ## Definition of done
 
 - `knowledge/vod-asset-field-mapping.md` states the four-ID-family navigation table and the ADI→API/Mongo field correspondences clearly enough to answer "which OpsHub/HAR/Lightstep/Mongo field does
@@ -135,10 +140,11 @@ call.
 ## Folder backlog
 
 Tracks every `github_copilot/*` candidate folder this story could eventually cover. `status` is the only field that changes as the story progresses: `not started` → `spec'd` (RKH-N task(s) exist in
-`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`config`, `copilot`, `knowledge`, `plan`, `scratch`, `scripts`, `sre`) are deliberately
-excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd. `aws-access-cli` and the root `investigations/` folder were both reclassified out of
-this exclusion (see their rows below): `aws-access-cli`'s automation/CLI code stays out of scope, but its dated `docs/2026-09-*.md` investigation write-ups do not; `investigations/`'s `data/`, `har/`,
-`scripts/`, `athenaCSV/`, `spancsv/`, and `xmls_or_mpd/` stay out of scope, but its `docs/` case write-ups and `instructions/` playbooks do not.
+`tasks.md`/`stories.md` but not yet executed) → `harvested` (task(s) executed, checkbox ticked). Infra folders (`config`, `copilot`, `knowledge`, `plan`, `scratch`, `scripts`) are deliberately
+excluded from this table — they hold no project-specific investigation knowledge of their own and are never spec'd. `aws-access-cli`, the root `investigations/` folder, and `sre` were all reclassified
+out of this exclusion (see their rows below): `aws-access-cli`'s automation/CLI code stays out of scope, but its dated `docs/2026-09-*.md` investigation write-ups do not; `investigations/`'s `data/`,
+`har/`, `scripts/`, `athenaCSV/`, `spancsv/`, and `xmls_or_mpd/` stay out of scope, but its `docs/` case write-ups and `instructions/` playbooks do not; `sre`'s `data/*.csv` (raw Jira exports) and
+`reports/*.md` (dated generated report outputs) stay out of scope, but its `docs/*.md` (Jira project structure, custom fields, quarterly query templates) does not.
 
 | Folder | Status | Notes |
 | --- | --- | --- |
@@ -162,6 +168,9 @@ knowledge, and stay out of scope |
 | `investigations` (root, not a submodule) | spec'd (RKH-12, RKH-13, RKH-14, RKH-15, RKH-16 not yet executed) | initially listed as excluded infra, then reclassified: `docs/` (case write-ups, several
 already promoted to root `knowledge/*.md`) and `instructions/` (9 executable Copilot playbook-prompts, none yet promoted) both hold genuine reusable content; `data/`, `har/`, `scripts/`, `athenaCSV/`,
 `spancsv/`, `xmls_or_mpd/` stay out of scope (raw/gitignored artifacts and analysis scripts, not knowledge docs) |
+| `sre` | spec'd (RKH-17 not yet executed) | initially listed as excluded infra, then reclassified: `docs/sre-jira-knowledge.md` + `docs/SRE_Quarterly_Jira_Query_Prompt.md` hold genuine reusable
+project-structure/field-ID/JQL-template knowledge, not referenced by any existing root `knowledge/*.md` (single harvest-only task, no port/correct half); `data/*.csv` (raw Jira exports) and
+`reports/*.md` (dated generated report outputs, one per skill run) stay out of scope |
 
 ## Adding a new folder (spec-authoring mode)
 

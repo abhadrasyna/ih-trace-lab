@@ -4,7 +4,7 @@ Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task
 spec. This list grows: a new `RKH-N` gets appended each time another `github_copilot/*` folder is next up for harvesting — don't assume RKH-1/RKH-2 (the `vod-asset-ingestion-mapping/` batch) is the
 whole story.
 
-**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7, RKH-8, RKH-9, RKH-10, RKH-11, RKH-12, RKH-13, RKH-14, RKH-15, RKH-16.**
+**Open: RKH-1, RKH-2, RKH-3, RKH-4, RKH-5, RKH-6, RKH-7, RKH-8, RKH-9, RKH-10, RKH-11, RKH-12, RKH-13, RKH-14, RKH-15, RKH-16, RKH-17.**
 
 - [ ] **RKH-1** — `knowledge/vod-asset-field-mapping.md`: harvest ID-navigation + field-mapping docs from `vod-asset-ingestion-mapping/` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 |
   Review: human diff review | SHA: <—>
@@ -43,6 +43,8 @@ whole story.
 - [ ] **RKH-16** — `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md`: distill root `investigations/instructions/{har-playback-flow-analysis,kinesis-stream-analysis,mpd-analysis,
   device-ua-playsession-analysis}.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—> | Depends on: RKH-14 (creates the ported
   `mpd-shaka-restrictions-analysis.md` this task cross-links to instead of duplicating)
+- [ ] **RKH-17** — `knowledge/sre-jira-project-reference.md`: harvest `sre/docs/{sre-jira-knowledge,SRE_Quarterly_Jira_Query_Prompt}.md` (Jira project SRE structure, custom-field IDs, skills
+  reference, quarterly JQL templates) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 
 ## Story done when
 
@@ -93,6 +95,9 @@ whole story.
 - **RKH-16** — `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md` exists, distills the reusable facts/methodology (HAR playback-flow reconstruction approach, Kinesis `PutRecords`
   decode/flatten rules, MPD/DASH analysis rules, device/UA CSV analysis approach) from its four source playbooks, cross-linked to RKH-14's ported `mpd-shaka-restrictions-analysis.md` instead of
   duplicating its DASH/Shaka detail.
+- **RKH-17** — `knowledge/sre-jira-project-reference.md` exists, preserves the SRE Jira project structure (daily operational stories, Q2 2026 epic-driven work, SDI cross-reference coverage states),
+  the key custom-field-ID table, the days-based (non-Fibonacci) story-points convention, the Initiative→Epic→Story hierarchy plus generalized quarterly JQL templates, and the `/sre*` skills reference
+  table with shared conventions — without porting `sre/data/*.csv` or `sre/reports/*.md`'s dated, raw report artifacts.
 
 ## After each task
 

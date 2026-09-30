@@ -547,3 +547,37 @@ this exact division of labor in its source form).
 **Tests:** none — docs-only.
 
 **Commit:** `docs(investigations-knowledge-harvest): add knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md`
+
+---
+
+## RKH-17 — `knowledge/sre-jira-project-reference.md`
+
+**Grounding:** `sre/docs/sre-jira-knowledge.md` (SRE Jira project structure: daily operational stories, Q2 2026 epic-driven work, key custom-field IDs, skills reference, story-points/planned-vs-
+unplanned methodology, SDI cross-check findings) and `sre/docs/SRE_Quarterly_Jira_Query_Prompt.md` (quarterly Initiative→Epic→Story JQL query templates). Both read-only sources under
+`/Users/abhadra/github_copilot/sre/` — never edit them. `sre/data/*.csv` (raw Jira exports) and `sre/reports/*.md` (dated generated report outputs, one per skill run) are out of scope — they are
+artifacts produced by the skills this file documents, not reusable knowledge themselves.
+
+**Files to change / create:**
+- `knowledge/sre-jira-project-reference.md` — new file
+
+**What to implement:**
+
+1. **"Read this first when" header** — consult before writing any JQL against Jira project SRE, or before running/authoring one of the `/sre*` skills.
+2. **Project structure section**: the two work dimensions — daily operational stories (Proactive Dashboard Monitoring, with its 3 shifts and per-customer expected-effort table; Operational Daily
+   Report & IVPA Health Verification), both anchored via the `Report Date` custom field; and Q2 2026 epic-driven work (Customer Change Support; Incident & Problem Triaging, cross-referenced against
+   project SDI with its qualifying-filter criteria and its 3 coverage states — `active`/`existing-no-activity`/`missing`).
+3. **Key Jira fields table** (Report Date, Epic Link, External Assignment Group, Request Source, Story Points custom-field IDs, including the `~` vs. `=` operator gotcha for the text-typed
+   assignment-group field) and the days-based (not Fibonacci: 0.125/0.25/0.5/1) story-points convention.
+4. **Initiative→Epic→Story hierarchy** (`Parent Link` = Epic→Initiative, `Epic Link` = Story/Bug→Epic) plus the quarterly JQL query templates (Initiatives, Epics per group, Stories per group) from
+   `SRE_Quarterly_Jira_Query_Prompt.md`, generalized beyond its one Q1-2026 worked example — keep its "update these parameters each quarter" convention explicit rather than the stale epic-key values.
+5. **Skills reference table** (`sreWorkLog`, `sredailyreporteffort`, `sremonitoringeffort`, `sremonitoringcommentanalysis`, `srecustomerschangesupportreport`) with trigger/use-for, and the shared
+   conventions (default to yesterday, natural-language dates, output to a reports folder by default, `inline-only` flag).
+6. **One dated-pattern gotcha, framed as time-of-writing not permanent fact**: the SDI→SRE-triaging coverage gap skewed heavily toward one assignment group (`VCS-GO`) across two consecutive sprints as
+   of 2026-06-28 (AC26.2.6: 7% coverage; AC26.3.1: 0% coverage) — cite this as an example of what the `/srecustomerschangesupportreport` skill flags, not as a standing fact to re-check.
+7. **Do not port** the raw per-sprint SDI-comparison tables themselves, or any `sre/data/*.csv`/`sre/reports/*.md` content — one sentence noting these are dated/raw skill-run artifacts that stay in
+   `github_copilot`, not harvested knowledge.
+8. **Source line** at the bottom naming both exact source paths and the read-only note.
+
+**Tests:** none — docs-only.
+
+**Commit:** `docs(sre-knowledge-harvest): add knowledge/sre-jira-project-reference.md`
