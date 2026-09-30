@@ -17,7 +17,11 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from scripts.dev.generate_scripts_registry import EXCLUDED_DIR_NAMES, SCRIPT_EXTENSIONS, extract_purpose
+from scripts.dev.generate_scripts_registry import (
+    EXCLUDED_DIR_NAMES,
+    SCRIPT_EXTENSIONS,
+    extract_purpose,
+)
 
 SCRIPT_SCOPES = (
     "investigations",

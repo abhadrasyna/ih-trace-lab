@@ -4,7 +4,7 @@ VENV_DIR := .venv
 PYTHON := $(VENV_DIR)/bin/python
 PIP := $(VENV_DIR)/bin/pip
 
-.PHONY: help venv test lint typecheck pre-commit registries clean clean-all
+.PHONY: help venv test lint lint-fix typecheck pre-commit registries clean clean-all
 
 help: ## Show this help
 	@echo "Available targets:"
@@ -20,6 +20,9 @@ test: ## Run the pytest suite (override with TEST=path/to/test_file.py)
 
 lint: ## Run ruff over src/, scripts/, and tests/
 	$(VENV_DIR)/bin/ruff check src scripts tests
+
+lint-fix: ## Run ruff over src/, scripts/, and tests/, auto-applying safe fixes
+	$(VENV_DIR)/bin/ruff check --fix src scripts tests
 
 typecheck: ## Run mypy over src/
 	$(VENV_DIR)/bin/mypy src

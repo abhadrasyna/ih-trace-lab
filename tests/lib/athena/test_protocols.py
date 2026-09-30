@@ -1,7 +1,7 @@
 """Tests for src.lib.athena.protocols."""
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 from src.lib.athena.protocols import AthenaClient, QueryResult
 

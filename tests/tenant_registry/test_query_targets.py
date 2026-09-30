@@ -7,7 +7,11 @@ import dataclasses
 import pytest
 
 from src.tenant_registry.models import TenantConfig
-from src.tenant_registry.query_targets import AthenaQueryTarget, LightstepGoQueryTarget, MatisseQueryTarget
+from src.tenant_registry.query_targets import (
+    AthenaQueryTarget,
+    LightstepGoQueryTarget,
+    MatisseQueryTarget,
+)
 
 
 def _tenant(**overrides: object) -> TenantConfig:

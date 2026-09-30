@@ -1,8 +1,9 @@
 """Protocol skeletons for shared Athena execution."""
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 @dataclass

@@ -3,7 +3,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.dev.generate_scripts_registry import build_registry, extract_purpose, extract_scratch_date
+from scripts.dev.generate_scripts_registry import (
+    build_registry,
+    extract_purpose,
+    extract_scratch_date,
+)
 
 
 def _write(path: Path, content: str = "") -> None:

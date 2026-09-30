@@ -12,7 +12,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.tenant_registry import AthenaQueryTarget, LightstepGoQueryTarget, MatisseQueryTarget, QueryTarget, TenantRegistry
+from src.tenant_registry import (
+    AthenaQueryTarget,
+    LightstepGoQueryTarget,
+    MatisseQueryTarget,
+    QueryTarget,
+    TenantRegistry,
+)
 
 
 def main(argv: list[str] | None = None) -> int:

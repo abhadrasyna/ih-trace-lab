@@ -113,7 +113,7 @@ def _is_structural(line: str, base_indent: str = "") -> bool:
         return True
     if stripped.startswith("|"):
         return True
-    remainder = line[len(base_indent) :] if line.startswith(base_indent) else line
+    remainder = line.removeprefix(base_indent)
     if _INDENTED_CODE_RE.match(remainder):
         return True
     return False
