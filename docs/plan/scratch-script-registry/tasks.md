@@ -3,11 +3,11 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: SSR-3, SSR-4, SSR-5, SSR-6, SSR-7.**
+**Open: SSR-4, SSR-5, SSR-6, SSR-7.**
 
 - [x] **SSR-1** — `scripts/dev/generate_scripts_registry.py`: scan + write root `SCRIPTS.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: e564794
 - [x] **SSR-2** — `scripts/dev/promote_scratch_scripts.py`: manual promotion CLI | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 501f818
-- [ ] **SSR-3** — `scratch/SCRATCH.md`: registry + sub-agent duplicate-check section | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [x] **SSR-3** — `scratch/SCRATCH.md`: registry + sub-agent duplicate-check section | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: ca5c1b6
 - [ ] **SSR-4** — Tests for SSR-1/SSR-2 | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **SSR-5** — `AGENTS.md` pointer line | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **SSR-6** — `session-close` SKILL.md: registry-regeneration step | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>

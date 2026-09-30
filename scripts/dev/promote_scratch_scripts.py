@@ -18,6 +18,7 @@ else:
     from .generate_scripts_registry import SCRIPT_EXTENSIONS, build_registry, extract_purpose, extract_scratch_date, find_scripts
 
 DEFAULT_MIN_AGE_DAYS = 30
+__all__ = ["DEFAULT_MIN_AGE_DAYS", "find_promotion_candidates", "main", "promote"]
 
 
 def find_promotion_candidates(scratch_dir: Path, min_age_days: int) -> list[Path]:
