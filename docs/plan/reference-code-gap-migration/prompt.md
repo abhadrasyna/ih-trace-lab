@@ -1,56 +1,45 @@
-# Reference code gap migration — prompt
+# Reference code gap migration — router
 
-> Plan (and later port) the ~166 `.py` files across 10 `github_copilot` reference projects that neither `pipeline-migration` nor `src-lib-migration` currently cover — resuming a 2026-09-30 audit
-> session, not yet started.
+Route to this epic's stories once you know which project/task you're picking up. This file has no tasks of its own — see each story's own `prompt.md` for its routing rules and session-start protocol
+(read `CONTEXT.md`, find the first unchecked task in that story's own `tasks.md`, one task per session).
 
-Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
-task id) before writing any code. One task per session. Complete it fully. Stop.
+`GAP-1` — the task that produced this epic (scope shape, category-conflict resolution, new-module promotion decisions) — is done; its record lives in this folder's own `tasks.md`/`stories.md` (now
+closed) and `spec.md` (the audit evidence still worth reading before any sub-story's first task). See `README.md` for the full decision log, tiering rationale, and story table.
 
-## Why this story exists
+## Why this epic exists
 
 A 2026-09-30 session asked whether `docs/plan/pipeline-migration/` and `docs/plan/src-lib-migration/` together plan for *all* Python code migration out of `/Users/abhadra/github_copilot` (read-only
-reference). They do not: `pipeline-migration` only fully ports `aws-access-cli` and `ctap-smvod-session-report`; `src-lib-migration` only extracts shared domain-mechanism patterns (auth, athena,
-csv_io, report_render, har, curl_to_python, paths) from a handful of other projects as *citation sources*, never porting their actual business logic. Ten projects have zero migration plan:
-`vod-playback-timing-probe` (65 files), `mtn-zm-session-device-investigation` (32), `mtn-network-traffic` (22), `vod-asset-ingestion-mapping` (15), root `investigations/` (10), `applauseInvestigation`
-(9), `shaka-6001-sa-error-analysis` (6), root `scripts/` (4), `astro-events-household-report` (2), `smarttv-mtntv` (1). `oasis-athena-mcp` (34 files) was checked and confirmed **not** a gap — it's
-superseded by the already-independent `athena-mcp-server` submodule that `athena-lib-integration` wires in.
+reference). They do not: ten projects (`vod-playback-timing-probe`, `mtn-zm-session-device-investigation`, `mtn-network-traffic`, `vod-asset-ingestion-mapping`, root `investigations/`,
+`applauseInvestigation`, `shaka-6001-sa-error-analysis`, root `scripts/`, `astro-events-household-report`, `smarttv-mtntv`) had zero migration plan. `README.md` records the full decision log for how
+this epic now covers all ten.
 
-A same-session background audit (`explore` agent, 2026-09-30) did a file-by-file classification of all 166 files against the "shared vs. specific" test and the 7 planned `src/lib/*` modules. Full
-findings are in this story's `spec.md` — read it before scoping any task below. This `prompt.md` only session-start-instructs and index-points; it does not restate the audit.
+## Hard gate — read before starting any story
 
-## Scope guard
+Every story in this epic is blocked until these land:
 
-- This story does **not** re-decide `project-taxonomy`'s category definitions or `src-lib-migration`'s existing 7-module design — it consumes both as-is, the same way `pipeline-migration` does.
-- This story does **not** touch `oasis-athena-mcp` — confirmed superseded, not a gap, no task here should re-open it.
-- No file under `/Users/abhadra/github_copilot` is ever created, edited, or deleted — read-only reference throughout, per `CONTEXT.md`'s constraint.
-- Whether this becomes one epic (10 stories, mirroring `pipeline-migration`'s shape) or several independently-landing stories (e.g. cheap wins first: `applauseInvestigation`,
-  `astro-events-household-report`; defer the two 60+/30+-file projects) is an **open decision**, not yet made — see "Task overview" below, GAP-1 is that decision, not a foregone one.
+1. `docs/plan/src-lib-migration/` — the `src/lib/*` modules each story imports must exist and be tested first. Tier 3 stories additionally need the two modules `README.md` §"GAP-1 decisions" promoted
+   (`mpd`, `crypto_signing`) — those do not exist yet even after the other five modules land.
+2. `docs/plan/project-taxonomy/` — PT-1/PT-2/PT-7 at minimum, for the category definitions and folder skeletons every story's target path assumes.
 
-## Session-start load hints
+If these are not yet ✅ done, stop and pick up that story instead — do not re-derive `src/lib/*` module shapes or folder skeletons locally; this epic only consumes them.
 
-- `spec.md` (this story's own file) — the full 10-project, file-by-file audit table; read before GAP-1.
-- `docs/plan/pipeline-migration/README.md` — the shape this story's eventual epic (if chosen) should mirror: one epic, N stories, shared blocking-dependency list, lib-vs-script split test cited per
-  file.
-- `docs/plan/src-lib-migration/README.md` — the 7 planned modules and existing citation list; GAP-1 must reconcile new duplication clusters `spec.md` found against this list without re-deciding module
-  boundaries already settled there.
-- `docs/plan/project-taxonomy/structure.md` — worked-example categories already named for 4 of the 10 projects (`applauseInvestigation` → `investigations/applause/`,
-  `mtn-zm-session-device-investigation` → `investigations/mtn-zm-device/`, `vod-asset-ingestion-mapping` and `vod-playback-timing-probe` → `experiments/`). **Known conflict, unresolved:** the
-  2026-09-30 audit suggests `vod-asset-ingestion-mapping` reads as a recurring-campaign *investigation* (its own README calls it "a continuous data-gathering exercise"), not an experiment. GAP-1 must
-  resolve this — either accept `structure.md`'s categorization as-is with a documented reason, or flag it back to `project-taxonomy` for a `structure.md` correction. Do not silently pick one.
+## Story selection
 
-## Task overview
+| If you're working on… | Tier | Go to |
+|---|---|---|
+| `applauseInvestigation` | 1 | `applause-investigation-migration/prompt.md` |
+| `astro-events-household-report` | 1 | `astro-events-household-investigation-migration/prompt.md` |
+| `shaka-6001-sa-error-analysis` | 1 | `shaka-6001-sa-investigation-migration/prompt.md` |
+| root `scripts/` | 1 | `root-scripts-tool-migration/prompt.md` |
+| `vod-asset-ingestion-mapping` | 2 | `vod-asset-ingestion-investigation-migration/prompt.md` |
+| `mtn-zm-session-device-investigation` | 2 | `mtn-zm-device-investigation-migration/prompt.md` |
+| `mtn-network-traffic` | 2 | `mtn-network-traffic-tool-migration/prompt.md` |
+| root `investigations/` | 2 | `root-investigations-migration/prompt.md` |
+| `vod-playback-timing-probe` | 3 (blocked on `src/lib/mpd/`) | `vod-playback-timing-probe-tool-migration/prompt.md` |
+| `smarttv-mtntv` | 3 (blocked on `src/lib/crypto_signing/`) | `smarttv-mtntv-tool-migration/prompt.md` |
 
-- **GAP-1** — Decide the scope shape (one epic w/ 10 stories vs. split by size/priority) and resolve the `vod-asset-ingestion-mapping`/`vod-playback-timing-probe` category conflict with
-  `structure.md`. Not yet started — this is the first unchecked task; see `tasks.md`.
-- Further tasks (one per chosen project/story) are deliberately not yet written — they depend on GAP-1's decision. Do not add them before GAP-1 lands.
+No priority order is enforced across stories beyond the tiering above — pick whichever one you're asked to work on; land Tier 1 before Tier 2/3 only when no specific story was requested.
 
-## Definition of done
+## Invariant
 
-- GAP-1 decided and recorded (epic shape + category-conflict resolution), with the resulting story/epic skeleton created (mirroring `pipeline-migration`'s file set) and this story's own `tasks.md`
-  updated to either point at the new epic/story location (if this folder is superseded) or continue with per-project tasks (if kept flat).
-
-## Perspectives not covered
-
-- `spec.md`'s "new shared module" candidates (`mpd`/DASH parser, playback-session/timing correlator, network-diagnostics, ADI/XML+asset-identity mapper, device/user-agent identity, crypto/JWS signing)
-  are named but not scoped as their own stories — GAP-1 should decide whether any of these get promoted to an 8th+ `src/lib/*` module or stay project-local duplication accepted as a known cost. Not
-  decided in this session.
+Never create, edit, or delete any file under `/Users/abhadra/github_copilot` — it is read-only reference for every story in this epic.

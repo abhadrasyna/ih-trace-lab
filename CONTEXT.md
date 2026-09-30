@@ -35,12 +35,16 @@
   `investigations/ctap-smvod/`, recurring-campaign category, incl. manual-Lightstep-step relocation) from `github_copilot` (read-only reference), replacing their duplicated executor/auth/SQL/output
   logic with `src/lib/*`, `query-catalog`, and `project-taxonomy` PT-7's ISO-prefix path convention respectively. Blocked on `project-taxonomy` PT-1/2/6/7, `src-lib-migration`, and `query-catalog`
   landing first. Not yet implemented — see `docs/plan/pipeline-migration/aws-access-cli-pipeline-migration/tasks.md` for the first unchecked task (AAM-1).
-- `docs/plan/reference-code-gap-migration/` — story: a 2026-09-30 audit found 10 `github_copilot` projects (~166 Python files: `vod-playback-timing-probe`, `mtn-zm-session-device-investigation`,
-  `mtn-network-traffic`, `vod-asset-ingestion-mapping`, root `investigations/`, `applauseInvestigation`, `shaka-6001-sa-error-analysis`, root `scripts/`, `astro-events-household-report`,
-  `smarttv-mtntv`) with no migration plan in either `pipeline-migration` or `src-lib-migration` (which only cite a few of them as duplication *sources*, never port their business logic);
-  `oasis-athena-mcp` was checked and confirmed not a gap (superseded by the `athena-mcp-server` submodule). Full file-by-file classification (lib-candidate vs. business-logic, ~35-45 files absorbable
-  by the existing 7 `src/lib/*` modules, ~95-105 irreducible, several new-module candidates) is in this story's `spec.md`. Not yet implemented — see its `tasks.md` for the first unchecked task (GAP-1:
-  decide scope shape — one epic vs. size-split — and resolve a `vod-asset-ingestion-mapping`/`vod-playback-timing-probe` category conflict with `project-taxonomy/structure.md`'s worked examples).
+- `docs/plan/reference-code-gap-migration/` — **epic** (promoted from a single story by its own GAP-1 task, 2026-09-30): ports the 10 `github_copilot` projects (~166 Python files) that neither
+  `pipeline-migration` nor `src-lib-migration` cover, into 10 sub-stories tiered by effort/blocking (`README.md`'s decision log) — Tier 1 cheap (`applause-investigation-migration`,
+  `astro-events-household-investigation-migration`, `shaka-6001-sa-investigation-migration`, `root-scripts-tool-migration`), Tier 2 medium (`vod-asset-ingestion-investigation-migration`,
+  `mtn-zm-device-investigation-migration`, `mtn-network-traffic-tool-migration`, `root-investigations-migration`), Tier 3 blocked on two newly-promoted `src/lib/*` modules
+  (`vod-playback-timing-probe-tool-migration` needs `mpd`, `smarttv-mtntv-tool-migration` needs `crypto_signing` — both modules to be built by `src-lib-migration`, not this epic). GAP-1 also flagged a
+  correction to `project-taxonomy/structure.md`/`stories.md`: `vod-asset-ingestion-mapping` recategorized from `experiments/` to `investigations/vod-asset-ingestion/` (recurring campaign, per its own
+  README); a second, similar tension for `vod-playback-timing-probe` (audit suggests "tool", `structure.md` still examples it under `experiments/`) was flagged but deliberately left unresolved for a
+  future `project-taxonomy` session. `oasis-athena-mcp` was checked and confirmed not a gap (superseded by the `athena-mcp-server` submodule). Root `prompt.md` is now a pure router (no session-start
+  protocol of its own) — each of the 10 sub-stories has its own `prompt.md`/`tasks.md`/`stories.md` and first unchecked task (all currently their own `<PREFIX>-1` audit task). Not yet implemented
+  beyond GAP-1 — see `README.md`'s Stories table for which sub-story to pick up next.
 
 ## Key Decisions
 

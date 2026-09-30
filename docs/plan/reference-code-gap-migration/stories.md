@@ -4,7 +4,9 @@
 
 ---
 
-## GAP-1 — decide scope shape + resolve category conflict
+## GAP-1 — decide scope shape + resolve category conflict (done)
+
+> Closed 2026-09-30. Decisions recorded in `README.md` §"GAP-1 decisions". This spec is kept as the historical record of what was asked; do not re-run it.
 
 **Files to change / create:**
 - Either this story's own `tasks.md` (if kept flat — add per-project task ids), or a new `docs/plan/reference-code-gap-migration/README.md` + per-project sub-story folders (if promoted to an epic,

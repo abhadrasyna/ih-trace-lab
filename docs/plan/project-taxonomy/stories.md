@@ -27,8 +27,10 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
      `RETENTION.md` marker (see PT-2), not a separate top-level category.
    - **Tool** — reusable software with its own interface/protocol, actively maintained and enhanced across many callers. Example: `github_copilot/oasis-athena-mcp` (MCP server),
      `github_copilot/mtn-network-traffic` (curl-to-Python converter).
-   - **Experiment** — a short-lived probe answering one narrow question, expected to be thrown away or absorbed once answered. Example: `github_copilot/vod-asset-ingestion-mapping`,
-     `github_copilot/vod-playback-timing-probe`.
+   - **Experiment** — a short-lived probe answering one narrow question, expected to be thrown away or absorbed once answered. Example: `github_copilot/vod-playback-timing-probe` (though
+     `reference-code-gap-migration`'s 2026-09-30 audit flags this one as reading more like a **tool** — see that story's `spec.md` §1 — an open tension for whoever implements PT-1, not resolved here).
+     `github_copilot/vod-asset-ingestion-mapping` was removed from this example — its own README calls it "a continuous data-gathering exercise", i.e. a recurring-campaign investigation
+     (`investigations/vod-asset-ingestion/`), not a throwaway probe; corrected by that same audit, see `structure.md`'s matching 2026-09-30 note.
 3. Each category paragraph ends with one sentence distinguishing it from its nearest neighbor (pipeline vs. investigation: no open question+no docs vs. open question+mandatory docs; investigation's
    two shapes: case-close-out vs. rolling retention; investigation vs. experiment: real product question vs. throwaway probe) — this is the actual test a session applies, not just a label.
 
@@ -49,8 +51,8 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 1. A `## Folder skeleton per category` table, columns `Category | Required files | Notes`, one row per PT-1 category:
    - Pipeline: `scripts/` (imports `src/lib/*` from `docs/plan/functional-code-taxonomy/`), `tests/`, a doc stating the schedule (what runs when, e.g. a cron expression or trigger description) — no
      `investigations/docs` (nothing to write up, it is not a case).
-   - Investigation: lives under the top-level `investigations/` category bucket, applying two rules found during the follow-up audit of `applauseInvestigation` and `vod-playback-timing-probe`
-     (both independently reinvented the same nesting mistake):
+   - Investigation: lives under the top-level `investigations/` category bucket, applying two rules found during the follow-up audit of `applauseInvestigation` and `vod-playback-timing-probe` (both
+     independently reinvented the same nesting mistake):
      - **Rule A (no double wrap):** a project's own case-artifact folders — `docs/`, `queries/`, `scripts/` — live directly at that project's own root (`investigations/<slug>/docs/`, etc.). Never
        re-wrap them in an inner folder also named `investigations/` (i.e. never `investigations/<slug>/investigations/{docs,...}`) — that stutter is exactly the bug found in both audited projects.
        Raw tool inputs (`har`/`lightstep`/`athena`) do **not** live under `investigations/` at all — see PT-7's root `data/` tree.
@@ -68,14 +70,14 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
    - Tool: `src/`, `tests/`, its own `README.md`, no `investigations/` (it is not a case-tracking folder).
    - Experiment: starts in `scratch/` per this project's existing convergence rule (`scratch/SCRATCH.md`) — only gets a dedicated folder under `experiments/` if/when it converges past a single
      session's throwaway probe; never starts as its own top-level folder.
-2. A `## Continuous investigations are plain folders` section stating the rule reached during the 2026-09-28 discussion round: `ctap-smvod-session-report`'s existing submodule boundary (own
-   `.git`, own remote) was audited for any concrete benefit — no git hook, workflow, or independent-review need was found that depends on it; its only real structural difference from a bounded-case
-   campaign is a recurring `data/`+`output/` pipeline tree, which PT-7's config-driven path templates already resolve without needing a separate git root. Everything in this project — pipeline,
-   investigation (bounded or recurring), tool, experiment — is therefore a **plain folder** by default; a real git submodule is only justified by an *external* fact independent of category (e.g. a
-   different team owns the remote, or the code is already published elsewhere), decided case-by-case, never assumed from a category label.
+2. A `## Continuous investigations are plain folders` section stating the rule reached during the 2026-09-28 discussion round: `ctap-smvod-session-report`'s existing submodule boundary (own `.git`,
+   own remote) was audited for any concrete benefit — no git hook, workflow, or independent-review need was found that depends on it; its only real structural difference from a bounded-case campaign
+   is a recurring `data/`+`output/` pipeline tree, which PT-7's config-driven path templates already resolve without needing a separate git root. Everything in this project — pipeline, investigation
+   (bounded or recurring), tool, experiment — is therefore a **plain folder** by default; a real git submodule is only justified by an *external* fact independent of category (e.g. a different team
+   owns the remote, or the code is already published elsewhere), decided case-by-case, never assumed from a category label.
 3. Update `structure.md`'s `investigations/` block in the same commit so it shows: a standalone `investigations/<case-id>/` example, a bounded-case campaign example (`<campaign-slug>/{docs/{<case-
-   id>-*.md, archive/}, queries/, scripts/, tests/}` — no `data/` here, see PT-7), and a recurring-campaign example with the optional `data/`, `output/`, `RETENTION.md` siblings — matching this
-   table row for row.
+   id>-*.md, archive/}, queries/, scripts/, tests/}` — no `data/` here, see PT-7), and a recurring-campaign example with the optional `data/`, `output/`, `RETENTION.md` siblings — matching this table
+   row for row.
 4. Cross-reference `docs/plan/functional-code-taxonomy/` by name for "what code a pipeline/tool/investigation's `scripts/`/`src/` folder should import" — do not restate that story's module layout
    here.
 
@@ -199,8 +201,8 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 - `github_copilot/investigations` (a separate, older project) shows the failure mode of *not* having any convention: ad hoc top-level buckets invented per data-type (`athenaCSV/`, `spancsv/`,
   `xmls_or_mpd/`, `har/`), zero case-id/campaign grouping, ~25 unrelated HAR files flat in one folder distinguishable only by inconsistent filenames. This is the negative example the design below
   prevents, not a variant to reconcile with.
-- `ctap-smvod-session-report` (a git submodule found, by the same round's later discussion, to buy no concrete benefit from that submodule boundary — folded into a plain recurring-campaign folder,
-  see PT-2) mixes a true manual input (3 hand-exported Lightstep CSVs/day — no live API) with a later pipeline step's own Athena output, re-read as the next step's input, under one undifferentiated
+- `ctap-smvod-session-report` (a git submodule found, by the same round's later discussion, to buy no concrete benefit from that submodule boundary — folded into a plain recurring-campaign folder, see
+  PT-2) mixes a true manual input (3 hand-exported Lightstep CSVs/day — no live API) with a later pipeline step's own Athena output, re-read as the next step's input, under one undifferentiated
   `inputCSV/` folder name. Its `aws-access-cli` sibling (pure pipeline, no persisted input — queries Athena live and writes straight to `output/<TENANT>/{daily,monthly,weekly}/`) confirms this
   input/output ambiguity is specific to a chained, per-date pipeline and does not apply to a pipeline with no manual Step 1. This is why `investigation_data`/`investigation_output` below split by
   *source/tool provenance*, not input-vs-output.
@@ -229,13 +231,12 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
      investigation_output:            "{investigations_root}/{campaign}/output"
    filename_date_format: "%Y-%m-%d"     # ISO, prefix position — see the filename-convention point below
    ```
-   The last two templates are for a **campaign running a recurring, no-close-event pipeline** (e.g. `ctap-smvod` — a plain folder, not a submodule; see PT-2), not a bounded case — found during the
-   same 2026-09-28 round auditing `ctap-smvod-session-report`'s `inputCSV/`, which mixes true manual exports with a later step's own re-read Athena output under one folder name. Root `data/`'s
-   `{campaign}/{case_id}/{tool}` split is input-vs-nothing (a case either has saved data for a tool or it doesn't); `investigation_data`'s split is *source/tool provenance*, not input-vs-output —
-   because in a repeating per-date pipeline, step N's output is legitimately step N+1's input, and forcing a rename between an "inputs" and "outputs" folder mid-chain for that reason alone buys
-   nothing. Deliverables (post-merge, final per-date reports) stay in `investigation_output`, never in `investigation_data` — only raw/intermediate per-tool pulls belong under
-   `investigation_data/{tool}`. `functional-code-taxonomy`'s FCT-7 owns the
-   `src/lib/paths/` resolver that reads this file — this task only owns the config file and the guide prose; do not duplicate resolver code here.
+The last two templates are for a **campaign running a recurring, no-close-event pipeline** (e.g. `ctap-smvod` — a plain folder, not a submodule; see PT-2), not a bounded case — found during the same
+2026-09-28 round auditing `ctap-smvod-session-report`'s `inputCSV/`, which mixes true manual exports with a later step's own re-read Athena output under one folder name. Root `data/`'s
+`{campaign}/{case_id}/{tool}` split is input-vs-nothing (a case either has saved data for a tool or it doesn't); `investigation_data`'s split is *source/tool provenance*, not input-vs-output — because
+in a repeating per-date pipeline, step N's output is legitimately step N+1's input, and forcing a rename between an "inputs" and "outputs" folder mid-chain for that reason alone buys nothing.
+Deliverables (post-merge, final per-date reports) stay in `investigation_output`, never in `investigation_data` — only raw/intermediate per-tool pulls belong under `investigation_data/{tool}`.
+`functional-code-taxonomy`'s FCT-7 owns the `src/lib/paths/` resolver that reads this file — this task only owns the config file and the guide prose; do not duplicate resolver code here.
 2. **Root `data/` tree**, gitignored wholesale in one root `.gitignore` line (`data/`) — replacing the per-project duplicated `.gitignore` lines the reference projects each reinvented:
    - `data/<campaign-slug>/<case-id>/{har,lightstep,athena}/` for a campaign case.
    - `data/<case-id>/{har,lightstep,athena}/` for a standalone case (no `misc/` wrapper — see PT-2's revised Rule B); promoted to the campaign form once a 2nd related case appears, identical promotion
@@ -250,7 +251,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
    - Lightstep: manual query only, not saved — see "Lightstep findings" section below
    - Athena: no
    ```
-   This is mandatory, not optional prose, because absence of a saved-CSV folder is otherwise indistinguishable from "wasn't checked" — a methodology gap, not a file-presence gap.
+This is mandatory, not optional prose, because absence of a saved-CSV folder is otherwise indistinguishable from "wasn't checked" — a methodology gap, not a file-presence gap.
 4. **`docs/` vs. `knowledge/` distinction**, stated explicitly with the worked example found in `applauseInvestigation`:
    - `investigations/*/docs/<case-id>-*.md` is the **mandatory, per-case deliverable** — every investigation produces one, it is what gets shared outside this project to explain what happened, and it
      stays tied to that case's ticket/household/device IDs forever. Cite `applauseInvestigation/investigations/docs/7231547-android-secure-decoder-failure.md` as the concrete example: household ID,
@@ -261,10 +262,10 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
    - **Promotion test:** would this fact still be true and useful on a *different* ticket, with different household/device IDs? If yes → `knowledge/<tool>/`. If it only makes sense with this ticket's
      specifics → stays in `docs/`.
 5. **Close-out policy** (default, stated as adjustable per campaign if a real recurring re-verification need shows up): once a case's `docs/` write-up (and any `knowledge/` promotion) is complete,
-   **delete** its raw `data/.../​<case-id>/` — do not archive it indefinitely. Grounding fact: one campaign's raw data alone already reached 1.6GB; an archive-forever default does not scale across many
-   campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does. This policy does **not** apply to `investigation_data`/`investigation_output` (a recurring campaign's own per-date
-   pipeline tree, signposted by its optional `RETENTION.md`, per PT-2) — there is no "case close" event on an ongoing daily pipeline; that tree's retention is that campaign's own concern (e.g. a
-   rolling window), not this story's.
+   **delete** its raw `data/.../​<case-id>/` — do not archive it indefinitely. Grounding fact: one campaign's raw data alone already reached 1.6GB; an archive-forever default does not scale across
+   many campaigns and many cases the way a small, distilled `docs/`+`knowledge/` does. This policy does **not** apply to `investigation_data`/`investigation_output` (a recurring campaign's own
+   per-date pipeline tree, signposted by its optional `RETENTION.md`, per PT-2) — there is no "case close" event on an ongoing daily pipeline; that tree's retention is that campaign's own concern
+   (e.g. a rolling window), not this story's.
 6. **Filename convention for date-keyed artifacts**, found necessary auditing `ctap-smvod-session-report`'s existing `DDMMYYYY`-suffix files (`athena_session_01082026.csv`) — ambiguous (reads as
    either DD-MM or MM-DD) and unsortable (a filename *suffix* means `ls`/glob order is alphabetical, not chronological: `_01082026` sorts before `_10072026`, i.e. August before July). Reuses the ISO
    date already established by `scratch-script-registry`'s `scratch/<YYYY-MM-DD>_<topic>_<purpose>.py` convention rather than inventing a third format, moved to a **prefix** so directory listings sort
@@ -277,8 +278,8 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
    - **Cumulative/rollup** (a single file appended with new rows every run, the date living as a *column*, not the filename — this is intentional, not a missing-date bug; confirmed against
      `aws-access-cli`'s `output/<TENANT>/{monthly,weekly}/adoption_session_report.csv`, where the cadence folder itself signals "this is a rollup" so a bare name is unambiguous there): when there is
      no cadence folder to carry that signal (e.g. `ctap-smvod`'s flat `output/mtn_escalation_all_dates.csv`), the filename needs an explicit rollup marker — standardize on a trailing `_rollup` (or
-     keep the existing `_all_dates`) tag so it is never mistaken for a per-date snapshot file that simply forgot its date.
-   `aws-access-cli`'s root-level `output/*_21092026.csv` files repeat the same ambiguous `DDMMYYYY`-suffix mistake — cited here as a second confirming negative example, not a pattern to copy.
+     keep the existing `_all_dates`) tag so it is never mistaken for a per-date snapshot file that simply forgot its date. `aws-access-cli`'s root-level `output/*_21092026.csv` files repeat the same
+     ambiguous `DDMMYYYY`-suffix mistake — cited here as a second confirming negative example, not a pattern to copy.
 7. Cross-reference `functional-code-taxonomy`'s FCT-7 by name for "the code that reads this config" — do not restate the resolver's function signatures here.
 
 **Tests:** none — docs/config-only (the resolver's tests live under FCT-7).
@@ -292,12 +293,12 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 **Deferred:** do not start until PT-2 and PT-7 have both landed — this task syncs findings *into* the real `investigations/<slug>/docs/<case-id>-*.md` tree and resolves paths via
 `config/data_paths.yaml`'s templates; neither exists before then.
 
-**Grounding:** found during a 2026-09-28 discussion round on how PT-2's mandatory case docs (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) actually get written without either (a)
-deferring all write-up to investigation close (loses the ability to hand off a paused case — see the `Status: IN PROGRESS` pattern already in `applauseInvestigation`'s docs) or (b) manual
-mid-investigation formatting discipline drifting in style session to session. Modeled directly on this repo's own `session-close` skill (`.github/skills/session-close/SKILL.md`), which proves
-Copilot CLI already persists every tool call and assistant turn to `~/.copilot/session-state/<session-id>/events.jsonl` for free — no manual dump needed, only an extraction pass. Differs from
-`session-close` in one load-bearing way: `session-close` audits *one bounded session's transcript*; an investigation spans *many* sessions, most of which have nothing to do with any given case, so
-the trigger must be content-filtered (does this window reference case X's path/ticket-id?), never session-filtered (is this whole session an investigation?).
+**Grounding:** found during a 2026-09-28 discussion round on how PT-2's mandatory case docs (`<case-id>-<topic>.md`, `<case-id>-executive-summary.md`) actually get written without either (a) deferring
+all write-up to investigation close (loses the ability to hand off a paused case — see the `Status: IN PROGRESS` pattern already in `applauseInvestigation`'s docs) or (b) manual mid-investigation
+formatting discipline drifting in style session to session. Modeled directly on this repo's own `session-close` skill (`.github/skills/session-close/SKILL.md`), which proves Copilot CLI already
+persists every tool call and assistant turn to `~/.copilot/session-state/<session-id>/events.jsonl` for free — no manual dump needed, only an extraction pass. Differs from `session-close` in one
+load-bearing way: `session-close` audits *one bounded session's transcript*; an investigation spans *many* sessions, most of which have nothing to do with any given case, so the trigger must be
+content-filtered (does this window reference case X's path/ticket-id?), never session-filtered (is this whole session an investigation?).
 
 **Files to change / create:**
 - `.github/skills/investigation-doc-sync/SKILL.md` — new file
@@ -306,29 +307,28 @@ the trigger must be content-filtered (does this window reference case X's path/t
 
 1. **Trigger phrase, explicit and case-scoped** — e.g. "investigation checkpoint `<case-id>`" (mirroring `session-close`'s trigger-phrase convention) — invoked only when the analyst knows
    case-specific work just happened; never auto-fired at every session end.
-2. **Cursor lives in the deliverable, not the transcript** — a marker comment at the top of `<case-id>-<topic>.md`, e.g. `<!-- last-synced: 2026-09-14T10:22:00Z -->`. `session-close` finds its
-   window via `skill.invoked` events inside one transcript; that breaks here because the relevant sessions differ each invocation. Each run reads this timestamp as the cursor and rewrites it after
-   syncing.
+2. **Cursor lives in the deliverable, not the transcript** — a marker comment at the top of `<case-id>-<topic>.md`, e.g. `<!-- last-synced: 2026-09-14T10:22:00Z -->`. `session-close` finds its window
+   via `skill.invoked` events inside one transcript; that breaks here because the relevant sessions differ each invocation. Each run reads this timestamp as the cursor and rewrites it after syncing.
 3. **Extraction filters by content, across sessions** — query `session_store_sql` (`local` scope; `tool_executions`/`session_files`/`turns`) for rows with `started_at`/`timestamp` after the cursor
    whose arguments or file paths contain the case-id or its resolved data path (`investigations/<slug>/data/<case-id>` per `config/data_paths.yaml`, or the bare ticket number in an Athena/Lightstep
    query argument) — regardless of which session emitted them. A session contributing zero matching rows (e.g. an unrelated docs/refactoring session) is silently skipped, not flagged as an error.
 4. **Fresh subagent does the writing** — per `session-close`'s own stated reason (bounded extraction cost, not a full context clone): a subagent receives only the matched rows, appends one new dated
    `## <finding> (<date>)` section per distinct finding to `<case-id>-<topic>.md` (finding + evidence table + a bolded conclusion sentence — the style already established in
    `applauseInvestigation/investigations/docs/7231763-android-resume-watching-latency.md`), and updates the cursor.
-5. **Executive summary is a separate, cheaper pass** — once `<case-id>-<topic>.md` has multiple dated sections, generating `<case-id>-executive-summary.md` condenses that already-clean markdown
-   file (headline finding, ruled-out table, recommendation — per `7231763-executive-summary.md`'s and `7232657-executive-summary.md`'s shape), not the raw transcript — invoked as its own trigger
-   phrase (e.g. "investigation summary `<case-id>`"), typically at close-out, not every checkpoint.
-6. Cross-reference `docs/plan/project-taxonomy/structure.md`'s `investigations/` block and PT-7's "Inputs used" mandatory block by name — this skill populates those files, it does not redefine
-   their shape.
-7. **Session-provenance table with both `cwd` and a derived `Case/Campaign` column** — grounded in a cross-check of `applauseInvestigation/session-info.md` (see
-   `applauseInvestigation/AGENTS.md`'s "append a row every session" convention): of 18 real Copilot CLI sessions with `cwd = applauseInvestigation`, only 8 rows ever got logged (the manual
-   "remember to append" step silently stopped being followed after 2026-08-16) — proving a purely-manual provenance log decays exactly like `session-history-summary.md` did. `cwd` alone is
-   currently low-signal: Copilot CLI records it once per session at launch, and today all 18 sessions share the identical value `/Users/abhadra/github_copilot/applauseInvestigation` because no
-   session was ever launched from inside a nested `investigations/<campaign-slug>/`. It is kept as its own column anyway — cheap, already present in `sessions`, and it becomes genuinely useful the
-   day the "launch from inside the case/campaign folder" convention (see PT-3's checklist) is actually followed, at which point it will show the nested path directly without any extra derivation.
-   Until then (and permanently, for sessions that don't follow that convention, or that touch more than one case), the authoritative column is `Case/Campaign`, derived from `session_files`
-   path-matching (the same source step 3 already queries): match each session's touched paths against `investigations/(docs|data)/<case-id>-*` / `investigations/<campaign-slug>/`, falling back to
-   `—` for sessions that touched no case-scoped file (scaffolding, knowledge-only, or pure Q&A sessions). Worked example, reconstructed from real `applauseInvestigation` session history:
+5. **Executive summary is a separate, cheaper pass** — once `<case-id>-<topic>.md` has multiple dated sections, generating `<case-id>-executive-summary.md` condenses that already-clean markdown file
+   (headline finding, ruled-out table, recommendation — per `7231763-executive-summary.md`'s and `7232657-executive-summary.md`'s shape), not the raw transcript — invoked as its own trigger phrase
+   (e.g. "investigation summary `<case-id>`"), typically at close-out, not every checkpoint.
+6. Cross-reference `docs/plan/project-taxonomy/structure.md`'s `investigations/` block and PT-7's "Inputs used" mandatory block by name — this skill populates those files, it does not redefine their
+   shape.
+7. **Session-provenance table with both `cwd` and a derived `Case/Campaign` column** — grounded in a cross-check of `applauseInvestigation/session-info.md` (see `applauseInvestigation/AGENTS.md`'s
+   "append a row every session" convention): of 18 real Copilot CLI sessions with `cwd = applauseInvestigation`, only 8 rows ever got logged (the manual "remember to append" step silently stopped
+   being followed after 2026-08-16) — proving a purely-manual provenance log decays exactly like `session-history-summary.md` did. `cwd` alone is currently low-signal: Copilot CLI records it once per
+   session at launch, and today all 18 sessions share the identical value `/Users/abhadra/github_copilot/applauseInvestigation` because no session was ever launched from inside a nested
+   `investigations/<campaign-slug>/`. It is kept as its own column anyway — cheap, already present in `sessions`, and it becomes genuinely useful the day the "launch from inside the case/campaign
+   folder" convention (see PT-3's checklist) is actually followed, at which point it will show the nested path directly without any extra derivation. Until then (and permanently, for sessions that
+   don't follow that convention, or that touch more than one case), the authoritative column is `Case/Campaign`, derived from `session_files` path-matching (the same source step 3 already queries):
+   match each session's touched paths against `investigations/(docs|data)/<case-id>-*` / `investigations/<campaign-slug>/`, falling back to `—` for sessions that touched no case-scoped file
+   (scaffolding, knowledge-only, or pure Q&A sessions). Worked example, reconstructed from real `applauseInvestigation` session history:
 
    | Date | Session ID | cwd | Case/Campaign |
    |---|---|---|---|
@@ -340,24 +340,24 @@ the trigger must be content-filtered (does this window reference case X's path/t
    | 2026-08-25 | `bf16595c` | `applauseInvestigation` | `7233017` |
    | 2026-08-20 | `a2e0d27a` | `applauseInvestigation` | *(no files edited — Q&A only)* |
 
-   (`cwd` is uniform in this table today for the reason above — it is not dead weight, it is a column waiting for the launch-directory convention to populate it with real variation, same as
-   `ctap-smvod-session-report`/`mtn-zm-session-device-investigation` already show non-uniform `cwd` values across different projects.) This lets a session pick up a paused case (e.g. `7231763`,
-   `7233017` — each revisited across non-consecutive sessions days apart) by scanning one table instead of opening every session-state transcript, and the table itself is regenerated by the same
-   sync pass (step 3/4), so it inherits that pass's freshness — it is not a second manually-maintained log.
+(`cwd` is uniform in this table today for the reason above — it is not dead weight, it is a column waiting for the launch-directory convention to populate it with real variation, same as
+`ctap-smvod-session-report`/`mtn-zm-session-device-investigation` already show non-uniform `cwd` values across different projects.) This lets a session pick up a paused case (e.g. `7231763`, `7233017`
+— each revisited across non-consecutive sessions days apart) by scanning one table instead of opening every session-state transcript, and the table itself is regenerated by the same sync pass (step
+3/4), so it inherits that pass's freshness — it is not a second manually-maintained log.
 8. **Multi-session combine-by-case, not overwrite** — grounded in case `7231763`, which real history shows was worked across **two sessions 11 days apart**: `80a4af33` (2026-08-14, first HAR/Lightstep
    latency pass: ruled out CTAP backend, profiled the `session-guard` proxy hop and MPD/CDN timeline, captured client IP, then explicitly closed with "save state, pick next latency issue") and
    `a987b3ed` (2026-08-25, a QA-requested reproduction run: new HAR + console logs for `run2`, re-derived the same FCID trace-pull technique, produced a fresh tap-to-playing timeline measured at
-   9.35s, and converted it to a Jira-formatted comment). Because extraction is content-filtered per case-id (step 3) and each run only appends what's new since the cursor (step 2/4), the two
-   sessions land as two independent dated sections in `7231763-android-resume-watching-latency.md` — never overwriting each other even though they're 11 days and one paused-and-resumed cycle apart.
-   The executive-summary pass (step 5) then condenses *both* dated sections into one `7231763-executive-summary.md`, e.g.:
+   9.35s, and converted it to a Jira-formatted comment). Because extraction is content-filtered per case-id (step 3) and each run only appends what's new since the cursor (step 2/4), the two sessions
+   land as two independent dated sections in `7231763-android-resume-watching-latency.md` — never overwriting each other even though they're 11 days and one paused-and-resumed cycle apart. The
+   executive-summary pass (step 5) then condenses *both* dated sections into one `7231763-executive-summary.md`, e.g.:
 
    > **Case 7231763 — Resume-watching latency (2 investigation rounds: 2026-08-14, 2026-08-25)**
    > - Round 1 (Aug 14): CTAP/backend ruled out; `session-guard` proxy and MPD/CDN timeline profiled; client IP captured.
    > - Round 2 (Aug 25, QA repro `run2`): same latency pattern reproduced; full tap→playing timeline measured at 9.35s; round-1's FCID trace-pull technique reused.
    > - **Conclusion:** consistent root cause confirmed across both reproductions.
 
-   This is the combined-summary behavior the skill must guarantee whenever multiple sessions target the same case/campaign, regardless of how many days apart they run or whether `cwd` matches
-   across them.
+This is the combined-summary behavior the skill must guarantee whenever multiple sessions target the same case/campaign, regardless of how many days apart they run or whether `cwd` matches across
+them.
 
 **Tests:** none — a skill file, not application code; verification is a real invocation against a fixture case once PT-2/PT-7 land (out of scope for this task itself).
 

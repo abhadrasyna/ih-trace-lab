@@ -1,8 +1,8 @@
 # Target folder/file structure
 
-Single source of truth for the end-state layout the three stories that touch file/folder layout (`project-taxonomy`, `functional-code-taxonomy`, `query-catalog`) build toward. Every task in any
-of their `stories.md` that touches file/folder layout points here instead of re-describing the tree inline — if this file and a task spec ever disagree, this file wins (update the task spec, not
-this file, unless a new discussion round explicitly changes the target layout — see the Invariant at the bottom).
+Single source of truth for the end-state layout the three stories that touch file/folder layout (`project-taxonomy`, `functional-code-taxonomy`, `query-catalog`) build toward. Every task in any of
+their `stories.md` that touches file/folder layout points here instead of re-describing the tree inline — if this file and a task spec ever disagree, this file wins (update the task spec, not this
+file, unless a new discussion round explicitly changes the target layout — see the Invariant at the bottom).
 
 Legend: `[PT-N]` / `[FCT-N]` / `[QC-N]` = the task that creates or last defines that node. Nothing below exists yet — all three stories are plan-only as of this pass.
 
@@ -75,8 +75,12 @@ ih-trace-lab/
 │   ├── <campaign-slug>/                      [PT-2, Rule B] e.g. `applause` (was applauseInvestigation), `mtn-zm-device`
 │   │   │                                      (was mtn-zm-session-device-investigation), `ctap-smvod` (was a
 │   │   │                                      separate-remote submodule — plain folder now, no benefit found from
-│   │   │                                      the submodule boundary) — one slug per campaign/relationship, not per
-│   │   │                                      case
+│   │   │                                      the submodule boundary), `vod-asset-ingestion` (was
+│   │   │                                      vod-asset-ingestion-mapping — recategorized from `experiments/` to
+│   │   │                                      here by `reference-code-gap-migration` GAP-1, 2026-09-30: its own
+│   │   │                                      README calls it "a continuous data-gathering exercise", i.e. a
+│   │   │                                      recurring campaign, not a throwaway probe) — one slug per
+│   │   │                                      campaign/relationship, not per case
 │   │   ├── docs/
 │   │   │   ├── <case-id>-<topic>.md          flat, ID-prefixed — no per-case subfolder [PT-2, Rule B]; mandatory
 │   │   │   │                                  deliverable per bounded case (shared outside this project) — every
@@ -126,7 +130,12 @@ ih-trace-lab/
 │       └── docs/  scripts/  tests/
 │
 ├── experiments/                                category: experiment — only created once promoted from scratch/
-│   └── <experiment-slug>/                    e.g. `vod-asset-ingestion-mapping`, `vod-playback-timing-probe`-style
+│   └── <experiment-slug>/                    e.g. `vod-playback-timing-probe`-style (NOTE: `reference-code-gap-migration`'s
+│                                              2026-09-30 audit suggests this project reads as a **tool** — reusable
+│                                              CLI/package, not a throwaway probe — an unresolved tension with this
+│                                              example, flagged for a future project-taxonomy session, not corrected
+│                                              here; see that story's `spec.md` §1). `vod-asset-ingestion-mapping` was
+│                                              removed from this example — see `investigations/` above.
 │
 ├── scratch/                                    every experiment starts here (existing convergence rule, unchanged)
 │
@@ -162,14 +171,18 @@ ih-trace-lab/
     └── har-<topic>.md                        e.g. `har-csv-household-id-gotchas.md` — same convention, HAR side
 ```
 
-`knowledge/<tool>-<topic>.md` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation
-produces one, it is what gets shared outside this project to explain what happened, and it stays tied to that case's
-ticket/household/device IDs forever. `knowledge/` is an optional, opportunistic side-effect — most cases produce
-nothing for it. Promotion test: would this fact still be true and useful on a *different* ticket, with different
-household/device IDs? If yes → `knowledge/<tool>-<topic>.md`. If it only makes sense with this ticket's specifics → it stays in
-`docs/`. Never write to `knowledge/` just to "use" the folder — a small, high-signal `knowledge/` is the point.
+`knowledge/<tool>-<topic>.md` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation produces one, it is what gets shared outside this project to explain
+what happened, and it stays tied to that case's ticket/household/device IDs forever. `knowledge/` is an optional, opportunistic side-effect — most cases produce nothing for it. Promotion test: would
+this fact still be true and useful on a *different* ticket, with different household/device IDs? If yes → `knowledge/<tool>-<topic>.md`. If it only makes sense with this ticket's specifics → it stays
+in `docs/`. Never write to `knowledge/` just to "use" the folder — a small, high-signal `knowledge/` is the point.
 
 ## Invariant
 
-If a future discussion round changes the target layout, update this file in the same turn as any resulting `tasks.md`/`stories.md` edits in any of the three stories — this file and all three
-stories' task specs must never describe two different end states.
+If a future discussion round changes the target layout, update this file in the same turn as any resulting `tasks.md`/`stories.md` edits in any of the three stories — this file and all three stories'
+task specs must never describe two different end states.
+
+## 2026-09-30 correction (`reference-code-gap-migration` GAP-1)
+
+`vod-asset-ingestion-mapping` moved from this file's `experiments/` worked example to `investigations/<campaign-slug>/` (slug `vod-asset-ingestion`) — see the `investigations/` tree above for the
+one-line reason. `vod-playback-timing-probe` stays under `experiments/` here despite that same audit suggesting **tool** as its better fit; that tension is flagged, not resolved, pending a future
+project-taxonomy session (PT-1 is not yet implemented, so no live doc drift resulted from either finding).

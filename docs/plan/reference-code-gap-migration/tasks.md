@@ -1,17 +1,18 @@
-# Reference code gap migration — tasks
+# Reference code gap migration — tasks (closed — this folder is now an epic)
 
-Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
-spec.
+**GAP-1 is done.** This folder was promoted to an epic (see this task's own decision). Going forward, read `prompt.md` (router) + `README.md` (epic index, story table, decision log) — do not look for
+further work in this file; per-story tasks live in each of the 10 sub-story folders' own `tasks.md`.
 
-**Open: GAP-1.**
+- [x] **GAP-1** — Decide scope shape (one epic/10 stories vs. size-split) + resolve `vod-asset-ingestion-mapping`/`vod-playback-timing-probe` category conflict with `project-taxonomy/structure.md`;
+  create the resulting epic/story skeleton | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 
-- [ ] **GAP-1** — Decide scope shape (one epic/10 stories vs. size-split) + resolve `vod-asset-ingestion-mapping`/`vod-playback-timing-probe` category conflict with `project-taxonomy/structure.md`;
-  create the resulting epic/story skeleton | Owner: — | Model: n/a | Review: none | SHA: —
+**Decision:** promoted to an epic, tiered by effort/blocking (not a flat 10-story list) — see `README.md` §"GAP-1 decisions" for the full reasoning, category-conflict resolution, and new-module
+promotion table.
 
 ## Story done when
 
-- **GAP-1** — scope shape recorded in this file (or a superseding epic's `README.md`), category conflict resolved with a documented reason (accept `structure.md` as-is or flag a correction back to
-  `project-taxonomy`), and per-project task ids added below (or in the new epic's sub-stories) for every one of the 10 gap projects named in `prompt.md`.
+- **GAP-1** — scope shape recorded (✅ — see `README.md`), category conflict resolved with a documented reason (✅ — flagged a correction to `project-taxonomy/structure.md` and `stories.md`; see
+  `README.md` §"GAP-1 decisions" §2), and per-project task ids added for every one of the 10 gap projects (✅ — one sub-story folder each, `README.md`'s Stories table).
 
 ## After each task
 
