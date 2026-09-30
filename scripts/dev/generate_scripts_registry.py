@@ -15,6 +15,7 @@ from pathlib import Path
 
 EXCLUDED_DIR_NAMES = frozenset({".git", ".venv", "__pycache__", "node_modules"})
 SCRIPT_EXTENSIONS = frozenset({".py", ".sh"})
+# Shared with promote_scratch_scripts.py so both scripts agree on what counts as promotable code.
 SCRATCH_DATE_RE = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})_")
 
 
