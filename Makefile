@@ -4,11 +4,13 @@ VENV_DIR := .venv
 PYTHON := $(VENV_DIR)/bin/python
 PIP := $(VENV_DIR)/bin/pip
 
-.PHONY: help venv test lint lint-fix typecheck pre-commit registries clean clean-all
+.PHONY: help all venv test lint lint-fix typecheck pre-commit registries clean clean-all
 
 help: ## Show this help
 	@echo "Available targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+all: clean venv pre-commit lint typecheck test registries ## Run clean, venv, pre-commit, lint, typecheck, test, and registries in order (everything except clean-all)
 
 venv: ## Create .venv (if missing), install dev deps, and install the pre-commit hooks
 	@test -d $(VENV_DIR) || python3 -m venv $(VENV_DIR)
