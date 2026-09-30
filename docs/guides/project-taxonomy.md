@@ -79,3 +79,32 @@ Use this checklist whenever a future story ports a pipeline-category project to 
 5. **Never a same-day swap.** A same-day cutover risks a silently broken daily, weekly, or monthly report going unnoticed for a full cycle, which is worse than a temporary duplicate run.
 
 This section is documentation only in this story. No pipeline has been ported yet, so this task does not edit any live crontab entry.
+
+## Input data: config, layout, and knowledge vs. docs
+
+`config/data_paths.yaml` is the single source of truth for input-data layout. Scripts must read it through the future `docs/plan/functional-code-taxonomy/` FCT-7 resolver rather than hardcoding
+`data/`, `knowledge/`, or `investigations/` paths themselves. The recurring-campaign templates there are for a no-close-event campaign such as `ctap-smvod`: `investigation_data` keeps raw or
+intermediate per-tool pulls by provenance, while `investigation_output` keeps final per-date deliverables.
+
+Root `data/` is gitignored wholesale and groups saved raw inputs by case, then by tool: `data/<campaign-slug>/<case-id>/{har,lightstep,athena}/` for a campaign case, or
+`data/<case-id>/{har,lightstep,athena}/` for a standalone case that later promotes by rename into a campaign path. Each tool subfolder appears only when that tool was actually used and something was
+saved. A HAR-only case is normal, not a gap, and a manual-only Lightstep or Athena query with nothing worth saving creates no folder.
+
+Every case doc under `investigations/*/docs/` must include an **Inputs used** block stating whether HAR, Lightstep, and Athena were used, and whether each one was saved to disk or used manually only.
+That turns a missing saved-data folder into an explicit methodology statement instead of an ambiguous absence.
+
+`investigations/*/docs/<case-id>-*.md` is the mandatory per-case deliverable. `applauseInvestigation/investigations/docs/7231547-android-secure-decoder-failure.md` is the model: it stays bound to one
+ticket's household IDs, device IDs, and timeline. `knowledge/<tool>/` is optional, case-independent carry-forward knowledge; the model is
+`applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md`, rehomed here as a Lightstep note under `knowledge/lightstep/` because the ticket number is not needed to reuse the finding.
+Promotion test: if the fact still matters with different household or device IDs, move it to `knowledge/<tool>/`; otherwise it stays in case docs.
+
+Default close-out policy: once a bounded case's docs are written and any reusable findings have been promoted to `knowledge/`, delete its raw `data/.../<case-id>/`. The reference audit already found a
+single campaign holding 1.6GB of raw data, so archive-forever does not scale. This default does not apply to a recurring campaign's own `investigation_data` and `investigation_output` tree, which is
+governed by that campaign's optional `RETENTION.md`.
+
+For recurring per-date pipelines, split saved files by source or tool provenance, not by an `input/` versus `output/` label. `ctap-smvod-session-report` showed why: manual Lightstep exports and a
+later step's own Athena output can both be "inputs" to the next step, but they are different sources and should stay separated as `data/lightstep/` and `data/athena/`.
+
+Use ISO date prefixes for date-keyed artifacts so filenames sort chronologically without extra parsing. Per-date snapshots use `YYYY-MM-DD_<artifact>.csv`; per-range snapshots use
+`YYYY-MM-DD_YYYY-MM-DD_<artifact>.csv` with any ticket tag trailing, never inserted between the dates and artifact; cumulative files keep an explicit `_rollup` or existing `_all_dates` suffix because
+the date lives in a column, not the filename. This corrects the unsortable `DDMMYYYY` suffix style found in both `ctap-smvod-session-report` and `aws-access-cli`.
