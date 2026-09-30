@@ -35,6 +35,12 @@
   `investigations/ctap-smvod/`, recurring-campaign category, incl. manual-Lightstep-step relocation) from `github_copilot` (read-only reference), replacing their duplicated executor/auth/SQL/output
   logic with `src/lib/*`, `query-catalog`, and `project-taxonomy` PT-7's ISO-prefix path convention respectively. Blocked on `project-taxonomy` PT-1/2/6/7, `src-lib-migration`, and `query-catalog`
   landing first. Not yet implemented — see `docs/plan/pipeline-migration/aws-access-cli-pipeline-migration/tasks.md` for the first unchecked task (AAM-1).
+- `docs/plan/reference-code-gap-migration/` — story: a 2026-09-30 audit found 10 `github_copilot` projects (~166 Python files: `vod-playback-timing-probe`, `mtn-zm-session-device-investigation`,
+  `mtn-network-traffic`, `vod-asset-ingestion-mapping`, root `investigations/`, `applauseInvestigation`, `shaka-6001-sa-error-analysis`, root `scripts/`, `astro-events-household-report`,
+  `smarttv-mtntv`) with no migration plan in either `pipeline-migration` or `src-lib-migration` (which only cite a few of them as duplication *sources*, never port their business logic);
+  `oasis-athena-mcp` was checked and confirmed not a gap (superseded by the `athena-mcp-server` submodule). Full file-by-file classification (lib-candidate vs. business-logic, ~35-45 files absorbable
+  by the existing 7 `src/lib/*` modules, ~95-105 irreducible, several new-module candidates) is in this story's `spec.md`. Not yet implemented — see its `tasks.md` for the first unchecked task (GAP-1:
+  decide scope shape — one epic vs. size-split — and resolve a `vod-asset-ingestion-mapping`/`vod-playback-timing-probe` category conflict with `project-taxonomy/structure.md`'s worked examples).
 
 ## Key Decisions
 
