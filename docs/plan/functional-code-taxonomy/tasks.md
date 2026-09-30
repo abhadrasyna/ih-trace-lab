@@ -3,19 +3,19 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: FCT-1, FCT-2, FCT-3, FCT-4, FCT-5, FCT-6, FCT-7.**
+**Open: none — story complete.**
 
-- [ ] **FCT-1** — `docs/guides/functional-code-taxonomy.md`: six-module map + replaced-originals evidence + shared-vs-specific test | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review:
-  human diff review | SHA: <—>
-- [ ] **FCT-2** — `src/lib/{athena,report_render,har}/protocols.py`: `Protocol` skeletons + tests | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA:
-  <—>
-- [ ] **FCT-3** — same doc: migration/ownership table + query-catalog boundary | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **FCT-4** — `AGENTS.md` pointer line | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **FCT-5** — `CONTEXT.md` pointer line | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **FCT-6** — `scripts/dev/generate_code_registry.py` + doc section: cross-project registry + delegated duplicate-check | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
-  confirms tests green | SHA: <—>
-- [ ] **FCT-7** — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path AND filename resolution | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review:
-  human confirms tests green | SHA: <—>
+- [x] **FCT-1** — `docs/guides/functional-code-taxonomy.md`: six-module map + replaced-originals evidence + shared-vs-specific test | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review:
+  human diff review | SHA: 8dba2f5
+- [x] **FCT-2** — `src/lib/{athena,report_render,har}/protocols.py`: `Protocol` skeletons + tests | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA:
+  f36a442
+- [x] **FCT-3** — same doc: migration/ownership table + query-catalog boundary | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 2304c4b
+- [x] **FCT-4** — `AGENTS.md` pointer line | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 9e64373
+- [x] **FCT-5** — `CONTEXT.md` pointer line | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 8257239
+- [x] **FCT-6** — `scripts/dev/generate_code_registry.py` + doc section: cross-project registry + delegated duplicate-check | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
+  confirms tests green | SHA: f2aadb7
+- [x] **FCT-7** — `src/lib/paths/protocols.py` + resolver: config-driven data/knowledge/investigations path AND filename resolution | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review:
+  human confirms tests green | SHA: 303f4ac
 
 ## Story done when
 
@@ -37,8 +37,8 @@ spec.
 - **FCT-7** — `src/lib/paths/protocols.py` defines the `PathResolver` `Protocol` (`resolve_input_dir`, `resolve_knowledge_dir`, `resolve_investigation_dir`, `resolve_investigation_data_dir`,
   `resolve_investigation_output_dir`, `format_snapshot_filename`, `format_range_filename`, `format_rollup_filename`) and a concrete `YamlPathResolver` reading `config/data_paths.yaml`'s 7 templates +
   `filename_date_format` (owned by `project-taxonomy`'s PT-7); tests confirm `resolve_input_dir` returns `None` (never raises) when a tool's directory is absent, that `resolve_knowledge_dir` ignores
-  campaign/case-id, that all directory templates format correctly, that `format_snapshot_filename`/`format_range_filename` produce the ISO-prefix shapes PT-7 defines (range tag trailing, never
-  infix), and that `format_rollup_filename` carries no date; a `Protocol`-conformance test pair matches FCT-2's existing pattern.
+  campaign/case-id, that all directory templates format correctly, that `format_snapshot_filename`/`format_range_filename` produce the ISO-prefix shapes PT-7 defines (range tag trailing, never infix),
+  and that `format_rollup_filename` carries no date; a `Protocol`-conformance test pair matches FCT-2's existing pattern.
 
 ## After each task
 

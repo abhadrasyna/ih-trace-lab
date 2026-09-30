@@ -7,9 +7,10 @@ reference** for prior art and confirmed domain facts; it is never edited from th
 
 ## Status
 
-Early / active. First story (`docs/plan/tenant-registry/`) not yet implemented; `docs/plan/scratch-script-registry/` is complete, and `docs/plan/query-catalog/` is still planned. Reusable project
-tooling has landed under `scripts/dev/`, with root `SCRIPTS.md` now generated from the current tree; production `src/` code has not.
+Early / active. First story (`docs/plan/tenant-registry/`) is not yet implemented; `docs/plan/scratch-script-registry/`, `docs/plan/project-taxonomy/`, and `docs/plan/functional-code-taxonomy/` are
+complete; `docs/plan/query-catalog/` is still planned. Reusable project tooling now includes both registry generators under `scripts/dev/`, and production `src/lib/` code has started with shared
+Protocol/config layers for `athena`, `report_render`, `har`, and `paths`.
 
 ## Setup
 
-No runtime dependencies yet (`requirements.txt` starts empty, by design — see its header comment). Dev tooling: `pip install -r requirements-dev.txt`, then `pre-commit install`.
+Runtime dependencies: `pip install -r requirements.txt` (currently `PyYAML` for config-driven path resolution). Dev tooling: `pip install -r requirements-dev.txt`, then `pre-commit install`.

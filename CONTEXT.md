@@ -14,10 +14,10 @@
   data/knowledge conventions; `config/data_paths.yaml` is the path-template source of truth; `scripts/dev/check_project_taxonomy.py` audits unclassified top-level dirs; and
   `.github/skills/investigation-doc-sync/SKILL.md` defines the deferred cross-session case-doc sync workflow. `structure.md` remains the canonical target-tree reference for this story and
   `functional-code-taxonomy`.
-- `docs/plan/functional-code-taxonomy/` — story: target `src/lib/{auth,athena,csv_io,report_render,har,curl_to_python}/` module map replacing 4 duplicated Athena executors, 8+ duplicated CSV writers,
-  and 4 duplicated HAR-entry loaders found in `github_copilot`; ports `PYTHON_DESIGN.md`'s DIP/OCP/SRP triggers into `Protocol` skeletons for `athena`, `report_render`, and `har`; adds a cross-project
-  script registry generalizing `scratch-script-registry`'s duplicate-check pattern beyond `scratch/`. Not yet implemented — see its `tasks.md` for the first unchecked task (FCT-1). Sibling to
-  `project-taxonomy` (categories vs. shared code) and `query-catalog` (SQL text vs. execution code).
+- `docs/plan/functional-code-taxonomy/` — story complete: `docs/guides/functional-code-taxonomy.md` now maps the six shared `src/lib/*` modules, states the shared-vs-specific test, records the
+  `query-catalog` boundary, and documents the delegated cross-project duplicate-check. `src/lib/{athena,report_render,har}/protocols.py` and `src/lib/paths/{protocols.py,config.py}` now provide the
+  shared Protocol/path-resolution seams, with tests; `scripts/dev/generate_code_registry.py` inventories reusable code outside `scratch/`. Sibling to `project-taxonomy` (categories vs. shared code)
+  and `query-catalog` (SQL text vs. execution code).
 - `docs/plan/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
   `scripts/dev/promote_scratch_scripts.py` provides manual promotion with registry refresh; `scratch/SCRATCH.md`, `AGENTS.md`, and the repo-local `.github/skills/session-close/SKILL.md` enforce the
   delegated duplicate-check and close-out regeneration workflow; `tests/dev/` covers both CLIs.
@@ -27,8 +27,8 @@
 - `docs/plan/src-lib-migration/` — epic: real, tested implementations of `functional-code-taxonomy`'s six `src/lib/*` modules (`auth`, `athena`, `csv_io`, `report_render`, `har`, `curl_to_python`),
   ported/refactored from `github_copilot` (read-only reference), one story per module. `athena-lib-integration` is the exception — it wires in `/Users/abhadra/myWork/myOffice/athena-mcp-server` (an
   already-independent, tested repo with the shared `athena_runner` execution stack) as a git submodule and adapts to it, rather than re-porting a fifth copy of that logic.
-  `auth`/`csv_io`/`curl_to_python` additionally define their own `Protocol`s here, deferred by `functional-code-taxonomy` FCT-2. Blocked on `functional-code-taxonomy` FCT-1/FCT-2/FCT-7 landing first.
-  Not yet implemented — see `docs/plan/src-lib-migration/athena-lib-integration/tasks.md` for the first unchecked task (ALI-1).
+  `auth`/`csv_io`/`curl_to_python` additionally define their own `Protocol`s here, deferred by `functional-code-taxonomy` FCT-2. Now unblocked by `functional-code-taxonomy`; see
+  `docs/plan/src-lib-migration/athena-lib-integration/tasks.md` for the first unchecked task (ALI-1).
 - `docs/plan/pipeline-migration/` — epic: ports `aws-access-cli` (→ `src/pipelines/aws-access-cli/`, pipeline category, incl. PT-6 cron-cutover) and `ctap-smvod-session-report` (→
   `investigations/ctap-smvod/`, recurring-campaign category, incl. manual-Lightstep-step relocation) from `github_copilot` (read-only reference), replacing their duplicated executor/auth/SQL/output
   logic with `src/lib/*`, `query-catalog`, and `project-taxonomy` PT-7's ISO-prefix path convention respectively. Blocked on `project-taxonomy` PT-1/2/6/7, `src-lib-migration`, and `query-catalog`
