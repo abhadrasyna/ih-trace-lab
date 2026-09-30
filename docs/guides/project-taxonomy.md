@@ -21,3 +21,26 @@ and you expect ongoing enhancement, it is a tool, not a throwaway probe.
 **Experiment** — a short-lived probe answering one narrow question, expected to be thrown away or absorbed once it proves or disproves that point. The model is
 `github_copilot/vod-playback-timing-probe`, while noting the open tension recorded in `docs/plan/reference-code-gap-migration/README.md` that this example may read more like a tool on a later pass.
 The nearest neighbor is an investigation; if the work is a disposable probe rather than a real product question with mandatory case docs, it is an experiment, not an investigation.
+
+## Folder skeleton per category
+
+| Category | Required files | Notes |
+|---|---|---|
+| Pipeline | `scripts/`, `tests/`, `README.md` documenting schedule/trigger | No case docs; `scripts/` stays thin over shared code from `docs/plan/functional-code-taxonomy/`. |
+| Investigation | `investigations/<slug>/` with `docs/`, `scripts/`, `tests/` | Applies Rule A and Rule B below; cross-campaign queries stay in repo-root `queries/`. |
+| Tool | `src/`, `tests/`, `README.md` | Software interface, not a case folder; imports shared modules from `docs/plan/functional-code-taxonomy/`. |
+| Experiment | Starts in `scratch/`; only later earns `experiments/<experiment-slug>/` | Never begins as a dedicated top-level folder. |
+
+**Rule A: no double wrap.** An investigation project's own `docs/` and `scripts/` live directly under its root. Never create `investigations/<slug>/investigations/{docs,...}`. Raw inputs live in root
+`data/` per PT-7, not under an inner `investigations/` folder.
+
+**Rule B: campaign slug, flat case docs.** A campaign slug is created once and keeps flat, ID-prefixed case docs. A standalone case with no known campaign yet lives directly as
+`investigations/<case-id>/` and is promoted by rename once a second related case appears. Bounded cases archive their docs at close-out, while recurring campaigns keep dated docs and may add optional
+`data/`, `output/`, and `RETENTION.md` siblings when they run a no-close-event per-date pipeline.
+
+## Continuous investigations are plain folders
+
+The 2026-09-28 audit did not find any concrete benefit tied to `github_copilot/ctap-smvod-session-report`'s existing submodule boundary: no hook, workflow, or review path depended on a separate git
+root. Its only real difference from a bounded campaign is a recurring `data/` plus `output/` pipeline tree, which PT-7 already handles with config-driven path templates. In this repo, pipeline,
+investigation, tool, and experiment are therefore plain folders by default; a real git submodule is justified only by an external fact such as different ownership or an already-published remote, not
+by the category label itself.

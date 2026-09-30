@@ -54,7 +54,8 @@ ih-trace-lab/
 │   └── pipelines/                             category: pipeline
 │       └── <pipeline-slug>/                  e.g. an aws-access-cli equivalent, once ported (see PT-6 cron-cutover)
 │           ├── scripts/                      thin — imports src/lib/*
-│           └── tests/
+│           ├── tests/
+│           └── README.md                     documents schedule/trigger and operator-facing behavior
 │
 ├── data/                                       [PT-7] raw tool inputs — root .gitignore'd wholesale (disposable,
 │   │                                            never committed); shape driven by config/data_paths.yaml, not hardcoded
