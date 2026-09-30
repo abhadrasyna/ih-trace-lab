@@ -23,6 +23,8 @@ The bridge key across **every** source in this pipeline is the session ID, forma
 For the per-service tag names on the same `ctap`/`sm-vod` spans, see `knowledge/mtn-sa-lightstep-span-attributes-by-service.md`; for reusable Lightstep query shapes against those spans, see
 `knowledge/mtn-sa-lightstep-query-templates.md`.
 
+The same `ctap`/`sm-vod` span family is also where `knowledge/mtn-sa-service-correlation-maps.md` maps service-level call relationships across the wider MTN SA platform.
+
 ## 3. Athena tables for playback outcome (`unified_e6auj7k7` database)
 
 | Table | Use it for | Key fields | Gotchas |
@@ -73,4 +75,5 @@ These aren't CTAP/SM-VOD-specific — they're workflow habits from this submodul
 ---
 
 **Source:** `/Users/abhadra/github_copilot/knowledge/ctap-smvod-pipeline.md`, itself distilled from `ctap-smvod-session-report/docs/STATUS.md`, `queries/QUERY_CATALOG.md`, `LEGEND.md`, and `README.md`
-(as of 17 Jul 2026). Harvested into this repo for RKH-2; later edits may add cross-links without re-harvesting the underlying source. These source paths are read-only reference, not a shared codebase.
+(as of 17 Jul 2026). Harvested into this repo for RKH-2; RKH-6 adds cross-links to the harvested MTN SA Lightstep tag and service-correlation references without re-harvesting the underlying source.
+These source paths are read-only reference, not a shared codebase.
