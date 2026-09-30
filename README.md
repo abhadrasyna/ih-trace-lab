@@ -7,7 +7,8 @@ reference** for prior art and confirmed domain facts; it is never edited from th
 
 ## Status
 
-Early / active. First story (`docs/plan/tenant-registry/`) not yet implemented; `docs/plan/scratch-script-registry/` and `docs/plan/query-catalog/` planned. No production code has landed yet.
+Early / active. First story (`docs/plan/tenant-registry/`) not yet implemented; `docs/plan/scratch-script-registry/` is complete, and `docs/plan/query-catalog/` is still planned. Reusable project
+tooling has landed under `scripts/dev/`, with root `SCRIPTS.md` now generated from the current tree; production `src/` code has not.
 
 ## Setup
 

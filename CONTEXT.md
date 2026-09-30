@@ -21,6 +21,9 @@
   and 4 duplicated HAR-entry loaders found in `github_copilot`; ports `PYTHON_DESIGN.md`'s DIP/OCP/SRP triggers into `Protocol` skeletons for `athena`, `report_render`, and `har`; adds a cross-project
   script registry generalizing `scratch-script-registry`'s duplicate-check pattern beyond `scratch/`. Not yet implemented — see its `tasks.md` for the first unchecked task (FCT-1). Sibling to
   `project-taxonomy` (categories vs. shared code) and `query-catalog` (SQL text vs. execution code).
+- `docs/plan/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
+  `scripts/dev/promote_scratch_scripts.py` provides manual promotion with registry refresh; `scratch/SCRATCH.md`, `AGENTS.md`, and the repo-local `.github/skills/session-close/SKILL.md` enforce the
+  delegated duplicate-check and close-out regeneration workflow; `tests/dev/` covers both CLIs.
 - `docs/plan/reference-knowledge-harvest/` — story: the ongoing, docs-only vehicle for harvesting reusable knowledge out of `github_copilot`'s ~13 read-only investigation folders into
   `ih-trace-lab/knowledge/`, one folder per `RKH-N` task, never bundling folders together. First batch (`RKH-1`/`RKH-2`) covers `vod-asset-ingestion-mapping/` (VOD asset
   ADI↔OpsHub↔HAR↔Lightstep↔MongoDB field mapping, ID-navigation cheat sheet) plus the root `knowledge/{vod-asset-ingestion-pipeline,ctap-smvod-pipeline}.md` distillations that reference it;
