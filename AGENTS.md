@@ -38,9 +38,9 @@ If the plan touches more than 2 files, wait for explicit go-ahead.
 <!-- marker: tier1 -->
 ## Story/epic planning (`docs/plan/`)
 
-Work above a single-sitting fix is tracked as a story (one coherent goal) or epic (2+ related stories) under `docs/plan/<slug>/` — see `docs/plan/README.md` for the file-set
-conventions and `docs/plan/_TEMPLATE/README.md` for how to start one (`cp -r docs/plan/_TEMPLATE/story docs/plan/<slug>`). Structure and checkbox consistency are enforced at commit
-time by the `docs-plan-story-structure`/`docs-plan-checkbox-consistency` pre-commit hooks (see `tooling/docs-plan/`) — a malformed plan folder fails the commit, not a later review.
+Work above a single-sitting fix is tracked as a story (one coherent goal) or epic (2+ related stories) under `docs/plan/<slug>/` — see `docs/plan/README.md` for the file-set conventions and
+`docs/plan/_TEMPLATE/README.md` for how to start one (`cp -r docs/plan/_TEMPLATE/story docs/plan/<slug>`). Structure and checkbox consistency are enforced at commit time by the
+`docs-plan-story-structure`/`docs-plan-checkbox-consistency` pre-commit hooks (see `tooling/docs-plan/`) — a malformed plan folder fails the commit, not a later review.
 <!-- INSERT: tier1 -->
 
 ## Step 4 — Tests are mandatory
@@ -85,7 +85,8 @@ touches money or runs a long-lived concurrent service. -->
 - `(str, Enum)` for string enums — never `StrEnum` (py3.11+ only, this overlay targets 3.10+).
 - `Decimal` for monetary values, opt in only if this project actually touches money — do not add it speculatively.
 - `pyproject.toml` + `requirements.txt`/`requirements-dev.txt` (not a `pyproject.toml`-only dependency model).
-- Call `setup_logging()` from `logs/setup_logging.py` once at process start; never `logging.basicConfig` elsewhere, never bare `logging.getLogger(__name__)` in `scripts/` (loses module context when run as `__main__`).
+- Call `setup_logging()` from `logs/setup_logging.py` once at process start; never `logging.basicConfig` elsewhere, never bare `logging.getLogger(__name__)` in `scripts/` (loses module context when
+  run as `__main__`).
 - Every new package directory under `src/`, `scripts/`, or `tests/` needs an `__init__.py`, even a one-line comment.
 - Design principles beyond the basics (SOLID as checkable triggers, named patterns): `PYTHON_DESIGN.md`, load on trigger only — not resident here.
 <!-- INSERT: python -->
@@ -93,8 +94,7 @@ touches money or runs a long-lived concurrent service. -->
 ## Domain conventions
 
 <!--
-Delete this whole section if the project doesn't touch Athena/tenant investigation work.
-Keep only what's actually true for this project. -->
+Delete this whole section if the project doesn't touch Athena/tenant investigation work. Keep only what's actually true for this project. -->
 
 <!-- INSERT: athena -->
 
@@ -118,5 +118,6 @@ Tier 0 — the written rule above is the whole mechanism until then. -->
 
 ## No throwaway code in production folders
 
-A quick POC or exploration always starts in `scratch/` first (see `scratch/SCRATCH.md`) and only graduates to `src/`/`scripts/` once it's proven, via the convergence rule documented there. This is a
-hard requirement, not just an available option.
+A quick POC or exploration always starts in `scratch/` first (see `scratch/SCRATCH.md`) and only graduates to `src/`/`scripts/` once it's proven, via the convergence rule documented there. Before
+writing a new scratch script, the duplicate-check + stub-creation step is delegated per `scratch/SCRATCH.md`'s "Registry & duplicate-check" section. This is a hard requirement, not just an available
+option.
