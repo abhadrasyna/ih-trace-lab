@@ -3,32 +3,31 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: PT-1, PT-2, PT-3, PT-4, PT-5, PT-6, PT-7, PT-8.**
+**Open: none — story complete.**
 
-- [ ] **PT-1** — `docs/guides/project-taxonomy.md`: four categories + `github_copilot` examples | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **PT-2** — same doc + `structure.md`: per-category folder skeleton (Rule A/Rule B) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff
-  review | SHA: <—>
-- [ ] **PT-3** — same doc: new-work checklist (new folder AND new script) with mandatory prior-art search | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
-  <—>
-- [ ] **PT-4** — `scripts/dev/check_project_taxonomy.py` + tests | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
-- [ ] **PT-5** — `AGENTS.md` + `CONTEXT.md` pointer lines | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **PT-6** — same doc: pipeline cron-cutover procedure | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **PT-7** — `config/data_paths.yaml` + root `data/` tree + recurring-campaign `data/`+`output/` tree + filename convention + docs-vs-knowledge guide section | Owner: AI agent (Copilot CLI)
-  | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
-- [ ] **PT-8** — `.github/skills/investigation-doc-sync/SKILL.md`: cross-session, content-filtered case-doc sync | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review |
-  SHA: <—> | **Deferred: do not start until PT-2 and PT-7 have both landed** (needs the real `investigations/<slug>/docs/` tree and `config/data_paths.yaml` templates to resolve case-doc paths
+- [x] **PT-1** — `docs/guides/project-taxonomy.md`: four categories + `github_copilot` examples | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 5e2abfd
+- [x] **PT-2** — same doc + `structure.md`: per-category folder skeleton (Rule A/Rule B) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 4fe2c22
+- [x] **PT-3** — same doc: new-work checklist (new folder AND new script) with mandatory prior-art search | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
+  70fd82f
+- [x] **PT-4** — `scripts/dev/check_project_taxonomy.py` + tests | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: 39eaaa1
+- [x] **PT-5** — `AGENTS.md` + `CONTEXT.md` pointer lines | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 600abf1
+- [x] **PT-6** — same doc: pipeline cron-cutover procedure | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 7d9f45a
+- [x] **PT-7** — `config/data_paths.yaml` + root `data/` tree + recurring-campaign `data/`+`output/` tree + filename convention + docs-vs-knowledge guide section | Owner: AI agent (Copilot CLI)
+  | Model: claude-sonnet-5 | Review: human diff review | SHA: 953aa6d
+- [x] **PT-8** — `.github/skills/investigation-doc-sync/SKILL.md`: cross-session, content-filtered case-doc sync | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review |
+  SHA: e3fa1e2 | **Deferred: do not start until PT-2 and PT-7 have both landed** (needs the real `investigations/<slug>/docs/` tree and `config/data_paths.yaml` templates to resolve case-doc paths
   against — nothing to sync into before then)
 
 ## Story done when
 
 - **PT-1** — `docs/guides/project-taxonomy.md` exists with a named, one-paragraph definition for each of: pipeline, investigation (bounded case or recurring campaign — no separate "continuous
   investigation" category; a git submodule was found to solve no use case here), tool, experiment — each citing the specific `github_copilot` folder it is modeled on.
-- **PT-2** — The same doc has a table (one row per category) listing required files/folders for that category, applying **Rule A** (a category's case-artifact folders — `docs/`, `queries/`,
-  `scripts/` — live directly at the project's own root; never re-wrapped in an inner folder also named `investigations/`; raw tool inputs live in root `data/` per PT-7, not under `investigations/`)
-  and **Rule B** (a slug under `investigations/` names a recurring campaign, created once; individual incoming cases are flat, ID-prefixed files within that campaign's `docs/`, never a new subfolder
-  or new top-level slug per case; a campaign running a recurring, no-close-event pipeline uses dated files instead and gains optional `data/`+`output/`+`RETENTION.md`; a case with no known campaign
-  yet sits directly as `investigations/<case-id>/` — no `misc/` wrapper — promoted by rename to `investigations/<campaign-slug>/<case-id>/` once a second related case appears); and `structure.md`
-  updated in the same commit so it matches the table exactly.
+- **PT-2** — The same doc has a table (one row per category) listing required files/folders for that category, applying **Rule A** (a category's case-artifact folders — `docs/`, `queries/`, `scripts/`
+  — live directly at the project's own root; never re-wrapped in an inner folder also named `investigations/`; raw tool inputs live in root `data/` per PT-7, not under `investigations/`) and **Rule
+  B** (a slug under `investigations/` names a recurring campaign, created once; individual incoming cases are flat, ID-prefixed files within that campaign's `docs/`, never a new subfolder or new
+  top-level slug per case; a campaign running a recurring, no-close-event pipeline uses dated files instead and gains optional `data/`+`output/`+`RETENTION.md`; a case with no known campaign yet sits
+  directly as `investigations/<case-id>/` — no `misc/` wrapper — promoted by rename to `investigations/<campaign-slug>/<case-id>/` once a second related case appears); and `structure.md` updated in
+  the same commit so it matches the table exactly.
 - **PT-3** — The same doc has a checklist a session follows before **either** creating any new top-level folder **or** writing any new script inside an existing one: (1) pick a category via the PT-1
   decision tree (folder case only), (2) delegate a sub-agent to search `docs/guides/`, `knowledge/` (once it exists), `/Users/abhadra/github_copilot` (read-only), and — for the new-script case —
   `functional-code-taxonomy`'s FCT-6 cross-project script registry for prior art on the same question, (3) only create the folder/script if no reusable prior art is found, or reuse/extend what is
@@ -46,15 +45,15 @@ spec.
   stating the conditional tool-subfolder rule (HAR-only is normal), the mandatory "Inputs used" case-doc block, the `docs/`-mandatory-vs-`knowledge/`-optional distinction with the
   `applauseInvestigation` worked example and promotion test, the default delete-on-close-out policy for raw `data/` (explicitly scoped to bounded campaign/case data, not a recurring campaign's own
   `investigation_data`/`investigation_output` tree, per its optional `RETENTION.md` marker), the source/tool-provenance split (not input-vs-output) for a recurring campaign's per-date pipeline, and
-  the ISO-prefix filename convention (per-date snapshot / per-range snapshot / cumulative-rollup — the third being intentional, not a missing-date bug) grounded in the `ctap-smvod-session-report`
-  and `aws-access-cli` audits; `structure.md` already reflects all of this from the same discussion round.
+  the ISO-prefix filename convention (per-date snapshot / per-range snapshot / cumulative-rollup — the third being intentional, not a missing-date bug) grounded in the `ctap-smvod-session-report` and
+  `aws-access-cli` audits; `structure.md` already reflects all of this from the same discussion round.
 - **PT-8** — `.github/skills/investigation-doc-sync/SKILL.md` exists, modeled on `session-close`'s structure, defining: the case-scoped trigger phrase, the cursor-in-deliverable mechanism (marker
   comment in `<case-id>-<topic>.md`, not a transcript-embedded event), the `session_store_sql` content-filtered extraction query (case-id/path match, not whole-session classification), the
   fresh-subagent write step producing dated findings sections, the separate executive-summary generation pass, an auto-regenerated session-provenance table with both `cwd` and a
-  `session_files`-derived `Case/Campaign` column (grounded in a real `applauseInvestigation/session-info.md` cross-check showing only 8 of 18 sessions ever got manually logged, and `cwd` alone
-  being uniform across all 18 today since no session has yet used a nested-launch-directory convention), and a guarantee — demonstrated against the real two-session `7231763` case (11 days
-  apart) — that multiple sessions on the same case/campaign combine into dated sections plus one condensed executive summary, never overwrite each other. Marked deferred in `tasks.md` until PT-2
-  and PT-7 both have SHAs — this task itself only needs to exist as a written spec, not be exercised against a real case.
+  `session_files`-derived `Case/Campaign` column (grounded in a real `applauseInvestigation/session-info.md` cross-check showing only 8 of 18 sessions ever got manually logged, and `cwd` alone being
+  uniform across all 18 today since no session has yet used a nested-launch-directory convention), and a guarantee — demonstrated against the real two-session `7231763` case (11 days apart) — that
+  multiple sessions on the same case/campaign combine into dated sections plus one condensed executive summary, never overwrite each other. Marked deferred in `tasks.md` until PT-2 and PT-7 both have
+  SHAs — this task itself only needs to exist as a written spec, not be exercised against a real case.
 
 ## After each task
 

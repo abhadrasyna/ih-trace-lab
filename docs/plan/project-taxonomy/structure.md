@@ -54,7 +54,8 @@ ih-trace-lab/
 │   └── pipelines/                             category: pipeline
 │       └── <pipeline-slug>/                  e.g. an aws-access-cli equivalent, once ported (see PT-6 cron-cutover)
 │           ├── scripts/                      thin — imports src/lib/*
-│           └── tests/
+│           ├── tests/
+│           └── README.md                     documents schedule/trigger and operator-facing behavior
 │
 ├── data/                                       [PT-7] raw tool inputs — root .gitignore'd wholesale (disposable,
 │   │                                            never committed); shape driven by config/data_paths.yaml, not hardcoded
@@ -161,19 +162,21 @@ ih-trace-lab/
 │       └── <slug>.md                         [QC-3] native TQL block, already parameterized in source form
 │
 └── knowledge/                                  [PT-7] tool-first, cross-campaign, OPTIONAL — the opposite axis from
-    │                                            data/ and investigations/*/docs/ (case-first, always written); flat
-    │                                            files, no per-tool subfolders — an open-ended tool set (a new tool
-    │                                            is just a new filename prefix) stays a cheap-to-scan single directory
-    ├── lightstep-<topic>.md                  e.g. `lightstep-span-attributes-by-service.md` — "span attribute X is
-    │                                          unreliable for platform detection", regardless of which case found it
-    ├── <project>-athena-<db>-tables.md       [QC-4] DDL cache, one file per Athena database — promote only
+    │                                            data/ and investigations/*/docs/ (case-first, always written); one
+    │                                            subfolder per tool keeps promoted findings grouped by provenance
+    ├── lightstep/
+    │   └── <topic>.md                        e.g. `span-attributes-by-service.md` — "span attribute X is unreliable
+    │                                          for platform detection", regardless of which case found it
+    ├── athena/
+    │   └── <project>-<db>-tables.md          [QC-4] DDL cache, one file per Athena database — promote only
     │                                          case-independent mechanism facts (see the promotion test below)
-    └── har-<topic>.md                        e.g. `har-csv-household-id-gotchas.md` — same convention, HAR side
+    └── har/
+        └── <topic>.md                        e.g. `csv-household-id-gotchas.md` — same convention, HAR side
 ```
 
-`knowledge/<tool>-<topic>.md` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation produces one, it is what gets shared outside this project to explain
+`knowledge/<tool>/<topic>.md` vs. `investigations/*/docs/`: `docs/` is the mandatory per-case deliverable — every investigation produces one, it is what gets shared outside this project to explain
 what happened, and it stays tied to that case's ticket/household/device IDs forever. `knowledge/` is an optional, opportunistic side-effect — most cases produce nothing for it. Promotion test: would
-this fact still be true and useful on a *different* ticket, with different household/device IDs? If yes → `knowledge/<tool>-<topic>.md`. If it only makes sense with this ticket's specifics → it stays
+this fact still be true and useful on a *different* ticket, with different household/device IDs? If yes → `knowledge/<tool>/<topic>.md`. If it only makes sense with this ticket's specifics → it stays
 in `docs/`. Never write to `knowledge/` just to "use" the folder — a small, high-signal `knowledge/` is the point.
 
 ## Invariant

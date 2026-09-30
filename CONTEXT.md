@@ -10,13 +10,10 @@
 - `docs/plan/query-catalog/` — story: `queries/athena/` + `queries/lightstep/` deduplicated, parameterized-template query catalog (harvested from `github_copilot`'s 3 `QUERY_CATALOG.md` files +
   `lightstep-query-templates.md`), plus a ported (not yet run) Athena DDL-cache under `knowledge/`. Not yet implemented — see its `tasks.md` for the first unchecked task (QC-1). Its DDL-cache task
   (QC-4) depends on `tenant-registry` landing first for any live Athena discovery.
-- `docs/plan/project-taxonomy/` — story: classifies work into 4 categories (pipeline, investigation — bounded case or recurring campaign, tool, experiment; a fifth "continuous investigation" category
-  was dropped after concluding a git submodule boundary solves no use case here — recurring campaigns are plain folders, differing from bounded cases only via PT-7's config-driven `data/`+`output/`
-  path templates and an optional `RETENTION.md` marker), per-category folder skeleton (Rule A: no double `investigations/` wrap; Rule B: campaign slug + flat ID-prefixed cases), a new-work checklist
-  covering both new folders and new scripts, and a pipeline cron-cutover procedure (for `aws-access-cli`-style live crontab migrations) — informed by a `github_copilot` audit (read-only reference);
-  also specs (PT-8, deferred until PT-2/PT-7 land) an `investigation-doc-sync` skill, modeled on `session-close`, that syncs case docs from `session_store_sql` via a case-scoped, content-filtered,
-  cursor-in-deliverable mechanism rather than a manual mid-investigation dump. `structure.md` in this story's folder is the canonical target-tree reference both this story and
-  `functional-code-taxonomy` point to. Not yet implemented — see its `tasks.md` for the first unchecked task (PT-1).
+- `docs/plan/project-taxonomy/` — story complete: `docs/guides/project-taxonomy.md` now defines the four categories, folder skeletons, prior-art checklist, pipeline cron-cutover procedure, and PT-7
+  data/knowledge conventions; `config/data_paths.yaml` is the path-template source of truth; `scripts/dev/check_project_taxonomy.py` audits unclassified top-level dirs; and
+  `.github/skills/investigation-doc-sync/SKILL.md` defines the deferred cross-session case-doc sync workflow. `structure.md` remains the canonical target-tree reference for this story and
+  `functional-code-taxonomy`.
 - `docs/plan/functional-code-taxonomy/` — story: target `src/lib/{auth,athena,csv_io,report_render,har,curl_to_python}/` module map replacing 4 duplicated Athena executors, 8+ duplicated CSV writers,
   and 4 duplicated HAR-entry loaders found in `github_copilot`; ports `PYTHON_DESIGN.md`'s DIP/OCP/SRP triggers into `Protocol` skeletons for `athena`, `report_render`, and `har`; adds a cross-project
   script registry generalizing `scratch-script-registry`'s duplicate-check pattern beyond `scratch/`. Not yet implemented — see its `tasks.md` for the first unchecked task (FCT-1). Sibling to

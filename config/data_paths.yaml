@@ -1,0 +1,16 @@
+data_root: data
+knowledge_root: knowledge
+investigations_root: investigations
+tools:
+  - har
+  - lightstep
+  - athena
+templates:
+  data_with_campaign: "{data_root}/{campaign}/{case_id}/{tool}"
+  data_without_campaign: "{data_root}/{case_id}/{tool}"
+  knowledge: "{knowledge_root}/{tool}"
+  investigation_with_campaign: "{investigations_root}/{campaign}"
+  investigation_without_campaign: "{investigations_root}/{case_id}"
+  investigation_data: "{investigations_root}/{campaign}/data/{tool}"
+  investigation_output: "{investigations_root}/{campaign}/output"
+filename_date_format: "%Y-%m-%d"
