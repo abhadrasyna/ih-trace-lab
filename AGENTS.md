@@ -90,6 +90,7 @@ touches money or runs a long-lived concurrent service. -->
   run as `__main__`).
 - Every new package directory under `src/`, `scripts/`, or `tests/` needs an `__init__.py`, even a one-line comment.
 - Design principles beyond the basics (SOLID as checkable triggers, named patterns): `PYTHON_DESIGN.md`, load on trigger only — not resident here.
+- `docs/guides/functional-code-taxonomy.md` is where this project applies `PYTHON_DESIGN.md`'s SRP/OCP/DIP triggers concretely to shared-lib boundaries; read it when shaping or reviewing `src/lib/*`.
 <!-- INSERT: python -->
 
 ## Domain conventions
