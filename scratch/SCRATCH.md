@@ -12,6 +12,25 @@ is stale."
 
 Stay flat (no subfolders) until this folder passes roughly 50 files — at that point, revisit whether purpose-subfolders earn their keep. Do not pre-create empty buckets before that point.
 
+## Registry & duplicate-check (before writing a new scratch script)
+
+Before creating any new scratch analysis/probe script, delegate a bounded sub-agent task (`task` or `general-purpose`) to read root `SCRIPTS.md` — both the "Scripts" and "Scratch (unpromoted — check
+here before writing a new one)" sections — and check whether the topic/question already has coverage.
+
+Hard requirement:
+
+- If the sub-agent finds a matching reusable script or scratch probe, it reports the path and stops. Reuse the existing file; do not create a new near-duplicate.
+- If the sub-agent finds no match, that same sub-agent creates the new stub file as `scratch/<YYYY-MM-DD>_<topic>_<purpose>.py` and then returns control to the main session.
+
+This is delegated rather than done inline so the duplicate-check plus stub-creation boilerplate stays out of the main session's context window, and so the check becomes a named, auditable step instead
+of something easy to skip under time pressure.
+
+Commands this workflow depends on:
+
+- `python scripts/dev/generate_scripts_registry.py` — regenerate root `SCRIPTS.md` after `scripts/` or `scratch/` changes. `session-close` also runs this when applicable.
+- `python scripts/dev/promote_scratch_scripts.py --list [--days N]` — list aged scratch scripts that may be ready for promotion.
+- `python scripts/dev/promote_scratch_scripts.py --script <path>` — manually promote one scratch script into `scripts/dev/` and refresh the registry in the same command.
+
 ## The convergence rule
 
 A scratch script answers one of two kinds of question, and they graduate differently:
