@@ -7,7 +7,7 @@ reference** for prior art and confirmed domain facts; it is never edited from th
 
 ## Status
 
-Early / active. First story (`docs/plan/tenant-registry/`) not yet implemented; `docs/plan/scratch-script-registry/` is now in progress (SSR-1 through SSR-5 landed, SSR-6 next), and
+Early / active. First story (`docs/plan/tenant-registry/`) not yet implemented; `docs/plan/scratch-script-registry/` is now in progress (SSR-1 through SSR-6 landed, SSR-7 next), and
 `docs/plan/query-catalog/` is still planned. First reusable project tooling has started to land under `scripts/dev/`; production `src/` code has not.
 
 ## Setup
