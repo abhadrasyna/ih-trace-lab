@@ -17,7 +17,24 @@
   - 2026-09-30: SSR-5 landed in `97278de`; `AGENTS.md` now carries the single pointer back to `scratch/SCRATCH.md`'s registry section.
   - 2026-09-30: SSR-6 landed in `ea76445`; the repo-local `session-close` override now conditionally regenerates `SCRIPTS.md`.
   - 2026-09-30: SSR-7 landed in `622dfdf`; root `SCRIPTS.md` is now committed, closing the story.
-- [ ] `reference-knowledge-harvest` — ongoing docs-only harvest from `github_copilot`. No dependents among the stories below; independent, can run indefinitely in parallel.
+- [x] `reference-knowledge-harvest` — harvested through RKH-17; future folders require new task/spec additions before this story reopens. No dependents among the stories below; independent.
+  - 2026-09-30: RKH-1 landed in `6cf4a9a`.
+  - 2026-09-30: RKH-2 landed in `3703905`.
+  - 2026-09-30: RKH-3 landed in `1c07a74`.
+  - 2026-09-30: RKH-4 landed in `872dfd3`.
+  - 2026-09-30: RKH-5 landed in `665b18d`.
+  - 2026-09-30: RKH-6 landed in `720b5d0`.
+  - 2026-09-30: RKH-7 landed in `6f00d6d`.
+  - 2026-09-30: RKH-8 landed in `06fa795`.
+  - 2026-09-30: RKH-9 landed in `6eefb65`.
+  - 2026-09-30: RKH-10 landed in `4f2194c`.
+  - 2026-09-30: RKH-11 landed in `753f29d`.
+  - 2026-09-30: RKH-12 landed in `f7af858`.
+  - 2026-09-30: RKH-13 landed in `10f4eb0`.
+  - 2026-09-30: RKH-14 landed in `a9e4613`.
+  - 2026-09-30: RKH-15 landed in `509f8ae`.
+  - 2026-09-30: RKH-16 landed in `815cfe3`.
+  - 2026-09-30: RKH-17 landed in `c264a75`.
 
 ## Phase 1 — Query catalog
 

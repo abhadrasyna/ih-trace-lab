@@ -151,13 +151,11 @@ their rows below for the per-folder reasoning.
 
 | Folder | Status | Notes |
 | --- | --- | --- |
-| `vod-asset-ingestion-mapping` | spec'd (RKH-1, RKH-2 not yet executed) | first batch |
-| `applauseInvestigation` | spec'd (RKH-3, RKH-4, RKH-5, RKH-6, RKH-7 not yet executed) | 3 own knowledge files (span attributes, query templates, CSV/household-ID gotchas) split one-per-task,
-RKH-6 porting/cross-linking `mtn-sa-service-correlation-maps.md` and `ctap-smvod-pipeline.md`, and RKH-7 covering the `investigations/` subfolder (Athena bridge keys + HAR Device ID recovery gotcha)
-missed by the first spec pass |
-| `ctap-smvod-session-report` | spec'd (RKH-10, RKH-11 not yet executed) | has `docs/`, `BLUEPRINT.md`, `LEGEND.md`, query catalog — the root `knowledge/ctap-smvod-pipeline.md` overlap flagged
-below was already fully claimed by RKH-2/RKH-6 (session/CDN-matching-algorithm facts) and `aws-access-cli`'s RKH-8 already reserves a pointer to this folder's identical `playback_outcome`
-classification-gap query, so RKH-10/RKH-11 are scoped to the two remaining un-claimed knowledge domains: playback-outcome/error taxonomy and raw CDN log field semantics |
+| `vod-asset-ingestion-mapping` | harvested | RKH-1/RKH-2 landed: VOD asset field mapping plus the ported VOD/CTAP-SM-VOD distillations |
+<!-- lint-ignore-length -->
+| `applauseInvestigation` | harvested | RKH-3 through RKH-7 landed: span attributes, query templates, CSV/household-ID gotchas, service-correlation cross-links, and Athena bridge-key/domain gotchas |
+<!-- lint-ignore-length -->
+| `ctap-smvod-session-report` | harvested | RKH-10/RKH-11 landed: playback-outcome/error taxonomy plus raw CDN log field semantics; the earlier session/CDN join-key distillation remains in `knowledge/ctap-smvod-pipeline.md` |
 | `astro-events-household-report` | excluded (no reusable knowledge) | reviewed `QUERY_CATALOG.md`/`README.md`/`queries/*.md` — confirmed no usable distillable knowledge beyond what the
 `query-catalog` story already covers; not spec'd |
 | `mtn-zm-session-device-investigation` | excluded (no reusable knowledge) | reviewed `README.md` + `docs/multi-investigation-config/{prompt,tasks,stories}.md` — its own internal plan story, not
@@ -170,15 +168,10 @@ tool/setup docs and its own internal plan story, not reusable investigation know
 | `vod-playback-timing-probe` | excluded (no reusable knowledge) | reviewed `README.md`, `QUICKSTART.md`, `AGENTS.md`, `docs/{usage,contributing}.md`,
 `docs/plans/segment-timeline-and-reporting-gaps.md` — tool/usage docs and its own internal plan story, not reusable investigation knowledge; confirmed no usable knowledge; not spec'd |
 | `smarttv-mtntv` | excluded (no reusable knowledge) | confirmed: only `scripts/` + `downloaded/`, no `docs/`/`README` at all; treated like an infra folder; not spec'd |
-| `aws-access-cli` | spec'd (RKH-8, RKH-9 not yet executed) | initially listed as excluded infra below, then reclassified: its `docs/2026-09-*.md` holds genuine dated investigation findings (adoption
-`playback_outcome` classification gap) distinct from its Athena-automation-CLI role; `docs/database-abstraction/` and `docs/plans/` are its own internal refactor-story docs, not reusable domain
-knowledge, and stay out of scope |
-| `investigations` (root, not a submodule) | spec'd (RKH-12, RKH-13, RKH-14, RKH-15, RKH-16 not yet executed) | initially listed as excluded infra, then reclassified: `docs/` (case write-ups, several
-already promoted to root `knowledge/*.md`) and `instructions/` (9 executable Copilot playbook-prompts, none yet promoted) both hold genuine reusable content; `data/`, `har/`, `scripts/`, `athenaCSV/`,
-`spancsv/`, `xmls_or_mpd/` stay out of scope (raw/gitignored artifacts and analysis scripts, not knowledge docs) |
-| `sre` | spec'd (RKH-17 not yet executed) | initially listed as excluded infra, then reclassified: `docs/sre-jira-knowledge.md` + `docs/SRE_Quarterly_Jira_Query_Prompt.md` hold genuine reusable
-project-structure/field-ID/JQL-template knowledge, not referenced by any existing root `knowledge/*.md` (single harvest-only task, no port/correct half); `data/*.csv` (raw Jira exports) and
-`reports/*.md` (dated generated report outputs, one per skill run) stay out of scope |
+| `aws-access-cli` | harvested | RKH-8/RKH-9 landed: adoption playback-outcome classification-gap analysis plus its cross-link from the `unified_e6auj7k7` schema reference |
+<!-- lint-ignore-length -->
+| `investigations` (root, not a submodule) | harvested | RKH-12 through RKH-16 landed: cross-tenant DRM/trace findings, MTN tenant/code-flow reference, 3 root knowledge ports, and 2 methodology distillations from the instruction playbooks |
+| `sre` | harvested | RKH-17 landed: Jira project structure, field-ID, quarterly JQL, and `/sre*` skill reference harvested into `knowledge/sre-jira-project-reference.md` |
 
 ## Adding a new folder (spec-authoring mode)
 
