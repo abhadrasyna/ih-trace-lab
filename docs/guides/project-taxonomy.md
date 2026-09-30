@@ -44,3 +44,19 @@ The 2026-09-28 audit did not find any concrete benefit tied to `github_copilot/c
 root. Its only real difference from a bounded campaign is a recurring `data/` plus `output/` pipeline tree, which PT-7 already handles with config-driven path templates. In this repo, pipeline,
 investigation, tool, and experiment are therefore plain folders by default; a real git submodule is justified only by an external fact such as different ownership or an already-published remote, not
 by the category label itself.
+
+## Starting new work
+
+Use this checklist before either creating a new top-level folder or writing a new script inside an existing one.
+
+1. **New top-level folder:** classify the work with the four category definitions above. If it does not clearly fit one category, stop and ask rather than guessing.
+2. **New top-level folder:** delegate a bounded read-only sub-agent to search `docs/guides/`, `knowledge/` once it exists, and `/Users/abhadra/github_copilot` for prior art on the concrete question
+   being answered, not just the category name.
+3. **New script in any category:** delegate a bounded sub-agent to check `docs/plan/functional-code-taxonomy/`'s FCT-6 cross-project script registry for an existing script or `src/lib/*` module doing
+   the same operation, such as HAR-entry loading, CSV/report writing, or Athena querying.
+4. If either search finds a match, reuse or extend it rather than creating a duplicate folder or script.
+5. If no match exists, create the folder with the skeleton above or write the new script as a thin consumer of shared code.
+
+Steps 2 and 3 are delegated for the same reason documented in `docs/plan/scratch-script-registry/prompt.md`: the search cost stays out of the main session context, and the duplicate-check remains a
+named, auditable step instead of an easy-to-skip intention. Once a match or near-match is found, apply `docs/plan/functional-code-taxonomy/`'s shared-vs-specific test: domain-mechanism code belongs in
+`src/lib/`, not as another copied local script.
