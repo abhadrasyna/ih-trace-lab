@@ -55,3 +55,15 @@ definition. Logic stays local to one project's `scripts/` when it encodes campai
 how this report should be titled, or which slices of a result set are meaningful for this investigation. The test is not whether another project already has similar code; that is only evidence that a
 shared module is overdue. The real test is whether a second, unrelated project could plausibly need the exact same logic to answer a different business question. If yes, write or extract it in
 `src/lib/` regardless of which project needs it first.
+
+## Which category consumes which module
+
+| Project category (`docs/plan/project-taxonomy`) | Modules it typically imports |
+|---|---|
+| Pipeline | `athena`, `csv_io`, `report_render`, `auth` |
+| Investigation | `athena`, `csv_io`, `report_render`, `har` when the case uses network captures |
+| Tool | Depends on the tool; an `oasis-athena-mcp`-style adapter imports `athena` instead of owning its own Athena client |
+| Experiment | Whichever shared module matches the question being probed; it still imports rather than re-implements per the thin-consumer rule |
+
+`docs/plan/query-catalog` owns the SQL text (deduplicated, parameterized query templates); this story owns the code that executes that SQL (`src/lib/athena/`) — a query template is a string passed
+into `AthenaClient.start_query`, never duplicated logic inside this module.
