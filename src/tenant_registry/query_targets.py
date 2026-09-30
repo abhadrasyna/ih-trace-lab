@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from src.tenant_registry.models import TenantConfig
+from .models import TenantConfig
 
 
 class QueryTarget(Protocol):

@@ -1,8 +1,8 @@
 """Tenant registry package."""
 
-from src.tenant_registry.models import TenantConfig
-from src.tenant_registry.query_targets import AthenaQueryTarget, LightstepGoQueryTarget, MatisseQueryTarget, QueryTarget
-from src.tenant_registry.registry import TenantRegistry
+from .models import TenantConfig
+from .query_targets import AthenaQueryTarget, LightstepGoQueryTarget, MatisseQueryTarget, QueryTarget
+from .registry import TenantRegistry
 
 __all__ = [
     "AthenaQueryTarget",

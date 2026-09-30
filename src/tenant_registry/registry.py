@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from src.tenant_registry.models import TenantConfig
+from .models import TenantConfig
 
 
 class TenantRegistry:
