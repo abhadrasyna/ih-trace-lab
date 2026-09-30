@@ -67,3 +67,12 @@ shared module is overdue. The real test is whether a second, unrelated project c
 
 `docs/plan/query-catalog` owns the SQL text (deduplicated, parameterized query templates); this story owns the code that executes that SQL (`src/lib/athena/`) — a query template is a string passed
 into `AthenaClient.start_query`, never duplicated logic inside this module.
+
+## Cross-project script registry
+
+Before writing any new script under `investigations/*/scripts`, `experiments/*/scripts`, `src/pipelines`, or `src/tools`, delegate a bounded sub-agent to search `CODE_REGISTRY.md` and the current
+`src/lib/*` modules for the concrete operation being proposed, such as "load HAR log entries" or "write a CSV report", not just the project name. When the search finds a near-match, apply the shared-
+vs.-specific test above: promote or reuse it in `src/lib/` if the overlap is a domain mechanism, and keep it local only when it is genuinely campaign- or case-specific business logic.
+
+This registry rule exists because convention alone was not enough. All four duplicated Athena executors and all four duplicated HAR-entry loaders already lived in projects that claimed to keep scripts
+thin and shared logic isolated. A searchable inventory plus a mandatory delegated duplicate-check is what makes reuse the fast path instead of the disciplined-but-skipped path.
