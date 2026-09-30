@@ -9,7 +9,7 @@
 `reference-knowledge-harvest`. Decided 2026-09-30, this session: automate all five via parallel Copilot CLI background agents, each running its story's tasks **unattended through completion** (not
 pausing per task for review, since every task's commit stays independently revertible in git) — except where a task explicitly requires a human-only confirmation step, which cannot be faked by an
 agent. Each agent works in its own `git worktree` to avoid five processes clobbering one shared working tree/git index. After each story's branch is reviewed and merged, run the `session-close` skill
-scoped to that story before moving to the next.
+scoped to that story before moving to the next — pointed explicitly at that story's own agent transcript, not the orchestrator's.
 
 ## Prompt to run
 
@@ -18,7 +18,8 @@ You are automating docs/plan/TODOS.md's Phase 0 in ih-trace-lab. Read CONTEXT.md
 
 Do the following, in order:
 
-STEP 0 — Isolate each story in its own worktree (prevents 5 parallel agents from corrupting one shared git index/working tree):
+STEP 0 — Verify a clean starting point, then isolate each story in its own worktree (prevents 5 parallel agents from corrupting one shared git index/working tree):
+  Run `git status --porcelain` on main; if it reports any output, stop and tell me before creating worktrees (do not stash/discard on my behalf).
   For each of these 5 stories, create a worktree + branch from the current main/default branch:
     - tenant-registry            -> ../wt-tenant-registry            (branch plan/tenant-registry)
     - project-taxonomy           -> ../wt-project-taxonomy            (branch plan/project-taxonomy)
@@ -27,7 +28,9 @@ STEP 0 — Isolate each story in its own worktree (prevents 5 parallel agents fr
     - reference-knowledge-harvest -> ../wt-reference-knowledge-harvest (branch plan/reference-knowledge-harvest)
   Use `git worktree add <path> -b <branch>` for each.
 
-STEP 1 — Launch 5 background general-purpose agents in one batch. Give each agent this exact brief, substituting its own story/worktree:
+STEP 1 — Launch 5 background general-purpose agents in one batch. Give each agent this exact brief, substituting its own story/worktree. Immediately after each launch, record that agent's
+  returned agent_id (and, once confirmed, its actual `~/.copilot/session-state/<id>/` transcript folder if that id doesn't map 1:1 — verify this mapping on the very first agent before assuming
+  it holds for all 5) against its story name — STEP 5 depends on this mapping to point `session-close` at the right transcript, not the orchestrator's own:
 
     "Work in <worktree-path>. Read docs/plan/<story>/prompt.md, tasks.md, and stories.md. Work top-down through EVERY unchecked task in tasks.md, not just the first — this run is unattended,
     not paused for per-task review. For each task: implement exactly what stories.md specifies for that task id, run any tests it names, commit with one commit per task (message states the
@@ -50,13 +53,17 @@ STEP 3 — For each of the 5 branches, present me the agent's self-summarized di
   fetch full diffs for all 5 branches by default.
 
 STEP 4 — After I approve a given branch (I may ask for fixes first — send those back to that story's agent via write_agent, do not start a new agent for the same story), merge that branch into
-  main, remove its worktree (`git worktree remove`), and delete the branch.
+  main, remove its worktree (`git worktree remove`), and delete the branch. Merge `scratch-script-registry` LAST, after the other 4 stories have already been merged and had their STEP 5
+  `session-close` run — its SSR-6 task adds `.github/skills/session-close/SKILL.md` (a repo-local override of the skill this whole batch is using), so merging it earlier would change that
+  skill's behavior mid-batch for the remaining stories' close-outs.
 
-STEP 5 — Immediately after merging each story's branch, invoke the `session-close` skill scoped to that story's just-merged work, before moving on to review the next branch's diff. Do this
-  once per story, not once at the very end for all five.
+STEP 5 — Immediately after merging each story's branch, invoke the `session-close` skill scoped to that story's just-merged work, passing the story's recorded session/transcript id from STEP 1
+  explicitly (do not rely on session-close's own default transcript resolution, which otherwise targets this orchestrating session's own transcript, not the worktree agent's) — before moving on
+  to review the next branch's diff. Do this once per story, not once at the very end for all five.
 
-STEP 6 — Once all 5 stories are either fully done or paused-with-a-clear-reason, update docs/plan/TODOS.md's Phase 0 checkboxes and add one line each to CONTEXT.md's "What Exists" bullets for
-  any story that reached "done". Any story paused on a human-confirmation step (e.g. tenant-registry at TR-1) stays unchecked with a note on what input is needed to resume — do not mark it done.
+STEP 6 — Once all 5 stories are either fully done or paused-with-a-clear-reason, update docs/plan/TODOS.md's Phase 0 checkboxes. For each story that reached "done", add a "What Exists" bullet
+  to CONTEXT.md ONLY if that story's own tasks did not already add/update one during merge (check the merged diff first — do not duplicate an edit the story's own commits already made). Any
+  story paused on a human-confirmation step (e.g. tenant-registry at TR-1) stays unchecked with a note on what input is needed to resume — do not mark it done.
 
 Do not proceed past STEP 0 without first telling me the worktree/branch plan and getting my go-ahead, per this project's approval protocol.
 ```
@@ -71,3 +78,9 @@ Do not proceed past STEP 0 without first telling me the worktree/branch plan and
   single batch.
 - STEP 3's review deliberately uses each agent's self-summarized diff, not raw `git diff` dumps, to avoid pulling ~5 branches' worth of full diff text into the orchestrating session's context. Fetch
   the actual diff only for a branch you decide needs closer inspection.
+- STEP 1's agent-id capture and STEP 5's explicit session-id pass exist because `session-close`'s default transcript resolution otherwise falls back to "this conversation's own session" or "most
+  recently modified transcript" — neither reliably identifies a specific background agent's transcript once 5 ran in parallel. Verify the agent_id-to-transcript-folder mapping on the first agent you
+  launch before trusting it for the rest; if `task`-launched background agents turn out not to persist a discoverable transcript under that id, `session-close` cannot audit them as designed and this
+  step needs a different mechanism (e.g. the agent self-reporting its own protocol-compliance checklist inline in its final report) before relying on it.
+- SSR-6 (in `scratch-script-registry`) adds a repo-local `.github/skills/session-close/SKILL.md`. Merging that story before the other 4 have had their STEP 5 close-out run would change the skill's
+  behavior mid-batch; STEP 4 now merges it last for this reason.

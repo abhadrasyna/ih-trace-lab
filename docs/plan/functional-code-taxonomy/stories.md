@@ -149,13 +149,15 @@ cross-reference it by name.
 - `scripts/dev/generate_code_registry.py` — new file
 - `tests/dev/test_generate_code_registry.py` — new file, using a fixture tree under `tmp_path` (no scan of the real repo in tests)
 - `docs/guides/functional-code-taxonomy.md` — append a `## Cross-project script registry` section
+- root `CODE_REGISTRY.md` — left untouched by this task, same convention as `scratch-script-registry`'s SSR-1/SSR-7 split (generator correctness here, real-tree population is a follow-up run)
 
 **What to implement:**
 
-1. `scripts/dev/generate_code_registry.py`: walks `investigations/*/scripts`, `experiments/*/scripts`, `src/pipelines`, `src/tools`, and `src/lib/*`, and writes a registry file (mirroring
-   `docs/plan/scratch-script-registry/`'s existing registry format and generator style exactly — read that story's generator before writing this one; do not invent a new format) listing, per script:
-   path, top-level function/class names, and a short docstring-derived summary if present. This generalizes that story's scratch-only registry to every new-script location named in
-   `project-taxonomy`'s PT-3 checklist.
+1. `scripts/dev/generate_code_registry.py`: walks `investigations/*/scripts`, `experiments/*/scripts`, `src/pipelines`, `src/tools`, and `src/lib/*`, and writes root `CODE_REGISTRY.md` (a distinct
+   file from `scratch-script-registry`'s `SCRIPTS.md` — this registry's scope is cross-project `src/`/`investigations/`/`experiments/` code, not `scripts/`+`scratch/`; mirror that story's
+   `build_registry`/`main()` generator style and `argparse` shape exactly — `--root` (default: repo root) / `--out` (default: `CODE_REGISTRY.md` under `--root`) — read that story's generator before
+   writing this one; do not invent a new CLI shape) listing, per script: path, top-level function/class names, and a short docstring-derived summary if present. This generalizes that story's
+   scratch-only registry to every new-script location named in `project-taxonomy`'s PT-3 checklist.
 2. The registry generator does not attempt semantic duplicate detection itself (that is a sub-agent's job, per point 3) — it only produces the searchable inventory a sub-agent greps/reads before
    writing a new script.
 3. `## Cross-project script registry` section in the guide doc: states the delegated duplicate-check convention `project-taxonomy`'s PT-3 step 3 invokes — before writing any new script, delegate a
