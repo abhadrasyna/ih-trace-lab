@@ -4,6 +4,7 @@ pytest
 pytest-cov
 ruff
 mypy
+types-PyYAML
 pre-commit
 detect-secrets
 bandit
