@@ -50,7 +50,10 @@
   README); a second, similar tension for `vod-playback-timing-probe` (audit suggests "tool", `structure.md` still examples it under `experiments/`) was flagged but deliberately left unresolved for a
   future `project-taxonomy` session. `oasis-athena-mcp` was checked and confirmed not a gap (superseded by the `athena-mcp-server` submodule). Root `prompt.md` is now a pure router (no session-start
   protocol of its own) — each of the 10 sub-stories has its own `prompt.md`/`tasks.md`/`stories.md` and first unchecked task (all currently their own `<PREFIX>-1` audit task). Not yet implemented
-  beyond GAP-1 — see `README.md`'s Stories table for which sub-story to pick up next.
+  beyond GAP-1 — see `README.md`'s Stories table for which sub-story to pick up next. **2026-10-01:** cross-cutting constraint added requiring any sub-story that ports a CSV/report-writing script to
+  adopt `PathResolver`'s naming helpers (`format_snapshot_filename`/`format_range_filename`/`format_rollup_filename`), not just its directory resolver — confirmed by source read that
+  `shaka-6001-sa-error-analysis`, `mtn-zm-session-device-investigation`, `astro-events-household-report`, and `vod-playback-timing-probe` each still hardcode their own ad hoc output-path logic today;
+  mirrors `pipeline-migration` AAM-4's already-designed task shape.
 
 - `docs/plan/reference-folder-diagrams/` — story complete: `scripts/reference_diagram/` now supports per-project internal-import flowcharts, and `docs/reference-diagrams/` now indexes 12 folder-level
   Mermaid pages (generated flowcharts plus hand-authored convergence/orchestration/state diagrams) covering every in-scope `github_copilot` migration folder except deliberately-excluded

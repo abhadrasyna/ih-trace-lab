@@ -126,6 +126,12 @@ port), per this epic's own "one task per session" convention — further tasks a
 - No file under `/Users/abhadra/github_copilot` is ever created, edited, or deleted by any story in this epic — read-only reference throughout.
 - No live AWS/Athena/Lightstep/network call in any story's tests — mocked collaborators only, matching `src-lib-migration`'s convention.
 - Tier 3 stories' first task may audit and skeleton, but must not attempt full migration until their blocking `src/lib/*` module exists — see each story's own `prompt.md` scope guard.
+- **2026-10-01 (CSV/report output naming consistency):** `shaka-6001-sa-error-analysis`, `mtn-zm-session-device-investigation`, `astro-events-household-report`, and `vod-playback-timing-probe` each
+  currently hardcode their own ad hoc `_DEFAULT_OUTPUT_DIR`/`output_path` logic (confirmed by direct source read, not assumed) — the same kind of per-project naming drift PT-7's `PathResolver`
+  (`src/lib/paths/config.py`) exists to end. Whichever sub-story task actually ports a CSV/report-writing script must replace that ad hoc path/filename construction with `PathResolver` — the directory
+  via its `resolve_*_dir` methods **and** the filename via `format_snapshot_filename`/`format_range_filename`/`format_rollup_filename` specifically, never a hand-rolled date string — mirroring
+  `pipeline-migration`'s `aws-access-cli-pipeline-migration` AAM-4 task shape (before/after diagram + snapshot/range/rollup classification + a test asserting no `_DDMMYYYY`-style suffix remains).
+  Citing `src/lib/paths` as a consumed module in a sub-story's `prompt.md` is not sufficient on its own — the filename-formatting helpers must actually be called, not just the directory resolver.
 
 ## Supersession / coordination
 
