@@ -7,7 +7,7 @@ spec.
 
 - [x] **PIR-1** — Deep review of 6 src-lib-migration + 2 pipeline-migration stories; write `spec.md`; apply autofixes | Owner: AI agent | Model: claude-sonnet-5 | Review: none | SHA: 0fccfe9
 - [x] **PIR-2** — Process-parity check of 10 reference-code-gap-migration sub-stories; append to `spec.md`; apply the one autofix | Owner: AI agent | Model: claude-sonnet-5 | Review: none | SHA:
-  <pending>
+  0fccfe9
 - [x] **PIR-3** — Consolidate flagged section; update `CONTEXT.md` | Owner: AI agent | Model: claude-sonnet-5 | Review: none | SHA: 0fccfe9
 
 ## Story done when
