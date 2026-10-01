@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "echo '{\"additionalContext\": \"Session-start reminder (auto-injected by .github/hooks/session-context.json, see AGENTS.md Steps 1-3): Read CONTEXT.md before writing any code, and state the literal text CONTEXT.md \\u2713 in your first user-facing response of this session -- including pure Q&A sessions with no code touched. If the prompt does not name specific files, stop and confirm scope before starting. State your one-sentence plan (files touched, tests, commit) and wait for explicit go-ahead before creating, editing, or running anything beyond a trivial single-file tweak.\"}'",
+        "powershell": "Write-Output ('{\"additionalContext\": \"Session-start reminder (auto-injected by .github/hooks/session-context.json, see AGENTS.md Steps 1-3): Read CONTEXT.md before writing any code, and state the literal text CONTEXT.md \\u2713 in your first user-facing response of this session -- including pure Q&A sessions with no code touched. If the prompt does not name specific files, stop and confirm scope before starting. State your one-sentence plan (files touched, tests, commit) and wait for explicit go-ahead before creating, editing, or running anything beyond a trivial single-file tweak.\"}')",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}
