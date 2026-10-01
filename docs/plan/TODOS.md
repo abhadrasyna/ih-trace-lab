@@ -56,17 +56,28 @@
       plus the index page linking back to `docs/reference-architecture.md`.
   - 2026-09-30: RFD-1 through RFD-10 landed (`02beb49`..`79aea36`), adding the per-project generator mode, 12 folder-level diagram pages, and the final index/exclusion note.
 
-## Phase 3 — Src-lib migration (real implementations)
+## Phase 3 — Design review gate (before any implementation-phase story starts)
 
-- [ ] `src-lib-migration` epic — unblocked by `functional-code-taxonomy`; its six stories can now land in any order, except `auth-lib-migration` additionally depends on `athena-lib-integration`
-      (reuses its `sso_auth` shape).
+- [x] `flow-correlation-id-logging` — defines the FCID (flow-correlation-id) convention referenced by `athena-lib-integration` and every other `src/lib/*` module's logging; design-only, no code.
+  - 2026-10-01: FCID-1/FCID-2 landed in `c5c08b7`.
+- [x] `pre-implementation-design-review` — SOLID/clean-code/extensibility audit of all 18 not-yet-started stories across `src-lib-migration`, `pipeline-migration`, and
+      `reference-code-gap-migration`, run before any of them starts producing code; extended same-day with 9 additional dimensions (exception hierarchy, throttling retry, concurrent-client safety,
+      PII/log redaction, config consistency, import-cycle check, test-fixture dedup, packaging/import-path, progressive Athena query scoping).
+  - 2026-10-01: PIR-1/PIR-2/PIR-3 landed in `0fccfe9`/`267fc26`/`7aa43fd`.
+  - 2026-10-01: all 6 originally-flagged judgment calls resolved in `d59a2d0`.
+  - 2026-10-01: extended review (9 more dimensions) landed in `64aaf25`; one self-introduced out-of-scope item (finding #11) reverted in `66b930f`.
 
-## Phase 4 — Pipeline migration
+## Phase 4 — Src-lib migration (real implementations)
+
+- [ ] `src-lib-migration` epic — unblocked by `functional-code-taxonomy` and `pre-implementation-design-review`; its six stories can now land in any order, except `auth-lib-migration` additionally
+      depends on `athena-lib-integration` (reuses its `sso_auth` shape). `athena-lib-integration` additionally carries the FCID convention's first real consumer obligation (ALI-2/ALI-5).
+
+## Phase 5 — Pipeline migration
 
 - [ ] `pipeline-migration` epic — blocked on `project-taxonomy` PT-1/2/6/7, all of `src-lib-migration`, and `query-catalog`. Two stories (`aws-access-cli-pipeline-migration`,
       `ctap-smvod-investigation-migration`) land in any order relative to each other once unblocked.
 
-## Phase 5 — Reference code gap migration (remaining 10 `github_copilot` projects)
+## Phase 6 — Reference code gap migration (remaining 10 `github_copilot` projects)
 
 - [ ] `reference-code-gap-migration` epic — Tier 1 (`applause-investigation-migration`, `astro-events-household-investigation-migration`, `shaka-6001-sa-investigation-migration`,
       `root-scripts-tool-migration`) ready as soon as `src-lib-migration` lands. Tier 2 (`vod-asset-ingestion-investigation-migration`, `mtn-zm-device-investigation-migration`,
@@ -75,13 +86,13 @@
       `src-lib-migration`**, so `src-lib-migration`'s `README.md`/`stories.md` need a follow-up edit adding those two modules before Tier 3 can start (see this epic's own "Supersession/coordination"
       note — not yet done as of this writing).
 
-## Phase 6 — Verification: diagram-vs-implementation diff (not yet its own story)
+## Phase 7 — Verification: diagram-vs-implementation diff (not yet its own story)
 
 Goal: for every python refactor under `src-lib-migration` and `reference-code-gap-migration`, compare the *original* `github_copilot` diagrams (Phase 2 output) against the *migrated* code, to catch
 logic silently dropped or altered during the port — a systematic check, not manual re-reading of both codebases.
 
 No existing story owns this — `reference-folder-diagrams` is explicitly scoped "docs/tooling only" against the read-only reference, and does not re-diagram `ih-trace-lab`'s own new code. Proposed
-follow-up story (create via `_TEMPLATE` once Phase 3/5 stories start landing):
+follow-up story (create via `_TEMPLATE` once Phase 4/6 stories start landing):
 
 1. Extend `scripts/reference_diagram/` (already built by RFD-1) with a second mode pointed at `ih-trace-lab`'s own `src/lib/*` / `investigations/*/scripts` / `src/pipelines/*`, producing the same
    Mermaid flowchart/sequence-diagram shape as the Phase 2 output, so both sides are directly comparable.
@@ -95,6 +106,6 @@ follow-up story (create via `_TEMPLATE` once Phase 3/5 stories start landing):
 ## Notes
 
 - `_TEMPLATE` excluded (not a real story). Ordering above still routes through `reference-code-gap-migration` and `reference-folder-diagrams` even though the originating review excluded them from deep
-  review, because Phase 6 (explicitly requested) needs both.
+  review, because Phase 7 (explicitly requested) needs both.
 - Model: all tasks across every story currently specify `claude-sonnet-5`. Kept as the default here; escalate per-task to a stronger model only if a specific port's first-pass output needs a redo, not
   as a blanket change.
