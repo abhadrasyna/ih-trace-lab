@@ -126,6 +126,9 @@ port), per this epic's own "one task per session" convention — further tasks a
 - No file under `/Users/abhadra/github_copilot` is ever created, edited, or deleted by any story in this epic — read-only reference throughout.
 - No live AWS/Athena/Lightstep/network call in any story's tests — mocked collaborators only, matching `src-lib-migration`'s convention.
 - Tier 3 stories' first task may audit and skeleton, but must not attempt full migration until their blocking `src/lib/*` module exists — see each story's own `prompt.md` scope guard.
+- **2026-10-01:** every sub-story's 2nd+ task (not yet written for any of the 10) must author its class/sequence Mermaid diagrams in its own `stories.md` before any code is written, mirroring
+  `src-lib-migration`'s own stated discipline ("diagrams are authored now, at design time, not deferred to the implementing session") — flagged by `docs/plan/pre-implementation-design-review/` finding
+  #11 as a process-parity gap, fixed here rather than left for 10 sub-stories to each invent independently.
 
 ## Supersession / coordination
 

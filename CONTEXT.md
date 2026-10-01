@@ -60,6 +60,13 @@
   sequence diagram (one Athena query inside one pipeline run) and a component diagram (FCID flowing through `src/lib/*` into all three migration epics' consumers); no `src/lib/logging/` module or code
   exists yet — that is deferred to a follow-up story once a real consumer (first candidate: `athena-lib-integration` ALI-2) needs it. Coordination notes were added to `src-lib-migration`,
   `pipeline-migration`, and `reference-code-gap-migration`'s `README.md`s pointing here. Cross-process FCID propagation (subprocess/cron boundaries) is explicitly out of scope, left open for later.
+- `docs/plan/pre-implementation-design-review/` — story complete: a SOLID/clean-code/extensibility design review of all 18 not-yet-started stories across `src-lib-migration`, `pipeline-migration`, and
+  `reference-code-gap-migration`, run before any of them starts producing code. `spec.md` is the full findings table. Two low-risk findings were fixed directly: (1) a blocking method-name/signature
+  mismatch between `src/lib/athena/protocols.py`'s `AthenaClient` and `athena-lib-integration/stories.md`'s own ALI-2 class diagram, which would have failed that story's own task gate; (2) a missing
+  design-time-diagram-discipline parity constraint added to `reference-code-gap-migration/README.md` so its 10 sub-stories mirror `src-lib-migration`'s own stated diagram-first convention once their
+  2nd+ tasks are written. Six further findings are left as open judgment calls in `spec.md`'s "Flagged for human decision" section (a DIP-test-pattern inconsistency, a possible premature
+  `report_render` factory, a YAGNI question on `curl_to_python`, a task-authoring SRP nit, a possible orchestrator-shape risk in `ctap-smvod`'s CSM-2, and the still-undesigned Athena batch/cache
+  optimization raised in the same 2026-10-01 conversation).
 
 ## Key Decisions
 

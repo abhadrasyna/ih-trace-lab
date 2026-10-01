@@ -61,19 +61,19 @@ yet landed, this task cannot start (see `prompt.md`'s hard gate).
 
 ```mermaid
 classDiagram
-    class AthenaExecutorProtocol {
-        <<Protocol (from functional-code-taxonomy FCT-2)>>
-        +run_query(sql, tenant) QueryResult
-        +poll_status(query_id) QueryStatus
-        +download_results(query_id) Path
+    class AthenaClient {
+        <<Protocol (from functional-code-taxonomy FCT-2, src/lib/athena/protocols.py)>>
+        +start_query(sql, params) str
+        +poll_status(execution_id) str
+        +fetch_results(execution_id) QueryResult
     }
     class AthenaAdapter {
         -executor: QueryExecutor
         -downloader: ResultDownloader
         +__init__(executor, downloader)
-        +run_query(sql, tenant) QueryResult
-        +poll_status(query_id) QueryStatus
-        +download_results(query_id) Path
+        +start_query(sql, params) str
+        +poll_status(execution_id) str
+        +fetch_results(execution_id) QueryResult
     }
     class QueryExecutor {
         <<athena_runner submodule>>
@@ -81,13 +81,17 @@ classDiagram
     class ResultDownloader {
         <<athena_runner submodule>>
     }
-    AthenaExecutorProtocol <|.. AthenaAdapter : implements
+    AthenaClient <|.. AthenaAdapter : implements
     AthenaAdapter --> QueryExecutor : constructor-injected
     AthenaAdapter --> ResultDownloader : constructor-injected
 ```
 
+<!-- 2026-10-01 pre-implementation-design-review: this diagram previously named
+run_query/poll_status/download_results, which did not match src/lib/athena/protocols.py's actual AthenaClient Protocol (start_query/poll_status/fetch_results) — fixed to match the landed,
+authoritative Protocol exactly. See docs/plan/pre-implementation-design-review/spec.md finding #1. -->
+
 **Tests (no network, no real external services):**
-- `test_adapter_delegates_run_query` — a fake `QueryExecutor` records the call; adapter returns its result untranslated (or correctly translated).
+- `test_adapter_delegates_start_query` — a fake `QueryExecutor` records the call; adapter returns its result untranslated (or correctly translated).
 - `test_adapter_constructor_requires_injection` — instantiating without collaborators raises (no silent default construction of a real `boto3` client).
 
 **Commit:** `feat(athena): add DIP-compliant adapter over athena_runner`
@@ -104,7 +108,7 @@ classDiagram
 
 1. Mock/fake `athena_runner.query_executor.QueryExecutor` and `athena_runner.result_downloader` — no real `boto3` calls, no live AWS/network, matching `athena-mcp-server`'s own existing test
    convention (mocked-boto3 unit tests).
-2. `test_adapter_satisfies_protocol` — `isinstance(AthenaAdapter(fake_executor, fake_downloader), AthenaExecutorProtocol)` is `True`.
+2. `test_adapter_satisfies_protocol` — `isinstance(AthenaAdapter(fake_executor, fake_downloader), AthenaClient)` is `True`.
 3. `test_non_conforming_stub_fails_protocol` — a stub missing one method is `False` under `isinstance`.
 
 **Commit:** `test(athena): mock athena_runner + Protocol conformance`
