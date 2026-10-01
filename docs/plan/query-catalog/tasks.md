@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: QC-6.**
+**Open: none — story complete.**
 
 - [x] **QC-1** — `queries/README.md`: folder purpose, layout, and core rules | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 47e1bac
 - [x] **QC-2** — `queries/athena/`: harvest 3 reference catalogs + 3 `ctap-smvod-session-report/queries/` promoted files into deduplicated templates + `index.md` (with run-status) | Owner: AI agent
@@ -12,7 +12,7 @@ spec.
   cf86faf
 - [x] **QC-4** — `knowledge/`: port (not run) DDL-cache tooling + `knowledge/README.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: b0a0044
 - [x] **QC-5** — `docs/guides/query-catalog.md` protocol doc + `AGENTS.md` pointer | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: ad9304f
-- [ ] **QC-6** — Tests for both harvest scripts (QC-2, QC-3) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
+- [x] **QC-6** — Tests for both harvest scripts (QC-2, QC-3) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: 1665aa4
 
 ## Story done when
 
