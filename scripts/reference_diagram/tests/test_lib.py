@@ -219,6 +219,20 @@ def test_build_internal_import_graph_excludes_test_files(tmp_path: Path) -> None
     assert graph[helper] == set()
 
 
+def test_build_internal_import_graph_drops_edges_into_test_files(tmp_path: Path) -> None:
+    # A production file importing a test-pattern module must not produce an edge
+    # into it, since the test node is excluded from the graph entirely.
+    _write(tmp_path / "sample" / "tests" / "__init__.py")
+    _write(tmp_path / "sample" / "tests" / "test_fixtures.py", "SAMPLE = 1\n")
+    _write(tmp_path / "sample" / "runner.py", "from tests.test_fixtures import SAMPLE\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    runner = tmp_path / "sample" / "runner.py"
+    test_fixtures = tmp_path / "sample" / "tests" / "test_fixtures.py"
+    assert test_fixtures not in graph
+    assert graph[runner] == set()
+
+
 def test_render_project_flowchart_happy_path(tmp_path: Path) -> None:
     root = tmp_path / "sample"
     a = root / "runner.py"

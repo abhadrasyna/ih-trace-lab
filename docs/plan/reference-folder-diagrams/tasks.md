@@ -15,7 +15,7 @@ spec.
 - [x] **RFD-8** — `aws-access-cli` flowchart + orchestration sequence diagram | Owner: AI agent | Model: n/a | Review: none | SHA: 9ccd050
 - [x] **RFD-9** — `ctap-smvod-session-report` sequence diagram + data-flow flowchart | Owner: AI agent | Model: n/a | Review: none | SHA: ae77a86
 - [x] **RFD-10** — Index page linking every diagram; note `oasis-athena-mcp` exclusion | Owner: AI agent | Model: n/a | Review: none | SHA: 79aea36
-- [x] **RFD-11** — Exclude test files from per-project internal-import flowcharts | Owner: AI agent | Model: n/a | Review: none | SHA: PENDING
+- [x] **RFD-11** — Exclude test files from per-project internal-import flowcharts | Owner: AI agent | Model: n/a | Review: `py-code-review` hook | SHA: 330637b
 
 ## Story done when
 

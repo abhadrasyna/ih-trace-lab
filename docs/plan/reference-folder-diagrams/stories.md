@@ -219,5 +219,7 @@ production code; tests aren't migration targets).
 **Tests:**
 - `test_is_test_file_detects_tests_directory` / `test_is_test_file_detects_test_filename_patterns` / `test_is_test_file_false_for_production_file`.
 - `test_build_internal_import_graph_excludes_test_files` — a test file importing a production file produces no node/edge for the test file.
+- `test_build_internal_import_graph_drops_edges_into_test_files` — a production file importing a test-pattern module produces no edge into it (added after `py-code-review` flagged the original test
+  only covered the reverse direction).
 
 **Commit:** `fix(reference-diagram): exclude test files from per-project flowcharts`
