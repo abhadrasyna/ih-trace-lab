@@ -64,9 +64,14 @@
   `reference-code-gap-migration`, run before any of them starts producing code. `spec.md` is the full findings table. Two low-risk findings were fixed directly: (1) a blocking method-name/signature
   mismatch between `src/lib/athena/protocols.py`'s `AthenaClient` and `athena-lib-integration/stories.md`'s own ALI-2 class diagram, which would have failed that story's own task gate; (2) a missing
   design-time-diagram-discipline parity constraint added to `reference-code-gap-migration/README.md` so its 10 sub-stories mirror `src-lib-migration`'s own stated diagram-first convention once their
-  2nd+ tasks are written. Six further findings are left as open judgment calls in `spec.md`'s "Flagged for human decision" section (a DIP-test-pattern inconsistency, a possible premature
-  `report_render` factory, a YAGNI question on `curl_to_python`, a task-authoring SRP nit, a possible orchestrator-shape risk in `ctap-smvod`'s CSM-2, and the still-undesigned Athena batch/cache
-  optimization raised in the same 2026-10-01 conversation).
+  2nd+ tasks are written. **2026-10-01 follow-up: all 6 originally-flagged judgment calls resolved** (`spec.md`'s "Flagged for human decision" section now records each resolution) — (a)
+  `src-lib-migration/README.md` gained a standardized two-assertion DIP-enforcement test pattern, applied to `athena-lib-integration`'s ALI-3 and `auth-lib-migration`'s AUM-3; (b)
+  `report-render-lib-migration` gained a new `RRM-3` Factory Method task (`src/lib/report_render/factory.py`) selecting a writer by shape key, renumbering the prior RRM-3/RRM-4 to RRM-4/RRM-5; (c)
+  `curl-to-python-lib-migration`'s CPM-1 framing corrected to cite its real confirmed consumer (a HAR-driven manual timing/latency investigation workflow), replacing the prior
+  "no-citation/speculative" framing; (d) the task-authoring SRP nit (finding #7) was left as-is, no split; (e) `ctap-smvod-investigation-migration`'s CSM-2 class diagram fixed to show `RunPipeline`
+  delegating to explicit `MergeScript`/`AnalyzeScript` collaborators instead of modeling their logic as inline methods; (f) `athena-lib-integration` gained two new tasks, `ALI-4` (audit existing
+  `athena_runner` batch/cache support) and `ALI-5` (`src/lib/athena/batch.py` + `cache.py` — bounded-concurrency `BatchQueryRunner` + `InMemoryTtlCache`, both DIP-compliant), with the prior ALI-4 (doc
+  pointers) renumbered to `ALI-6`.
 
 ## Key Decisions
 

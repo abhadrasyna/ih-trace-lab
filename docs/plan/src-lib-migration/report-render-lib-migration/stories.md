@@ -90,7 +90,59 @@ sequenceDiagram
 
 ---
 
-## RRM-3 — Tests + `Protocol` conformance pair
+## RRM-3 — `src/lib/report_render/factory.py`: writer selection Factory
+
+**Files to change / create:**
+- `src/lib/report_render/factory.py` — new.
+- `src/lib/report_render/protocols.py` — re-read (do not edit) FCT-2's `ReportWriterProtocol`; this task adds a sibling, not a replacement.
+
+**Why this task exists (2026-10-01, `pre-implementation-design-review` finding #4):** RRM-2 defines one Strategy implementer per report shape but leaves selection between them to each consumer — every
+call site would need its own `if shape == "csv": CsvReportWriter() else: SummaryReportWriter()` branch, which is exactly the OCP violation RRM-2 was meant to close, just moved to the call sites
+instead of removed. This task closes that gap with a Factory Method so consumers depend only on a shape key, never on a concrete writer class name.
+
+**What to implement:**
+
+1. `PYTHON_DESIGN.md` trigger applied: **Factory Method** — one function owns "which `ReportWriterProtocol` implementer corresponds to this shape key," so adding a new shape is a one-line registry
+   entry, never an edited `if`/`elif` chain at every call site.
+2. `REPORT_SHAPE_REGISTRY: dict[str, type[ReportWriterProtocol]]` module-level mapping from a shape key (the same shape names RRM-1 recorded, e.g. `"csv"`, `"summary"`) to its writer class.
+3. `make_report_writer(shape: str) -> ReportWriterProtocol` — looks up `REPORT_SHAPE_REGISTRY[shape]`, instantiates it, and raises a clear `ValueError` (listing valid keys) for an unknown shape —
+   never a silent `None`/default fallback.
+4. No consumer imports `CsvReportWriter`/`SummaryReportWriter` directly going forward — `RRM-4`'s doc pointer should say so explicitly so future consumers use the factory, not the concrete classes.
+
+**Class diagram:**
+
+```mermaid
+classDiagram
+    class ReportWriterProtocol {
+        <<Protocol (from functional-code-taxonomy FCT-2)>>
+        +write(destination, rows) None
+    }
+    class CsvReportWriter {
+        +write(destination, rows) None
+    }
+    class SummaryReportWriter {
+        +write(destination, rows) None
+    }
+    class ReportWriterFactory {
+        <<factory.py>>
+        +make_report_writer(shape) ReportWriterProtocol
+    }
+    ReportWriterProtocol <|.. CsvReportWriter : implements
+    ReportWriterProtocol <|.. SummaryReportWriter : implements
+    ReportWriterFactory ..> CsvReportWriter : creates
+    ReportWriterFactory ..> SummaryReportWriter : creates
+```
+
+**Tests:**
+- `test_make_report_writer_returns_csv_writer` — `make_report_writer("csv")` is an instance of `CsvReportWriter`.
+- `test_make_report_writer_returns_summary_writer` — `make_report_writer("summary")` is an instance of `SummaryReportWriter`.
+- `test_make_report_writer_unknown_shape_raises` — `make_report_writer("nonsense")` raises `ValueError` listing valid keys.
+
+**Commit:** `feat(report_render): add Factory Method for writer selection`
+
+---
+
+## RRM-4 — Tests + `Protocol` conformance pair
 
 **Files to change / create:**
 - `tests/lib/report_render/test_writers.py` — new.
@@ -106,7 +158,7 @@ sequenceDiagram
 
 ---
 
-## RRM-4 — Doc/`CONTEXT.md` pointers
+## RRM-5 — Doc/`CONTEXT.md` pointers
 
 **Files to change / create:**
 - `CONTEXT.md` — one new "What Exists" line.
@@ -114,8 +166,10 @@ sequenceDiagram
 
 **What to implement:**
 
-1. `CONTEXT.md` line: `src/lib/report_render/writers.py` — Strategy-based report writers replacing the 8+ duplicated `github_copilot` originals (cite RRM-1's grouped list).
+1. `CONTEXT.md` line: `src/lib/report_render/writers.py` + `factory.py` — Strategy-based report writers, selected via a Factory Method keyed by shape, replacing the 8+ duplicated `github_copilot`
+   originals (cite RRM-1's grouped list).
+2. Note explicitly that future consumers call `make_report_writer(shape)`, never import a concrete writer class directly.
 
 **Tests:** N/A — docs only.
 
-**Commit:** `docs(report_render): point CONTEXT.md at the new writers`
+**Commit:** `docs(report_render): point CONTEXT.md at the new writers + factory`

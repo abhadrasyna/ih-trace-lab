@@ -94,6 +94,9 @@ sequenceDiagram
 
 1. Mocked upstream collaborator, no live AWS/network calls.
 2. `Protocol` conformance pair mirroring AUM-1's pattern, now against the concrete `SsoAuth` class.
+3. **DIP pair (standardized by `pre-implementation-design-review`, finding #2; see `src-lib-migration/README.md`'s cross-cutting constraints):** `test_sso_auth_construction_requires_collaborator` —
+   `SsoAuth()` with no args raises `TypeError`; and `test_sso_auth_never_calls_boto3_directly` — assert no direct `boto3` lookup from within `SsoAuth`'s own methods, confirming all AWS access is
+   delegated to the injected collaborator.
 
 **Commit:** `test(auth): sso tests + Protocol conformance`
 

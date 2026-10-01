@@ -49,6 +49,14 @@ classDiagram
         +step5_analyze()
         +step6_build_output()
     }
+    class MergeScript {
+        <<ported merge_*.py>>
+        +merge(lightstep_rows, athena_rows)
+    }
+    class AnalyzeScript {
+        <<ported analyze_*.py>>
+        +analyze(merged_rows)
+    }
     class AthenaAdapter {
         <<src/lib/athena>>
         +execute_query(catalog_key, params)
@@ -65,7 +73,13 @@ classDiagram
     RunPipeline --> AthenaAdapter
     RunPipeline --> AuthAdapter
     RunPipeline --> CsvIO
+    RunPipeline --> MergeScript : step4 delegates to
+    RunPipeline --> AnalyzeScript : step5 delegates to
 ```
+
+> **2026-10-01 note (fixed by `pre-implementation-design-review`, finding #5):** `step4_merge_session_debug()`/`step5_analyze()` on `RunPipeline` are thin orchestration calls into the already-audited,
+> already-classified-as-business-logic `merge_*.py`/`analyze_*.py` scripts (per CSM-1) — they are not where the merge/analyze logic itself lives. The diagram's explicit delegation arrows exist to keep
+> this distinction visible: `RunPipeline` stays an orchestrator, the ported scripts stay the owners of their respective logic.
 
 ```mermaid
 sequenceDiagram

@@ -13,8 +13,8 @@ spec.
 
 ## Story done when
 
-- **CPM-1** — A recorded finding states either the specific `github_copilot` files this module replaces, or explicitly that none were cited in FCT-1's audit and this module is built ahead of a
-  proven-duplication trigger (per this epic's explicit authorization, not a silent scope assumption).
+- **CPM-1** — A recorded finding states either the specific `github_copilot` files this module replaces, or explicitly that none were cited in FCT-1's audit; either way, the confirmed consumer
+  scenario (HAR-driven timing/latency investigation, manual curl-copy-and-convert trigger) is recorded before any code is written.
 - **CPM-2** — `src/lib/curl_to_python/protocols.py` defines `CurlConverterProtocol` as a `Protocol`-only interface, `@runtime_checkable`.
 - **CPM-3** — `src/lib/curl_to_python/converter.py` implements it with a pure, side-effect-free conversion (parses/produces text or AST only, never executes the converted request).
 - **CPM-4** — `pytest` passes; `Protocol` conformance confirmed via `isinstance`.

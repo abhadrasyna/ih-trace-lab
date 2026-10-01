@@ -11,8 +11,11 @@ task id) before writing any code. One task per session. Complete it fully. Stop.
 ## Why this story exists
 
 `functional-code-taxonomy` named `curl_to_python` as one of the six `src/lib/*` modules (curl-command-to-Python-requests-call conversion, used when turning a captured browser/HAR curl command into a
-repeatable investigation script) but did not scope a `Protocol` for it — lowest proven duplication of the six at FCT-1's audit time. This epic builds it now as an explicit, requested follow-up rather
-than waiting for further organic triggers.
+repeatable investigation script) but did not scope a `Protocol` for it — lowest proven duplication of the six at FCT-1's audit time. **Confirmed real consumer (2026-10-01, in the
+`pre-implementation-design-review` follow-up conversation):** this module's actual invocation shape is manual/ad hoc, not pipeline-automated — during a HAR-driven timing/latency investigation (e.g.
+`vod-playback-timing-probe`, `applauseInvestigation`), an analyst identifies a specific request in a HAR file, copies that request's curl command (as exported by browser devtools), and invokes this
+converter to get a repeatable Python script for re-running/measuring that single request's timing. This is not a speculative build-ahead-of-a-trigger module; the trigger is this HAR-investigation
+workflow, confirmed as real rather than hypothetical.
 
 ## Scope guard
 
@@ -30,8 +33,8 @@ than waiting for further organic triggers.
 
 ## Task overview
 
-- **CPM-1** — Confirm/derive the originals this module replaces from the FCT-1 audit (`curl_to_python` was named in the module map but not necessarily audit-cited by file — confirm whether a citation
-  exists, or record that none does and this module is being built ahead of a proven-duplication trigger, per this epic's explicit authorization).
+- **CPM-1** — Confirm/derive the originals this module replaces from the FCT-1 audit, and record the confirmed consumer scenario (HAR-driven timing/latency investigation: analyst copies a single
+  request's curl command identified via HAR inspection, converts it for repeatable re-testing) rather than treating this as a speculative build-ahead-of-a-trigger module.
 - **CPM-2** — `src/lib/curl_to_python/protocols.py`: new `CurlConverterProtocol`.
 - **CPM-3** — `src/lib/curl_to_python/converter.py`: concrete implementer.
 - **CPM-4** — Tests + `Protocol` conformance pair.

@@ -50,17 +50,22 @@ appears once each sub-story's 2nd+ task is written, which this epic's own conven
 
 Self-contained — each item below states the decision needed and the file it would touch, without requiring a re-read of this session's transcript.
 
-1. **Finding #2 (DIP test pattern)** — decide and document, in `src-lib-migration/README.md`'s "Cross-cutting constraints," one canonical two-assertion DIP-enforcement test pattern (e.g. "every
-   adapter test suite asserts (a) construction without required collaborators raises, and (b) no direct call to the real external client/library inside the adapter") that every module's
-   `*-lib-migration` story adopts identically, rather than each inventing its own single assertion.
-2. **Finding #3 (report_render factory)** — decide whether `report-render-lib-migration` needs a format-selection factory/registry now (adds a seam before a 3rd consumer exists) or waits for RRM-1's
-   grouped-list count to actually reach 3+ shapes (pure YAGNI). No file changes until decided.
-3. **Finding #4 (curl_to_python YAGNI)** — re-confirm `curl-to-python-lib-migration` still has epic-requester authorization to build ahead of a proven consumer, or make CPM-1's audit the hard gate (do
-   not proceed past CPM-1 without a confirmed citation). Touches `src-lib-migration/athena-lib-integration/../curl-to-python-lib-migration/prompt.md`'s scope guard if reversed.
-4. **Finding #7 (task-authoring SRP nit)** — decide whether the 6 `*-lib-migration` stories' final `CONTEXT.md` + epic-README task should split into two tasks each (×6 new rows) or stay bundled as a
-   pragmatic exception to the SRP-on-tasks idea. Low stakes; explicitly flagged so it isn't silently decided either way.
-5. **Finding #9 (ctap-smvod orchestrator shape)** — before starting CSM-2, confirm with whoever implements it that `RunPipeline`'s class diagram is illustrative (steps delegate to the named
-   `merge_*.py`/`analyze_*.py` scripts) and not the literal intended class — if literal, revise CSM-2's diagram in `pipeline-migration/ctap-smvod-investigation-migration/stories.md` to show explicit
-   delegation before any code is written.
-6. **Finding #10 (Athena batch/cache design)** — same gap already flagged in the prior 2026-10-01 conversation (batched/concurrent query submission, SQL-fingerprint result cache, polling backoff).
-   Belongs as a new task on `athena-lib-integration` (e.g. an `ALI-5`) once a human decides to scope it — not invented here, since it is a real design task, not a doc fix.
+**All 6 items below were resolved on 2026-10-01, in a follow-up session; each note states the decision made and where it landed.**
+
+1. **Finding #2 (DIP test pattern)** — **Resolved: standardize now.** `src-lib-migration/README.md`'s "Cross-cutting constraints" gained the canonical two-assertion pattern (construction-without-
+   collaborators raises + no direct real-client call inside the adapter). `athena-lib-integration/stories.md`'s ALI-3 and `auth-lib-migration/stories.md`'s AUM-3 both now list the missing half of the
+   pair explicitly.
+2. **Finding #3 (report_render factory)** — **Resolved: build now** (the requester overrode this review's "defer" recommendation). `report-render-lib-migration` gained a new `RRM-3` task
+   (`src/lib/report_render/factory.py`, a Factory Method keyed by shape) between the prior RRM-2 and RRM-3; the prior RRM-3/RRM-4 renumbered to RRM-4/RRM-5. `prompt.md`/`tasks.md`/`stories.md` all
+   updated to match.
+3. **Finding #4 (curl_to_python YAGNI)** — **Resolved: real consumer confirmed, not a hard gate.** The requester clarified the actual trigger: a HAR-driven manual timing/latency investigation workflow
+   (analyst copies a single request's curl command identified via HAR inspection, converts it, re-runs for timing measurement). `curl-to-python-lib-migration/prompt.md` and CPM-1's spec in
+   `stories.md`/`tasks.md` were corrected to cite this scenario instead of the prior "no citation found, built speculatively" framing.
+4. **Finding #7 (task-authoring SRP nit)** — **Resolved: leave bundled, no split.** The requester chose not to split the `CONTEXT.md` + epic-README task across the 6 `*-lib-migration` stories; no file
+   changes made for this item.
+5. **Finding #9 (ctap-smvod orchestrator shape)** — **Resolved: diagram was literal, now fixed.** `pipeline-migration/ctap-smvod-investigation-migration/stories.md`'s CSM-2 class diagram now shows
+   `RunPipeline` delegating to explicit `MergeScript`/`AnalyzeScript` collaborators (mirroring `merge_*.py`/`analyze_*.py`) instead of modeling their logic as inline methods, with a dated note
+   explaining the fix.
+6. **Finding #10 (Athena batch/cache design)** — **Resolved: scoped and added as new tasks.** Follow-up scoping (small batches of 2-5 independent queries; TTL-based result caching; existing
+   `athena_runner` batch support unknown) produced two new tasks in `athena-lib-integration`: `ALI-4` (audit whether `athena_runner` already supports batching/caching) and `ALI-5`
+   (`src/lib/athena/batch.py` + `cache.py` — bounded-concurrency `BatchQueryRunner` + `InMemoryTtlCache`, both DIP-compliant). The prior ALI-4 (doc pointers) renumbered to `ALI-6`.

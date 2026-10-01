@@ -101,6 +101,10 @@ Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic
 - No story adds a project-specific business rule to `src/lib/*` — only domain-mechanism logic (Athena execution, CSV/report I/O, HAR parsing, auth, curl conversion) belongs here; anything
   campaign/case-specific stays local to a future consumer's own `scripts/`.
 - No live AWS/network calls in any story's tests — mocked `boto3`/filesystem only, matching `athena-mcp-server`'s own existing test convention.
+- **2026-10-01 (standardized by `pre-implementation-design-review`, finding #2):** every adapter/implementer's test suite asserts **both** of the following, not just one — (a) constructing the class
+  without its required collaborator arguments raises (no silent default construction), and (b) the class makes no direct call to the real external client/library it wraps (`boto3`, the injected
+  submodule, etc.) from inside its own methods. `athena-lib-integration`'s ALI-3 and `auth-lib-migration`'s AUM-3 each previously asserted only one half of this pair; both should add the missing
+  assertion when picked up.
 
 ## Supersession / coordination
 

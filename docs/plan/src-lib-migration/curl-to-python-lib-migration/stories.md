@@ -7,13 +7,16 @@
 
 ```mermaid
 graph LR
-    Consumer["future investigation\n(captured browser curl command)"] --> Converter["src/lib/curl_to_python/converter.py\n(this story)"]
-    Converter --> PyCode["generated Python requests-call text/AST\n(not executed by this module)"]
+    Analyst["Analyst — HAR-driven timing/latency\ninvestigation (manual trigger)"] --> Har["identifies one request in a HAR file\n(src/lib/har loader output)"]
+    Har --> CurlCopy["copies that request's curl command\n(browser devtools export)"]
+    CurlCopy --> Converter["src/lib/curl_to_python/converter.py\n(this story)"]
+    Converter --> PyCode["generated Python requests-call text\n(not executed by this module)"]
+    PyCode --> Rerun["Analyst re-runs/times the single\nrequest with the generated script"]
 ```
 
 ---
 
-## CPM-1 — Confirm/derive replaced-originals citation
+## CPM-1 — Confirm/derive replaced-originals citation + consumer scenario
 
 **Files to change / create:**
 - `stories.md` (this file) — record the finding as a subsection under CPM-2 below.
@@ -21,8 +24,9 @@ graph LR
 **What to implement:**
 
 1. Re-read `functional-code-taxonomy`'s FCT-1 audit text for any `curl_to_python`-relevant file citation (search for "curl" across its `prompt.md`/`stories.md`).
-2. If none exists, record explicitly: "No specific `github_copilot` original was cited for `curl_to_python` in the FCT-1 audit; this module is built ahead of a proven-duplication trigger per this
-   epic's explicit authorization (2026-09-30 session)."
+2. Record the confirmed consumer scenario (2026-10-01, `pre-implementation-design-review` follow-up): invocation is manual/ad hoc, not pipeline-automated — during a HAR-driven timing/latency
+   investigation, an analyst identifies one request in a HAR file (via `src/lib/har`'s loader), copies that request's curl command as exported by browser devtools, and invokes this converter to get a
+   repeatable Python script for re-running/timing that single request. This is the module's real trigger, not a speculative build-ahead-of-a-proven-need.
 3. If a citation is found on re-read, record it here instead and adjust CPM-3's implementer to match its actual shape rather than inventing one.
 
 **Tests:** N/A — audit/analysis task.

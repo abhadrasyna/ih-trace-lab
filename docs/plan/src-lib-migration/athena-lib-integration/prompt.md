@@ -18,16 +18,20 @@ execution stack — itself ported from `github_copilot/oasis-athena-mcp` (origin
 
 So this story is integration, not migration: add the repo as a git submodule, then write a thin adapter in `src/lib/athena/` that satisfies `functional-code-taxonomy` FCT-2's `Protocol` by delegating
 to `athena_runner`'s existing classes — constructor-injected per `PYTHON_DESIGN.md`'s DIP trigger ("a class constructs its own collaborator directly instead of receiving it"), never re-implemented.
+**2026-10-01 addition (`pre-implementation-design-review` finding #6, scoped via follow-up questions):** real investigations submit small batches of independent queries (2-5, e.g. per-tenant/per-day
+fan-out) and sometimes re-run identical SQL+params — ALI-4/ALI-5 add bounded-concurrency batch submission and a TTL result cache on top of the single-query adapter, rather than leaving every consumer
+to hand-roll its own `ThreadPoolExecutor`/caching.
 
 ## Scope guard
 
-**In scope:** `.gitmodules` entry + pinned submodule checkout of `athena-mcp-server`; `src/lib/athena/adapter.py` (thin delegation layer only); tests mocking `athena_runner`'s public surface (no live
-AWS); doc/`CONTEXT.md` pointers.
+**In scope:** `.gitmodules` entry + pinned submodule checkout of `athena-mcp-server`; `src/lib/athena/adapter.py` (thin delegation layer only); `src/lib/athena/batch.py` + `cache.py` (concurrent batch
+submission + TTL result cache, built on top of the adapter, not inside it); tests mocking `athena_runner`'s public surface (no live AWS); doc/`CONTEXT.md` pointers.
 
 **Out of scope:** any change inside the `athena-mcp-server` submodule itself once added (it is a separate repo with its own commit history and its own `AGENTS.md`/test suite — treat it as externally
 owned, same posture as `/Users/abhadra/github_copilot` but for a different reason: here it's because it's a *sibling deliverable*, not because it's a read-only audit target); any change under
 `/Users/abhadra/github_copilot`; `functional-code-taxonomy`'s own FCT-1/FCT-3 citations (this story leaves the coordination note in the epic `README.md` instead of editing that story's files directly,
-since that story is owned separately and not yet started).
+since that story is owned separately and not yet started); a distributed/persistent cache backend (`InMemoryTtlCache` only — a Redis/file-backed `QueryResultCache` implementer is a future consumer's
+problem if ever needed, kept open via the `Protocol` seam).
 
 ## Session-start load hints
 
@@ -35,21 +39,24 @@ since that story is owned separately and not yet started).
 - `docs/plan/functional-code-taxonomy/prompt.md` + `stories.md` (FCT-2 spec) — the exact `Protocol` shape `src/lib/athena/adapter.py` must satisfy.
 - `/Users/abhadra/myWork/myOffice/athena-mcp-server/CONTEXT.md` and `README.md` — what `athena_runner` already exposes, and its one known open item (the `aws-access-cli` sibling-checkout
   namespace-package merge in `tool_config.py::_load_mtn_registry`) — this story's adapter must not silently mask that fragility if it surfaces during integration.
-- `PYTHON_DESIGN.md` — cite the specific DIP trigger this story applies before writing `adapter.py`.
+- `PYTHON_DESIGN.md` — cite the specific DIP trigger this story applies before writing `adapter.py`, and the Strategy/concurrency guidance before writing `batch.py`/`cache.py`.
 
 ## Task overview
 
 - **ALI-1** — Add `athena-mcp-server` as a pinned git submodule; document init/update steps.
 - **ALI-2** — `src/lib/athena/adapter.py`: DIP-compliant adapter implementing FCT-2's `Protocol` by delegating to `athena_runner.query_executor`/`aws_clients`.
 - **ALI-3** — Tests (mocked `athena_runner`, no live AWS) + `Protocol` conformance check.
-- **ALI-4** — Doc/`CONTEXT.md` pointers; note submodule init requirement in project `README.md` setup steps.
+- **ALI-4** — Audit whether `athena_runner` already supports batch/concurrent submission or caching, before designing ALI-5.
+- **ALI-5** — `src/lib/athena/batch.py` + `cache.py`: bounded-concurrency batch submission + TTL result cache, constructor-injected over the ALI-2 adapter.
+- **ALI-6** — Doc/`CONTEXT.md` pointers; note submodule init requirement in project `README.md` setup steps.
 
 ## Definition of done
 
 - `athena-mcp-server` is a real git submodule at a pinned commit; `git submodule update --init` reproduces it; the epic `README.md` "Stories" status column is updated.
 - `src/lib/athena/adapter.py` contains no port of `query_executor`/`aws_clients` logic — only delegation; it satisfies FCT-2's `Protocol` via `isinstance` in a test.
+- `src/lib/athena/batch.py`'s `BatchQueryRunner` and `cache.py`'s `InMemoryTtlCache` exist, both DIP-compliant (constructor-injected collaborators, no silent default construction).
 - Tests pass with zero live AWS calls.
-- `CONTEXT.md` and this project's setup docs each note the new submodule dependency.
+- `CONTEXT.md` and this project's setup docs each note the new submodule dependency and the batch/cache layer.
 
 ## Perspectives not covered
 
