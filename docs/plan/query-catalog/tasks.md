@@ -10,7 +10,7 @@ spec.
   (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **QC-3** — `queries/lightstep/`: harvest `lightstep-query-templates.md` into templates + `index.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
   <—>
-- [ ] **QC-4** — `knowledge/`: port (not run) DDL-cache tooling + `knowledge/README.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [x] **QC-4** — `knowledge/`: port (not run) DDL-cache tooling + `knowledge/README.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: b0a0044
 - [ ] **QC-5** — `docs/guides/query-catalog.md` protocol doc + `AGENTS.md` pointer | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **QC-6** — Tests for both harvest scripts (QC-2, QC-3) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 
