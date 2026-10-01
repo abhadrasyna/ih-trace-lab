@@ -5,8 +5,8 @@ spec.
 
 **Open: none — story complete.**
 
-- [x] **FCID-1** — Define the FCID convention (format, generation, `contextvars` propagation, log-line shape) | Owner: AI agent | Model: claude-sonnet-5 | Review: none | SHA: <pending commit>
-- [x] **FCID-2** — Reference Mermaid diagrams + coordination notes in the 3 existing epics | Owner: AI agent | Model: claude-sonnet-5 | Review: none | SHA: <pending commit>
+- [x] **FCID-1** — Define the FCID convention (format, generation, `contextvars` propagation, log-line shape) | Owner: AI agent | Model: claude-sonnet-5 | Review: none | SHA: c5c08b7
+- [x] **FCID-2** — Reference Mermaid diagrams + coordination notes in the 3 existing epics | Owner: AI agent | Model: claude-sonnet-5 | Review: none | SHA: c5c08b7
 
 ## Story done when
 
