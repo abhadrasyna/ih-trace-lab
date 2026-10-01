@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: none — story complete.**
+**Open: none — story complete.** (Reopened once, for RFD-11, per `reference-code-gap-migration`'s precedent of appending a new task rather than starting a new story.)
 
 - [x] **RFD-1** — Extend `scripts/reference_diagram/` with a per-project script-dependency flowchart mode | Owner: AI agent | Model: n/a | Review: `py-code-review` hook | SHA: 02beb49
 - [x] **RFD-2** — Tier-1 diagrams: applauseInvestigation, astro-events-household-report, shaka-6001-sa-error-analysis, root `scripts/` | Owner: AI agent | Model: n/a | Review: none | SHA: be1643a
@@ -15,6 +15,7 @@ spec.
 - [x] **RFD-8** — `aws-access-cli` flowchart + orchestration sequence diagram | Owner: AI agent | Model: n/a | Review: none | SHA: 9ccd050
 - [x] **RFD-9** — `ctap-smvod-session-report` sequence diagram + data-flow flowchart | Owner: AI agent | Model: n/a | Review: none | SHA: ae77a86
 - [x] **RFD-10** — Index page linking every diagram; note `oasis-athena-mcp` exclusion | Owner: AI agent | Model: n/a | Review: none | SHA: 79aea36
+- [x] **RFD-11** — Exclude test files from per-project internal-import flowcharts | Owner: AI agent | Model: n/a | Review: none | SHA: PENDING
 
 ## Story done when
 
@@ -34,6 +35,9 @@ spec.
 - **RFD-9** — `docs/reference-diagrams/ctap-smvod-session-report.md` exists with a sequence diagram of `run_pipeline.py`'s orchestration and a data-flow flowchart.
 - **RFD-10** — `docs/reference-diagrams/README.md` links every diagram above plus `docs/reference-architecture.md`, and states why `oasis-athena-mcp` (superseded by the `athena-mcp-server` submodule)
   has none.
+- **RFD-11** — `scripts/reference_diagram/lib.py`'s `build_internal_import_graph` excludes test files (`tests/`/`test/` dirs, `test_*.py`/`*_test.py`) from per-project flowchart nodes and edges, with
+  a unit test covering the exclusion; `docs/reference-diagrams/{aws-access-cli,mtn-network-traffic,mtn-zm-session-device-investigation}.md` (the 3 diagrams with test files mixed in) are regenerated
+  with test nodes removed, hand-authored sections preserved unchanged.
 
 ## After each task
 

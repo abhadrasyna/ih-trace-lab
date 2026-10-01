@@ -12,6 +12,7 @@ from reference_diagram.lib import (
     discover_projects,
     extract_top_level_import_names,
     find_python_files,
+    is_test_file,
     link_cross_project_imports,
     own_top_level_names,
     render_mermaid,
@@ -127,6 +128,25 @@ def test_link_cross_project_imports_skips_ambiguous_alias(tmp_path: Path) -> Non
     assert projects["consumer"].imported_projects == set()
 
 
+# --- is_test_file -------------------------------------------------------------
+
+def test_is_test_file_detects_tests_directory(tmp_path: Path) -> None:
+    root = tmp_path / "sample"
+    assert is_test_file(root, root / "tests" / "test_helper.py")
+    assert is_test_file(root, root / "pkg" / "tests" / "anything.py")
+
+
+def test_is_test_file_detects_test_filename_patterns(tmp_path: Path) -> None:
+    root = tmp_path / "sample"
+    assert is_test_file(root, root / "pkg" / "test_runner.py")
+    assert is_test_file(root, root / "pkg" / "runner_test.py")
+
+
+def test_is_test_file_false_for_production_file(tmp_path: Path) -> None:
+    root = tmp_path / "sample"
+    assert not is_test_file(root, root / "pkg" / "runner.py")
+
+
 # --- build_internal_import_graph / render_project_flowchart --------------------
 
 def test_build_internal_import_graph_happy_path(tmp_path: Path) -> None:
@@ -185,6 +205,18 @@ def test_build_internal_import_graph_drops_ambiguous_module_aliases(tmp_path: Pa
     project = discover_projects(tmp_path)["sample"]
     graph = build_internal_import_graph(project)
     assert graph[tmp_path / "sample" / "runner.py"] == set()
+
+
+def test_build_internal_import_graph_excludes_test_files(tmp_path: Path) -> None:
+    _write(tmp_path / "sample" / "pkg" / "__init__.py")
+    _write(tmp_path / "sample" / "pkg" / "helper.py", "VALUE = 1\n")
+    _write(tmp_path / "sample" / "tests" / "test_helper.py", "from pkg.helper import VALUE\n")
+    project = discover_projects(tmp_path)["sample"]
+    graph = build_internal_import_graph(project)
+    helper = tmp_path / "sample" / "pkg" / "helper.py"
+    test_file = tmp_path / "sample" / "tests" / "test_helper.py"
+    assert test_file not in graph
+    assert graph[helper] == set()
 
 
 def test_render_project_flowchart_happy_path(tmp_path: Path) -> None:

@@ -198,3 +198,26 @@ No persistent-storage schema changes in this story — nothing to point to in a 
 **Tests:** none — docs-only index.
 
 **Commit:** `docs(reference-diagrams): add index linking all reference diagrams`
+
+---
+
+## RFD-11 — Exclude test files from per-project internal-import flowcharts
+
+**Why:** a 2026-10-01 user review of `docs/reference-diagrams/` found test files (`tests/*.py`, `test_*.py`) mixed into the generated per-project flowcharts as ordinary nodes — e.g.
+`aws-access-cli.md` had 39 of 91 nodes (43%) as test scaffolding, inflating the diagram's "density" note with noise irrelevant to the story's actual purpose (migration/convergence decisions for
+production code; tests aren't migration targets).
+
+**Files to change:**
+- `scripts/reference_diagram/lib.py` — add `is_test_file(project_root, py_file) -> bool` (true for paths under a `tests`/`test` directory, or filenames matching `test_*.py`/`*_test.py`); filter
+  `build_internal_import_graph`'s nodes/edges to production files only (module resolution still uses the full project for correctness, edges into excluded test files are dropped since the target node
+  no longer exists); update `render_project_report`'s scanned-file-count line to report the production/test split instead of the raw total.
+- `scripts/reference_diagram/tests/test_lib.py` — tests for `is_test_file` and for `build_internal_import_graph` excluding test files.
+- `docs/reference-diagrams/aws-access-cli.md`, `mtn-network-traffic.md`, `mtn-zm-session-device-investigation.md` — the 3 diagrams with test files present — regenerated via
+  `scripts/reference_diagram/main.py --source /Users/abhadra/github_copilot --project <name> --out docs/reference-diagrams/<name>.md`, with each file's hand-authored tail section
+  (fan-out/state-diagram/convergence-target prose) preserved exactly as before, unchanged.
+
+**Tests:**
+- `test_is_test_file_detects_tests_directory` / `test_is_test_file_detects_test_filename_patterns` / `test_is_test_file_false_for_production_file`.
+- `test_build_internal_import_graph_excludes_test_files` — a test file importing a production file produces no node/edge for the test file.
+
+**Commit:** `fix(reference-diagram): exclude test files from per-project flowcharts`
