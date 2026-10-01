@@ -46,7 +46,9 @@
 
 ## Phase 1 — Query catalog
 
-- [ ] `query-catalog` — QC-1/2/3/5/6 have no dependency; QC-4's former `tenant-registry` blocker is now satisfied.
+- [x] `query-catalog` — complete: QC-1 through QC-6 all landed via a task-level parallel-worktree batch (4 tasks in parallel, QC-6 sequenced after its QC-2/QC-3 dependency merged).
+  - 2026-10-01: QC-1 landed in `47e1bac` (done directly, trivial docs-only task). QC-2 landed in `6f3823a`. QC-3 landed in `cf86faf`. QC-4 landed in `b0a0044`. QC-5 landed in `ad9304f`. QC-6 landed in
+    `1665aa4`. All merged to `main`; worktrees removed.
 
 ## Phase 2 — Reference diagrams (of the *original* `github_copilot` code)
 
