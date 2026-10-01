@@ -114,6 +114,9 @@ Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic
   files they cite — this epic does not edit those stories' files itself (both are not yet started); this note is the coordination record.
 - `aws-access-cli-pipeline-migration`'s cron-cutover step is the first real exercise of `project-taxonomy` PT-6's procedure — if that procedure proves incomplete in practice, the fix belongs in PT-6's
   own spec, not a silent workaround here.
+- **2026-10-01:** `docs/plan/flow-correlation-id-logging/` defines the project's FCID (flow-correlation-id) logging convention. Both stories here generate one FCID per run at their entry point
+  (`run_*.py` for `aws-access-cli`, `run_pipeline.py` for `ctap-smvod`) and rely on `src/lib/*` adapters to auto-inject it into every log line — neither story implements the convention itself; this is
+  the coordination record.
 
 ## Epic done when
 

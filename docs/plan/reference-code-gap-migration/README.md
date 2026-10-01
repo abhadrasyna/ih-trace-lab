@@ -135,6 +135,8 @@ port), per this epic's own "one task per session" convention — further tasks a
   required there unless a future session resolves the second, deliberately-unresolved `vod-playback-timing-probe` tension.
 - `root-scripts-tool-migration`'s `generate_scripts_registry.py` overlaps `functional-code-taxonomy` FCT-6's own cross-project script registry extension — that story's first task must check whether
   FCT-6 already supersedes it before porting a second copy.
+- **2026-10-01:** `docs/plan/flow-correlation-id-logging/` defines the project's FCID (flow-correlation-id) logging convention. Every sub-story's entry script should generate one FCID per run per that
+  convention once it implements logging — this epic does not implement the convention itself; this is the coordination record.
 
 ## Epic done when
 
