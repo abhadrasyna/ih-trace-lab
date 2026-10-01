@@ -5,7 +5,7 @@ spec.
 
 **Open: QC-1, QC-2, QC-3, QC-4, QC-5, QC-6.**
 
-- [ ] **QC-1** — `queries/README.md`: folder purpose, layout, and core rules | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [x] **QC-1** — `queries/README.md`: folder purpose, layout, and core rules | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <PENDING-COMMIT>
 - [ ] **QC-2** — `queries/athena/`: harvest 3 reference catalogs + 3 `ctap-smvod-session-report/queries/` promoted files into deduplicated templates + `index.md` (with run-status) | Owner: AI agent
   (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 - [ ] **QC-3** — `queries/lightstep/`: harvest `lightstep-query-templates.md` into templates + `index.md` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA:
