@@ -122,5 +122,5 @@ Tier 0 — the written rule above is the whole mechanism until then. -->
 ## No throwaway code in production folders
 
 A quick POC or exploration always starts in `scratch/` first (see `scratch/SCRATCH.md`) and only graduates to `src/`/`scripts/` once it's proven, via the convergence rule documented there. Before
-writing a new scratch script, the duplicate-check + stub-creation step is delegated per `scratch/SCRATCH.md`'s "Registry & duplicate-check" section. This is a hard requirement, not just an available
-option.
+writing a new scratch script, the duplicate-check + stub-creation step is delegated per `scratch/SCRATCH.md`'s "Registry & duplicate-check" section. For Athena/Lightstep query work specifically,
+follow `docs/guides/query-catalog.md` before writing a new SQL/TQL file or promoting one into a script. This is a hard requirement, not just an available option.
