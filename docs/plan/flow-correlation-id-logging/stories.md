@@ -37,7 +37,13 @@ under one FCID.
     "logger": "src.lib.athena.adapter", "query_execution_id": "q-9f8e...", "tenant": "mtn-za",
     "sql_fingerprint": "7c3a1e2b", "event": "query_state_change", "state": "SUCCEEDED", "duration_ms": 4210}
    ```
-6. **Who sets it at each consumer type:**
+6. **PII/secrets redaction (2026-10-01 extended review addition):** raw SQL text and query parameters can carry tenant identifiers, session/subscriber IDs, or (if a caller ever misuses a literal
+   instead of a bind param) credentials — none of that belongs verbatim in a log line that may be shipped to a shared aggregator. The log-line shape above already reflects the rule: log
+   `sql_fingerprint` (a short hash of the normalized SQL, e.g. first 8 hex chars of `sha256(sql)`) instead of the raw SQL string, and log only named/allow-listed param keys (`tenant`,
+   `query_execution_id`, `duration_ms`, `state`) rather than an opaque dump of every bind parameter. A future `src/lib/logging/redact.py` helper should expose a `redact_params(params: dict,
+   allow_keys: set[str]) -> dict` that drops/`***`-masks any key not on the allow-list, called from the same `logging.Filter` that injects `fcid`, so redaction is automatic and cannot be forgotten at
+   an individual call site the way manual masking would be.
+7. **Who sets it at each consumer type:**
    - Pipeline (`src/pipelines/aws-access-cli/run_*.py`) — generate once per cron-triggered process start.
    - Investigation (`investigations/ctap-smvod/run_pipeline.py`) — generate once per manual invocation of the 6-step orchestrator; all 6 steps share it.
    - Tool (`src/tools/*`) — generate once per CLI invocation.

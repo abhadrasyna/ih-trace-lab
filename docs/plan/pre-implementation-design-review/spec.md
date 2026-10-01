@@ -69,3 +69,36 @@ Self-contained — each item below states the decision needed and the file it wo
 6. **Finding #10 (Athena batch/cache design)** — **Resolved: scoped and added as new tasks.** Follow-up scoping (small batches of 2-5 independent queries; TTL-based result caching; existing
    `athena_runner` batch support unknown) produced two new tasks in `athena-lib-integration`: `ALI-4` (audit whether `athena_runner` already supports batching/caching) and `ALI-5`
    (`src/lib/athena/batch.py` + `cache.py` — bounded-concurrency `BatchQueryRunner` + `InMemoryTtlCache`, both DIP-compliant). The prior ALI-4 (doc pointers) renumbered to `ALI-6`.
+
+## Extended review, 2026-10-01 (same day, follow-up pass)
+
+The requester asked for the review to go beyond their originally-stated criteria (SOLID, Athena optimization, FCID logging, extensibility) to catch anything else at-risk before implementation starts,
+explicitly to avoid refactoring multiple times. Scope was agreed via `ask_user`: all 8 proposed dimensions below, full depth, plus a 9th requirement the requester specified directly.
+
+**A concrete, already-committed defect was found first** (not a hypothetical): `athena-lib-integration`'s ALI-5 batch design (added in the 6-item resolution above) did not implement
+`flow-correlation-id-logging/stories.md`'s own stated `contextvars`/`ThreadPoolExecutor` caveat — FCID would have silently vanished from log lines inside batch worker threads. Fixed as a new ALI-5
+implementation point (capture `copy_context()` on the calling thread, submit work through it).
+
+1. **Exception hierarchy** — `athena-lib-integration`'s ALI-2 gained `src/lib/athena/exceptions.py` (mirrors, never leaks, `athena_runner.exceptions.*`); `src-lib-migration/README.md` gained a
+   generalized cross-cutting rule requiring the same pattern in every other `src/lib/*` module.
+2. **AWS throttling retry/backoff** — confirmed missing in `athena_runner.query_executor.py` by direct source read; added to ALI-2 as an adapter-layer responsibility (exponential backoff + jitter,
+   scoped to throttling-class `ClientError`s only).
+3. **Credential/session reuse under concurrency** — `athena_runner.aws_clients.AwsClientFactory` builds boto3 clients from one shared `boto3.Session` per call, with no documented concurrent-call
+   safety; ALI-5 now requires all `AthenaClient` instances to be constructed sequentially before its thread pool starts, never inside a worker thread.
+4. **PII/secrets in logs** — `flow-correlation-id-logging/stories.md`'s log-line shape spec gained a redaction rule: log `sql_fingerprint` (a short hash) instead of raw SQL text, and only allow-listed
+   param keys, never an opaque param dump.
+5. **Config management consistency** — confirmed `src/lib/paths/config.py`'s `PathConfig` (frozen dataclass + `.load(path)`) as the project's existing config pattern; ALI-2 now reuses
+   `athena_runner.config.RunConfig` directly instead of inventing a new shape, and `src-lib-migration/README.md` gained a generalized rule for other modules to follow the same precedent.
+6. **Import-cycle / dependency-graph check** — `src-lib-migration/README.md` gained an explicit one-directional dependency rule for `src/lib/*` (e.g. `athena/` depends on nothing else under
+   `src/lib/`), with a future `tests/lib/test_no_import_cycles.py` flagged for whichever story is picked up last.
+7. **Test-fixture duplication (DRY in tests)** — `src-lib-migration/README.md` flagged a future shared `tests/lib/conftest.py` for fake collaborators reused across 6+ stories, to be introduced the
+   first time a second story needs one.
+8. **Packaging/import-path consistency** — confirmed no `pyproject.toml`/`setup.py`/`conftest.py` exists at the repo root; `tests/` only imports `from src.lib...` successfully because of `python -m
+   pytest` invoked from repo root. Flagged as an open item in `src-lib-migration/README.md` for whichever story first needs cross-directory imports (likely `pipeline-migration`'s first integration
+   task).
+9. **Progressive/incremental Athena query scoping (requester-specified)** — `athena-lib-integration` gained a new `ALI-6` task, `src/lib/athena/progressive.py`: a `ProgressiveQueryRunner` that runs a
+   query against a narrow scope first, widens only when a `SufficiencyCheck` says the result isn't enough, stops when a `ScopeSequence` is exhausted, and combines rows across every scope actually run
+   (never dropping an earlier scope's rows). The prior ALI-6 (doc pointers) renumbered to `ALI-7`.
+
+All of the above were written directly into the affected stories'/epics' own files (`athena-lib-integration/stories.md`, `tasks.md`, `prompt.md`; `flow-correlation-id-logging/stories.md`;
+`src-lib-migration/README.md`) rather than only recorded here — this section is the audit trail, not the source of truth for the resulting design.

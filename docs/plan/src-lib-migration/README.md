@@ -105,6 +105,27 @@ Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic
   without its required collaborator arguments raises (no silent default construction), and (b) the class makes no direct call to the real external client/library it wraps (`boto3`, the injected
   submodule, etc.) from inside its own methods. `athena-lib-integration`'s ALI-3 and `auth-lib-migration`'s AUM-3 each previously asserted only one half of this pair; both should add the missing
   assertion when picked up.
+- **2026-10-01 (extended design review — exception-hierarchy-per-module):** every `src/lib/<module>/` that wraps a third-party or submodule dependency defines its own `exceptions.py` with a single
+  module-specific base (e.g. `AthenaAdapterError`) and narrow subclasses, and **never lets the wrapped library's own exception types cross the module's public `Protocol` boundary** — callers catch
+  only this module's hierarchy, never `botocore.exceptions.ClientError` or `athena_runner.exceptions.*` directly. `athena-lib-integration`'s `src/lib/athena/exceptions.py` (ALI-2) is the first
+  instance of this pattern; `auth-lib-migration`, `csv-io-lib-migration`, `curl-to-python-lib-migration`, and `har-lib-migration` must each add an equivalent `exceptions.py` rather than letting
+  `boto3`/filesystem/parsing errors leak through unwrapped.
+- **2026-10-01 (extended design review — config-management consistency):** `src/lib/paths/config.py`'s `PathConfig` (a frozen dataclass loaded from YAML via a `.load(path)` classmethod) is this
+  project's existing config-loading convention. Any story introducing its own config shape (e.g. `athena-lib-integration` reusing `athena_runner.config.RunConfig`) should either reuse an existing
+  upstream config object as-is (as ALI-2 does) or, if a story needs a project-local config of its own, follow `PathConfig`'s frozen-dataclass + `.load(path)` shape rather than inventing ad hoc env-var
+  reads — one config pattern across `src/lib/*`, not one per module.
+- **2026-10-01 (extended design review — import-cycle / dependency-direction):** `src/lib/*` modules must form a one-directional dependency graph with no cycles — e.g. `athena/` may depend on nothing
+  else under `src/lib/`, `auth/` may be depended on by `athena/` (for SSO credential refresh) but must never import `athena/` back, and `report_render/`/`csv_io`/`har/` are leaf modules depended on by
+  pipeline/investigation code, not by each other. Whichever story is picked up last under this epic should add a lightweight `tests/lib/test_no_import_cycles.py` (walk `src/lib/`'s module graph,
+  assert no back-edges) rather than relying on manual review to catch a future cycle.
+- **2026-10-01 (extended design review — shared test-fixture duplication):** six+ stories under this epic each need the same handful of fake/mock collaborators (a fake clock, a fake `boto3` client
+  stub, a minimal conforming `Protocol` stub for conformance tests). Introduce `tests/lib/conftest.py` with these as reusable `pytest` fixtures the first time a second story needs one of them (likely
+  `auth-lib-migration`, since it depends on `athena-lib-integration`), rather than each story re-defining its own ad hoc version — a DRY violation across test code is still a DRY violation.
+- **2026-10-01 (extended design review — packaging / import-path convention):** this repo has no `pyproject.toml`/`setup.py`/`pytest.ini`/`conftest.py` at the repo root; `tests/` imports via `from
+  src.lib...` only because `python -m pytest` is invoked from the repo root (per the `Makefile`'s `test` target). This works for `pytest` but is undocumented and will break the first time a non-pytest
+  consumer (e.g. a future `investigations/<slug>/scripts/` script) tries `import src.lib.athena` from a different working directory. Flagged here as an open item for whichever story first needs
+  cross-directory imports (likely `pipeline-migration`'s first integration task) to either add a root `conftest.py`/minimal `pyproject.toml` with an explicit `src` layout, or document the `python -m
+  <module>`-from-repo-root invocation requirement explicitly in that consumer's own `prompt.md`.
 
 ## Supersession / coordination
 

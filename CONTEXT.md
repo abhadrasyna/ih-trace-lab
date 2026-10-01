@@ -71,7 +71,18 @@
   "no-citation/speculative" framing; (d) the task-authoring SRP nit (finding #7) was left as-is, no split; (e) `ctap-smvod-investigation-migration`'s CSM-2 class diagram fixed to show `RunPipeline`
   delegating to explicit `MergeScript`/`AnalyzeScript` collaborators instead of modeling their logic as inline methods; (f) `athena-lib-integration` gained two new tasks, `ALI-4` (audit existing
   `athena_runner` batch/cache support) and `ALI-5` (`src/lib/athena/batch.py` + `cache.py` — bounded-concurrency `BatchQueryRunner` + `InMemoryTtlCache`, both DIP-compliant), with the prior ALI-4 (doc
-  pointers) renumbered to `ALI-6`.
+  pointers) renumbered to `ALI-6`. **2026-10-01, same-day extended review pass (user-requested, 8 dimensions + progressive query scoping):** grounded in a direct read of the `athena-mcp-server`
+  submodule's source (not speculation) — found and fixed a real defect: ALI-5's just-committed batch design did not satisfy `flow-correlation-id-logging`'s own stated
+  `contextvars`/`ThreadPoolExecutor` caveat (FCID would have silently vanished inside worker threads); ALI-5 now captures `copy_context()` on the calling thread before submitting work. ALI-2 gained a
+  mirrored `src/lib/athena/exceptions.py` hierarchy (never leaking `athena_runner.exceptions.*`) and throttling retry/backoff (confirmed missing upstream in `query_executor.py`); ALI-5 now reuses
+  `athena_runner.config.RunConfig.max_concurrency` (confirmed reserved-but-unconsumed upstream) instead of a redundant new constructor arg, and pre-builds all `AthenaClient` instances sequentially
+  before starting its thread pool (`AwsClientFactory`'s shared-`boto3.Session` construction is not documented safe for concurrent calls). A new `ALI-6` task (`src/lib/athena/progressive.py`) adds a
+  progressive scope-widening query runner — narrow scope first, widen only if insufficient, combine rows across every scope actually run — per the user's own 9th review requirement; the prior ALI-6
+  (doc pointers) renumbered to `ALI-7`. `flow-correlation-id-logging/stories.md` gained a PII/secrets redaction rule (log `sql_fingerprint`, not raw SQL; allow-list param keys).
+  `src-lib-migration/README.md`'s cross-cutting constraints gained 5 generalized rules beyond the `athena`-specific instances: exception-hierarchy-per-module, config-loading consistency (cite
+  `src/lib/paths/config.py`'s `PathConfig`), import-cycle/dependency-direction (one-directional `src/lib/*` graph, future `test_no_import_cycles.py`), shared test-fixture dedup (future
+  `tests/lib/conftest.py`), and the packaging/import-path gap (no root `pyproject.toml`/`conftest.py` yet — `python -m pytest`-from-repo-root is the only reason `from src.lib...` imports currently
+  work; flagged as an open item for `pipeline-migration`'s first integration task).
 
 ## Key Decisions
 
