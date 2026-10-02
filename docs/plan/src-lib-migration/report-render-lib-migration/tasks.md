@@ -5,7 +5,7 @@ spec.
 
 **Open: RRM-2, RRM-3, RRM-4, RRM-5.**
 
-- [x] **RRM-1** — Re-confirm 8+ file audit list, group by report shape | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <PENDING-COMMIT>
+- [x] **RRM-1** — Re-confirm 8+ file audit list, group by report shape | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 515d44b
 - [ ] **RRM-2** — `src/lib/report_render/writers.py`: Strategy implementer(s) satisfying FCT-2's `Protocol` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests
   green | SHA: <—>
 - [ ] **RRM-3** — `src/lib/report_render/factory.py`: Factory Method for writer selection by shape key | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green |
