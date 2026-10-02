@@ -107,3 +107,24 @@ def test_refresh_failure_propagates_instead_of_being_swallowed() -> None:
         pass
 
     assert session_calls == [], "session_factory must not run when the refresh check raises"
+
+
+def test_sso_auth_construction_requires_collaborator() -> None:
+    """DIP pair (pre-implementation-design-review finding #2): construction without collaborators must fail loudly."""
+    try:
+        SsoAuth()  # type: ignore[call-arg]  # intentional: both args are required, no defaults
+        raise AssertionError("expected TypeError: SsoAuth requires both collaborators")
+    except TypeError:
+        pass
+
+    try:
+        SsoAuth(refresher_factory=lambda profile_name: _FakeRefresher(already_valid=True))  # type: ignore[call-arg]
+        raise AssertionError("expected TypeError: session_factory is still missing")
+    except TypeError:
+        pass
+
+    try:
+        SsoAuth(session_factory=lambda profile_name: _FakeSession())  # type: ignore[call-arg]
+        raise AssertionError("expected TypeError: refresher_factory is still missing")
+    except TypeError:
+        pass
