@@ -36,13 +36,19 @@ Each task id (`**ID**`) carries exactly one checkbox, in `tasks.md`'s working li
 
 ### Archiving a completed story
 
-Once a standalone story's `tasks.md` shows `**Open: none — story complete.**` (and, for a story nested under an epic, once the epic itself still has other open stories — the epic folder stays under
-`docs/plan/` until every one of its stories is done), archive it:
+Once a standalone story's `tasks.md` shows `**Open: none — story complete.**` (and, for a story nested under an epic, once every one of the epic's sub-stories shows the same marker — the epic folder
+stays under `docs/plan/` until all of its stories are done), archive it with the script:
 
-1. `git mv docs/plan/<slug>/ docs/archive/<slug>/` — move the whole folder as-is, no restructuring.
-2. Update every cross-reference to `docs/plan/<slug>` (in other stories' `prompt.md`/ `stories.md`/`tasks.md`, `CONTEXT.md`, `README.md`, and any `docs/guides/*`) to `docs/archive/<slug>`, so no
-   dangling `docs/plan/` link remains.
-3. Commit the move and every reference update together — one commit, not a move followed by a separate link-fixing commit.
+```
+python scripts/dev/archive_completed_story.py <slug>
+```
 
-2026-10-02: first applied to `tenant-registry`, `query-catalog`, `project-taxonomy`, `functional-code-taxonomy`, `scratch-script-registry`, `reference-knowledge-harvest`, `reference-folder-diagrams`,
-`flow-correlation-id-logging`, and `pre-implementation-design-review`.
+It `git mv`s the folder to `docs/archive/<slug>`, rewrites every `docs/plan/<slug>` cross-reference (in other stories' `prompt.md`/`stories.md`/`tasks.md`, `CONTEXT.md`, `README.md`, and any
+`docs/guides/*`) to `docs/archive/<slug>`, reflows any line pushed over the 200-char cap by the longer path, and stages every touched file with `git add` — it does not commit, and refuses to run
+(raises `StoryNotComplete`) if the slug or any of its sub-stories is still open. Review `git status`, then commit the move and every reference update together in one commit.
+
+A non-blocking `story-archive-check` pre-commit hook (`scripts/dev/hooks/check_unarchived_stories.py`) warns — without blocking the commit — whenever a `docs/plan/` story or epic looks complete but
+hasn't been archived yet, as a safety net for the case where this step is forgotten.
+
+2026-10-02: first applied manually to `tenant-registry`, `query-catalog`, `project-taxonomy`, `functional-code-taxonomy`, `scratch-script-registry`, `reference-knowledge-harvest`,
+`reference-folder-diagrams`, `flow-correlation-id-logging`, and `pre-implementation-design-review`, before the script above existed.

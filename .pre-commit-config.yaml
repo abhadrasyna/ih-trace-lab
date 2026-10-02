@@ -23,5 +23,13 @@ repos:
         pass_filenames: true
         verbose: true
 
+      - id: story-archive-check
+        name: "warn on complete-but-unarchived docs/plan/ stories"
+        language: system
+        entry: python scripts/dev/hooks/check_unarchived_stories.py
+        files: 'docs/plan/.*/tasks\.md$'
+        pass_filenames: false
+        verbose: true
+
 # NOTE (phase0): ruff/mypy/pytest-gate/bandit/detect-secrets hooks are deferred
 # until pyproject.toml, tests/unit/, and src/ are (re)added to the python piece.

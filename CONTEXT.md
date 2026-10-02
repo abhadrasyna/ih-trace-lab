@@ -32,6 +32,11 @@
 - `docs/archive/reference-knowledge-harvest/` — story complete through RKH-17: `knowledge/` now contains the harvested VOD asset mapping/pipeline references, MTN SA Lightstep tag/query references,
   Applause Athena/CSV gotchas, adoption playback-outcome gap notes, CTAP-SM-VOD playback/CDN methodology docs, MTN/TIM Play tenant+DRM references, the 3 root knowledge ports, and the SRE Jira project
   reference. The story remains extensible — future `github_copilot/*` folders would reopen it by appending new `RKH-N` tasks rather than creating a new story.
+- Story-archiving is now scripted and self-triggering: `scripts/dev/archive_completed_story.py <slug>` (epic-aware; refuses incomplete slugs) does the `git mv` + cross-reference rewrite + 200-char
+  reflow described in `docs/plan/README.md`'s "Archiving a completed story" section and stages the result for review/commit; the non-blocking `story-archive-check` pre-commit hook
+  (`scripts/dev/hooks/check_unarchived_stories.py`) warns when a story looks complete but hasn't been archived yet. Separately, `.github/hooks/session-close-trigger.json` (native Copilot CLI
+  `sessionStart`/`agentStop` hooks, backed by `scripts/dev/hooks/session_close_on_commit.py`) detects when `HEAD` moved during a turn (i.e. a commit just landed) and forces one more turn whose prompt
+  asks the agent to invoke the `session-close` skill immediately, instead of relying on the end of the whole session to remember to do it.
 - `docs/plan/src-lib-migration/` — epic: real, tested implementations of `functional-code-taxonomy`'s six `src/lib/*` modules (`auth`, `athena`, `csv_io`, `report_render`, `har`, `curl_to_python`),
   ported/refactored from `github_copilot` (read-only reference), one story per module. `athena-lib-integration` is the exception — it wires in `/Users/abhadra/myWork/myOffice/athena-mcp-server` (an
   already-independent, tested repo with the shared `athena_runner` execution stack) as a git submodule and adapts to it, rather than re-porting a fifth copy of that logic.
