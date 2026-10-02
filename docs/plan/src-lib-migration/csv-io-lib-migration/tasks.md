@@ -3,11 +3,11 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: CIM-2, CIM-3, CIM-4.**
+**Open: CIM-3, CIM-4.**
 
 - [x] **CIM-1** — `src/lib/csv_io/protocols.py`: split `CsvReaderProtocol`/`CsvWriterProtocol` (ISP) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green |
   SHA: `77fd3be`
-- [ ] **CIM-2** — `src/lib/csv_io/csv_file.py`: concrete reader/writer implementer(s) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
+- [x] **CIM-2** — `src/lib/csv_io/csv_file.py`: concrete reader/writer implementer(s) | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: `02c3b1d`
 - [ ] **CIM-3** — Tests + `Protocol` conformance pairs | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **CIM-4** — Doc/`CONTEXT.md` pointers | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 
