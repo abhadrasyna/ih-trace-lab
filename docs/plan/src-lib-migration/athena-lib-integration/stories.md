@@ -175,6 +175,11 @@ written.
   client construction from multiple threads (individual constructed clients are thread-safe once created; the Session's own credential-resolution path during client construction is the risk). ALI-5
   must not call `athena_client()` concurrently from inside worker threads — see ALI-5 point 4.
 
+**Re-confirmed 2026-10-02** against the pinned submodule commit (`vendor/athena-mcp-server@9463d00`, same pin ALI-1 locked in): all three pre-seeded findings above still hold —
+`RunConfig.max_concurrency: int = 5` is present and unconsumed; `query_executor.py` has no retry/backoff/throttling handling; `AwsClientFactory.__init__` builds one `boto3.Session` per factory
+instance and `athena_client()`/`s3_client()`/`sts_client()` all derive from that single shared session. No new batch/pool/cache helper exists anywhere in the submodule. ALI-5 proceeds as net-new
+design per the pre-seeded finding; no change to that finding was needed.
+
 **Tests:** N/A — audit/analysis task, no code changes.
 
 **Commit:** `docs(athena): confirm athena_runner batch/cache support status`
