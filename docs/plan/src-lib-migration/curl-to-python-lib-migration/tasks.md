@@ -8,7 +8,7 @@ spec.
 - [x] **CPM-1** — Confirm/derive replaced-originals citation from FCT-1 audit | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: `3fea060`
 - [x] **CPM-2** — `src/lib/curl_to_python/protocols.py`: new `CurlConverterProtocol` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: `96f99df`
 - [x] **CPM-3** — `src/lib/curl_to_python/converter.py`: concrete implementer | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: `51cc759`
-- [x] **CPM-4** — Tests + `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <PENDING>
+- [x] **CPM-4** — Tests + `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: `bcbc23d`
 - [ ] **CPM-5** — Doc/`CONTEXT.md` pointers | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
 
 ## Story done when
