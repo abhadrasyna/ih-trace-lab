@@ -86,7 +86,7 @@ graph TB
 | `athena-lib-integration/` | Submodule `athena-mcp-server` + thin `src/lib/athena/` adapter | ✅ Done | `functional-code-taxonomy` FCT-1/FCT-2 | 43ca081 |
 | `report-render-lib-migration/` | Port 8+ duplicated CSV/report writers → `src/lib/report_render/` | ✅ Done | `functional-code-taxonomy` FCT-1/FCT-2 | f639c9b |
 | `har-lib-migration/` | Port 4 duplicated HAR-entry loaders → `src/lib/har/` | ✅ Done | `functional-code-taxonomy` FCT-1/FCT-2 | 433d2ef |
-| `auth-lib-migration/` | Consolidate AWS SSO auth helpers → `src/lib/auth/` (new `Protocol`) | 🔄 In progress (AUM-1/2 done) | FCT-1, `athena-lib-integration` (reuses `sso_auth` shape) | `8c57885` |
+| `auth-lib-migration/` | Consolidate AWS SSO auth helpers → `src/lib/auth/` (new `Protocol`) | 🔄 In progress (AUM-1–3 done) | FCT-1, `athena-lib-integration` (reuses `sso_auth` shape) | `5c61e1f` |
 | `csv-io-lib-migration/` | Consolidate raw CSV I/O → `src/lib/csv_io/` (new `Protocol`) | ⬜ Not started | `functional-code-taxonomy` FCT-1 | — |
 | `curl-to-python-lib-migration/` | Consolidate curl→Python conversion → `src/lib/curl_to_python/` (new `Protocol`) | ⬜ Not started | `functional-code-taxonomy` FCT-1 | — |
 
