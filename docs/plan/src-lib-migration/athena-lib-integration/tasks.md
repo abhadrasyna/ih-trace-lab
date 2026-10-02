@@ -8,7 +8,7 @@ spec.
 - [x] **ALI-1** — Add `athena-mcp-server` as a pinned git submodule + init/update docs | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 2f7bad3
 - [x] **ALI-2** — `src/lib/athena/adapter.py` + `exceptions.py`: DIP-compliant `Protocol`-conforming adapter delegating to `athena_runner`, with mirrored exception hierarchy and throttling
   retry/backoff | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: c6bebc3
-- [x] **ALI-3** — Tests: mocked `athena_runner`, `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: PENDING
+- [x] **ALI-3** — Tests: mocked `athena_runner`, `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: f16b8d4
 - [ ] **ALI-4** — Audit: confirm whether `athena_runner` already supports batch/concurrent submission or caching | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review
   | SHA: <—>
 - [ ] **ALI-5** — `src/lib/athena/batch.py` + `cache.py`: concurrent batch submission + TTL result cache, FCID-propagating | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
