@@ -3,7 +3,7 @@
 > One task per session. Find the first unchecked item in `tasks.md`. That is your only task. Full implementation rules live in `AGENTS.md` and `PYTHON_DESIGN.md`. After each task: set `SHA:` on the
 > task line + tick the box, update the story status summary, add one line to your backlog/session-log file.
 
-See `docs/plan/project-taxonomy/structure.md` for the canonical target folder tree this story's `src/lib/*` modules and FCT-6's registry must stay consistent with — do not restate that tree here;
+See `docs/archive/project-taxonomy/structure.md` for the canonical target folder tree this story's `src/lib/*` modules and FCT-6's registry must stay consistent with — do not restate that tree here;
 cross-reference it by name.
 
 ---
@@ -94,14 +94,14 @@ cross-reference it by name.
 
 **What to implement:**
 
-1. A `## Which category consumes which module` table, columns `Project category (docs/plan/project-taxonomy) | Modules it typically imports`:
+1. A `## Which category consumes which module` table, columns `Project category (docs/archive/project-taxonomy) | Modules it typically imports`:
    - Pipeline → `athena`, `csv_io`, `report_render`, `auth`.
    - Continuous investigation → `athena`, `csv_io`, `report_render`, `har` (if network-capture based).
    - One-off investigation → same as continuous investigation, thinner usage.
    - Tool → depends on the tool; `oasis-athena-mcp`-equivalent tools become adapters over `athena` rather than owning their own client.
-   - Experiment → whichever module the probe's question touches; still imports rather than reimplements, per the "thin consumer" rule stated in `docs/plan/project-taxonomy/`.
-2. One explicit sentence, verbatim-quotable: "`docs/plan/query-catalog` owns the SQL text (deduplicated, parameterized query templates); this story owns the code that executes that SQL
-   (`src/lib/athena/`) — a query template is a string passed into `AthenaClient.start_query`, never duplicated logic inside this module." Read `docs/plan/query-catalog/prompt.md`'s "Why this story
+   - Experiment → whichever module the probe's question touches; still imports rather than reimplements, per the "thin consumer" rule stated in `docs/archive/project-taxonomy/`.
+2. One explicit sentence, verbatim-quotable: "`docs/archive/query-catalog` owns the SQL text (deduplicated, parameterized query templates); this story owns the code that executes that SQL
+   (`src/lib/athena/`) — a query template is a string passed into `AthenaClient.start_query`, never duplicated logic inside this module." Read `docs/archive/query-catalog/prompt.md`'s "Why this story
    exists" section before writing this sentence, so the boundary matches that story's actual stated scope rather than an assumption.
 
 **Tests:** none — docs-only.

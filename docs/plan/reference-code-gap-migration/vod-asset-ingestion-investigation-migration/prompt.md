@@ -8,7 +8,7 @@ task id) before writing any code. One task per session. Complete it fully. Stop.
 ## Why this story exists
 
 `/Users/abhadra/github_copilot/vod-asset-ingestion-mapping` (15 files) has no migration plan anywhere — cited elsewhere only as `har`'s duplication source (`har_parser.py`). Epic `spec.md` §4 audited
-it: 4 files are `har`/`csv_io` lib candidates; 11 stay project-specific (ADI XML parsing, ID/value correlation, OpsHub↔HAR field mapping). Note also `docs/plan/reference-knowledge-harvest/` already
+it: 4 files are `har`/`csv_io` lib candidates; 11 stay project-specific (ADI XML parsing, ID/value correlation, OpsHub↔HAR field mapping). Note also `docs/archive/reference-knowledge-harvest/` already
 harvested this project's VOD asset ID-navigation cheat sheet into `knowledge/` — that is a separate, already-landed docs effort; this story ports the project's *code*, not its knowledge.
 
 **Category correction (epic GAP-1, 2026-09-30):** this project was previously worked-example'd under `experiments/` in `project-taxonomy/structure.md`/`stories.md`. Both files were corrected — its own
@@ -25,7 +25,7 @@ already-landed `knowledge/` distillation (not re-touched here); any other sub-st
 
 - `docs/plan/reference-code-gap-migration/spec.md` §4 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` §"GAP-1 decisions" — the category-conflict resolution and ADI/XML-mapper accept-local decision.
-- `docs/plan/project-taxonomy/structure.md` — the corrected `investigations/vod-asset-ingestion/` example.
+- `docs/archive/project-taxonomy/structure.md` — the corrected `investigations/vod-asset-ingestion/` example.
 - `docs/plan/src-lib-migration/README.md` — `har`/`csv_io` module status.
 
 ## Task overview

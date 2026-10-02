@@ -25,11 +25,11 @@ This epic is the follow-up that actually ports both, once its three blocking dep
 ## Scope decisions
 
 - **Blocked on three sibling stories landing first**, confirmed with the epic requester, 2026-09-30:
-  - `docs/plan/project-taxonomy/` PT-1, PT-2, PT-7 (category definitions, folder skeletons, `config/data_paths.yaml` + ISO-prefix filename convention) — both stories' target layout comes from there,
-    not invented here. `aws-access-cli-pipeline-migration` additionally needs PT-6 (cron-cutover procedure) before its cron step.
+  - `docs/archive/project-taxonomy/` PT-1, PT-2, PT-7 (category definitions, folder skeletons, `config/data_paths.yaml` + ISO-prefix filename convention) — both stories' target layout comes from
+    there, not invented here. `aws-access-cli-pipeline-migration` additionally needs PT-6 (cron-cutover procedure) before its cron step.
   - `docs/plan/src-lib-migration/` — both stories consume `src/lib/{athena,auth,csv_io,report_render}` once those stories land; neither re-implements the executor/writer/auth logic those stories
     already own.
-  - `docs/plan/query-catalog/` — both stories hand their SQL text (`aws-access-cli`'s 6 query classes, `ctap-smvod`'s 45 query files) to that story's `queries/athena/`/`queries/lightstep/` catalog;
+  - `docs/archive/query-catalog/` — both stories hand their SQL text (`aws-access-cli`'s 6 query classes, `ctap-smvod`'s 45 query files) to that story's `queries/athena/`/`queries/lightstep/` catalog;
     this epic does not invent a second SQL-ownership location.
 - **Category assignment is fixed by `project-taxonomy/structure.md`'s own worked examples**, not re-decided here: `aws-access-cli` → **pipeline** (`src/pipelines/aws-access-cli/`);
   `ctap-smvod-session-report` → **investigation, recurring campaign** (`investigations/ctap-smvod/`, Rule B).
@@ -114,7 +114,7 @@ Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic
   files they cite — this epic does not edit those stories' files itself (both are not yet started); this note is the coordination record.
 - `aws-access-cli-pipeline-migration`'s cron-cutover step is the first real exercise of `project-taxonomy` PT-6's procedure — if that procedure proves incomplete in practice, the fix belongs in PT-6's
   own spec, not a silent workaround here.
-- **2026-10-01:** `docs/plan/flow-correlation-id-logging/` defines the project's FCID (flow-correlation-id) logging convention. Both stories here generate one FCID per run at their entry point
+- **2026-10-01:** `docs/archive/flow-correlation-id-logging/` defines the project's FCID (flow-correlation-id) logging convention. Both stories here generate one FCID per run at their entry point
   (`run_*.py` for `aws-access-cli`, `run_pipeline.py` for `ctap-smvod`) and rely on `src/lib/*` adapters to auto-inject it into every log line — neither story implements the convention itself; this is
   the coordination record.
 

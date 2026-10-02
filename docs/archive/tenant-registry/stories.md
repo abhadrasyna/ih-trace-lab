@@ -1,9 +1,7 @@
 # Tenant registry — story specs
 
-> One task per session. Find the first unchecked item in `tasks.md`. That is your only task.
-> Full implementation rules live in `PYTHON_DESIGN.md` and `AGENTS.md`.
-> After each task: set `SHA:` on the task line + tick the box, update the story status
-> summary, add one line to your backlog/session-log file.
+> One task per session. Find the first unchecked item in `tasks.md`. That is your only task. Full implementation rules live in `PYTHON_DESIGN.md` and `AGENTS.md`. After each task: set `SHA:` on the
+> task line + tick the box, update the story status summary, add one line to your backlog/session-log file.
 
 **Confirmed tenant data (source of truth for TR-1/TR-2 — do not re-derive, re-verify, or invent additional tenants):**
 
@@ -28,8 +26,8 @@ Athena `database` for each opco is `unified_<athena_tenant_id>` (confirmed patte
 
 1. In the scratch script, hardcode (do not import anything — this is a throwaway probe) a minimal dict for exactly 2 opcos: South Africa (`iye9omdf`, dedicated project) and Ghana (`apbyfj9d`, shared
    project `mcs-go-prod-mtn-1-eu`), using the confirmed data table above.
-2. Write one small function that, given an opco's Go ID, returns `{"project": ..., "region": ..., "filter": {...} | None}` — `filter` is `None` for a dedicated project, `{"sessionInfo.busUnitId": <go_id>}`
-   for a shared one.
+2. Write one small function that, given an opco's Go ID, returns `{"project": ..., "region": ..., "filter": {...} | None}` — `filter` is `None` for a dedicated project, `{"sessionInfo.busUnitId":
+   <go_id>}` for a shared one.
 3. Run the function for both opcos and print the resolved output.
 4. **Stop here and state to the human exactly which Lightstep MCP tool/query you intend to run next** (per `AGENTS.md`'s hard gate — this applies regardless of it being a "probe"). Suggested: a
    `query_spans` or `list_services` call scoped to `mcs-go-prod-iye9omdf-eu` (no filter) and a second one scoped to `mcs-go-prod-mtn-1-eu` with `sessionInfo.busUnitId = apbyfj9d`, using a short recent
@@ -39,9 +37,8 @@ Athena `database` for each opco is `unified_<athena_tenant_id>` (confirmed patte
 
 **Tests:** none — scratch scripts are exempt (`scratch/SCRATCH.md`).
 
-**Commit:** `docs(tenant-registry): record TR-1 scratch probe findings`
-(the scratch script itself is not held to `src/` discipline but is still committed under `scratch/`, per this project's convention that scratch work is tracked, not gitignored, unless `SCRATCH.md`
-says otherwise for a specific artifact type)
+**Commit:** `docs(tenant-registry): record TR-1 scratch probe findings` (the scratch script itself is not held to `src/` discipline but is still committed under `scratch/`, per this project's
+convention that scratch work is tracked, not gitignored, unless `SCRATCH.md` says otherwise for a specific artifact type)
 
 ---
 
@@ -72,14 +69,14 @@ says otherwise for a specific artifact type)
 **Files to change / create:**
 - `src/tenant_registry/__init__.py`
 - `src/tenant_registry/models.py` — frozen `TenantConfig` dataclass mirroring `config/tenants.yaml`'s fields (type-hinted, per `AGENTS.md` Python conventions)
-- `src/tenant_registry/registry.py` — `TenantRegistry`: loads `config/tenants.yaml` (path injectable via `__init__`, default `config/tenants.yaml` relative to repo root — Dependency Inversion, so tests
-  can pass a fixture path instead), builds lookup indexes by every ID type + `code`, `get(identifier) -> TenantConfig` raising `KeyError` with the list of valid ids on a miss (mirror the proven
+- `src/tenant_registry/registry.py` — `TenantRegistry`: loads `config/tenants.yaml` (path injectable via `__init__`, default `config/tenants.yaml` relative to repo root — Dependency Inversion, so
+  tests can pass a fixture path instead), builds lookup indexes by every ID type + `code`, `get(identifier) -> TenantConfig` raising `KeyError` with the list of valid ids on a miss (mirror the proven
   `aws-access-cli/scripts/athena_runner/tenants.py` pattern — do not reinvent the error shape)
 - `src/tenant_registry/query_targets.py` — a `QueryTarget` `Protocol` with one method, `build_context(tenant: TenantConfig) -> dict`, plus 3 implementers: `LightstepGoQueryTarget`,
   `MatisseQueryTarget`, `AthenaQueryTarget`
 
-**Before any code:** read `PYTHON_DESIGN.md`'s SOLID triggers section. The `QueryTarget` split exists specifically to avoid an `if system == ...: elif ...` branch in one method (the OCP trigger) —
-do not collapse the 3 implementers back into a single function with a `system` parameter.
+**Before any code:** read `PYTHON_DESIGN.md`'s SOLID triggers section. The `QueryTarget` split exists specifically to avoid an `if system == ...: elif ...` branch in one method (the OCP trigger) — do
+not collapse the 3 implementers back into a single function with a `system` parameter.
 
 **What to implement:**
 
@@ -87,13 +84,13 @@ do not collapse the 3 implementers back into a single function with a `system` p
 2. `TenantRegistry.get(identifier)`: identifier can be a Go ID, Matisse Project ID, Matisse Client Tenant ID, Athena Tenant ID, or `code` — try all indexes, raise `KeyError` on a miss listing every
    registered Go ID (the most human-recognizable id) as the "available" list.
 3. `LightstepGoQueryTarget.build_context(tenant)`: returns `{"project": tenant.lightstep_project, "region": tenant.lightstep_region, "filter": {"sessionInfo.busUnitId": tenant.go_id} if
-   tenant.shared_project else None}`. If `tenant.shared_project` is `True` and, for any reason, `tenant.go_id` is falsy, raise `ValueError` — this is the enforcement point protecting against a
-   silent broad query on a shared project.
+   tenant.shared_project else None}`. If `tenant.shared_project` is `True` and, for any reason, `tenant.go_id` is falsy, raise `ValueError` — this is the enforcement point protecting against a silent
+   broad query on a shared project.
 4. `MatisseQueryTarget.build_context(tenant)`: returns `{"project_id": tenant.matisse_project_id, "client_tenant_id": tenant.matisse_client_tenant_id}`.
 5. `AthenaQueryTarget.build_context(tenant)`: returns `{"database": f"unified_{tenant.athena_tenant_id}", "profile": tenant.athena_profile, "region": tenant.athena_region}`.
 
-**Tests:** written in TR-6, not here (this task is implementation only per the task split — if trivial to co-locate, still keep the TR-6 checkbox separate since it tracks test-completeness
-explicitly per this story's `tasks.md`).
+**Tests:** written in TR-6, not here (this task is implementation only per the task split — if trivial to co-locate, still keep the TR-6 checkbox separate since it tracks test-completeness explicitly
+per this story's `tasks.md`).
 
 **Commit:** `feat(tenant-registry): add TenantRegistry and QueryTarget implementers`
 
@@ -107,8 +104,8 @@ explicitly per this story's `tasks.md`).
 **What to implement:**
 
 1. `argparse` CLI: `--system {lightstep_go,matisse,athena}` and `--tenant <any known id>` (no hardcoded default — matches this project's argparse-not-hardcoded convention).
-2. Loads `TenantRegistry` (default config path), resolves `--tenant` via `.get()`, dispatches to the matching `QueryTarget` implementer (a small `{"lightstep_go": LightstepGoQueryTarget(), ...}`
-   dict literal in `main()` is acceptable here — this is the CLI's one allowed dispatch point, not a repeated decision method elsewhere).
+2. Loads `TenantRegistry` (default config path), resolves `--tenant` via `.get()`, dispatches to the matching `QueryTarget` implementer (a small `{"lightstep_go": LightstepGoQueryTarget(), ...}` dict
+   literal in `main()` is acceptable here — this is the CLI's one allowed dispatch point, not a repeated decision method elsewhere).
 3. On success: print the `build_context` result as a single line of JSON to stdout, exit 0.
 4. On any `KeyError`/`ValueError` from the registry or query target: print the exception message to stderr, exit 1. No stack trace noise — this output is meant to be read by a human or by this
    assistant deciding whether to proceed, so keep it terse.
@@ -129,11 +126,11 @@ explicitly per this story's `tasks.md`).
 
 **What to implement:**
 
-1. `docs/guides/tenant-resolution.md` states the protocol: before invoking any Lightstep/Matisse/Athena MCP tool for a named opco, run
-   `python scripts/resolve_tenant.py --system <system> --tenant <id>` via the `bash` tool first; use its JSON output to build the MCP call; if it exits non-zero, stop and ask rather than guessing or
-   falling back to a hardcoded value. Never inline tenant IDs/projects in this doc — always point at `config/tenants.yaml` and the CLI as the source of truth.
-2. Also document the shared-project case explicitly (Zambia/Ghana both resolve to `mcs-go-prod-mtn-1-eu`; the CLI's `filter` output is what disambiguates them) so a future reader understands *why*
-   the CLI step exists, not just that it's mandatory.
+1. `docs/guides/tenant-resolution.md` states the protocol: before invoking any Lightstep/Matisse/Athena MCP tool for a named opco, run `python scripts/resolve_tenant.py --system <system> --tenant
+   <id>` via the `bash` tool first; use its JSON output to build the MCP call; if it exits non-zero, stop and ask rather than guessing or falling back to a hardcoded value. Never inline tenant
+   IDs/projects in this doc — always point at `config/tenants.yaml` and the CLI as the source of truth.
+2. Also document the shared-project case explicitly (Zambia/Ghana both resolve to `mcs-go-prod-mtn-1-eu`; the CLI's `filter` output is what disambiguates them) so a future reader understands *why* the
+   CLI step exists, not just that it's mandatory.
 3. `AGENTS.md` gets exactly one line at `<!-- INSERT: investigations -->`: a pointer sentence to `docs/guides/tenant-resolution.md`, phrased as a hard requirement consistent with this project's
    existing tool-invocation gate style. No tenant data, no opco list, no ID values in `AGENTS.md` itself.
 
@@ -157,6 +154,7 @@ explicitly per this story's `tasks.md`).
 - `test_registry.py`: `test_get_by_each_id_type_returns_correct_tenant`, `test_get_unknown_identifier_raises_key_error_listing_available_ids`.
 - `test_query_targets.py`: `test_lightstep_go_dedicated_project_has_no_filter`, `test_lightstep_go_shared_project_includes_bus_unit_id_filter`, `test_matisse_and_athena_build_context_happy_path`,
   `test_lightstep_go_shared_project_missing_go_id_raises_value_error` (the enforcement case).
-- `test_resolve_tenant_cli.py`: `test_cli_success_prints_json_and_exits_zero`, `test_cli_unknown_tenant_exits_nonzero_with_message` (invoke via `subprocess`/direct `main()` call — no real MCP/network).
+- `test_resolve_tenant_cli.py`: `test_cli_success_prints_json_and_exits_zero`, `test_cli_unknown_tenant_exits_nonzero_with_message` (invoke via `subprocess`/direct `main()` call — no real
+  MCP/network).
 
 **Commit:** `test(tenant-registry): cover registry, query targets, and CLI`

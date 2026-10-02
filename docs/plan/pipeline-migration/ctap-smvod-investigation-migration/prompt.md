@@ -25,8 +25,8 @@ own documented constraint, not a gap in this story; `src/lib/*` module internals
 
 ## Session-start load hints
 
-- `docs/plan/project-taxonomy/structure.md` — the exact `investigations/<campaign-slug>/` skeleton (Rule B, recurring campaign) and its literal `ctap-smvod` example.
-- `docs/plan/project-taxonomy/stories.md` PT-2 (Rule B skeleton) and PT-7 (path/filename convention, explicitly audited against this project) — read before CSM-2/CSM-3/CSM-4/CSM-5.
+- `docs/archive/project-taxonomy/structure.md` — the exact `investigations/<campaign-slug>/` skeleton (Rule B, recurring campaign) and its literal `ctap-smvod` example.
+- `docs/archive/project-taxonomy/stories.md` PT-2 (Rule B skeleton) and PT-7 (path/filename convention, explicitly audited against this project) — read before CSM-2/CSM-3/CSM-4/CSM-5.
 - `docs/plan/src-lib-migration/README.md` — confirms which `src/lib/*` modules exist, before CSM-2.
 - `/Users/abhadra/github_copilot/ctap-smvod-session-report/scripts/run_pipeline.py` — read this specific file in full before CSM-2/CSM-3, it documents Step 1's manual-only status itself.
 - `/Users/abhadra/github_copilot/ctap-smvod-session-report/{output,inputCSV}/` — the concrete flat-naming pattern being replaced; list (don't re-read every file) before CSM-3/CSM-5.

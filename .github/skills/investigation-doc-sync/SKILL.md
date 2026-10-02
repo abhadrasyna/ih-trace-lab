@@ -27,7 +27,7 @@ sections.
 
 ## Target files and cursor
 
-The detailed deliverable is the case doc named by `docs/plan/project-taxonomy/structure.md`'s `investigations/` block, for example `investigations/<campaign-slug>/docs/<case-id>-<topic>.md` or
+The detailed deliverable is the case doc named by `docs/archive/project-taxonomy/structure.md`'s `investigations/` block, for example `investigations/<campaign-slug>/docs/<case-id>-<topic>.md` or
 `investigations/<case-id>/docs/<case-id>-<topic>.md`.
 
 The cursor is a marker comment at the top of that detailed doc:
@@ -41,7 +41,7 @@ Read the timestamp before querying history. After a successful checkpoint sync, 
 ## Step 1 — Resolve the target paths
 
 1. Read `config/data_paths.yaml` and resolve the real investigation paths using the templates defined by PT-7. This skill populates those paths; it does not redefine them.
-2. Confirm the doc shape from `docs/plan/project-taxonomy/structure.md`'s `investigations/` block.
+2. Confirm the doc shape from `docs/archive/project-taxonomy/structure.md`'s `investigations/` block.
 3. Preserve PT-7's mandatory **Inputs used** block in the detailed doc. Update it only when the matched evidence changes what was used or what was saved.
 
 ## Step 2 — Extract only new, case-scoped evidence

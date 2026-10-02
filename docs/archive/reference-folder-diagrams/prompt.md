@@ -33,7 +33,7 @@ Does not change runtime behaviour of anything under `src/`; touches only diagram
 - `docs/reference-architecture.md` — the existing flat overview this story adds detail beside, not replaces.
 - `scripts/reference_diagram/lib.py` / `main.py` / `tests/` — the tool this story extends.
 - `docs/plan/reference-code-gap-migration/README.md` — tier list, category corrections, the two module-promotion decisions (`mpd`, `crypto_signing`) that RFD-6/RFD-7 must render faithfully.
-- `docs/plan/functional-code-taxonomy/` — target `src/lib/*` module map that convergence diagrams point to.
+- `docs/archive/functional-code-taxonomy/` — target `src/lib/*` module map that convergence diagrams point to.
 - `knowledge/vod-asset-ingestion-mapping/` (if present) — source material for RFD-3's hand-authored field-mapping diagram.
 
 ## Task overview

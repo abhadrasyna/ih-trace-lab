@@ -12,8 +12,8 @@
 - Either this story's own `tasks.md` (if kept flat — add per-project task ids), or a new `docs/plan/reference-code-gap-migration/README.md` + per-project sub-story folders (if promoted to an epic,
   mirroring `docs/plan/pipeline-migration/`'s exact file set: epic `prompt.md` + `README.md` router at the root, no epic-level `tasks.md`, one sub-story folder per project with its own
   `prompt.md`/`tasks.md`/`stories.md`).
-- `docs/plan/project-taxonomy/structure.md` — only if the category-conflict resolution is "flag a correction", in which case update the `vod-asset-ingestion-mapping` worked example there (coordinate
-  with that story owner; do not silently move it out of `experiments/` without a documented reason readable in this task's own commit).
+- `docs/archive/project-taxonomy/structure.md` — only if the category-conflict resolution is "flag a correction", in which case update the `vod-asset-ingestion-mapping` worked example there
+  (coordinate with that story owner; do not silently move it out of `experiments/` without a documented reason readable in this task's own commit).
 
 **What to implement:**
 

@@ -21,7 +21,7 @@ are both `csv_io` lib candidates; no project-specific business logic and no new 
 
 - `docs/plan/reference-code-gap-migration/spec.md` §9 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (Tier 1).
-- `docs/plan/project-taxonomy/structure.md` — `investigations/<slug>/` skeleton; this project needs a new campaign slug (`astro-events-household`, not yet worked-example'd there).
+- `docs/archive/project-taxonomy/structure.md` — `investigations/<slug>/` skeleton; this project needs a new campaign slug (`astro-events-household`, not yet worked-example'd there).
 - `docs/plan/src-lib-migration/README.md` — `csv_io` module status.
 
 ## Task overview

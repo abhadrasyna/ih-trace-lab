@@ -25,7 +25,7 @@ spec.
 - **QC-3** — `queries/lightstep/index.md` lists every distinct query template found in `lightstep-query-templates.md`; each row's template lives at `queries/lightstep/<slug>.md`, preserving the native
   TQL block, purpose, tool name, and save-path convention from the source.
 - **QC-4** — `knowledge/README.md` documents the DDL-cache convention (one `knowledge/<project>-athena-<db>-tables.md` per Athena database, generated not hand-written) and states plainly that
-  populating one for real requires `docs/plan/tenant-registry/` to land first; the 3 ported tooling scripts are present under `scripts/athena/` and importable, but this task does not execute them
+  populating one for real requires `docs/archive/tenant-registry/` to land first; the 3 ported tooling scripts are present under `scripts/athena/` and importable, but this task does not execute them
   against any live database.
 - **QC-5** — `docs/guides/query-catalog.md` states the write/reuse workflow end to end (check `queries/<source>/index.md` → check `knowledge/` DDL cache → write/reuse a template → promote to a script
   only if post-processing logic is needed); `AGENTS.md` gained exactly one new pointer sentence to it, in its existing "No throwaway code in production folders" paragraph.

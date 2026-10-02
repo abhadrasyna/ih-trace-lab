@@ -19,7 +19,7 @@ Every story in this epic is blocked until these land:
 
 1. `docs/plan/src-lib-migration/` — the `src/lib/*` modules each story imports must exist and be tested first. Tier 3 stories additionally need the two modules `README.md` §"GAP-1 decisions" promoted
    (`mpd`, `crypto_signing`) — those do not exist yet even after the other five modules land.
-2. `docs/plan/project-taxonomy/` — PT-1/PT-2/PT-7 at minimum, for the category definitions and folder skeletons every story's target path assumes.
+2. `docs/archive/project-taxonomy/` — PT-1/PT-2/PT-7 at minimum, for the category definitions and folder skeletons every story's target path assumes.
 
 If these are not yet ✅ done, stop and pick up that story instead — do not re-derive `src/lib/*` module shapes or folder skeletons locally; this epic only consumes them.
 

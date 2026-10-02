@@ -6,8 +6,8 @@
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
 
-**Hard gate:** confirm `docs/plan/functional-code-taxonomy/` FCT-1 and FCT-3 (the `report_render`-vs-`csv_io` boundary statement) are checked done before starting CIM-1 — this story must not blur the
-line FCT-3 draws between raw CSV I/O and formatted report rendering.
+**Hard gate:** confirm `docs/archive/functional-code-taxonomy/` FCT-1 and FCT-3 (the `report_render`-vs-`csv_io` boundary statement) are checked done before starting CIM-1 — this story must not blur
+the line FCT-3 draws between raw CSV I/O and formatted report rendering.
 
 ## Why this story exists
 
@@ -26,7 +26,7 @@ report output.
 ## Session-start load hints
 
 - `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
-- `docs/plan/functional-code-taxonomy/prompt.md` and `stories.md` (FCT-3's `report_render`/`csv_io`/`query-catalog` boundary table) — read before drawing this story's own scope line.
+- `docs/archive/functional-code-taxonomy/prompt.md` and `stories.md` (FCT-3's `report_render`/`csv_io`/`query-catalog` boundary table) — read before drawing this story's own scope line.
 - `docs/plan/src-lib-migration/report-render-lib-migration/stories.md` — the sibling module this story must stay distinct from.
 - `PYTHON_DESIGN.md` — DIP/ISP trigger sections.
 

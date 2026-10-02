@@ -5,7 +5,7 @@
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
 
-**Hard gate:** confirm `docs/plan/functional-code-taxonomy/` FCT-1 and FCT-2 are checked done before starting RRM-2 — FCT-2 defines `src/lib/report_render/protocols.py`'s exact shape.
+**Hard gate:** confirm `docs/archive/functional-code-taxonomy/` FCT-1 and FCT-2 are checked done before starting RRM-2 — FCT-2 defines `src/lib/report_render/protocols.py`'s exact shape.
 
 ## Why this story exists
 
@@ -26,7 +26,7 @@ FCT-2's, not re-litigated here).
 ## Session-start load hints
 
 - `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
-- `docs/plan/functional-code-taxonomy/stories.md` (FCT-2 spec) and the landed `src/lib/report_render/protocols.py` — the exact interface this story implements against.
+- `docs/archive/functional-code-taxonomy/stories.md` (FCT-2 spec) and the landed `src/lib/report_render/protocols.py` — the exact interface this story implements against.
 - `PYTHON_DESIGN.md` — Strategy pattern section (RRM-2) and Factory Method section (RRM-3); cite the OCP trigger each resolves.
 
 ## Task overview

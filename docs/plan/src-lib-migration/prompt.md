@@ -6,8 +6,8 @@ steps below to find and run exactly one task.
 **Origin:** `README.md` in this folder — the epic index. Read it if you have not this session; it carries the scope decisions, the architecture diagram, the ordered story list, and the cross-cutting
 constraints this router's logic depends on.
 
-**Hard gate before Step 1:** this whole epic is blocked on `docs/plan/functional-code-taxonomy/` FCT-1 (module map) and FCT-2 (`athena`/`report_render`/`har` `Protocol` skeletons) landing — FCT-7
-(`PathResolver`) additionally gates any story that resolves file paths. Check `docs/plan/functional-code-taxonomy/tasks.md` first. If FCT-1/FCT-2 are still unchecked, **stop here** and report that
+**Hard gate before Step 1:** this whole epic is blocked on `docs/archive/functional-code-taxonomy/` FCT-1 (module map) and FCT-2 (`athena`/`report_render`/`har` `Protocol` skeletons) landing — FCT-7
+(`PathResolver`) additionally gates any story that resolves file paths. Check `docs/archive/functional-code-taxonomy/tasks.md` first. If FCT-1/FCT-2 are still unchecked, **stop here** and report that
 this epic cannot start yet; do not improvise a `Protocol` shape this epic's stories weren't written against.
 
 ---

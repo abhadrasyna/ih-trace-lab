@@ -24,7 +24,7 @@ up, per the coordination note in epic `README.md`); `root-investigations-migrati
 
 - `docs/plan/reference-code-gap-migration/spec.md` §10 — this project's one-file audit entry.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (`crypto_signing` promotion).
-- `docs/plan/project-taxonomy/structure.md` — the `src/tools/<slug>/` skeleton.
+- `docs/archive/project-taxonomy/structure.md` — the `src/tools/<slug>/` skeleton.
 - `docs/plan/src-lib-migration/README.md` — check whether `crypto_signing` has been added to that epic's module list yet.
 
 ## Task overview

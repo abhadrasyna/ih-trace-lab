@@ -58,14 +58,14 @@ shared module is overdue. The real test is whether a second, unrelated project c
 
 ## Which category consumes which module
 
-| Project category (`docs/plan/project-taxonomy`) | Modules it typically imports |
+| Project category (`docs/archive/project-taxonomy`) | Modules it typically imports |
 |---|---|
 | Pipeline | `athena`, `csv_io`, `report_render`, `auth` |
 | Investigation | `athena`, `csv_io`, `report_render`, `har` when the case uses network captures |
 | Tool | Depends on the tool; an `oasis-athena-mcp`-style adapter imports `athena` instead of owning its own Athena client |
 | Experiment | Whichever shared module matches the question being probed; it still imports rather than re-implements per the thin-consumer rule |
 
-`docs/plan/query-catalog` owns the SQL text (deduplicated, parameterized query templates); this story owns the code that executes that SQL (`src/lib/athena/`) — a query template is a string passed
+`docs/archive/query-catalog` owns the SQL text (deduplicated, parameterized query templates); this story owns the code that executes that SQL (`src/lib/athena/`) — a query template is a string passed
 into `AthenaClient.start_query`, never duplicated logic inside this module.
 
 ## Cross-project script registry

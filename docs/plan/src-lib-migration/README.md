@@ -7,9 +7,9 @@
 
 ## Why this epic exists
 
-`docs/plan/functional-code-taxonomy/` (design-only: module map, `Protocol` skeletons for the three riskiest modules, a cross-project script registry) deliberately left every *concrete* implementation
-to a follow-up, "triggered the first time an actual pipeline/investigation/tool needs them" (its own stated YAGNI stance). This epic is that follow-up, authorized explicitly rather than waiting for an
-organic trigger.
+`docs/archive/functional-code-taxonomy/` (design-only: module map, `Protocol` skeletons for the three riskiest modules, a cross-project script registry) deliberately left every *concrete*
+implementation to a follow-up, "triggered the first time an actual pipeline/investigation/tool needs them" (its own stated YAGNI stance). This epic is that follow-up, authorized explicitly rather than
+waiting for an organic trigger.
 
 While scoping story 1 (`athena`), auditing `/Users/abhadra/myWork/myOffice/athena-mcp-server` found the athena duplication problem already solved *outside* `ih-trace-lab`: it is a fully independent,
 tested (101 tests), pip-installable repo (`src/athena_runner/*`: `config`, `aws_clients`, `query_executor`, `result_downloader`, `sso_auth`, `sso_profiles`, `tenants`, `logging_setup`, `date_utils`,
@@ -132,7 +132,7 @@ Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic
 - `functional-code-taxonomy` FCT-1 (module map + replaced-originals citations) and FCT-3 (migration/ownership table) must be updated, when that story is picked up, to cite `athena-mcp-server` as the
   canonical `athena` implementation — not a fifth from-scratch port. This epic does not edit `functional-code-taxonomy`'s files itself (that story is not yet started); it leaves this note as the
   coordination record.
-- **2026-10-01:** `docs/plan/flow-correlation-id-logging/` defines the project's FCID (flow-correlation-id) logging convention — `contextvars`-propagated, auto-injected via a `logging.Filter`, no
+- **2026-10-01:** `docs/archive/flow-correlation-id-logging/` defines the project's FCID (flow-correlation-id) logging convention — `contextvars`-propagated, auto-injected via a `logging.Filter`, no
   manual `fcid` parameter on any adapter method. `athena-lib-integration`'s ALI-2 adapter (and every other module's adapter here) should adopt that convention's log-line shape once implemented. This
   epic does not implement the convention itself; this is the coordination record.
 - `athena-lib-integration` must stay reconciled with `athena-mcp-server`'s own `CONTEXT.md` "Known open item" (the `aws-access-cli` sibling-checkout namespace-package merge for

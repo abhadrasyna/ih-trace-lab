@@ -31,7 +31,7 @@ the other 8 are not.
 
 - `docs/plan/reference-code-gap-migration/spec.md` §5 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (target-folder reasoning, `mpd`/`crypto_signing` promotion).
-- `docs/plan/project-taxonomy/structure.md` — the `investigations/<slug>/` (bounded-case) skeleton.
+- `docs/archive/project-taxonomy/structure.md` — the `investigations/<slug>/` (bounded-case) skeleton.
 - `docs/plan/src-lib-migration/README.md` — `report_render` module status.
 
 ## Task overview

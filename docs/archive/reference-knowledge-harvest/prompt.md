@@ -97,7 +97,7 @@ call.
   `docs/20260724-mtn-vs-timplay-vod-flow-comparison.md`, `docs/20260724-timplay-mileto-vod-ctap-sm-vod-mdrm-trace-analysis.md`, `docs/20260724-timplay-tenant-configuration-ltv-playback-analysis.md`)
   that are missing from `investigations/README.md`'s own case-index table — a stale-index gap flagged during spec-authoring, not fixed at the source (read-only).
 - **RKH-13** — `knowledge/mtn-tenant-identifiers-and-code-flow.md`: harvest `docs/ITZUu4aBswL.md` + `docs/ITZUu4aBswL_code_flow.md` (flagged in the case index as "source of truth for MTN tenant IDs";
-  full HAR→code-flow trace covering login, VOD playback, mDRM Widevine license, Kinesis analytics), with a forward-note that `docs/plan/tenant-registry/` (this repo's own not-yet-implemented story)
+  full HAR→code-flow trace covering login, VOD playback, mDRM Widevine license, Kinesis analytics), with a forward-note that `docs/archive/tenant-registry/` (this repo's own not-yet-implemented story)
   should consult this file once its resolver work begins.
 - **RKH-14** — port `github_copilot/knowledge/{ctap-shared-content-default-limit,mpd-shaka-restrictions-analysis,recommendation-engine-thinkanalytics}.md` into `ih-trace-lab/knowledge/` as-is (3
   files, one task, same porting pattern as RKH-2), cross-linked to RKH-12 where underlying case docs overlap.
@@ -130,8 +130,8 @@ call.
   link to both instead.
 - `knowledge/mtn-sa-timplay-drm-cross-tenant-trace-analysis.md` exists, preserves the four 2026-07-24 docs' cross-tenant DRM/session findings (MTN SA `iye9omdf` vs. TIM Play/mileto `iljyxcc3`), and
   flags the source folder's stale case-index gap without editing the read-only source.
-- `knowledge/mtn-tenant-identifiers-and-code-flow.md` exists, preserves `ITZUu4aBswL.md`/`_code_flow.md`'s tenant-ID facts and full HAR→code-flow trace, and forward-notes `docs/plan/tenant-registry/`
-  as the eventual consumer.
+- `knowledge/mtn-tenant-identifiers-and-code-flow.md` exists, preserves `ITZUu4aBswL.md`/`_code_flow.md`'s tenant-ID facts and full HAR→code-flow trace, and forward-notes
+  `docs/archive/tenant-registry/` as the eventual consumer.
 - `knowledge/ctap-shared-content-default-limit.md`, `knowledge/mpd-shaka-restrictions-analysis.md`, and `knowledge/recommendation-engine-thinkanalytics.md` exist in `ih-trace-lab`, ported as-is,
   cross-linked to RKH-12 where their underlying case docs overlap.
 - `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md` and `knowledge/mtn-har-kinesis-and-manifest-analysis-methodology.md` exist, each distilling their five/four source
@@ -191,7 +191,7 @@ already `harvested`/`spec'd`, or is one of the excluded infra folders — ask in
    grounding/files-to-change/what-to-implement/tests/commit shape as the RKH-1 section). Update this file's "Task overview" section to add the new batch, and flip `SOURCE_FOLDER`'s backlog row to
    `spec'd`. Do not edit RKH-1/RKH-2's existing content.
 6. **Reflow, commit, verify** — run `scripts/dev/reflow_md.py` on every touched file, stage, commit (message: `docs(plan): spec RKH-N/RKH-N+1 for <SOURCE_FOLDER>`), then run `git show
-   HEAD:docs/plan/reference-knowledge-harvest/tasks.md` (and `stories.md`) to confirm the new content actually landed at `HEAD` — do not trust `git status`/`git diff --cached` alone. Stop; do not
+   HEAD:docs/archive/reference-knowledge-harvest/tasks.md` (and `stories.md`) to confirm the new content actually landed at `HEAD` — do not trust `git status`/`git diff --cached` alone. Stop; do not
    execute the new task in this same session.
 
 ## Perspectives not covered

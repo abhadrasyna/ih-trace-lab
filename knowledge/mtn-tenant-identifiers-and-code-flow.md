@@ -130,7 +130,7 @@ The cookbook also preserves a list of common failure modes spanning:
 
 ## Forward note for `tenant-registry`
 
-This repository's `docs/plan/tenant-registry/` story is not implemented yet. When that resolver work begins, it should consult this file instead of re-deriving MTN tenant-ID facts from scratch.
+This repository's `docs/archive/tenant-registry/` story is not implemented yet. When that resolver work begins, it should consult this file instead of re-deriving MTN tenant-ID facts from scratch.
 
 ## Source
 

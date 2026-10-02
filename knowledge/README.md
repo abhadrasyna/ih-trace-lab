@@ -25,7 +25,7 @@ that section and leave the narrative inventory intact.
 ## Prerequisite before step 1
 
 This project does not yet have a resolved AWS SSO profile and target-tenant context for any new Athena database discovery/export run. Before using the Athena cache workflow, complete the tenant work
-tracked in `docs/plan/tenant-registry/prompt.md` so the correct tenant, profile, and database context can be resolved explicitly instead of guessed.
+tracked in `docs/archive/tenant-registry/prompt.md` so the correct tenant, profile, and database context can be resolved explicitly instead of guessed.
 
 QC-4 adds only the ported tooling and this convention doc. It does **not** populate or refresh any real `knowledge/*-tables.md` cache file in this worktree.
 

@@ -7,9 +7,9 @@ reference** for prior art and confirmed domain facts; it is never edited from th
 
 ## Status
 
-Early / active. First story (`docs/plan/tenant-registry/`) is not yet implemented; `docs/plan/scratch-script-registry/`, `docs/plan/project-taxonomy/`, and `docs/plan/functional-code-taxonomy/` are
-complete; `docs/plan/query-catalog/` is still planned. Reusable project tooling now includes both registry generators under `scripts/dev/`, and production `src/lib/` code has started with shared
-Protocol/config layers for `athena`, `report_render`, `har`, and `paths`.
+Early / active. First story (`docs/archive/tenant-registry/`) is not yet implemented; `docs/archive/scratch-script-registry/`, `docs/archive/project-taxonomy/`, and
+`docs/archive/functional-code-taxonomy/` are complete; `docs/archive/query-catalog/` is still planned. Reusable project tooling now includes both registry generators under `scripts/dev/`, and
+production `src/lib/` code has started with shared Protocol/config layers for `athena`, `report_render`, `har`, and `paths`.
 
 ## Setup
 

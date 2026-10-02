@@ -415,7 +415,7 @@ Kinesis-vs-CTAP country mismatch `ZA` vs `USA`) plus sections on Kinesis stream 
 client↔Lightstep code-flow trace across mDRM Widevine license acquisition, client-identity/device-registration, and GO-platform CTAP/session-guard/go-mdrmfe, including an identity-lifecycle timeline,
 per-service Lightstep project/service catalogue, and common-failure-modes section.
 
-**Cross-story note:** this overlaps conceptually with `ih-trace-lab`'s own not-yet-implemented `docs/plan/tenant-registry/` story (a tenant-ID resolver). Per explicit user decision, harvest it here
+**Cross-story note:** this overlaps conceptually with `ih-trace-lab`'s own not-yet-implemented `docs/archive/tenant-registry/` story (a tenant-ID resolver). Per explicit user decision, harvest it here
 rather than defer — the resulting file must forward-note that `tenant-registry` should consult it once that story's implementation begins, rather than silently duplicating scope.
 
 **Files to change / create:**
@@ -433,8 +433,8 @@ rather than defer — the resulting file must forward-note that `tenant-registry
 4. **Port the full code-flow trace as-is** from `_code_flow.md`: the mDRM Widevine license-acquisition two-leg flow, the client-identity/device-registration flow with its identity-lifecycle timeline
    (§2.13, when each ID becomes available), the GO-platform CTAP/session-guard/go-mdrmfe service chain with its Lightstep project/service catalogue, the two-layer-DRM-architecture explanation, the
    Lightstep debugging pivots, and the common-failure-modes list — preserving the table-of-contents structure so it stays usable as a lookup reference, not just prose.
-5. **Add the tenant-registry forward-note**: state plainly that `docs/plan/tenant-registry/` (not yet implemented in this repo) should consult this file once its tenant-ID resolver work begins, rather
-   than re-deriving these facts independently.
+5. **Add the tenant-registry forward-note**: state plainly that `docs/archive/tenant-registry/` (not yet implemented in this repo) should consult this file once its tenant-ID resolver work begins,
+   rather than re-deriving these facts independently.
 6. **Source line** at the bottom naming the exact source paths (`investigations/docs/ITZUu4aBswL.md`, `ITZUu4aBswL_code_flow.md`) and the read-only note.
 
 **Tests:** none — docs-only.

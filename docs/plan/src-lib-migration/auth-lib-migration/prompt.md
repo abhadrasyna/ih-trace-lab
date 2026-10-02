@@ -6,7 +6,7 @@
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
 
-**Hard gate:** confirm `docs/plan/functional-code-taxonomy/` FCT-1 is checked done, and `docs/plan/src-lib-migration/athena-lib-integration/` is fully done (this story's `Protocol` uses
+**Hard gate:** confirm `docs/archive/functional-code-taxonomy/` FCT-1 is checked done, and `docs/plan/src-lib-migration/athena-lib-integration/` is fully done (this story's `Protocol` uses
 `athena_runner.sso_auth`'s public interface as prior art — read it, do not guess at it).
 
 ## Why this story exists
@@ -30,7 +30,7 @@ change under `/Users/abhadra/github_copilot` or inside the `athena-mcp-server` s
 - `docs/plan/src-lib-migration/athena-lib-integration/stories.md` — the adapter pattern this story's concrete class should mirror.
 - `/Users/abhadra/myWork/myOffice/athena-mcp-server/src/athena_runner/sso_auth.py` and `sso_profiles.py` (read-only reference for shape, via the submodule once ALI-1 lands) — the concrete prior art
   this `Protocol` generalizes.
-- `docs/plan/functional-code-taxonomy/stories.md` FCT-2 — match its `Protocol` authoring pattern (`@runtime_checkable`, method signatures only) exactly for consistency.
+- `docs/archive/functional-code-taxonomy/stories.md` FCT-2 — match its `Protocol` authoring pattern (`@runtime_checkable`, method signatures only) exactly for consistency.
 - `PYTHON_DESIGN.md` — DIP trigger section.
 
 ## Task overview

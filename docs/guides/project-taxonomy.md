@@ -26,9 +26,9 @@ The nearest neighbor is an investigation; if the work is a disposable probe rath
 
 | Category | Required files | Notes |
 |---|---|---|
-| Pipeline | `scripts/`, `tests/`, `README.md` documenting schedule/trigger | No case docs; `scripts/` stays thin over shared code from `docs/plan/functional-code-taxonomy/`. |
+| Pipeline | `scripts/`, `tests/`, `README.md` documenting schedule/trigger | No case docs; `scripts/` stays thin over shared code from `docs/archive/functional-code-taxonomy/`. |
 | Investigation | `investigations/<slug>/` with `docs/`, `scripts/`, `tests/` | Applies Rule A and Rule B below; cross-campaign queries stay in repo-root `queries/`. |
-| Tool | `src/`, `tests/`, `README.md` | Software interface, not a case folder; imports shared modules from `docs/plan/functional-code-taxonomy/`. |
+| Tool | `src/`, `tests/`, `README.md` | Software interface, not a case folder; imports shared modules from `docs/archive/functional-code-taxonomy/`. |
 | Experiment | Starts in `scratch/`; only later earns `experiments/<experiment-slug>/` | Never begins as a dedicated top-level folder. |
 
 **Rule A: no double wrap.** An investigation project's own `docs/` and `scripts/` live directly under its root. Never create `investigations/<slug>/investigations/{docs,...}`. Raw inputs live in root
@@ -52,14 +52,14 @@ Use this checklist before either creating a new top-level folder or writing a ne
 1. **New top-level folder:** classify the work with the four category definitions above. If it does not clearly fit one category, stop and ask rather than guessing.
 2. **New top-level folder:** delegate a bounded read-only sub-agent to search `docs/guides/`, `knowledge/` once it exists, and `/Users/abhadra/github_copilot` for prior art on the concrete question
    being answered, not just the category name.
-3. **New script in any category:** delegate a bounded sub-agent to check `docs/plan/functional-code-taxonomy/`'s FCT-6 cross-project script registry for an existing script or `src/lib/*` module doing
-   the same operation, such as HAR-entry loading, CSV/report writing, or Athena querying.
+3. **New script in any category:** delegate a bounded sub-agent to check `docs/archive/functional-code-taxonomy/`'s FCT-6 cross-project script registry for an existing script or `src/lib/*` module
+   doing the same operation, such as HAR-entry loading, CSV/report writing, or Athena querying.
 4. If either search finds a match, reuse or extend it rather than creating a duplicate folder or script.
 5. If no match exists, create the folder with the skeleton above or write the new script as a thin consumer of shared code.
 
-Steps 2 and 3 are delegated for the same reason documented in `docs/plan/scratch-script-registry/prompt.md`: the search cost stays out of the main session context, and the duplicate-check remains a
-named, auditable step instead of an easy-to-skip intention. Once a match or near-match is found, apply `docs/plan/functional-code-taxonomy/`'s shared-vs-specific test: domain-mechanism code belongs in
-`src/lib/`, not as another copied local script.
+Steps 2 and 3 are delegated for the same reason documented in `docs/archive/scratch-script-registry/prompt.md`: the search cost stays out of the main session context, and the duplicate-check remains a
+named, auditable step instead of an easy-to-skip intention. Once a match or near-match is found, apply `docs/archive/functional-code-taxonomy/`'s shared-vs-specific test: domain-mechanism code belongs
+in `src/lib/`, not as another copied local script.
 
 ## Pipeline cron-cutover procedure
 
@@ -82,7 +82,7 @@ This section is documentation only in this story. No pipeline has been ported ye
 
 ## Input data: config, layout, and knowledge vs. docs
 
-`config/data_paths.yaml` is the single source of truth for input-data layout. Scripts must read it through the future `docs/plan/functional-code-taxonomy/` FCT-7 resolver rather than hardcoding
+`config/data_paths.yaml` is the single source of truth for input-data layout. Scripts must read it through the future `docs/archive/functional-code-taxonomy/` FCT-7 resolver rather than hardcoding
 `data/`, `knowledge/`, or `investigations/` paths themselves. The recurring-campaign templates there are for a no-close-event campaign such as `ctap-smvod`: `investigation_data` keeps raw or
 intermediate per-tool pulls by provenance, while `investigation_output` keeps final per-date deliverables.
 

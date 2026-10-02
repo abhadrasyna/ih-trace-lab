@@ -6,8 +6,7 @@ One folder per unit of work. See `_TEMPLATE/README.md` for how to start a new on
 
 ### Story-folder file set
 
-A story folder is a leaf: it has its own `prompt.md` (why the story exists, what task to
-do next) and a working task list. Required:
+A story folder is a leaf: it has its own `prompt.md` (why the story exists, what task to do next) and a working task list. Required:
 
 | File | Required? | Holds |
 |---|---|---|
@@ -19,25 +18,31 @@ do next) and a working task list. Required:
 
 ### Epic-folder file set
 
-An epic is a container: `prompt.md` (router — lists its stories in fixed order) +
-`README.md` (shared brief) at the root, plus one story sub-folder per story. The epic
-root carries **no `tasks.md`** of its own — every checkbox lives in a sub-story's
-`tasks.md`.
+An epic is a container: `prompt.md` (router — lists its stories in fixed order) + `README.md` (shared brief) at the root, plus one story sub-folder per story. The epic root carries **no `tasks.md`**
+of its own — every checkbox lives in a sub-story's `tasks.md`.
 
-**Phase0 workflow:** stories are created standalone at the top level of `docs/plan/`
-(`docs/plan/<slug>/` with `prompt.md` + `tasks.md` + `stories.md`) — no epic wrapper
-required. Once a handful of related stories exist, they may be moved together under a
-new epic folder (`prompt.md` + `README.md` router, stories nested underneath). Until
-that grouping decision is made, go with plain story folders only.
+**Phase0 workflow:** stories are created standalone at the top level of `docs/plan/` (`docs/plan/<slug>/` with `prompt.md` + `tasks.md` + `stories.md`) — no epic wrapper required. Once a handful of
+related stories exist, they may be moved together under a new epic folder (`prompt.md` + `README.md` router, stories nested underneath). Until that grouping decision is made, go with plain story
+folders only.
 
 ### Extra files
 
-No tracked non-`.md` file belongs in a plan folder. An extra `.md` beyond the sets above
-must not carry `- [ ]` task checkboxes — those belong in `tasks.md` only, so nothing
-mirrors task state and nothing can drift.
+No tracked non-`.md` file belongs in a plan folder. An extra `.md` beyond the sets above must not carry `- [ ]` task checkboxes — those belong in `tasks.md` only, so nothing mirrors task state and
+nothing can drift.
 
 ### Task-line format
 
-Each task id (`**ID**`) carries exactly one checkbox, in `tasks.md`'s working list. A
-`## Story done when` / `## Epic done when` summary block is prose criteria only — no
-checkboxes there.
+Each task id (`**ID**`) carries exactly one checkbox, in `tasks.md`'s working list. A `## Story done when` / `## Epic done when` summary block is prose criteria only — no checkboxes there.
+
+### Archiving a completed story
+
+Once a standalone story's `tasks.md` shows `**Open: none — story complete.**` (and, for a story nested under an epic, once the epic itself still has other open stories — the epic folder stays under
+`docs/plan/` until every one of its stories is done), archive it:
+
+1. `git mv docs/plan/<slug>/ docs/archive/<slug>/` — move the whole folder as-is, no restructuring.
+2. Update every cross-reference to `docs/plan/<slug>` (in other stories' `prompt.md`/ `stories.md`/`tasks.md`, `CONTEXT.md`, `README.md`, and any `docs/guides/*`) to `docs/archive/<slug>`, so no
+   dangling `docs/plan/` link remains.
+3. Commit the move and every reference update together — one commit, not a move followed by a separate link-fixing commit.
+
+2026-10-02: first applied to `tenant-registry`, `query-catalog`, `project-taxonomy`, `functional-code-taxonomy`, `scratch-script-registry`, `reference-knowledge-harvest`, `reference-folder-diagrams`,
+`flow-correlation-id-logging`, and `pre-implementation-design-review`.

@@ -115,7 +115,7 @@ classDiagram
 
 <!-- 2026-10-01 pre-implementation-design-review: this diagram previously named
 run_query/poll_status/download_results, which did not match src/lib/athena/protocols.py's actual AthenaClient Protocol (start_query/poll_status/fetch_results) — fixed to match the landed,
-authoritative Protocol exactly. See docs/plan/pre-implementation-design-review/spec.md finding #1. -->
+authoritative Protocol exactly. See docs/archive/pre-implementation-design-review/spec.md finding #1. -->
 
 **Tests (no network, no real external services):**
 - `test_adapter_delegates_start_query` — a fake `QueryExecutor` records the call; adapter returns its result untranslated (or correctly translated).

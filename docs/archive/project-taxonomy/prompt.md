@@ -49,17 +49,17 @@ before either), one lightweight audit script checking existing top-level dirs ag
 
 **Out of scope:** any change under `/Users/abhadra/github_copilot` (read-only reference, never edited from this project); any actual edit to the live system crontab (PT-6 is a documented procedure for
 a *future* pipeline-migration story to follow, not something this story executes); the shared-code module layout that replaces duplicated Athena/CSV/HAR logic, the registry tool that powers the
-script-level duplicate-check, and the "shared vs. specific" test for what belongs in `src/lib/` — those are `docs/plan/functional-code-taxonomy/`'s job (FCT-1/FCT-2/FCT-6); this story only decides
+script-level duplicate-check, and the "shared vs. specific" test for what belongs in `src/lib/` — those are `docs/archive/functional-code-taxonomy/`'s job (FCT-1/FCT-2/FCT-6); this story only decides
 *what kind of project* a piece of work is and *where its files sit*, not *what library code it imports* or *how duplication is detected*; converting any existing `ih-trace-lab` folder into a submodule
 (no such folders exist yet — this story defines the rule for when a *future* one should be).
 
 ## Session-start load hints
 
 - `README.md` — the project mission statement this taxonomy operationalizes.
-- `docs/plan/scratch-script-registry/prompt.md` and `stories.md` — the existing sub-agent-delegated duplicate-check pattern (scoped to `scratch/` scripts) this story's PT-3 checklist extends to *any*
-  new script, and to new top-level folders; match its delegation style rather than inventing a new pattern.
-- `docs/plan/functional-code-taxonomy/prompt.md` — the sibling story this one's PT-2 skeletons must stay compatible with (a pipeline/investigation/tool folder's `scripts/`/`src/` imports that story's
-  shared-lib modules; that story's FCT-6 registry is what PT-3's script-level check queries; this story does not re-decide module layout or build the registry itself).
+- `docs/archive/scratch-script-registry/prompt.md` and `stories.md` — the existing sub-agent-delegated duplicate-check pattern (scoped to `scratch/` scripts) this story's PT-3 checklist extends to
+  *any* new script, and to new top-level folders; match its delegation style rather than inventing a new pattern.
+- `docs/archive/functional-code-taxonomy/prompt.md` — the sibling story this one's PT-2 skeletons must stay compatible with (a pipeline/investigation/tool folder's `scripts/`/`src/` imports that
+  story's shared-lib modules; that story's FCT-6 registry is what PT-3's script-level check queries; this story does not re-decide module layout or build the registry itself).
 - `structure.md` (this story's own folder) — the canonical target tree; PT-2 edits this file directly, not just prose in the guide doc; read it before PT-2 so the guide doc's skeleton table and this
   file never diverge.
 - `docs/guides/git-multi-account-auth.md` — this project's existing precedent for a `docs/guides/*.md` reference doc's tone/structure; match it rather than inventing new formatting conventions.
@@ -79,7 +79,7 @@ script-level duplicate-check, and the "shared vs. specific" test for what belong
 
 ## Definition of done
 
-- `docs/guides/project-taxonomy.md` exists, covers PT-1/PT-2/PT-3/PT-6 content, and is internally consistent with `structure.md` and with `docs/plan/functional-code-taxonomy/`'s module layout (no
+- `docs/guides/project-taxonomy.md` exists, covers PT-1/PT-2/PT-3/PT-6 content, and is internally consistent with `structure.md` and with `docs/archive/functional-code-taxonomy/`'s module layout (no
   contradicting folder-skeleton claims across any of the three).
 - `structure.md` reflects Rule A and Rule B and is the tree `docs/guides/project-taxonomy.md`'s skeleton table matches exactly.
 - `scripts/dev/check_project_taxonomy.py` runs against the current (empty) `ih-trace-lab` tree without error and its tests are green.

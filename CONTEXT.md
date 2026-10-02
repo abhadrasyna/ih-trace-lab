@@ -11,25 +11,25 @@
   not the full `AGENTS.md`/`CONTEXT.md` text, to avoid adding token cost every session.
 - **Copilot Memory is enabled** (`/memory on`, confirmed 2026-10-01) — a per-user CLI account setting, not a repo file; there is nothing under this repo to look for. Intended to reduce the
   `avoid-broad-filesystem-finds`/`avoid-mid-session-rereads` rows in `suggestions.md` by letting the CLI recall repo-structure facts across sessions instead of re-discovering them each time.
-- `docs/plan/tenant-registry/` — story complete: `config/tenants.yaml` is now the canonical MTN tenant-identifier config for all 4 confirmed opcos (Go ID, Matisse Project/Client Tenant ID, Athena
+- `docs/archive/tenant-registry/` — story complete: `config/tenants.yaml` is now the canonical MTN tenant-identifier config for all 4 confirmed opcos (Go ID, Matisse Project/Client Tenant ID, Athena
   Tenant ID, Lightstep project/region, shared-project disambiguation attribute); `src/tenant_registry/` loads it and resolves per-system query contexts (`TenantRegistry`/`QueryTarget`); this assistant
   must consult it (via `scripts/resolve_tenant.py` or the loader directly) before any Lightstep/Matisse/Athena MCP call, per `docs/guides/tenant-resolution.md`'s CLI-first protocol. TR-1's scratch
   probe was confirmed against real, human-reviewed Lightstep MCP data (dedicated SA project + shared Ghana project disambiguated by `busUnitId`) before any production code was written.
-- `docs/plan/query-catalog/` — story complete: `queries/athena/` + `queries/lightstep/` now provide a deduplicated, parameterized-template query catalog harvested from `github_copilot`'s 3
+- `docs/archive/query-catalog/` — story complete: `queries/athena/` + `queries/lightstep/` now provide a deduplicated, parameterized-template query catalog harvested from `github_copilot`'s 3
   `QUERY_CATALOG.md` files plus `lightstep-query-templates.md`; the Athena/Lightstep harvest scripts are in `scripts/dev/`, the query indexes/templates live under `queries/`, the query workflow guide
   lives at `docs/guides/query-catalog.md`, and the ported (not yet run) Athena DDL-cache tooling plus `knowledge/README.md` live under `knowledge/` / `scripts/athena/`.
-- `docs/plan/project-taxonomy/` — story complete: `docs/guides/project-taxonomy.md` now defines the four categories, folder skeletons, prior-art checklist, pipeline cron-cutover procedure, and PT-7
+- `docs/archive/project-taxonomy/` — story complete: `docs/guides/project-taxonomy.md` now defines the four categories, folder skeletons, prior-art checklist, pipeline cron-cutover procedure, and PT-7
   data/knowledge conventions; `config/data_paths.yaml` is the path-template source of truth; `scripts/dev/check_project_taxonomy.py` audits unclassified top-level dirs; and
   `.github/skills/investigation-doc-sync/SKILL.md` defines the deferred cross-session case-doc sync workflow. `structure.md` remains the canonical target-tree reference for this story and
   `functional-code-taxonomy`.
-- `docs/plan/functional-code-taxonomy/` — story complete: `docs/guides/functional-code-taxonomy.md` now maps the six shared `src/lib/*` modules, states the shared-vs-specific test, records the
+- `docs/archive/functional-code-taxonomy/` — story complete: `docs/guides/functional-code-taxonomy.md` now maps the six shared `src/lib/*` modules, states the shared-vs-specific test, records the
   `query-catalog` boundary, and documents the delegated cross-project duplicate-check. `src/lib/{athena,report_render,har}/protocols.py` and `src/lib/paths/{protocols.py,config.py}` now provide the
   shared Protocol/path-resolution seams, with tests; `scripts/dev/generate_code_registry.py` inventories reusable code outside `scratch/`. Sibling to `project-taxonomy` (categories vs. shared code)
   and `query-catalog` (SQL text vs. execution code).
-- `docs/plan/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
+- `docs/archive/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
   `scripts/dev/promote_scratch_scripts.py` provides manual promotion with registry refresh; `scratch/SCRATCH.md`, `AGENTS.md`, and the repo-local `.github/skills/session-close/SKILL.md` enforce the
   delegated duplicate-check and close-out regeneration workflow; `tests/dev/` covers both CLIs.
-- `docs/plan/reference-knowledge-harvest/` — story complete through RKH-17: `knowledge/` now contains the harvested VOD asset mapping/pipeline references, MTN SA Lightstep tag/query references,
+- `docs/archive/reference-knowledge-harvest/` — story complete through RKH-17: `knowledge/` now contains the harvested VOD asset mapping/pipeline references, MTN SA Lightstep tag/query references,
   Applause Athena/CSV gotchas, adoption playback-outcome gap notes, CTAP-SM-VOD playback/CDN methodology docs, MTN/TIM Play tenant+DRM references, the 3 root knowledge ports, and the SRE Jira project
   reference. The story remains extensible — future `github_copilot/*` folders would reopen it by appending new `RKH-N` tasks rather than creating a new story.
 - `docs/plan/src-lib-migration/` — epic: real, tested implementations of `functional-code-taxonomy`'s six `src/lib/*` modules (`auth`, `athena`, `csv_io`, `report_render`, `har`, `curl_to_python`),
@@ -55,20 +55,20 @@
   `shaka-6001-sa-error-analysis`, `mtn-zm-session-device-investigation`, `astro-events-household-report`, and `vod-playback-timing-probe` each still hardcode their own ad hoc output-path logic today;
   mirrors `pipeline-migration` AAM-4's already-designed task shape.
 
-- `docs/plan/reference-folder-diagrams/` — story complete: `scripts/reference_diagram/` now supports per-project internal-import flowcharts, and `docs/reference-diagrams/` now indexes 12 folder-level
-  Mermaid pages (generated flowcharts plus hand-authored convergence/orchestration/state diagrams) covering every in-scope `github_copilot` migration folder except deliberately-excluded
+- `docs/archive/reference-folder-diagrams/` — story complete: `scripts/reference_diagram/` now supports per-project internal-import flowcharts, and `docs/reference-diagrams/` now indexes 12
+  folder-level Mermaid pages (generated flowcharts plus hand-authored convergence/orchestration/state diagrams) covering every in-scope `github_copilot` migration folder except deliberately-excluded
   `oasis-athena-mcp`; the set makes `reference-code-gap-migration`'s tiering and its `src/lib/mpd/` / `src/lib/crypto_signing/` promotion decisions visible, not just prose.
-- `docs/plan/flow-correlation-id-logging/` — story complete (design-only): defines the project's FCID (flow-correlation-id) convention — one id per run, minted once at each consumer's entry point,
+- `docs/archive/flow-correlation-id-logging/` — story complete (design-only): defines the project's FCID (flow-correlation-id) convention — one id per run, minted once at each consumer's entry point,
   propagated via a `contextvars.ContextVar` (no manual parameter-threading through `src/lib/*` adapter methods), auto-injected into every log line via a `logging.Filter`. `stories.md` carries a
   sequence diagram (one Athena query inside one pipeline run) and a component diagram (FCID flowing through `src/lib/*` into all three migration epics' consumers); no `src/lib/logging/` module or code
   exists yet — that is deferred to a follow-up story once a real consumer (first candidate: `athena-lib-integration` ALI-2) needs it. Coordination notes were added to `src-lib-migration`,
   `pipeline-migration`, and `reference-code-gap-migration`'s `README.md`s pointing here. Cross-process FCID propagation (subprocess/cron boundaries) is explicitly out of scope, left open for later.
-- `docs/plan/pre-implementation-design-review/` — story complete: a SOLID/clean-code/extensibility design review of all 18 not-yet-started stories across `src-lib-migration`, `pipeline-migration`, and
-  `reference-code-gap-migration`, run before any of them starts producing code. `spec.md` is the full findings table. One low-risk finding was fixed directly: a blocking method-name/signature mismatch
-  between `src/lib/athena/protocols.py`'s `AthenaClient` and `athena-lib-integration/stories.md`'s own ALI-2 class diagram, which would have failed that story's own task gate. A second finding (a
-  design-time-diagram-discipline parity constraint for `reference-code-gap-migration/README.md`) was applied, then reverted 2026-10-01 at the requester's instruction as a self-introduced extension
-  outside their stated review criteria — `spec.md`'s finding #11 row records this. **2026-10-01 follow-up: all 6 originally-flagged judgment calls resolved** (`spec.md`'s "Flagged for human decision"
-  section now records each resolution) — (a) `src-lib-migration/README.md` gained a standardized two-assertion DIP-enforcement test pattern, applied to `athena-lib-integration`'s ALI-3 and
+- `docs/archive/pre-implementation-design-review/` — story complete: a SOLID/clean-code/extensibility design review of all 18 not-yet-started stories across `src-lib-migration`, `pipeline-migration`,
+  and `reference-code-gap-migration`, run before any of them starts producing code. `spec.md` is the full findings table. One low-risk finding was fixed directly: a blocking method-name/signature
+  mismatch between `src/lib/athena/protocols.py`'s `AthenaClient` and `athena-lib-integration/stories.md`'s own ALI-2 class diagram, which would have failed that story's own task gate. A second
+  finding (a design-time-diagram-discipline parity constraint for `reference-code-gap-migration/README.md`) was applied, then reverted 2026-10-01 at the requester's instruction as a self-introduced
+  extension outside their stated review criteria — `spec.md`'s finding #11 row records this. **2026-10-01 follow-up: all 6 originally-flagged judgment calls resolved** (`spec.md`'s "Flagged for human
+  decision" section now records each resolution) — (a) `src-lib-migration/README.md` gained a standardized two-assertion DIP-enforcement test pattern, applied to `athena-lib-integration`'s ALI-3 and
   `auth-lib-migration`'s AUM-3; (b) `report-render-lib-migration` gained a new `RRM-3` Factory Method task (`src/lib/report_render/factory.py`) selecting a writer by shape key, renumbering the prior
   RRM-3/RRM-4 to RRM-4/RRM-5; (c) `curl-to-python-lib-migration`'s CPM-1 framing corrected to cite its real confirmed consumer (a HAR-driven manual timing/latency investigation workflow), replacing
   the prior "no-citation/speculative" framing; (d) the task-authoring SRP nit (finding #7) was left as-is, no split; (e) `ctap-smvod-investigation-migration`'s CSM-2 class diagram fixed to show

@@ -24,7 +24,7 @@ only if a third project needs the same DNS/TLS/MTR/traceroute/WHOIS mechanisms.
 
 - `docs/plan/reference-code-gap-migration/spec.md` §3 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (network-diagnostics accept-local decision).
-- `docs/plan/project-taxonomy/structure.md` — the `src/tools/<slug>/` skeleton (this category has no `investigations/docs` — it is not a case).
+- `docs/archive/project-taxonomy/structure.md` — the `src/tools/<slug>/` skeleton (this category has no `investigations/docs` — it is not a case).
 - `docs/plan/src-lib-migration/README.md` — `curl_to_python`/`report_render`/`auth` module status.
 
 ## Task overview

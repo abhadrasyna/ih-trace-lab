@@ -5,7 +5,7 @@
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
 
-**Hard gate:** confirm `docs/plan/functional-code-taxonomy/` FCT-1 and FCT-2 are checked done before starting HLM-2 — FCT-2 defines `src/lib/har/protocols.py`'s exact shape, seeded from
+**Hard gate:** confirm `docs/archive/functional-code-taxonomy/` FCT-1 and FCT-2 are checked done before starting HLM-2 — FCT-2 defines `src/lib/har/protocols.py`'s exact shape, seeded from
 `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()`.
 
 ## Why this story exists
@@ -25,7 +25,7 @@ SRP/duplication violation: a pure domain-mechanism function with no business bei
 ## Session-start load hints
 
 - `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
-- `docs/plan/functional-code-taxonomy/stories.md` (FCT-2 spec) and the landed `src/lib/har/protocols.py` — the exact interface this story implements against.
+- `docs/archive/functional-code-taxonomy/stories.md` (FCT-2 spec) and the landed `src/lib/har/protocols.py` — the exact interface this story implements against.
 - `PYTHON_DESIGN.md` — SRP trigger section.
 
 ## Task overview

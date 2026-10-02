@@ -26,7 +26,7 @@ duplicating it a second time.
 
 - `docs/plan/reference-code-gap-migration/spec.md` §8 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (Tier 1; FCT-6 coordination note).
-- `docs/plan/functional-code-taxonomy/` — FCT-6's own spec, to check the `generate_scripts_registry.py` overlap.
+- `docs/archive/functional-code-taxonomy/` — FCT-6's own spec, to check the `generate_scripts_registry.py` overlap.
 - `docs/plan/src-lib-migration/README.md` — `csv_io`/`report_render` module status.
 
 ## Task overview

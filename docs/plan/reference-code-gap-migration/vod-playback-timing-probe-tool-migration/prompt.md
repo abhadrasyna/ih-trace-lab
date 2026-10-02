@@ -28,7 +28,7 @@ up, per the coordination note in epic `README.md`); `src/lib/{har,auth,curl_to_p
 
 - `docs/plan/reference-code-gap-migration/spec.md` §1 — this project's full per-file audit table (the largest of the 10).
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (`mpd` promotion, playback-timing accept-local decision).
-- `docs/plan/project-taxonomy/structure.md` — the `src/tools/<slug>/` skeleton; note the flagged, unresolved tool-vs-experiment tension for this project (not this story's job to resolve).
+- `docs/archive/project-taxonomy/structure.md` — the `src/tools/<slug>/` skeleton; note the flagged, unresolved tool-vs-experiment tension for this project (not this story's job to resolve).
 - `docs/plan/src-lib-migration/README.md` — `har`/`auth`/`curl_to_python`/`report_render` module status, and whether `mpd` has been added yet.
 
 ## Task overview

@@ -27,7 +27,7 @@ sub-story.
 
 - `docs/plan/reference-code-gap-migration/spec.md` §2 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (Tier 2 correction, above).
-- `docs/plan/project-taxonomy/structure.md` — the existing `investigations/mtn-zm-device/` worked example.
+- `docs/archive/project-taxonomy/structure.md` — the existing `investigations/mtn-zm-device/` worked example.
 - `docs/plan/src-lib-migration/README.md` — `athena`/`csv_io`/`report_render`/`paths` module status.
 
 ## Task overview

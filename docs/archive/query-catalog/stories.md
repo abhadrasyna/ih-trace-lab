@@ -125,9 +125,10 @@ superseded versions, not query shapes meant for reuse — stay out of this harve
    flags in the source, per its own docstring). Do not invoke AWS/Athena from this task — porting is a file copy + adaptation, not a live run.
 2. `knowledge/README.md` documents: (a) the convention — one `knowledge/<project>-athena-<db>-tables.md` file per Athena database, holding a generated DDL reference section plus a hand-written
    categorized table inventory, mirroring `oasis-athena-mcp/docs/table-ddl-knowledge-guide.md`'s 4-step workflow (discover tables → filter to canonical tables → export DDL → compose the doc); (b) that
-   step 1 requires a resolved AWS SSO profile/tenant for the target database, which this project does not yet have — link `docs/plan/tenant-registry/prompt.md` as the explicit prerequisite, and state
-   that this task does not populate any real `knowledge/*-tables.md` file, only the tooling to do so once that prerequisite lands; (c) the same convention applies to a future Lightstep-side knowledge
-   cache (project/service IDs, attribute names — see `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md` for the shape) — named here as a follow-up, not built by this task.
+   step 1 requires a resolved AWS SSO profile/tenant for the target database, which this project does not yet have — link `docs/archive/tenant-registry/prompt.md` as the explicit prerequisite, and
+   state that this task does not populate any real `knowledge/*-tables.md` file, only the tooling to do so once that prerequisite lands; (c) the same convention applies to a future Lightstep-side
+   knowledge cache (project/service IDs, attribute names — see `applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md` for the shape) — named here as a follow-up, not built by this
+   task.
 
 **Tests:** none — this task ports existing, already-tested infra scripts and writes one docs file; no new logic is introduced.
 

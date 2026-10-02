@@ -26,8 +26,8 @@ spec.
 - **FCT-2** — All three `protocols.py` files define `Protocol` classes only (`abc`/`typing.Protocol`, `@runtime_checkable` where instance checks are meaningful) with method signatures but no bodies
   beyond `...`; `pytest` confirms a minimal hand-written conforming class satisfies each `Protocol` via `isinstance`, and a non-conforming stub does not. `src/lib/har/protocols.py` is seeded from
   `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()`'s shape (read-only reference, not copied verbatim).
-- **FCT-3** — The guide doc has a table mapping each `docs/plan/project-taxonomy/` category to which `src/lib/*` modules it consumes, plus one explicit sentence: "`query-catalog` owns SQL text; this
-  story owns the code that executes it."
+- **FCT-3** — The guide doc has a table mapping each `docs/archive/project-taxonomy/` category to which `src/lib/*` modules it consumes, plus one explicit sentence: "`query-catalog` owns SQL text;
+  this story owns the code that executes it."
 - **FCT-4** — `AGENTS.md` gained one pointer line stating `docs/guides/functional-code-taxonomy.md` is where `PYTHON_DESIGN.md`'s triggers are applied concretely.
 - **FCT-5** — `CONTEXT.md`'s "What Exists" list gained one line for this story, matching the existing `tenant-registry`/`query-catalog` bullet style.
 - **FCT-6** — `python scripts/dev/generate_code_registry.py` runs against the current tree without error and produces a registry file (mirroring `scratch-script-registry`'s existing registry format)

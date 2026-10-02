@@ -19,41 +19,41 @@ analyze_har.py::iter_entries()`, `vod-playback-timing-probe/scripts/extract_cont
 (twice within the *same* project), and `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()` (the one project that isolated it into its own file — a usable seed, not a
 throwaway). This is the single biggest concrete cause of the "redo the same investigation again without knowing a similar one exists" problem this project's mission statement (`README.md`) names.
 
-This story is the functional-code counterpart to `docs/plan/project-taxonomy/`: that story decides *what kind of project* a piece of work is; this one decides *what shared library code* any project —
-regardless of category — imports instead of reinventing. It also gives `PYTHON_DESIGN.md` (currently reference-only, "loaded on trigger only") its first concrete trigger: the Athena executor is a
+This story is the functional-code counterpart to `docs/archive/project-taxonomy/`: that story decides *what kind of project* a piece of work is; this one decides *what shared library code* any project
+— regardless of category — imports instead of reinventing. It also gives `PYTHON_DESIGN.md` (currently reference-only, "loaded on trigger only") its first concrete trigger: the Athena executor is a
 textbook DIP violation (each of the four originals constructs its own `boto3` client internally instead of receiving one), CSV/report writing is a textbook OCP violation (every new report format is a
 new copy-pasted `to_csv`/print-loop rather than a new `Strategy` implementer), and HAR-entry loading is a textbook SRP/duplication violation (the loader is a pure domain-mechanism function that has no
 business being copy-pasted per project) — this story applies those triggers when designing the three riskiest modules' interfaces, rather than porting the originals' shape as-is.
 
 Auditing further found that the "thin script, import shared lib" convention is not self-enforcing on its own — every one of the four duplicated Athena executors and all four HAR-loader copies existed
-inside a project that already claimed to follow that convention. `docs/plan/scratch-script-registry/` already solved exactly this problem for `scratch/` scripts (a sub-agent-delegated duplicate-check
-before writing a new probe); FCT-6 generalizes that same registry-and-check pattern to *every* new script anywhere in `ih-trace-lab` (`investigations/*/scripts`, `experiments/*/scripts`,
-`src/pipelines`, `src/tools`), since `project-taxonomy`'s PT-3 checklist depends on this registry existing to do its script-level prior-art check.
+inside a project that already claimed to follow that convention. `docs/archive/scratch-script-registry/` already solved exactly this problem for `scratch/` scripts (a sub-agent-delegated
+duplicate-check before writing a new probe); FCT-6 generalizes that same registry-and-check pattern to *every* new script anywhere in `ih-trace-lab` (`investigations/*/scripts`,
+`experiments/*/scripts`, `src/pipelines`, `src/tools`), since `project-taxonomy`'s PT-3 checklist depends on this registry existing to do its script-level prior-art check.
 
 ## Scope guard
 
 **In scope:** a target module map (`docs/guides/functional-code-taxonomy.md`) covering `src/lib/{auth,athena,csv_io,report_render,har,curl_to_python}/`, with each module's responsibility and which
 `github_copilot` original(s) it replaces; a "shared vs. specific" test stating precisely when logic must move to `src/lib/` vs. stay local to one project (FCT-1); `Protocol`-based interface skeletons
 (no implementation bodies) for the three highest-risk modules — `athena`, `report_render`, and `har` — with tests asserting they are runtime-checkable `Protocol`s; a migration/ownership table
-cross-referencing `docs/plan/project-taxonomy/` (which category consumes which module) and `docs/plan/query-catalog/` (the existing story owning SQL *text* — this story owns query *execution*, not the
-SQL itself); a cross-project script registry generator and its delegated duplicate-check convention, generalizing `docs/plan/scratch-script-registry/`'s existing pattern (FCT-6);
+cross-referencing `docs/archive/project-taxonomy/` (which category consumes which module) and `docs/archive/query-catalog/` (the existing story owning SQL *text* — this story owns query *execution*,
+not the SQL itself); a cross-project script registry generator and its delegated duplicate-check convention, generalizing `docs/archive/scratch-script-registry/`'s existing pattern (FCT-6);
 `AGENTS.md`/`CONTEXT.md` pointer lines.
 
 **Out of scope:** any change under `/Users/abhadra/github_copilot` (read-only, never edited from this project); actual working implementations of `src/lib/athena/client.py`,
 `src/lib/csv_io/writer.py`, etc. — those are real production code with real tests and are deliberately left to follow-up stories triggered the first time an actual pipeline/investigation/tool needs
 them, not built speculatively now (this project's YAGNI stance, and `PYTHON_DESIGN.md`'s own closing section: "don't build preemptively... worth building only once there's evidence"); the SQL text
-itself, already owned by `docs/plan/query-catalog/`; `project-taxonomy`'s own new-top-level-folder checklist and its Rule A/Rule B nesting rules — this story only supplies the script-level registry
+itself, already owned by `docs/archive/query-catalog/`; `project-taxonomy`'s own new-top-level-folder checklist and its Rule A/Rule B nesting rules — this story only supplies the script-level registry
 that checklist queries, it does not redefine folder-level rules.
 
 ## Session-start load hints
 
 - `PYTHON_DESIGN.md` — read in full before FCT-2; this story's `Protocol` skeletons are the first place this doc's SRP/OCP/DIP triggers and the Strategy pattern get applied in `ih-trace-lab`, not a
   restatement to skip.
-- `docs/plan/project-taxonomy/prompt.md` and `structure.md` — the sibling story whose per-category folder skeletons (PT-2) name which modules a pipeline/tool/investigation's `scripts/`/`src/` imports,
-  and whose PT-3 new-script checklist depends on FCT-6's registry existing; this story does not re-decide project categories or folder layout.
-- `docs/plan/query-catalog/prompt.md` — read its "Why this story exists" section before FCT-3, to state the SQL-text-vs-execution-code boundary precisely rather than guessing at it.
-- `docs/plan/scratch-script-registry/prompt.md` and `stories.md` — the existing single-scope (scratch-only) registry/duplicate-check pattern FCT-6 generalizes; match its delegation style and registry
-  file format rather than inventing a new one.
+- `docs/archive/project-taxonomy/prompt.md` and `structure.md` — the sibling story whose per-category folder skeletons (PT-2) name which modules a pipeline/tool/investigation's `scripts/`/`src/`
+  imports, and whose PT-3 new-script checklist depends on FCT-6's registry existing; this story does not re-decide project categories or folder layout.
+- `docs/archive/query-catalog/prompt.md` — read its "Why this story exists" section before FCT-3, to state the SQL-text-vs-execution-code boundary precisely rather than guessing at it.
+- `docs/archive/scratch-script-registry/prompt.md` and `stories.md` — the existing single-scope (scratch-only) registry/duplicate-check pattern FCT-6 generalizes; match its delegation style and
+  registry file format rather than inventing a new one.
 - `docs/guides/git-multi-account-auth.md` — this project's existing `docs/guides/*.md` tone/structure precedent.
 
 ## Task overview
@@ -71,7 +71,7 @@ that checklist queries, it does not redefine folder-level rules.
 ## Definition of done
 
 - `docs/guides/functional-code-taxonomy.md` names all six modules, each with a concrete replaced-original citation from the 2026-09-28 audit, states the "shared vs. specific" test, and does not
-  contradict `docs/plan/project-taxonomy/`'s folder skeletons or `structure.md`.
+  contradict `docs/archive/project-taxonomy/`'s folder skeletons or `structure.md`.
 - `src/lib/athena/protocols.py`, `src/lib/report_render/protocols.py`, and `src/lib/har/protocols.py` exist as `Protocol` definitions only (no concrete implementation), each `@runtime_checkable` where
   that is meaningful, with passing tests confirming a minimal conforming stub satisfies the `Protocol`.
 - The guide doc states, in one place, which future story owns SQL text (`query-catalog`) vs. execution code (this story) — no reader has to infer the boundary.

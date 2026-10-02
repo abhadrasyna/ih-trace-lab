@@ -86,7 +86,7 @@ whole story.
   `iljyxcc3`, tenant identifiers, `ctap`→`sm-vod`→`go-mdrmfe`→license-server trace chain), and flags the source folder's stale case-index gap (these four docs are absent from
   `investigations/README.md`'s own case-log table) without editing the read-only source.
 - **RKH-13** — `knowledge/mtn-tenant-identifiers-and-code-flow.md` exists, preserves `ITZUu4aBswL.md`/`_code_flow.md`'s tenant-ID facts and the full HAR→code-flow trace (login, VOD playback, mDRM
-  Widevine license, Kinesis analytics), and forward-notes `docs/plan/tenant-registry/` as the eventual consumer once that not-yet-implemented story's resolver work begins.
+  Widevine license, Kinesis analytics), and forward-notes `docs/archive/tenant-registry/` as the eventual consumer once that not-yet-implemented story's resolver work begins.
 - **RKH-14** — `knowledge/{ctap-shared-content-default-limit,mpd-shaka-restrictions-analysis,recommendation-engine-thinkanalytics}.md` all exist in `ih-trace-lab`, ported as-is from the root
   `github_copilot/knowledge/` originals, cross-linked to RKH-12 where their underlying case docs (DRM/manifest analysis) overlap.
 - **RKH-15** — `knowledge/mtn-lightstep-identity-and-session-investigation-methodology.md` exists, distills the reusable facts/methodology (MCP query syntax hard rules, householdId→clientId resolution

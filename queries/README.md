@@ -36,5 +36,5 @@ See `docs/guides/query-catalog.md` for the full workflow once it exists.
 
 ## Before writing new Athena SQL
 
-Check the relevant `knowledge/<project>-athena-<db>-tables.md` DDL cache before re-deriving a table's columns from a live query, once one exists (see `docs/plan/query-catalog/` task QC-4) — don't
+Check the relevant `knowledge/<project>-athena-<db>-tables.md` DDL cache before re-deriving a table's columns from a live query, once one exists (see `docs/archive/query-catalog/` task QC-4) — don't
 re-discover schema that a cached DDL doc already has.

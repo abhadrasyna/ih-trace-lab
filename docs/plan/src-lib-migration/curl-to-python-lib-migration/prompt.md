@@ -5,7 +5,7 @@
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
 
-**Hard gate:** confirm `docs/plan/functional-code-taxonomy/` FCT-1 is checked done before starting CPM-1 — re-derive this module's originals from that story's audit rather than re-auditing
+**Hard gate:** confirm `docs/archive/functional-code-taxonomy/` FCT-1 is checked done before starting CPM-1 — re-derive this module's originals from that story's audit rather than re-auditing
 `github_copilot` from scratch.
 
 ## Why this story exists
@@ -27,7 +27,7 @@ workflow, confirmed as real rather than hypothetical.
 ## Session-start load hints
 
 - `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
-- `docs/plan/functional-code-taxonomy/prompt.md`/`stories.md` — re-read for any `curl_to_python`-relevant audit citations before CPM-1.
+- `docs/archive/functional-code-taxonomy/prompt.md`/`stories.md` — re-read for any `curl_to_python`-relevant audit citations before CPM-1.
 - `PYTHON_DESIGN.md` — SRP/Factory Method trigger sections (parsing a curl command into structured parts is a natural Factory Method: one function owns "which Python call shape results from this curl
   command," rather than branching inline at each call site).
 

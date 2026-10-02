@@ -5,8 +5,8 @@
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
 
-**Hard gate:** confirm `docs/plan/functional-code-taxonomy/` FCT-1 and FCT-2 are checked done in that story's `tasks.md` before starting ALI-2 or later — FCT-2 is where `src/lib/athena/`'s `Protocol`
-shape is defined; this story implements against it, not around it. ALI-1 (the submodule add) has no such dependency and may proceed independently if useful, but do not skip ahead past it.
+**Hard gate:** confirm `docs/archive/functional-code-taxonomy/` FCT-1 and FCT-2 are checked done in that story's `tasks.md` before starting ALI-2 or later — FCT-2 is where `src/lib/athena/`'s
+`Protocol` shape is defined; this story implements against it, not around it. ALI-1 (the submodule add) has no such dependency and may proceed independently if useful, but do not skip ahead past it.
 
 ## Why this story exists
 
@@ -42,8 +42,8 @@ adapter adds resilience at its own boundary instead).
 ## Session-start load hints
 
 - `docs/plan/src-lib-migration/README.md` — the epic architecture diagram and cross-cutting constraints this story must honour.
-- `docs/plan/functional-code-taxonomy/prompt.md` + `stories.md` (FCT-2 spec) — the exact `Protocol` shape `src/lib/athena/adapter.py` must satisfy.
-- `docs/plan/flow-correlation-id-logging/stories.md` — the FCID convention and its own stated `contextvars`/`ThreadPoolExecutor` caveat, which ALI-5 must satisfy.
+- `docs/archive/functional-code-taxonomy/prompt.md` + `stories.md` (FCT-2 spec) — the exact `Protocol` shape `src/lib/athena/adapter.py` must satisfy.
+- `docs/archive/flow-correlation-id-logging/stories.md` — the FCID convention and its own stated `contextvars`/`ThreadPoolExecutor` caveat, which ALI-5 must satisfy.
 - `/Users/abhadra/myWork/myOffice/athena-mcp-server/CONTEXT.md` and `README.md` — what `athena_runner` already exposes, and its one known open item (the `aws-access-cli` sibling-checkout
   namespace-package merge in `tool_config.py::_load_mtn_registry`) — this story's adapter must not silently mask that fragility if it surfaces during integration.
 - `PYTHON_DESIGN.md` — cite the specific DIP trigger this story applies before writing `adapter.py`, the Strategy/concurrency guidance before writing `batch.py`/`cache.py`, and the Template

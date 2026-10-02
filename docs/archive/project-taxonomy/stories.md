@@ -49,7 +49,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 **What to implement:**
 
 1. A `## Folder skeleton per category` table, columns `Category | Required files | Notes`, one row per PT-1 category:
-   - Pipeline: `scripts/` (imports `src/lib/*` from `docs/plan/functional-code-taxonomy/`), `tests/`, a doc stating the schedule (what runs when, e.g. a cron expression or trigger description) — no
+   - Pipeline: `scripts/` (imports `src/lib/*` from `docs/archive/functional-code-taxonomy/`), `tests/`, a doc stating the schedule (what runs when, e.g. a cron expression or trigger description) — no
      `investigations/docs` (nothing to write up, it is not a case).
    - Investigation: lives under the top-level `investigations/` category bucket, applying two rules found during the follow-up audit of `applauseInvestigation` and `vod-playback-timing-probe` (both
      independently reinvented the same nesting mistake):
@@ -78,7 +78,7 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
 3. Update `structure.md`'s `investigations/` block in the same commit so it shows: a standalone `investigations/<case-id>/` example, a bounded-case campaign example (`<campaign-slug>/{docs/{<case-
    id>-*.md, archive/}, queries/, scripts/, tests/}` — no `data/` here, see PT-7), and a recurring-campaign example with the optional `data/`, `output/`, `RETENTION.md` siblings — matching this table
    row for row.
-4. Cross-reference `docs/plan/functional-code-taxonomy/` by name for "what code a pipeline/tool/investigation's `scripts/`/`src/` folder should import" — do not restate that story's module layout
+4. Cross-reference `docs/archive/functional-code-taxonomy/` by name for "what code a pipeline/tool/investigation's `scripts/`/`src/` folder should import" — do not restate that story's module layout
    here.
 
 **Tests:** none — docs-only.
@@ -101,15 +101,15 @@ disagree, `structure.md` wins and the task spec must be corrected to match.
       picking the closest label.
    2. **New top-level folder:** delegate a sub-agent (the `explore` or `task` agent type — bounded, read-only) to search, in order: `docs/guides/`, `knowledge/` (once it exists as a folder), and
       `/Users/abhadra/github_copilot` (read-only reference) for prior art answering the same or a closely related question. Give the sub-agent the concrete question, not just a category name.
-   3. **New script (any category):** before writing it, delegate a sub-agent to check `docs/plan/functional-code-taxonomy/`'s FCT-6 cross-project script registry (once it exists) for an existing
+   3. **New script (any category):** before writing it, delegate a sub-agent to check `docs/archive/functional-code-taxonomy/`'s FCT-6 cross-project script registry (once it exists) for an existing
       script or `src/lib/*` module doing the same or closely related thing — e.g. HAR-entry loading, CSV/report writing, Athena querying. Give the sub-agent the concrete operation the script performs,
       not the project name.
    4. If either search finds a match: reuse or extend it; do not create a new top-level folder, or a new script, duplicating it.
    5. If no match: create the folder using PT-2's skeleton for the classified category, or write the script importing `src/lib/*` as normal.
-2. State explicitly why steps 2 and 3 are delegated rather than done inline — same rationale as `docs/plan/scratch-script-registry/prompt.md`'s duplicate-check delegation (keeps the search cost off
+2. State explicitly why steps 2 and 3 are delegated rather than done inline — same rationale as `docs/archive/scratch-script-registry/prompt.md`'s duplicate-check delegation (keeps the search cost off
    the main session's context, makes it a named auditable step) — this checklist is that same pattern applied at whole-project scope *and* at per-script scope, not just single-script scope inside
    `scratch/`; do not re-justify it differently.
-3. Cross-reference `docs/plan/functional-code-taxonomy/`'s "shared vs. specific" test (FCT-1) as the follow-up question once a match or near-match is found: if the found code operates on a domain
+3. Cross-reference `docs/archive/functional-code-taxonomy/`'s "shared vs. specific" test (FCT-1) as the follow-up question once a match or near-match is found: if the found code operates on a domain
    mechanism (Athena, CSV/report I/O, HAR parsing) rather than a campaign/case-specific business rule, it belongs in `src/lib/`, not copied into a new script — do not restate that test here.
 
 **Tests:** none — docs-only.
@@ -318,8 +318,8 @@ content-filtered (does this window reference case X's path/ticket-id?), never se
 5. **Executive summary is a separate, cheaper pass** — once `<case-id>-<topic>.md` has multiple dated sections, generating `<case-id>-executive-summary.md` condenses that already-clean markdown file
    (headline finding, ruled-out table, recommendation — per `7231763-executive-summary.md`'s and `7232657-executive-summary.md`'s shape), not the raw transcript — invoked as its own trigger phrase
    (e.g. "investigation summary `<case-id>`"), typically at close-out, not every checkpoint.
-6. Cross-reference `docs/plan/project-taxonomy/structure.md`'s `investigations/` block and PT-7's "Inputs used" mandatory block by name — this skill populates those files, it does not redefine their
-   shape.
+6. Cross-reference `docs/archive/project-taxonomy/structure.md`'s `investigations/` block and PT-7's "Inputs used" mandatory block by name — this skill populates those files, it does not redefine
+   their shape.
 7. **Session-provenance table with both `cwd` and a derived `Case/Campaign` column** — grounded in a cross-check of `applauseInvestigation/session-info.md` (see `applauseInvestigation/AGENTS.md`'s
    "append a row every session" convention): of 18 real Copilot CLI sessions with `cwd = applauseInvestigation`, only 8 rows ever got logged (the manual "remember to append" step silently stopped
    being followed after 2026-08-16) — proving a purely-manual provenance log decays exactly like `session-history-summary.md` did. `cwd` alone is currently low-signal: Copilot CLI records it once per

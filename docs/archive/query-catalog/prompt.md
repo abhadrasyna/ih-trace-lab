@@ -31,7 +31,7 @@ harvest of the 4 reference catalog files named above plus `ctap-smvod-session-re
 `edge_4032_playback_failure.md`) (parsing already-committed markdown — no live Athena/Lightstep queries run), a `knowledge/` DDL-cache convention doc plus ported (not executed) tooling scripts, a
 short `docs/guides/query-catalog.md` protocol doc, and an `AGENTS.md` pointer line.
 
-**Out of scope:** running any live Athena or Lightstep MCP query to populate a fresh `knowledge/*-tables.md` DDL cache — that requires the tenant/profile resolution `docs/plan/tenant-registry/` is
+**Out of scope:** running any live Athena or Lightstep MCP query to populate a fresh `knowledge/*-tables.md` DDL cache — that requires the tenant/profile resolution `docs/archive/tenant-registry/` is
 still building (TR-1..6 all open); this story only ports the reusable *scripts* for that job, it does not run them. No changes to `/Users/abhadra/github_copilot` (read-only reference). No change to
 how queries are actually executed (still manual, by the user, against Athena/Lightstep) — this story only organizes what gets saved before/after that. `ctap-smvod-session-report/queries/ exploration/`
 and `stories/` (DDL-discovery narrative, not queries meant for reuse) and `backups/` (superseded pre-`APP_KEEPALIVE` versions) stay out of scope — QC-2 harvests query shapes, not
@@ -46,7 +46,7 @@ narrative/DDL-discovery history.
 - `/Users/abhadra/github_copilot/applauseInvestigation/knowledge/lightstep-query-templates.md` — the Lightstep catalog being harvested (read-only source, do not edit).
 - `/Users/abhadra/github_copilot/oasis-athena-mcp/docs/table-ddl-knowledge-guide.md` + `scripts/discover_athena_tables.py` + `scripts/run_table_ddl_export.py` +
   `/Users/abhadra/github_copilot/scripts/update_athena_table_ddl_knowledge.py` — the DDL-cache tooling being ported (read, do not edit the originals).
-- `docs/plan/tenant-registry/prompt.md` — the prerequisite this story's DDL-cache task explicitly defers to; read its "Why this story exists" to understand why a live Athena/Lightstep call cannot
+- `docs/archive/tenant-registry/prompt.md` — the prerequisite this story's DDL-cache task explicitly defers to; read its "Why this story exists" to understand why a live Athena/Lightstep call cannot
   happen yet.
 - `scratch/SCRATCH.md` — the existing convergence-rule precedent this story's script-promotion trigger is modeled on (design POC repeats vs. plumbing repeats); read before writing QC-5.
 

@@ -23,7 +23,7 @@ skeleton + port.
 
 - `docs/plan/reference-code-gap-migration/spec.md` §6 — this project's full per-file audit table; read before the first task.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log and story table (this story is Tier 1).
-- `docs/plan/project-taxonomy/structure.md` — the `investigations/<campaign-slug>/` skeleton (Rule A/B) this story's target folder must match.
+- `docs/archive/project-taxonomy/structure.md` — the `investigations/<campaign-slug>/` skeleton (Rule A/B) this story's target folder must match.
 - `docs/plan/src-lib-migration/README.md` — confirms which `src/lib/*` modules exist before importing them.
 
 ## Task overview
