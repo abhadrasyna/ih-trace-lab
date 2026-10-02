@@ -5,7 +5,7 @@ spec.
 
 **Open: HLM-2, HLM-3, HLM-4.**
 
-- [x] **HLM-1** — Re-confirm 4-copy audit list | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <PENDING-COMMIT>
+- [x] **HLM-1** — Re-confirm 4-copy audit list | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 6894751
 - [ ] **HLM-2** — `src/lib/har/loader.py`: concrete loader satisfying FCT-2's `Protocol` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **HLM-3** — Tests + `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **HLM-4** — Doc/`CONTEXT.md` pointers | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
