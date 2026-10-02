@@ -63,6 +63,9 @@
   `SsoAuth` implementer. `SsoAuth` is constructor-injected with `refresher_factory`/`session_factory` collaborator callables (rather than one bound collaborator) because the real
   `SsoCredentialRefresher` binds a single profile per instance while `AuthProtocol`'s methods take `profile_name` per call; it never builds its own `boto3` object or reimplements the SSO refresh
   polling loop.
+- `src/lib/csv_io/protocols.py` + `csv_file.py` — split `CsvReaderProtocol`/`CsvWriterProtocol` (ISP) plus stdlib-backed `CsvFileReader`/`CsvFileWriter` for raw CSV I/O, distinct from
+  `report_render`'s formatted-output Strategy (`csv_io` owns getting rows in/out of files; `report_render` renders already-read/normalized rows). Matches `csv.DictReader`/`csv.DictWriter` defaults
+  exactly, per `csv-io-lib-migration/stories.md` CIM-1's requester-approved file-boundary audit.
 - `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. Scoped to exactly what `docs/archive/flow-correlation-id-logging`'s FCID-1 already fully specifies; `redact_params` and a project-wide
   `setup_logging()` formatter wiring remain deferred future work, not yet owned by any `docs/plan/` task.
