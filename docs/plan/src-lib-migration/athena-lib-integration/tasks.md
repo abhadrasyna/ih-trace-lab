@@ -3,12 +3,12 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: ALI-3, ALI-4, ALI-5, ALI-6, ALI-7.**
+**Open: ALI-4, ALI-5, ALI-6, ALI-7.**
 
 - [x] **ALI-1** — Add `athena-mcp-server` as a pinned git submodule + init/update docs | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 2f7bad3
 - [x] **ALI-2** — `src/lib/athena/adapter.py` + `exceptions.py`: DIP-compliant `Protocol`-conforming adapter delegating to `athena_runner`, with mirrored exception hierarchy and throttling
   retry/backoff | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: c6bebc3
-- [ ] **ALI-3** — Tests: mocked `athena_runner`, `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
+- [x] **ALI-3** — Tests: mocked `athena_runner`, `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: PENDING
 - [ ] **ALI-4** — Audit: confirm whether `athena_runner` already supports batch/concurrent submission or caching | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review
   | SHA: <—>
 - [ ] **ALI-5** — `src/lib/athena/batch.py` + `cache.py`: concurrent batch submission + TTL result cache, FCID-propagating | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
