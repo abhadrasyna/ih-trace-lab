@@ -40,8 +40,21 @@
 - `docs/plan/src-lib-migration/` — epic: real, tested implementations of `functional-code-taxonomy`'s six `src/lib/*` modules (`auth`, `athena`, `csv_io`, `report_render`, `har`, `curl_to_python`),
   ported/refactored from `github_copilot` (read-only reference), one story per module. `athena-lib-integration` is the exception — it wires in `/Users/abhadra/myWork/myOffice/athena-mcp-server` (an
   already-independent, tested repo with the shared `athena_runner` execution stack) as a git submodule and adapts to it, rather than re-porting a fifth copy of that logic.
-  `auth`/`csv_io`/`curl_to_python` additionally define their own `Protocol`s here, deferred by `functional-code-taxonomy` FCT-2. Now unblocked by `functional-code-taxonomy`; see
-  `docs/plan/src-lib-migration/athena-lib-integration/tasks.md` for the first unchecked task (ALI-1).
+  `auth`/`csv_io`/`curl_to_python` additionally define their own `Protocol`s here, deferred by `functional-code-taxonomy` FCT-2. `athena-lib-integration` is complete through ALI-6 (ALI-7 is
+  docs-only); see `docs/plan/src-lib-migration/README.md`'s Stories table for the other five stories' status and first unchecked task.
+- `vendor/athena-mcp-server` — pinned git submodule (see `docs/guides/submodules.md` for init/update steps; `git submodule update --init` after cloning, plus `pip install -e vendor/athena-mcp-server`
+  since the submodule's `athena_runner` package isn't on PyPI). `src/lib/athena/adapter.py` is a thin DIP adapter delegating to it — no `query_executor`/`aws_clients` execution logic is duplicated in
+  `ih-trace-lab` itself; `src/lib/athena/exceptions.py` defines this module's own exception hierarchy so callers never need to catch `athena_runner.exceptions.*` or raw
+  `botocore.exceptions.ClientError` directly.
+- `src/lib/athena/batch.py` + `cache.py` — bounded-concurrency batch submission (`BatchQueryRunner`, pool size from `athena_runner.config.RunConfig.max_concurrency`) with a fingerprint-keyed TTL
+  result cache (`InMemoryTtlCache`), for consumers submitting multiple independent queries at once (e.g. per-tenant/per-day fan-out). One query's failure never blanks out the batch's other results
+  (`AthenaBatchExecutionError` carries both partial results and failures).
+- `src/lib/athena/progressive.py` — progressive scope-widening query runner (`ProgressiveQueryRunner`): runs a narrow scope first, widens only if a consumer-supplied `SufficiencyCheck` says the result
+  isn't enough, stops when the consumer's `ScopeSequence` is exhausted (or a `max_rounds` backstop is hit, guarding against a misbehaving collaborator pair), and combines rows across every scope
+  actually run.
+- `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
+  prerequisite so FCID survives a `ThreadPoolExecutor` boundary. Scoped to exactly what `docs/archive/flow-correlation-id-logging`'s FCID-1 already fully specifies; `redact_params` and a project-wide
+  `setup_logging()` formatter wiring remain deferred future work, not yet owned by any `docs/plan/` task.
 - `docs/plan/pipeline-migration/` — epic: ports `aws-access-cli` (→ `src/pipelines/aws-access-cli/`, pipeline category, incl. PT-6 cron-cutover) and `ctap-smvod-session-report` (→
   `investigations/ctap-smvod/`, recurring-campaign category, incl. manual-Lightstep-step relocation) from `github_copilot` (read-only reference), replacing their duplicated executor/auth/SQL/output
   logic with `src/lib/*`, `query-catalog`, and `project-taxonomy` PT-7's ISO-prefix path convention respectively. Blocked on `project-taxonomy` PT-1/2/6/7, `src-lib-migration`, and `query-catalog`

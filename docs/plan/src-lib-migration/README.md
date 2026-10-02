@@ -83,7 +83,7 @@ graph TB
 
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
-| `athena-lib-integration/` | Submodule `athena-mcp-server` + thin `src/lib/athena/` adapter | 🔄 ALI-1–6 done, ALI-7 open | `functional-code-taxonomy` FCT-1/FCT-2 | — |
+| `athena-lib-integration/` | Submodule `athena-mcp-server` + thin `src/lib/athena/` adapter | ✅ Done | `functional-code-taxonomy` FCT-1/FCT-2 | <—> |
 | `report-render-lib-migration/` | Port 8+ duplicated CSV/report writers → `src/lib/report_render/` | 🔄 RRM-1 done, RRM-2–5 open | `functional-code-taxonomy` FCT-1/FCT-2 | — |
 | `har-lib-migration/` | Port 4 duplicated HAR-entry loaders → `src/lib/har/` | 🔄 HLM-1 done, HLM-2–4 open | `functional-code-taxonomy` FCT-1/FCT-2 | — |
 | `auth-lib-migration/` | Consolidate AWS SSO auth helpers → `src/lib/auth/` (new `Protocol`) | ⬜ Not started | FCT-1, `athena-lib-integration` (reuses `sso_auth` shape) | — |
@@ -134,7 +134,11 @@ Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic
   coordination record.
 - **2026-10-01:** `docs/archive/flow-correlation-id-logging/` defines the project's FCID (flow-correlation-id) logging convention — `contextvars`-propagated, auto-injected via a `logging.Filter`, no
   manual `fcid` parameter on any adapter method. `athena-lib-integration`'s ALI-2 adapter (and every other module's adapter here) should adopt that convention's log-line shape once implemented. This
-  epic does not implement the convention itself; this is the coordination record.
+  epic does not implement the convention itself; this is the coordination record. **Landed state (2026-10-02, ALI-7):** the minimal FCID-1 slice (`src/lib/logging/context.py` —
+  `bind_fcid`/`current_fcid`/`FcidLogFilter`) was built as an ALI-5 prerequisite, since `batch.py`'s `BatchQueryRunner` needed FCID to survive a `ThreadPoolExecutor` boundary; `batch.py` and
+  `progressive.py` both attach `FcidLogFilter` to their own module logger and log FCID-tagged lines. `adapter.py` itself does **not** yet attach the filter or log FCID-tagged lines — this remains open
+  for whichever story next touches `adapter.py`, since ALI-5/ALI-6 only needed the propagation primitives, not a retrofit of the adapter's own existing log calls. `redact_params` and a project-wide
+  `setup_logging()` formatter wiring also remain unimplemented, per `src/lib/logging/context.py`'s own module docstring.
 - `athena-lib-integration` must stay reconciled with `athena-mcp-server`'s own `CONTEXT.md` "Known open item" (the `aws-access-cli` sibling-checkout namespace-package merge for
   `tool_config.py::_load_mtn_registry`) — that fragility is upstream of this epic, not introduced by it, but the adapter must not paper over it silently if it resurfaces.
 
