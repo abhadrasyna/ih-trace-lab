@@ -3,10 +3,10 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: AUM-1, AUM-2, AUM-3, AUM-4.**
+**Open: AUM-2, AUM-3, AUM-4.**
 
-- [ ] **AUM-1** — `src/lib/auth/protocols.py`: new `AuthProtocol` generalized from `athena_runner.sso_auth` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests
-  green | SHA: <—>
+- [x] **AUM-1** — `src/lib/auth/protocols.py`: new `AuthProtocol` generalized from `athena_runner.sso_auth` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests
+  green | SHA: `fcf7214`/`aa3a98b`
 - [ ] **AUM-2** — `src/lib/auth/sso.py`: concrete implementer delegating to `athena_runner.sso_auth` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green |
   SHA: <—>
 - [ ] **AUM-3** — Tests + `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
