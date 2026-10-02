@@ -59,6 +59,10 @@
   cited in `har-lib-migration/stories.md`'s HLM-1 audit (`applauseInvestigation/scripts/analyze_har.py::iter_entries()`,
   `vod-playback-timing-probe/scripts/{extract_content_ids_from_har.py,summarize_har_playbacks.py}::_load_entries()`, `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()`).
   Accepts `str | Path | an open file handle`; `load_json_entries()`'s JSON-filter/response-parse step stays out of scope as project-specific logic for a future consumer.
+- `src/lib/auth/protocols.py` + `sso.py` — `AuthProtocol` (`ensure_session`/`refresh_if_expired`), generalized from `athena_runner.sso_auth.SsoCredentialRefresher`'s proven shape, and its concrete
+  `SsoAuth` implementer. `SsoAuth` is constructor-injected with `refresher_factory`/`session_factory` collaborator callables (rather than one bound collaborator) because the real
+  `SsoCredentialRefresher` binds a single profile per instance while `AuthProtocol`'s methods take `profile_name` per call; it never builds its own `boto3` object or reimplements the SSO refresh
+  polling loop.
 - `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. Scoped to exactly what `docs/archive/flow-correlation-id-logging`'s FCID-1 already fully specifies; `redact_params` and a project-wide
   `setup_logging()` formatter wiring remain deferred future work, not yet owned by any `docs/plan/` task.
