@@ -22,7 +22,7 @@ only). Disposition: **autofix** (applied directly in this story, see commit) · 
 <!-- lint-ignore-length -->
 | 6 | `har-lib-migration` | HLM-2 explicitly requires a specific exception type on malformed input ("fail loudly, no silently-wrong partial results") — matches this project's own global convention. No finding; cited as a **positive pattern**. | SRP / fail-loudly convention | n/a | n/a (positive, no action) |
 <!-- lint-ignore-length -->
-| 7 | all 6 stories | Every module's last task is a `CONTEXT.md`-pointer-only commit *and* a `docs/plan/src-lib-migration/README.md` status-row update in the same task — these are two different files with two different purposes (global state snapshot vs. this epic's own progress view) bundled into one task line with one commit message. Minor process nit, not a code/design defect. | SRP (applied to task-authoring itself) | low | **flagged** — splitting into two tasks per module (×6) adds six more task-table rows for a cosmetic gain; worth a human call on whether it's worth the churn. |
+| 7 | all 6 stories | Every module's last task is a `CONTEXT.md`-pointer-only commit *and* a `docs/archive/src-lib-migration/README.md` status-row update in the same task — these are two different files with two different purposes (global state snapshot vs. this epic's own progress view) bundled into one task line with one commit message. Minor process nit, not a code/design defect. | SRP (applied to task-authoring itself) | low | **flagged** — splitting into two tasks per module (×6) adds six more task-table rows for a cosmetic gain; worth a human call on whether it's worth the churn. |
 
 ## pipeline-migration (2 stories)
 

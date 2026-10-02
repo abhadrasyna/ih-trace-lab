@@ -24,7 +24,7 @@ skeleton + port.
 - `docs/plan/reference-code-gap-migration/spec.md` §7 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` — epic decision log (Tier 1; device/UA-identity accept-local decision).
 - `docs/archive/project-taxonomy/structure.md` — `investigations/<slug>/` skeleton.
-- `docs/plan/src-lib-migration/README.md` — `athena`/`auth` module status.
+- `docs/archive/src-lib-migration/README.md` — `athena`/`auth` module status.
 
 ## Task overview
 

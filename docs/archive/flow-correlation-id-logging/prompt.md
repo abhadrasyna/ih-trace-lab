@@ -27,7 +27,7 @@ story once a real consumer needs it (matching `functional-code-taxonomy`'s own Y
 ## Session-start load hints
 
 - `PYTHON_DESIGN.md` — DIP/Protocol conventions this design must stay consistent with, even though no code lands here.
-- `src/lib/athena/protocols.py` and `docs/plan/src-lib-migration/athena-lib-integration/stories.md` — the first real consumer seam this convention targets; the method names in both must already be
+- `src/lib/athena/protocols.py` and `docs/archive/src-lib-migration/athena-lib-integration/stories.md` — the first real consumer seam this convention targets; the method names in both must already be
   reconciled (flagged separately, 2026-10-01 review) before ALI-2 adopts FCID logging.
 - Global `AGENTS.md` logging rule: `setup_logging()` once at process start, never `logging.basicConfig` elsewhere, never bare `logging.getLogger(__name__)` in `scripts/`.
 

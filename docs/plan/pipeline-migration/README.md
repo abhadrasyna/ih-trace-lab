@@ -27,7 +27,7 @@ This epic is the follow-up that actually ports both, once its three blocking dep
 - **Blocked on three sibling stories landing first**, confirmed with the epic requester, 2026-09-30:
   - `docs/archive/project-taxonomy/` PT-1, PT-2, PT-7 (category definitions, folder skeletons, `config/data_paths.yaml` + ISO-prefix filename convention) — both stories' target layout comes from
     there, not invented here. `aws-access-cli-pipeline-migration` additionally needs PT-6 (cron-cutover procedure) before its cron step.
-  - `docs/plan/src-lib-migration/` — both stories consume `src/lib/{athena,auth,csv_io,report_render}` once those stories land; neither re-implements the executor/writer/auth logic those stories
+  - `docs/archive/src-lib-migration/` — both stories consume `src/lib/{athena,auth,csv_io,report_render}` once those stories land; neither re-implements the executor/writer/auth logic those stories
     already own.
   - `docs/archive/query-catalog/` — both stories hand their SQL text (`aws-access-cli`'s 6 query classes, `ctap-smvod`'s 45 query files) to that story's `queries/athena/`/`queries/lightstep/` catalog;
     this epic does not invent a second SQL-ownership location.

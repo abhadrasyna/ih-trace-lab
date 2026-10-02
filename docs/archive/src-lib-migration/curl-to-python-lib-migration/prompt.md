@@ -33,7 +33,7 @@ workflow, confirmed as real rather than hypothetical.
 
 ## Session-start load hints
 
-- `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
+- `docs/archive/src-lib-migration/README.md` — epic architecture diagram and constraints.
 - `docs/archive/functional-code-taxonomy/prompt.md`/`stories.md` — re-read for any `curl_to_python`-relevant audit citations before CPM-1.
 - `PYTHON_DESIGN.md` — SRP/Factory Method trigger sections (parsing a curl command into structured parts is a natural Factory Method: one function owns "which Python call shape results from this curl
   command," rather than branching inline at each call site).

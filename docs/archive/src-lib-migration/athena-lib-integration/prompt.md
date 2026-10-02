@@ -46,7 +46,7 @@ adapter adds resilience at its own boundary instead).
 
 ## Session-start load hints
 
-- `docs/plan/src-lib-migration/README.md` — the epic architecture diagram and cross-cutting constraints this story must honour.
+- `docs/archive/src-lib-migration/README.md` — the epic architecture diagram and cross-cutting constraints this story must honour.
 - `docs/archive/functional-code-taxonomy/prompt.md` + `stories.md` (FCT-2 spec) — the exact `Protocol` shape `src/lib/athena/adapter.py` must satisfy.
 - `docs/archive/flow-correlation-id-logging/stories.md` — the FCID convention and its own stated `contextvars`/`ThreadPoolExecutor` caveat, which ALI-5 must satisfy.
 - `/Users/abhadra/myWork/myOffice/athena-mcp-server/CONTEXT.md` and `README.md` — what `athena_runner` already exposes, and its one known open item (the `aws-access-cli` sibling-checkout

@@ -28,8 +28,8 @@ for a human to decide.
 ## Session-start load hints
 
 - `PYTHON_DESIGN.md` — the SOLID-as-triggers checklist this review applies verbatim.
-- `docs/plan/src-lib-migration/`, `docs/plan/pipeline-migration/`, `docs/plan/reference-code-gap-migration/` — the 18 stories under review; read each target story's own `stories.md`/`tasks.md` before
-  editing it, never patch from memory.
+- `docs/archive/src-lib-migration/`, `docs/plan/pipeline-migration/`, `docs/plan/reference-code-gap-migration/` — the 18 stories under review; read each target story's own `stories.md`/`tasks.md`
+  before editing it, never patch from memory.
 - `docs/archive/flow-correlation-id-logging/` — the prior design-review session's own output (a worked example of "design review cheaper than code," same reviewer, one day earlier).
 
 ## Task overview

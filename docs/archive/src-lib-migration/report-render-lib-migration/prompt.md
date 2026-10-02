@@ -37,7 +37,7 @@ FCT-2's, not re-litigated here).
 
 ## Session-start load hints
 
-- `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
+- `docs/archive/src-lib-migration/README.md` — epic architecture diagram and constraints.
 - `docs/archive/functional-code-taxonomy/stories.md` (FCT-2 spec) and the landed `src/lib/report_render/protocols.py` — the exact interface this story implements against.
 - `PYTHON_DESIGN.md` — Strategy pattern section (RRM-2) and Factory Method section (RRM-3); cite the OCP trigger each resolves.
 

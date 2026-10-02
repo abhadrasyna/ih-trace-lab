@@ -26,7 +26,7 @@ already-landed `knowledge/` distillation (not re-touched here); any other sub-st
 - `docs/plan/reference-code-gap-migration/spec.md` §4 — this project's full per-file audit table.
 - `docs/plan/reference-code-gap-migration/README.md` §"GAP-1 decisions" — the category-conflict resolution and ADI/XML-mapper accept-local decision.
 - `docs/archive/project-taxonomy/structure.md` — the corrected `investigations/vod-asset-ingestion/` example.
-- `docs/plan/src-lib-migration/README.md` — `har`/`csv_io` module status.
+- `docs/archive/src-lib-migration/README.md` — `har`/`csv_io` module status.
 
 ## Task overview
 

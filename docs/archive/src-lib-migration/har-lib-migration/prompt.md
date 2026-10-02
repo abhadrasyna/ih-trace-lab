@@ -34,7 +34,7 @@ SRP/duplication violation: a pure domain-mechanism function with no business bei
 
 ## Session-start load hints
 
-- `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
+- `docs/archive/src-lib-migration/README.md` — epic architecture diagram and constraints.
 - `docs/archive/functional-code-taxonomy/stories.md` (FCT-2 spec) and the landed `src/lib/har/protocols.py` — the exact interface this story implements against.
 - `PYTHON_DESIGN.md` — SRP trigger section.
 

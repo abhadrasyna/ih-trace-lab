@@ -37,11 +37,11 @@
   (`scripts/dev/hooks/check_unarchived_stories.py`) warns when a story looks complete but hasn't been archived yet. Separately, `.github/hooks/session-close-trigger.json` (native Copilot CLI
   `sessionStart`/`agentStop` hooks, backed by `scripts/dev/hooks/session_close_on_commit.py`) detects when `HEAD` moved during a turn (i.e. a commit just landed) and forces one more turn whose prompt
   asks the agent to invoke the `session-close` skill immediately, instead of relying on the end of the whole session to remember to do it.
-- `docs/plan/src-lib-migration/` — epic: real, tested implementations of `functional-code-taxonomy`'s six `src/lib/*` modules (`auth`, `athena`, `csv_io`, `report_render`, `har`, `curl_to_python`),
+- `docs/archive/src-lib-migration/` — epic: real, tested implementations of `functional-code-taxonomy`'s six `src/lib/*` modules (`auth`, `athena`, `csv_io`, `report_render`, `har`, `curl_to_python`),
   ported/refactored from `github_copilot` (read-only reference), one story per module. `athena-lib-integration` is the exception — it wires in `/Users/abhadra/myWork/myOffice/athena-mcp-server` (an
   already-independent, tested repo with the shared `athena_runner` execution stack) as a git submodule and adapts to it, rather than re-porting a fifth copy of that logic.
   `auth`/`csv_io`/`curl_to_python` additionally define their own `Protocol`s here, deferred by `functional-code-taxonomy` FCT-2. `athena-lib-integration` is complete through ALI-6 (ALI-7 is
-  docs-only); see `docs/plan/src-lib-migration/README.md`'s Stories table for the other five stories' status and first unchecked task.
+  docs-only); see `docs/archive/src-lib-migration/README.md`'s Stories table for the other five stories' status and first unchecked task.
 - `vendor/athena-mcp-server` — pinned git submodule (see `docs/guides/submodules.md` for init/update steps; `git submodule update --init` after cloning, plus `pip install -e vendor/athena-mcp-server`
   since the submodule's `athena_runner` package isn't on PyPI). `src/lib/athena/adapter.py` is a thin DIP adapter delegating to it — no `query_executor`/`aws_clients` execution logic is duplicated in
   `ih-trace-lab` itself; `src/lib/athena/exceptions.py` defines this module's own exception hierarchy so callers never need to catch `athena_runner.exceptions.*` or raw

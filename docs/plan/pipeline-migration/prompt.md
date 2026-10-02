@@ -8,7 +8,7 @@ Both stories in this epic are blocked until these land:
 
 1. `docs/archive/project-taxonomy/` — PT-1 (category definitions), PT-2 (folder skeletons), PT-7 (`config/data_paths.yaml` + filename convention) at minimum; `aws-access-cli-pipeline-migration`
    additionally needs PT-6 (cron-cutover procedure) before its cutover task.
-2. `docs/plan/src-lib-migration/` — the `src/lib/*` modules both stories import must exist and be tested first.
+2. `docs/archive/src-lib-migration/` — the `src/lib/*` modules both stories import must exist and be tested first.
 3. `docs/archive/query-catalog/` — the SQL-catalog location both stories hand their query files to must exist first.
 
 If any of these are not yet ✅ done, stop and pick up that story instead — do not re-derive folder skeletons, filename conventions, or SQL-catalog locations locally; this epic only consumes them.

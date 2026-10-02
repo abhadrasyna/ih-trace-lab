@@ -402,7 +402,7 @@ sequenceDiagram
 **Files to change / create:**
 - `CONTEXT.md` — one new "What Exists" line for this story.
 - Project root `README.md` (or `docs/guides/`) — submodule init step, if not already covered by ALI-1.
-- `docs/plan/src-lib-migration/README.md` — update this story's row in the "Stories" status table to ✅ Done with closing SHA (final task of the story).
+- `docs/archive/src-lib-migration/README.md` — update this story's row in the "Stories" status table to ✅ Done with closing SHA (final task of the story).
 
 **What to implement:**
 
@@ -410,7 +410,7 @@ sequenceDiagram
 2. `CONTEXT.md` line: `src/lib/athena/batch.py` + `cache.py` — bounded-concurrency batch submission with a shape-keyed-by-fingerprint TTL result cache, for consumers submitting multiple independent
    queries (e.g. per-tenant/per-day fan-out).
 3. `CONTEXT.md` line: `src/lib/athena/progressive.py` — progressive scope-widening query runner (narrow scope first, widen only if insufficient, combine rows across every scope actually run).
-4. Confirm no drift: re-read `docs/plan/src-lib-migration/README.md`'s Supersession/coordination note and confirm it still accurately describes the landed state.
+4. Confirm no drift: re-read `docs/archive/src-lib-migration/README.md`'s Supersession/coordination note and confirm it still accurately describes the landed state.
 
 **Tests:** N/A — docs only.
 

@@ -8,7 +8,7 @@ closed) and `spec.md` (the audit evidence still worth reading before any sub-sto
 
 ## Why this epic exists
 
-A 2026-09-30 session asked whether `docs/plan/pipeline-migration/` and `docs/plan/src-lib-migration/` together plan for *all* Python code migration out of `/Users/abhadra/github_copilot` (read-only
+A 2026-09-30 session asked whether `docs/plan/pipeline-migration/` and `docs/archive/src-lib-migration/` together plan for *all* Python code migration out of `/Users/abhadra/github_copilot` (read-only
 reference). They do not: ten projects (`vod-playback-timing-probe`, `mtn-zm-session-device-investigation`, `mtn-network-traffic`, `vod-asset-ingestion-mapping`, root `investigations/`,
 `applauseInvestigation`, `shaka-6001-sa-error-analysis`, root `scripts/`, `astro-events-household-report`, `smarttv-mtntv`) had zero migration plan. `README.md` records the full decision log for how
 this epic now covers all ten.
@@ -17,8 +17,8 @@ this epic now covers all ten.
 
 Every story in this epic is blocked until these land:
 
-1. `docs/plan/src-lib-migration/` — the `src/lib/*` modules each story imports must exist and be tested first. Tier 3 stories additionally need the two modules `README.md` §"GAP-1 decisions" promoted
-   (`mpd`, `crypto_signing`) — those do not exist yet even after the other five modules land.
+1. `docs/archive/src-lib-migration/` — the `src/lib/*` modules each story imports must exist and be tested first. Tier 3 stories additionally need the two modules `README.md` §"GAP-1 decisions"
+   promoted (`mpd`, `crypto_signing`) — those do not exist yet even after the other five modules land.
 2. `docs/archive/project-taxonomy/` — PT-1/PT-2/PT-7 at minimum, for the category definitions and folder skeletons every story's target path assumes.
 
 If these are not yet ✅ done, stop and pick up that story instead — do not re-derive `src/lib/*` module shapes or folder skeletons locally; this epic only consumes them.

@@ -22,7 +22,7 @@ graph LR
 ### Audit findings
 
 Read-only audit across the five `functional-code-taxonomy` FCT-1-cited projects found 18 relevant files, not the original "8+" estimate; 13 are `csv_io`'s (see
-`docs/plan/src-lib-migration/csv-io-lib-migration/stories.md` CIM-1). The remaining 5 are `report_render`'s, grouped into **3 Strategy shapes**:
+`docs/archive/src-lib-migration/csv-io-lib-migration/stories.md` CIM-1). The remaining 5 are `report_render`'s, grouped into **3 Strategy shapes**:
 
 **Shape 1 — `MarkdownTableWriter`** (flat markdown table, one row per event/item):
 - `github_copilot/vod-playback-timing-probe/scripts/generate_timing_report.py`
@@ -193,7 +193,7 @@ classDiagram
 
 **Files to change / create:**
 - `CONTEXT.md` — one new "What Exists" line.
-- `docs/plan/src-lib-migration/README.md` — update this story's row to ✅ Done with closing SHA.
+- `docs/archive/src-lib-migration/README.md` — update this story's row to ✅ Done with closing SHA.
 
 **What to implement:**
 

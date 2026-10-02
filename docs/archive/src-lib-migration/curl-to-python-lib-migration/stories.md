@@ -134,7 +134,7 @@ sequenceDiagram
 
 **Files to change / create:**
 - `CONTEXT.md` — one new "What Exists" line.
-- `docs/plan/src-lib-migration/README.md` — update this story's row to ✅ Done with closing SHA.
+- `docs/archive/src-lib-migration/README.md` — update this story's row to ✅ Done with closing SHA.
 
 **What to implement:**
 

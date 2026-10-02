@@ -15,7 +15,7 @@
 2. Confirm or refine `spec.md` §1's classification — state the FCT-1 test result explicitly per file.
 3. Explicitly list which files depend on `mpd_parser.py` (directly or transitively) and are therefore blocked until `src/lib/mpd/` exists, versus which files can be ported independently once
    `src-lib-migration`'s other five modules (`har`, `auth`, `curl_to_python`, `report_render`, `paths`) land.
-4. Check `docs/plan/src-lib-migration/README.md` for whether `src/lib/mpd/` has been added to that epic's module list yet (per this epic's own coordination note); if not, state that the actual port
+4. Check `docs/archive/src-lib-migration/README.md` for whether `src/lib/mpd/` has been added to that epic's module list yet (per this epic's own coordination note); if not, state that the actual port
    cannot start until it is.
 
 **Tests:** none — audit/docs-only task.

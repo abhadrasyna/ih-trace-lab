@@ -26,7 +26,7 @@ modified here); `query-catalog`'s catalog format/ownership rules (consumed as-is
 
 - `docs/archive/project-taxonomy/structure.md` — the exact `src/pipelines/<slug>/` skeleton and the `data_paths.yaml` template names this story's output-migration task must match.
 - `docs/archive/project-taxonomy/stories.md` PT-6 (cron-cutover procedure) and PT-7 (path/filename convention) — read before AAM-4 or AAM-5.
-- `docs/plan/src-lib-migration/README.md` — confirms which `src/lib/*` modules exist and their import surface, before AAM-2.
+- `docs/archive/src-lib-migration/README.md` — confirms which `src/lib/*` modules exist and their import surface, before AAM-2.
 - `docs/archive/query-catalog/` (its own `stories.md` for the catalog file-per-query convention) — read before AAM-3.
 - `/Users/abhadra/github_copilot/aws-access-cli/scripts/` — the source tree being ported; read the specific files a task names, not the whole tree at once.
 

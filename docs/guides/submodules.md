@@ -1,7 +1,7 @@
 # Git submodules
 
 This project vendors in already-independent sibling deliverables as pinned git submodules rather than re-porting their logic a second time. See
-`docs/plan/src-lib-migration/athena-lib-integration/prompt.md` for the rationale behind each one.
+`docs/archive/src-lib-migration/athena-lib-integration/prompt.md` for the rationale behind each one.
 
 ## `vendor/athena-mcp-server`
 

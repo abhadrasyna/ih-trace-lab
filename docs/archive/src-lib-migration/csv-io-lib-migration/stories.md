@@ -37,7 +37,7 @@ no human-facing formatting) — 13 files:
 - `github_copilot/ctap-smvod-session-report/scripts/filter_error_code_report.py`
 - `github_copilot/mtn-zm-session-device-investigation/scripts/build_final_session_report.py`
 
-The remaining 5 files from the same audit (markdown/console human-facing output) are `report_render`'s, not `csv_io`'s — see `docs/plan/src-lib-migration/report-render-lib-migration/stories.md`'s
+The remaining 5 files from the same audit (markdown/console human-facing output) are `report_render`'s, not `csv_io`'s — see `docs/archive/src-lib-migration/report-render-lib-migration/stories.md`'s
 RRM-1 section for that list and shape grouping. CIM-1 may proceed directly against the 13-file list above without re-auditing.
 
 **Files to change / create:**
@@ -124,7 +124,7 @@ sequenceDiagram
 
 **Files to change / create:**
 - `CONTEXT.md` — one new "What Exists" line.
-- `docs/plan/src-lib-migration/README.md` — update this story's row to ✅ Done with closing SHA.
+- `docs/archive/src-lib-migration/README.md` — update this story's row to ✅ Done with closing SHA.
 
 **What to implement:**
 

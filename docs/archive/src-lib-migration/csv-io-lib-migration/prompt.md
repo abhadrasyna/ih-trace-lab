@@ -33,9 +33,9 @@ report output.
 
 ## Session-start load hints
 
-- `docs/plan/src-lib-migration/README.md` — epic architecture diagram and constraints.
+- `docs/archive/src-lib-migration/README.md` — epic architecture diagram and constraints.
 - `docs/archive/functional-code-taxonomy/prompt.md` and `stories.md` (FCT-3's `report_render`/`csv_io`/`query-catalog` boundary table) — read before drawing this story's own scope line.
-- `docs/plan/src-lib-migration/report-render-lib-migration/stories.md` — the sibling module this story must stay distinct from.
+- `docs/archive/src-lib-migration/report-render-lib-migration/stories.md` — the sibling module this story must stay distinct from.
 - `PYTHON_DESIGN.md` — DIP/ISP trigger sections.
 
 ## Task overview
