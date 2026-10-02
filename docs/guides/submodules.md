@@ -16,6 +16,7 @@ This project vendors in already-independent sibling deliverables as pinned git s
 
 ```sh
 git submodule update --init --recursive
+pip install -r requirements.txt  # installs athena_runner in editable mode from vendor/athena-mcp-server
 ```
 
 (or clone this repo with `git clone --recurse-submodules`).

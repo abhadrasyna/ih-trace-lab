@@ -1,3 +1,9 @@
 # Runtime dependencies, pinned. Add entries as the project actually needs them —
 # this starts empty; do not pre-populate speculatively.
 PyYAML==6.0.1
+
+# athena_runner (src/lib/athena/adapter.py's delegation target) ships inside the vendor/athena-mcp-server
+# git submodule, not PyPI -- install it in editable mode after `git submodule update --init`. Pulls in
+# boto3/botocore transitively via that submodule's own pyproject.toml. See docs/guides/submodules.md.
+-e vendor/athena-mcp-server
+
