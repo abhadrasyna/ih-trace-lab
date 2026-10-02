@@ -58,7 +58,7 @@ def test_fcid_log_filter_injects_bound_value() -> None:
     logger.addFilter(filter_)
     records: list[logging.LogRecord] = []
     handler = logging.Handler()
-    handler.emit = records.append  # type: ignore[assignment]
+    handler.emit = records.append  # type: ignore[assignment]  # test stub swaps a list.append for the bound method logging.Handler.emit expects
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
     try:
@@ -73,7 +73,7 @@ def test_fcid_log_filter_injects_bound_value() -> None:
         logger.removeFilter(filter_)
 
     assert len(records) == 1
-    assert records[0].fcid == "logged-fcid"  # type: ignore[attr-defined]
+    assert records[0].fcid == "logged-fcid"  # type: ignore[attr-defined]  # fcid is set dynamically by FcidLogFilter, not part of LogRecord's static type
 
 
 def test_fcid_log_filter_defaults_to_no_fcid_sentinel() -> None:
@@ -82,7 +82,7 @@ def test_fcid_log_filter_defaults_to_no_fcid_sentinel() -> None:
     logger.addFilter(filter_)
     records: list[logging.LogRecord] = []
     handler = logging.Handler()
-    handler.emit = records.append  # type: ignore[assignment]
+    handler.emit = records.append  # type: ignore[assignment]  # test stub swaps a list.append for the bound method logging.Handler.emit expects
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
     try:
@@ -92,4 +92,4 @@ def test_fcid_log_filter_defaults_to_no_fcid_sentinel() -> None:
         logger.removeFilter(filter_)
 
     assert len(records) == 1
-    assert records[0].fcid == "no-fcid"  # type: ignore[attr-defined]
+    assert records[0].fcid == "no-fcid"  # type: ignore[attr-defined]  # fcid is set dynamically by FcidLogFilter, not part of LogRecord's static type
