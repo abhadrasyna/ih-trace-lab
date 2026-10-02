@@ -66,6 +66,10 @@
 - `src/lib/csv_io/protocols.py` + `csv_file.py` — split `CsvReaderProtocol`/`CsvWriterProtocol` (ISP) plus stdlib-backed `CsvFileReader`/`CsvFileWriter` for raw CSV I/O, distinct from
   `report_render`'s formatted-output Strategy (`csv_io` owns getting rows in/out of files; `report_render` renders already-read/normalized rows). Matches `csv.DictReader`/`csv.DictWriter` defaults
   exactly, per `csv-io-lib-migration/stories.md` CIM-1's requester-approved file-boundary audit.
+- `src/lib/curl_to_python/protocols.py` + `converter.py` — `CurlConverterProtocol` (`convert(curl_command) -> str`) and its concrete `CurlToRequestsConverter`, built ahead of a proven-duplication
+  trigger per this epic's explicit authorization (no existing `github_copilot` file was found to replace — see `curl-to-python-lib-migration/stories.md`'s CPM-1 finding). Parses curl's
+  method/URL/headers/data grammar only (any other flag/quoting form raises `UnsupportedCurlFlagError` by name rather than producing silently-wrong output) and renders Python `requests.request(...)`
+  source text; never executes the converted request.
 - `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. Scoped to exactly what `docs/archive/flow-correlation-id-logging`'s FCID-1 already fully specifies; `redact_params` and a project-wide
   `setup_logging()` formatter wiring remain deferred future work, not yet owned by any `docs/plan/` task.
