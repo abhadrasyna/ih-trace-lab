@@ -87,7 +87,7 @@ graph TB
 | `report-render-lib-migration/` | Port 8+ duplicated CSV/report writers → `src/lib/report_render/` | ✅ Done | `functional-code-taxonomy` FCT-1/FCT-2 | f639c9b |
 | `har-lib-migration/` | Port 4 duplicated HAR-entry loaders → `src/lib/har/` | ✅ Done | `functional-code-taxonomy` FCT-1/FCT-2 | 433d2ef |
 | `auth-lib-migration/` | Consolidate AWS SSO auth helpers → `src/lib/auth/` (new `Protocol`) | ✅ Done | FCT-1, `athena-lib-integration` (reuses `sso_auth` shape) | `e03ebb7` |
-| `csv-io-lib-migration/` | Consolidate raw CSV I/O → `src/lib/csv_io/` (new `Protocol`) | 🔄 In progress (CIM-1/2 done) | `functional-code-taxonomy` FCT-1 | `02c3b1d` |
+| `csv-io-lib-migration/` | Consolidate raw CSV I/O → `src/lib/csv_io/` (new `Protocol`) | 🔄 In progress (CIM-1–3 done) | `functional-code-taxonomy` FCT-1 | `c7d78d5` |
 | `curl-to-python-lib-migration/` | Consolidate curl→Python conversion → `src/lib/curl_to_python/` (new `Protocol`) | ⬜ Not started | `functional-code-taxonomy` FCT-1 | — |
 
 Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.
