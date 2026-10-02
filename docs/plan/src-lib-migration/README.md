@@ -83,7 +83,7 @@ graph TB
 
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
-| `athena-lib-integration/` | Submodule `athena-mcp-server` + thin `src/lib/athena/` adapter | ⬜ Not started | `functional-code-taxonomy` FCT-1/FCT-2 | — |
+| `athena-lib-integration/` | Submodule `athena-mcp-server` + thin `src/lib/athena/` adapter | 🔄 ALI-1 done, ALI-2–7 open | `functional-code-taxonomy` FCT-1/FCT-2 | — |
 | `report-render-lib-migration/` | Port 8+ duplicated CSV/report writers → `src/lib/report_render/` | 🔄 RRM-1 done, RRM-2–5 open | `functional-code-taxonomy` FCT-1/FCT-2 | — |
 | `har-lib-migration/` | Port 4 duplicated HAR-entry loaders → `src/lib/har/` | 🔄 HLM-1 done, HLM-2–4 open | `functional-code-taxonomy` FCT-1/FCT-2 | — |
 | `auth-lib-migration/` | Consolidate AWS SSO auth helpers → `src/lib/auth/` (new `Protocol`) | ⬜ Not started | FCT-1, `athena-lib-integration` (reuses `sso_auth` shape) | — |

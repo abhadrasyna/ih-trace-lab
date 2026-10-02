@@ -1,0 +1,3 @@
+[submodule "vendor/athena-mcp-server"]
+	path = vendor/athena-mcp-server
+	url = https://github.com/abhadrasyna/athena-mcp-server.git

@@ -14,3 +14,6 @@ production `src/lib/` code has started with shared Protocol/config layers for `a
 ## Setup
 
 Runtime dependencies: `pip install -r requirements.txt` (currently `PyYAML` for config-driven path resolution). Dev tooling: `pip install -r requirements-dev.txt`, then `pre-commit install`.
+
+This repo has a git submodule (`vendor/athena-mcp-server`) — after cloning, run `git submodule update --init --recursive` (or clone with `git clone --recurse-submodules`). See
+`docs/guides/submodules.md` for what it provides and how to update its pin.
