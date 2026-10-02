@@ -17,7 +17,10 @@ consumers depend on a shape key, not a concrete writer class.
 
 ## Locked-in decisions (requester-approved 2026-10-02)
 
-- **Writer destination contract:** accept both a file path and an open file handle, not path-only.
+- **Writer destination contract: SUPERSEDED (2026-10-02, when RRM-2 was picked up)** — originally "accept both a file path and an open file handle, not path-only." The actual, already-landed
+  `functional-code-taxonomy` FCT-2 `ReportRenderer` `Protocol` takes no destination at all (`render(rows) -> str`; rendering is deliberately split from file I/O, which `csv_io` owns). This story's own
+  hard gate and scope guard both require implementing that real `Protocol` exactly rather than re-litigating it, so this decision no longer applies — see `stories.md`'s RRM-2 section for the full
+  resolution note.
 - **Registry shape-key names:** agent picks lowercase names matching the final shapes (e.g. `"csv"`, `"summary"`) — no human decision needed, trivially renamed later.
 - **Exact CSV/subtotal output format:** no existing consumer spec exists; agent defines a reasonable format and the test expectations that lock it in — human reviews at the mandatory diff-review gate
   below, not before.
