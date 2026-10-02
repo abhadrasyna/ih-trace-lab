@@ -55,6 +55,10 @@
 - `src/lib/report_render/writers.py` + `factory.py` — Strategy-based report writers (`MarkdownTableWriter`, `CategoryBreakdownWriter`, `StatisticalWriteupWriter`), selected via a Factory Method
   (`make_report_writer(shape)`) keyed by shape (`"markdown_table"`/`"category_breakdown"`/`"statistical_writeup"`), replacing the 8+ duplicated `github_copilot` originals cited in
   `report-render-lib-migration/stories.md`'s RRM-1 audit. Future consumers call `make_report_writer(shape)`; none import a concrete writer class directly.
+- `src/lib/har/loader.py` — `JsonHarEntryLoader` implements `HarEntryLoader` (`functional-code-taxonomy` FCT-2's `Protocol`), replacing the 4 duplicated `github_copilot` HAR `log.entries` loaders
+  cited in `har-lib-migration/stories.md`'s HLM-1 audit (`applauseInvestigation/scripts/analyze_har.py::iter_entries()`,
+  `vod-playback-timing-probe/scripts/{extract_content_ids_from_har.py,summarize_har_playbacks.py}::_load_entries()`, `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()`).
+  Accepts `str | Path | an open file handle`; `load_json_entries()`'s JSON-filter/response-parse step stays out of scope as project-specific logic for a future consumer.
 - `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. Scoped to exactly what `docs/archive/flow-correlation-id-logging`'s FCID-1 already fully specifies; `redact_params` and a project-wide
   `setup_logging()` formatter wiring remain deferred future work, not yet owned by any `docs/plan/` task.
