@@ -10,7 +10,7 @@ spec.
   retry/backoff | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: c6bebc3
 - [x] **ALI-3** — Tests: mocked `athena_runner`, `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: f16b8d4
 - [x] **ALI-4** — Audit: confirm whether `athena_runner` already supports batch/concurrent submission or caching | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review
-  | SHA: PENDING
+  | SHA: 706c48f
 - [ ] **ALI-5** — `src/lib/athena/batch.py` + `cache.py`: concurrent batch submission + TTL result cache, FCID-propagating | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
   confirms tests green | SHA: <—>
 - [ ] **ALI-6** — `src/lib/athena/progressive.py`: progressive scope-widening query runner | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
