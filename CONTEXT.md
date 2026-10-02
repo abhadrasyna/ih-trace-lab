@@ -9,6 +9,12 @@
   `CONTEXT.md ✓`, confirm scope when files aren't named, and state a plan + wait for go-ahead before non-trivial changes. Added to cut the highest-recurrence rows in `suggestions.md`
   (`wait-for-explicit-go-ahead-before-editing`, `state-context-md-checkmark-explicitly`, etc.) at the source instead of only catching them after the fact in `session-close`. Injects a short pointer,
   not the full `AGENTS.md`/`CONTEXT.md` text, to avoid adding token cost every session.
+- `AUTOMATION.md` (root) + `.github/hooks/autopilot-checkpoint.json` / `scripts/dev/hooks/autopilot_checkpoint.py` — diagnosed from the `src-lib-migration` epic's 2026-10-02 run, which executed all 24
+  task segments inside one single-agent session with no re-check between segments (the direct cause of `suggestions.md`'s `re-read-context-on-resumed-task-segments` and repeated
+  `state-plan-before-editing`/`wait-for-explicit-go-ahead-before-editing` rows). `AUTOMATION.md` is the how-to for running a multi-story epic via one sub-agent per story instead (token cost scales
+  with story count, not story count squared, and each sub-agent's own first turn satisfies Steps 1-3 fresh). `autopilot_checkpoint.py` is the fallback for when sub-agent delegation genuinely isn't
+  available: an `agentStop` hook that forces a plan/go-ahead checkpoint every 5 turns regardless of commits, complementing (not replacing) `session_close_on_commit.py` (commit-triggered) and
+  `session-context.json` (`sessionStart`-triggered only).
 - **Copilot Memory is enabled** (`/memory on`, confirmed 2026-10-01) — a per-user CLI account setting, not a repo file; there is nothing under this repo to look for. Intended to reduce the
   `avoid-broad-filesystem-finds`/`avoid-mid-session-rereads` rows in `suggestions.md` by letting the CLI recall repo-structure facts across sessions instead of re-discovering them each time.
 - `docs/archive/tenant-registry/` — story complete: `config/tenants.yaml` is now the canonical MTN tenant-identifier config for all 4 confirmed opcos (Go ID, Matisse Project/Client Tenant ID, Athena

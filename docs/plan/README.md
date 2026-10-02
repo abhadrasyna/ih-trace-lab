@@ -52,3 +52,12 @@ hasn't been archived yet, as a safety net for the case where this step is forgot
 
 2026-10-02: first applied manually to `tenant-registry`, `query-catalog`, `project-taxonomy`, `functional-code-taxonomy`, `scratch-script-registry`, `reference-knowledge-harvest`,
 `reference-folder-diagrams`, `flow-correlation-id-logging`, and `pre-implementation-design-review`, before the script above existed.
+
+### Autopilot mode (running a multi-story epic in one sitting)
+
+See root `AUTOMATION.md` for the full how-to. The short version, specific to `docs/plan/` structure: an epic's stories are independently scoped by design (own `prompt.md`/`tasks.md`/`stories.md`, own
+first-unchecked-task), so each story is a natural sub-agent delegation unit — a fresh agent per story, reading only that story's own files plus the epic `README.md`, never the whole epic's accumulated
+transcript. The `src-lib-migration` epic (2026-10-02) was instead driven as 24 task segments inside one single-agent session with no re-check between segments, which produced the
+`re-read-context-on-resumed-task-segments`/`state-plan-before-editing`/`wait-for-explicit-go-ahead-before-editing` rows now ranked highly in root `suggestions.md`.
+`scripts/dev/hooks/autopilot_checkpoint.py` (`.github/hooks/autopilot-checkpoint.json`) now forces a plan/go-ahead checkpoint every 5 agent turns as a backstop, but delegating story-by-story to
+sub-agents avoids needing that backstop to fire at all — each sub-agent's own first turn already satisfies Step 1-3 fresh, and its context never accumulates the prior stories' token cost.
