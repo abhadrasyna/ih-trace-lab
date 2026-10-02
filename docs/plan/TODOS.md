@@ -69,8 +69,10 @@
 
 ## Phase 4 — Src-lib migration (real implementations)
 
-- [ ] `src-lib-migration` epic — unblocked by `functional-code-taxonomy` and `pre-implementation-design-review`; its six stories can now land in any order, except `auth-lib-migration` additionally
+- [x] `src-lib-migration` epic — unblocked by `functional-code-taxonomy` and `pre-implementation-design-review`; its six stories can now land in any order, except `auth-lib-migration` additionally
       depends on `athena-lib-integration` (reuses its `sso_auth` shape). `athena-lib-integration` additionally carries the FCID convention's first real consumer obligation (ALI-2/ALI-5).
+  - 2026-10-02: all six stories landed — `athena-lib-integration` (`43ca081`), `report-render-lib-migration` (`f639c9b`), `har-lib-migration` (`433d2ef`), `auth-lib-migration` (`e03ebb7`),
+    `csv-io-lib-migration` (`2cbc187`), `curl-to-python-lib-migration` (`18140bc`); see `docs/archive/src-lib-migration/README.md` for per-story status and open follow-up items.
 
 ## Phase 5 — Pipeline migration
 
