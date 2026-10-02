@@ -26,6 +26,11 @@ to ALI-2 (confirmed missing upstream in `athena_runner.query_executor`), confirm
 honor rather than duplicate, flagged `AwsClientFactory`'s shared-`boto3.Session` client construction as unsafe to call concurrently from worker threads (ALI-5 pre-builds clients up front instead), and
 added ALI-6 (`progressive.py`) for the requester's own scoping request: run a query against a narrow scope first, widen only if insufficient, and combine rows across every scope actually run.
 
+## Locked-in decisions (requester-approved 2026-10-02)
+
+- **Submodule path:** `vendor/athena-mcp-server`.
+- **Submodule pin:** pin to the commit that is `athena-mcp-server`'s `HEAD` at the time ALI-1 is executed (confirmed `9463d00` as of 2026-10-02) — never track `main`.
+
 ## Scope guard
 
 **In scope:** `.gitmodules` entry + pinned submodule checkout of `athena-mcp-server`; `src/lib/athena/adapter.py` + `exceptions.py` (thin delegation layer, with a mirrored exception hierarchy and

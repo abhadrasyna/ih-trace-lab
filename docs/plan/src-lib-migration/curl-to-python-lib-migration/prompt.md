@@ -17,6 +17,13 @@ repeatable investigation script) but did not scope a `Protocol` for it — lowes
 converter to get a repeatable Python script for re-running/measuring that single request's timing. This is not a speculative build-ahead-of-a-trigger module; the trigger is this HAR-investigation
 workflow, confirmed as real rather than hypothetical.
 
+## Locked-in decisions (requester-approved 2026-10-02)
+
+- **Supported curl grammar:** method, URL, headers, data only. Any unsupported flag (cookies, query-param-only shortcuts, auth flags, multiline/escaping beyond basic quoting) must raise an explicit
+  error naming the unsupported flag — never silently drop it. Extend grammar only when a real consumer needs it.
+- **Sensitive headers/tokens:** preserve as-is in generated code, no redaction — this produces local investigation scripts, not shipped/exported code; redaction would silently produce broken output.
+- **Output library:** `requests` only; no `httpx` output path.
+
 ## Scope guard
 
 **In scope:** `src/lib/curl_to_python/protocols.py` (new `Protocol`) + `src/lib/curl_to_python/` concrete converter implementer; tests; doc/`CONTEXT.md` pointers.

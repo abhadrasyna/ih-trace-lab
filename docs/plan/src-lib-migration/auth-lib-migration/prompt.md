@@ -16,6 +16,11 @@ consumer needs them"). This epic is that consumer. Unlike `report_render`/`har`,
 `athena_runner.sso_auth`/`sso_profiles` (already a real, tested AWS SSO auto-refresh implementation, landed via `athena-lib-integration`) as the concrete shape to generalize from, rather than
 inventing an auth interface from nothing.
 
+## Locked-in decisions (requester-approved 2026-10-02)
+
+- **`AuthProtocol` return type:** commit to `boto3.Session` (not "or equivalent") — it's what every downstream AWS call needs.
+- **Collaborator shape (class vs free functions):** no human decision needed — read `athena_runner.sso_auth`'s actual public surface at implementation time and mirror whichever shape it exposes.
+
 ## Scope guard
 
 **In scope:** `src/lib/auth/protocols.py` (new `Protocol`, generalized from `athena_runner.sso_auth`'s public surface) + `src/lib/auth/` concrete implementer wrapping AWS SSO profile refresh for

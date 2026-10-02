@@ -15,6 +15,13 @@ task id) before writing any code. One task per session. Complete it fully. Stop.
 project), and `vod-asset-ingestion-mapping/scripts/lib/har_parser.py:: load_json_entries()` (the one project that isolated it into its own file — used as FCT-2's seed). This is a textbook
 SRP/duplication violation: a pure domain-mechanism function with no business being copy-pasted per project.
 
+## Locked-in decisions (requester-approved 2026-10-02)
+
+- **Loader input type:** accept both a file path and an open file handle (`str | Path | IO`), not path-only.
+- **Malformed-HAR validation scope:** broad — reject non-dict `log`, non-list `entries`, and invalid JSON, not just "missing `log.entries`."
+- **Four originals, canonical source — conditional STOP:** if HLM-1's re-audit finds the four originals have diverged in behavior (not just copy-pasted identically), the agent must document the
+  divergence and pause for human sign-off on which behavior is canonical before writing HLM-2. If they are still shape-identical, no sign-off is needed — proceed.
+
 ## Scope guard
 
 **In scope:** `src/lib/har/` concrete loader implementing FCT-2's `Protocol`; tests; doc/ `CONTEXT.md` pointers.

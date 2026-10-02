@@ -15,6 +15,15 @@ than a new Strategy implementer). FCT-2 already scaffolded the `Protocol`; this 
 **2026-10-01 addition (`pre-implementation-design-review` finding #4):** Strategy implementers alone still leave the *selection* between them to each call site; RRM-3 adds a Factory Method so
 consumers depend on a shape key, not a concrete writer class.
 
+## Locked-in decisions (requester-approved 2026-10-02)
+
+- **Writer destination contract:** accept both a file path and an open file handle, not path-only.
+- **Registry shape-key names:** agent picks lowercase names matching the final shapes (e.g. `"csv"`, `"summary"`) — no human decision needed, trivially renamed later.
+- **Exact CSV/subtotal output format:** no existing consumer spec exists; agent defines a reasonable format and the test expectations that lock it in — human reviews at the mandatory diff-review gate
+  below, not before.
+- **Report-shape grouping — STOP, human sign-off required:** RRM-1 must re-confirm the 8+ file audit, propose the grouping into report shapes (which files are shape-identical, how many Strategy
+  implementers result), and pause for explicit human approval of that grouping before RRM-2 writes any Strategy implementer. Do not proceed past the proposal without that sign-off.
+
 ## Scope guard
 
 **In scope:** `src/lib/report_render/` concrete writer(s) implementing FCT-2's `Protocol`, one Strategy implementer per report *shape* the audit found (not per-project — if two projects' writers are

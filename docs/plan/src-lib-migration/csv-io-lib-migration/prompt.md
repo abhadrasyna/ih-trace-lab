@@ -16,6 +16,14 @@ the line FCT-3 draws between raw CSV I/O and formatted report rendering.
 `Protocol` and implementer, reusing the audit's file list where the duplication is genuinely raw I/O (e.g. "read this CSV into dicts", "write these dicts to a CSV with this header") rather than shaped
 report output.
 
+## Locked-in decisions (requester-approved 2026-10-02)
+
+- **CSV edge-case behavior:** match Python stdlib `csv.DictReader`/`csv.DictWriter` defaults (ordering, quoting, encoding, newline handling) — do not invent bespoke behavior.
+- **Fixture data:** generate a small synthetic fixture CSV (2–3 rows) sufficient to prove round-trip correctness; no real project sample required.
+- **`csv_io` vs `report_render` file boundary — STOP, human sign-off required:** before implementing CIM-1, the agent must re-read FCT-3's boundary statement, propose the specific file-by-file split
+  (which audited CSV usages are `csv_io` vs `report_render`), and pause for explicit human approval of that split before writing `src/lib/csv_io/protocols.py`. Do not proceed past the proposal without
+  that sign-off.
+
 ## Scope guard
 
 **In scope:** `src/lib/csv_io/protocols.py` (new `Protocol`) + `src/lib/csv_io/` concrete reader/writer implementer for plain CSV structures; tests; doc/`CONTEXT.md` pointers.
