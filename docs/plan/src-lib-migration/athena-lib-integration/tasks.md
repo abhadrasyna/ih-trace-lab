@@ -5,7 +5,7 @@ spec.
 
 **Open: ALI-2, ALI-3, ALI-4, ALI-5, ALI-6, ALI-7.**
 
-- [x] **ALI-1** — Add `athena-mcp-server` as a pinned git submodule + init/update docs | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: PENDING
+- [x] **ALI-1** — Add `athena-mcp-server` as a pinned git submodule + init/update docs | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 2f7bad3
 - [ ] **ALI-2** — `src/lib/athena/adapter.py` + `exceptions.py`: DIP-compliant `Protocol`-conforming adapter delegating to `athena_runner`, with mirrored exception hierarchy and throttling
   retry/backoff | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **ALI-3** — Tests: mocked `athena_runner`, `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
