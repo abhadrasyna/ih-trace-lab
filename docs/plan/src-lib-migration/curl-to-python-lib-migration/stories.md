@@ -33,6 +33,20 @@ graph LR
 
 **Commit:** `docs(curl_to_python): confirm replaced-originals citation`
 
+### CPM-1 finding (2026-10-02)
+
+FCT-1's audit cites `src/lib/curl_to_python/` as replacing "the curl-command-to-Python-code converter itself (from `mtn-network-traffic`)" but names no specific file. Re-reading FCT-1's text found no
+other `curl`-relevant citation beyond that one line and the already-separately-cited `mtn-network-traffic/scripts/curl_timer/report.py` (cited under `csv_io`, not here).
+
+Re-deriving the actual shape from `mtn-network-traffic/scripts/curl_timer/` directly (read-only — no `github_copilot` changes made) found **no file that converts a curl command into Python `requests`
+source text**. The package's modules (`curl_timing.py`, `blocks.py`, `jwt_inspect.py`, `markdown_report.py`, etc.) extract and **shell out to the real `curl` binary** to measure request-phase timing
+(DNS/TLS/TTFB) directly — they never generate a `requests`-call equivalent. FCT-1's citation describes this story's intended module by its target responsibility, not an existing file it is literally
+replacing; no existing converter-shaped original exists to match CPM-3's implementer against.
+
+**Consequence:** CPM-3 is built directly from this story's own locked-in grammar spec (`prompt.md`'s "Locked-in decisions") rather than ported/adapted from any `mtn-network-traffic` file. The
+confirmed consumer scenario (HAR-driven timing/latency investigation; analyst copies one request's curl command, converts it, re-runs/times it standalone) stands as recorded above and is unaffected by
+this finding — it describes a real, distinct manual workflow, independent of whether a prior converter implementation exists to port from.
+
 ---
 
 ## CPM-2 — `src/lib/curl_to_python/protocols.py`: new `CurlConverterProtocol`

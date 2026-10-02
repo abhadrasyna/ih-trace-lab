@@ -3,9 +3,9 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: CPM-1, CPM-2, CPM-3, CPM-4, CPM-5.**
+**Open: CPM-2, CPM-3, CPM-4, CPM-5.**
 
-- [ ] **CPM-1** — Confirm/derive replaced-originals citation from FCT-1 audit | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [x] **CPM-1** — Confirm/derive replaced-originals citation from FCT-1 audit | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <PENDING>
 - [ ] **CPM-2** — `src/lib/curl_to_python/protocols.py`: new `CurlConverterProtocol` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **CPM-3** — `src/lib/curl_to_python/converter.py`: concrete implementer | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
 - [ ] **CPM-4** — Tests + `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: <—>
