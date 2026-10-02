@@ -15,14 +15,30 @@ graph LR
 
 ## HLM-1 — Re-confirm audit list
 
-**Files to change / create:**
-- `stories.md` (this file) — append the confirmed list as a subsection under HLM-2 below.
+**Status: DONE (requester-approved 2026-10-02) — resolves this task's conditional STOP gate.** HLM-2 may proceed directly against the finding below without re-auditing.
 
-**What to implement:**
+### Audit findings
 
-1. Re-read (read-only) `applauseInvestigation/scripts/analyze_har.py::iter_entries()`, `vod-playback-timing-probe/scripts/extract_content_ids_from_har.py::_load_entries()`,
-   `vod-playback-timing-probe/scripts/summarize_har_playbacks.py::_load_entries()`, and `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()`.
-2. Confirm they are still shape-identical (all load `log.entries` from a HAR JSON file) or note any divergence found since the FCT-1 audit.
+Read-only comparison of all four originals' actual function bodies found real divergence, not just copy-paste cosmetics:
+
+| Original | Return shape | Behavior |
+|---|---|---|
+| `applauseInvestigation/scripts/analyze_har.py::iter_entries()` | generator, raw HAR entry dicts | streams via `ijson` if available, else `json.load` + yield; no filtering |
+| `vod-playback-timing-probe/scripts/extract_content_ids_from_har.py::_load_entries()` | list, raw HAR entry dicts | plain `json.load()["log"]["entries"]`; no filtering |
+| `vod-playback-timing-probe/scripts/summarize_har_playbacks.py::_load_entries()` | list, raw HAR dicts | identical to row above — confirms "twice in same project" |
+| `vod-asset-ingestion-mapping/scripts/lib/har_parser.py::load_json_entries()` | list of `HarJsonEntry` (different type) | filters by JSON mimetype/URL, decodes + parses response body |
+
+**Resolution:** `load_json_entries()` bundles two concerns — loading `log.entries` (identical mechanism to the other three) and JSON-mimetype/URL filtering + response-body parsing (unique to that
+project, and not representable by the already-landed `HarEntry` dataclass, which has no response-content field). Per this project's own shared-vs-specific test
+(`docs/guides/functional-code-taxonomy.md`), the filter/parse behavior is project-specific business logic, not a reusable mechanism. `src/lib/har/loader.py` (HLM-2) therefore covers:
+- the shared `log.entries`-loading mechanism for all four originals (dropping `analyze_har.py`'s `ijson`-streaming path — no cited consumer needs multi-GB streaming, and FCT-2's `Protocol` already
+  fixed a `list[HarEntry]` return, not a generator — this is YAGNI, not a new decision);
+- explicitly **not** `load_json_entries()`'s JSON-filter/parse step, which stays out of scope for the shared loader (consistent with this story's own "Out of scope: any HAR-entry
+  *filtering*/business-rule logic specific to one investigation").
+
+No code under `/Users/abhadra/github_copilot` or `src/lib/har/protocols.py` is touched by this finding — both remain read-only/out-of-scope per this story's existing constraints.
+
+**Files changed:** none — this section is the task's deliverable, recorded here by prior agreement rather than produced by a dedicated commit.
 
 **Tests:** N/A — audit/analysis task.
 

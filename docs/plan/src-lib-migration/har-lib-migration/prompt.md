@@ -19,8 +19,11 @@ SRP/duplication violation: a pure domain-mechanism function with no business bei
 
 - **Loader input type:** accept both a file path and an open file handle (`str | Path | IO`), not path-only.
 - **Malformed-HAR validation scope:** broad — reject non-dict `log`, non-list `entries`, and invalid JSON, not just "missing `log.entries`."
-- **Four originals, canonical source — conditional STOP:** if HLM-1's re-audit finds the four originals have diverged in behavior (not just copy-pasted identically), the agent must document the
-  divergence and pause for human sign-off on which behavior is canonical before writing HLM-2. If they are still shape-identical, no sign-off is needed — proceed.
+- **Four originals, canonical source — RESOLVED (requester-approved 2026-10-02):** HLM-1's re-audit found real divergence, not just copy-paste cosmetics. `load_json_entries()` bundles two concerns:
+  loading `log.entries` (shared across all four) and JSON-mimetype/URL filtering + response-body parsing (unique to `vod-asset-ingestion-mapping`, and not representable by the already-landed
+  `HarEntry` dataclass, which has no response-content field). Resolution: the shared loader covers the "load `log.entries`" mechanism identically for all four originals; `load_json_entries()`'s
+  filter/parse behavior is explicitly excluded as project-specific business logic per this project's own shared-vs-specific test, not a gap in HLM-2. See `stories.md`'s HLM-1 section for the full
+  citation. No sign-off blocks HLM-2 — proceed.
 
 ## Scope guard
 
@@ -44,7 +47,9 @@ SRP/duplication violation: a pure domain-mechanism function with no business bei
 
 ## Definition of done
 
-- Every cited original from the FCT-1 audit is covered by `src/lib/har/loader.py`'s behavior, or an explicit note states why it diverges.
+- Every cited original from the FCT-1 audit is covered by `src/lib/har/loader.py`'s behavior, or an explicit note states why it diverges. **Resolved 2026-10-02:** three originals (`analyze_har.py`,
+  `extract_content_ids_from_har.py`, `summarize_har_playbacks.py`) are fully covered by the shared `load_entries()` mechanism; `vod-asset-ingestion-mapping/.../load_json_entries()` is covered only for
+  its `log.entries`-loading sub-behavior — its JSON-mimetype/URL filtering and response-body parsing is explicitly excluded as project-specific logic (see `stories.md` HLM-1).
 - `src/lib/har/loader.py` implements FCT-2's `Protocol`, verified via `isinstance`.
 - Tests pass with no network calls (fixture HAR files only).
 - `CONTEXT.md` gains one new line.
