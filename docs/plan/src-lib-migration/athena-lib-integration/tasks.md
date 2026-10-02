@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: ALI-7.**
+**Open: none — story complete.**
 
 - [x] **ALI-1** — Add `athena-mcp-server` as a pinned git submodule + init/update docs | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 2f7bad3
 - [x] **ALI-2** — `src/lib/athena/adapter.py` + `exceptions.py`: DIP-compliant `Protocol`-conforming adapter delegating to `athena_runner`, with mirrored exception hierarchy and throttling
@@ -14,7 +14,7 @@ spec.
 - [x] **ALI-5** — `src/lib/athena/batch.py` + `cache.py`: concurrent batch submission + TTL result cache, FCID-propagating | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human
   confirms tests green | SHA: aec53de
 - [x] **ALI-6** — `src/lib/athena/progressive.py`: progressive scope-widening query runner | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: c98f0f6
-- [ ] **ALI-7** — `CONTEXT.md` + setup docs: submodule + batch/cache/progressive pointer | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [x] **ALI-7** — `CONTEXT.md` + setup docs: submodule + batch/cache/progressive pointer | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 43ca081
 
 ## Story done when
 
