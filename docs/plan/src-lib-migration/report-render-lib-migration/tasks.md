@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: RRM-5.**
+**Open: none — story complete.**
 
 - [x] **RRM-1** — Re-confirm 8+ file audit list, group by report shape | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: 515d44b
 - [x] **RRM-2** — `src/lib/report_render/writers.py`: Strategy implementer(s) satisfying FCT-2's `Protocol` | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests
@@ -11,7 +11,7 @@ spec.
 - [x] **RRM-3** — `src/lib/report_render/factory.py`: Factory Method for writer selection by shape key | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green |
   SHA: d373df5
 - [x] **RRM-4** — Tests + `Protocol` conformance pair | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human confirms tests green | SHA: f101b1a
-- [ ] **RRM-5** — Doc/`CONTEXT.md` pointers | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: <—>
+- [x] **RRM-5** — Doc/`CONTEXT.md` pointers | Owner: AI agent (Copilot CLI) | Model: claude-sonnet-5 | Review: human diff review | SHA: f639c9b
 
 ## Story done when
 
