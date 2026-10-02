@@ -17,6 +17,29 @@ graph LR
 
 ## CIM-1 — `src/lib/csv_io/protocols.py`: split reader/writer protocols
 
+### Audit findings (requester-approved 2026-10-02 — satisfies this task's STOP gate, pre-implementation sign-off)
+
+Read-only audit across the five `functional-code-taxonomy` FCT-1-cited projects found 18 relevant files, not the original "8+" estimate, and resolved one double-citation
+(`mtn-network-traffic/scripts/curl_timer/report.py`, which its own code comment confirms is CSV-only — markdown rendering lives in a separate script). Approved `csv_io` originals (raw CSV read/write,
+no human-facing formatting) — 13 files:
+
+- `github_copilot/aws-access-cli/scripts/run_incomplete_no_destroy_investigation.py`
+- `github_copilot/aws-access-cli/scripts/run_adoption_gap_analysis_report.py`
+- `github_copilot/aws-access-cli/scripts/run_adoption_gap_analysis_session_report.py`
+- `github_copilot/aws-access-cli/scripts/athena_runner/adoption/period_report_store.py`
+- `github_copilot/aws-access-cli/scripts/athena_runner/adoption/report_store.py`
+- `github_copilot/applauseInvestigation/scripts/analyze_athena_playback.py`
+- `github_copilot/mtn-network-traffic/scripts/curl_timer/report.py`
+- `github_copilot/ctap-smvod-session-report/scripts/extract_position_report.py`
+- `github_copilot/ctap-smvod-session-report/scripts/merge_ctap_smvod_csv.py`
+- `github_copilot/ctap-smvod-session-report/scripts/build_webview_device_summary.py`
+- `github_copilot/ctap-smvod-session-report/scripts/build_mtn_summary.py`
+- `github_copilot/ctap-smvod-session-report/scripts/filter_error_code_report.py`
+- `github_copilot/mtn-zm-session-device-investigation/scripts/build_final_session_report.py`
+
+The remaining 5 files from the same audit (markdown/console human-facing output) are `report_render`'s, not `csv_io`'s — see `docs/plan/src-lib-migration/report-render-lib-migration/stories.md`'s
+RRM-1 section for that list and shape grouping. CIM-1 may proceed directly against the 13-file list above without re-auditing.
+
 **Files to change / create:**
 - `src/lib/csv_io/protocols.py` — new.
 - `src/lib/csv_io/__init__.py` — package marker.

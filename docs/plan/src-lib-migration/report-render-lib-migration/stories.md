@@ -17,16 +17,29 @@ graph LR
 
 ## RRM-1 — Re-confirm audit list, group by shape
 
-**Files to change / create:**
-- `stories.md` (this file) — append the confirmed list as a subsection under RRM-2 below, before writing code.
+**Status: DONE (requester-approved 2026-10-02) — satisfies this task's STOP gate, pre-implementation sign-off.** RRM-2 may proceed directly against the grouping below without re-auditing.
 
-**What to implement:**
+### Audit findings
 
-1. Re-read (read-only) each of: `ctap-smvod-session-report`, `aws-access-cli`, `applauseInvestigation`, `mtn-zm-session-device-investigation`, `vod-playback-timing-probe` writer files cited in
-   `functional-code-taxonomy` FCT-1's audit.
-2. Group by output *shape* (e.g. "flat CSV, one row per record" vs. "grouped summary with subtotal rows") rather than by source project — two projects with identical shape need only one Strategy
-   implementer between them.
-3. Record the final grouped list with file citations in this section, so RRM-2 has a fixed target instead of re-deriving it.
+Read-only audit across the five `functional-code-taxonomy` FCT-1-cited projects found 18 relevant files, not the original "8+" estimate; 13 are `csv_io`'s (see
+`docs/plan/src-lib-migration/csv-io-lib-migration/stories.md` CIM-1). The remaining 5 are `report_render`'s, grouped into **3 Strategy shapes**:
+
+**Shape 1 — `MarkdownTableWriter`** (flat markdown table, one row per event/item):
+- `github_copilot/vod-playback-timing-probe/scripts/generate_timing_report.py`
+- `github_copilot/vod-playback-timing-probe/scripts/playback_probe/har_probe_comparison_report.py`
+
+**Shape 2 — `CategoryBreakdownWriter`** (counts by category + most-common top-N; markdown-file and console-print are a *destination* difference, handled by the writer's path/file-handle contract, not
+a separate shape):
+- `github_copilot/mtn-zm-session-device-investigation/scripts/generate_summary.py`
+- `github_copilot/mtn-zm-session-device-investigation/scripts/summarize_final_session_report.py`
+
+**Shape 3 — `StatisticalWriteupWriter`** (richer multi-section write-up: distribution + buffering/startup stats + outliers + breakdowns + anomaly scan — structurally distinct from Shape 2, not merged
+with it):
+- `github_copilot/ctap-smvod-session-report/scripts/analyze_outcome_report.py`
+
+`src/lib/report_render/writers.py` (RRM-2) implements exactly these 3 Strategy classes — no more, no fewer — covering all 5 cited originals.
+
+**Files changed:** none — this section of `stories.md` is itself the task's deliverable, recorded here by prior agreement rather than produced by a dedicated commit.
 
 **Tests:** N/A — audit/analysis task, no code changes.
 
