@@ -33,12 +33,14 @@ Usage:
     python3 run_pipeline.py --date 18092026 --dry-run
 
     # Skip both Athena enrichment steps (e.g. re-running Step 5/6b only
-    # after inputCSV/athena_session_*.csv and debug_states_*.csv already
+    # after data/athena/YYYY-MM-DD_session.csv and
+    # data/athena/YYYY-MM-DD_debug_states.csv already
     # exist from a previous run):
     python3 run_pipeline.py --date 18092026 --skip-step3 --skip-step4
 
     # Skip Steps 3/4 automatically, but only for dates whose
-    # inputCSV/athena_session_DDMMYYYY.csv / debug_states_DDMMYYYY.csv already
+    # data/athena/YYYY-MM-DD_session.csv /
+    # data/athena/YYYY-MM-DD_debug_states.csv already
     # exist -- unlike --skip-step3/--skip-step4 (always skip), this checks
     # per-date and still fires Athena for any date missing that file:
     python3 run_pipeline.py --date 18092026 --skip-if-exists
@@ -60,6 +62,7 @@ from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LIGHTSTEP_DIR = os.path.join(SCRIPT_DIR, "..", "data", "lightstep")
+ATHENA_DIR = os.path.join(SCRIPT_DIR, "..", "data", "athena")
 
 
 def _ddmmyyyy_to_iso(date_ddmmyyyy: str) -> str:
@@ -98,11 +101,11 @@ def _ensure_step2_inputs_exist(date_ddmmyyyy: str) -> dict[str, str]:
 
 
 def _step3_output_path(date_ddmmyyyy: str) -> str:
-    return os.path.join(SCRIPT_DIR, "..", "inputCSV", f"athena_session_{date_ddmmyyyy}.csv")
+    return os.path.join(ATHENA_DIR, f"{_ddmmyyyy_to_iso(date_ddmmyyyy)}_session.csv")
 
 
 def _step4_output_path(date_ddmmyyyy: str) -> str:
-    return os.path.join(SCRIPT_DIR, "..", "inputCSV", f"debug_states_{date_ddmmyyyy}.csv")
+    return os.path.join(ATHENA_DIR, f"{_ddmmyyyy_to_iso(date_ddmmyyyy)}_debug_states.csv")
 
 
 def _build_steps(args, date_iso: str):
@@ -115,6 +118,7 @@ def _build_steps(args, date_iso: str):
         athena_common += ["--profile", args.profile]
     if args.skip_auth_check:
         athena_common += ["--skip-auth-check"]
+    athena_common += ["--output-dir", ATHENA_DIR]
 
     # --skip-if-exists is opt-in and per-date: unlike --skip-step3/--skip-step4
     # (always skip, regardless of file state), this only skips Athena for a
@@ -178,8 +182,8 @@ def main():
     ap.add_argument(
         "--skip-if-exists", action="store_true",
         help="Opt-in, per-date auto-skip: skip Step 3 if "
-             "inputCSV/athena_session_DDMMYYYY.csv already exists, and/or Step 4 "
-             "if inputCSV/debug_states_DDMMYYYY.csv already exists, instead of "
+             "data/athena/YYYY-MM-DD_session.csv already exists, and/or Step 4 "
+             "if data/athena/YYYY-MM-DD_debug_states.csv already exists, instead of "
              "always re-firing Athena (the default). A date still missing "
              "either file fires Athena for that step as normal.")
     ap.add_argument("--skip-step6b", action="store_true", help="Skip Step 6b (position-check view)")
@@ -187,7 +191,7 @@ def main():
                      help="Skip Step 6d (WebView device reliability report)")
     ap.add_argument(
         "--full-position-report", action="store_true",
-        help="Pass --no-only-not-moved to Step 6b, so output/position_report_DDMMYYYY.csv "
+        help="Pass --no-only-not-moved to Step 6b, so output/YYYY-MM-DD_position_report.csv "
              "covers every session instead of extract_position_report.py's new "
              "on-by-default --only-not-moved filter -- needed if you'll run Step 6c/7 "
              "(filter_error_code_report.py/correlate_cdn_ips.py) afterward, which both "

@@ -49,3 +49,34 @@ def test_step2_missing_file_error_message_names_new_path(tmp_path: Path, monkeyp
     assert "inputCSV" not in message
     assert "2026-09-30_smvod.csv" in message
     assert "2026-09-30_smvod-ts.csv" in message
+
+
+def test_step34_paths_use_data_athena_and_skip_checks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    athena_dir = tmp_path / "data" / "athena"
+    athena_dir.mkdir(parents=True)
+    monkeypatch.setattr(run_pipeline, "ATHENA_DIR", str(athena_dir))
+
+    assert run_pipeline._step3_output_path("30092026") == str(athena_dir / "2026-09-30_session.csv")
+    assert run_pipeline._step4_output_path("30092026") == str(athena_dir / "2026-09-30_debug_states.csv")
+
+
+def test_build_steps_passes_athena_output_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    athena_dir = tmp_path / "data" / "athena"
+    athena_dir.mkdir(parents=True)
+    monkeypatch.setattr(run_pipeline, "ATHENA_DIR", str(athena_dir))
+
+    class Args:
+        date = "30092026"
+        profile = "demo"
+        skip_auth_check = True
+        skip_if_exists = False
+        skip_step3 = False
+        skip_step4 = False
+        skip_step6b = False
+        skip_step6d = False
+        full_position_report = False
+
+    steps = run_pipeline._build_steps(Args(), "2026-09-30")
+
+    assert ["--output-dir", str(athena_dir)] == steps[1][1][-2:]
+    assert ["--output-dir", str(athena_dir)] == steps[2][1][-2:]

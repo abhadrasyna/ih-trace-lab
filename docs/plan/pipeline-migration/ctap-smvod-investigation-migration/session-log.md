@@ -12,3 +12,6 @@
 - 2026-10-03 — CSM-5: switched investigation `output/` producers/consumers onto PT-7 snapshot/range/rollup filenames via the shared path resolver helpers and added output-path regression tests.
 
 - 2026-10-03 — CSM-6: moved CTAP/SM-VOD Athena query text into the root query catalog, rewired the Athena/debug scripts to render catalog templates, and added a no-inline-SQL regression test.
+
+- 2026-10-03 — CSM-7: added no-network happy-path/edge-case tests across the remaining CTAP/SM-VOD business-logic scripts, fixed the CSV-compat layer issues those tests exposed, added `RETENTION.md`,
+  and pointed `CONTEXT.md` at this story folder.

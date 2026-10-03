@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-import types
 from typing import Any
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
@@ -30,6 +29,8 @@ class DictReader(Iterator[dict[str, str]]):
 
     @staticmethod
     def _strip_bom_keys(row: dict[str, str]) -> dict[str, str]:
+        if None in row:
+            raise ValueError("CSV row has more columns than the header defines")
         return {key.lstrip("\ufeff"): value for key, value in row.items()}
 
 
@@ -45,11 +46,11 @@ class DictWriter:
         self._flushed = False
         original_close = handle.close
 
-        def close_with_flush(*args: Any, **kwargs: Any) -> Any:
+        def close_with_flush() -> Any:
             self._flush()
-            return original_close(*args, **kwargs)
+            return original_close()
 
-        handle.close = types.MethodType(close_with_flush, handle)
+        handle.close = close_with_flush
 
     def writeheader(self) -> None:
         self._header_requested = True
