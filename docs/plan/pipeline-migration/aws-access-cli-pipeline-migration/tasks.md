@@ -3,9 +3,9 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: AAM-1, AAM-2, AAM-3, AAM-4, AAM-5, AAM-6.**
+**Open: AAM-2, AAM-3, AAM-4, AAM-5, AAM-6.**
 
-- [ ] **AAM-1** — Audit `aws-access-cli/scripts/` and produce a per-file lib-vs-script classification table | Owner: AI agent | Model: n/a | Review: human read-through | SHA: <—>
+- [x] **AAM-1** — Audit `aws-access-cli/scripts/` and produce a per-file lib-vs-script classification table | Owner: AI agent | Model: n/a | Review: human read-through | SHA: 77a2a51
 - [ ] **AAM-2** — Create `src/pipelines/aws-access-cli/` skeleton + thin `run_*.py` wrappers over `src/lib/*` | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 - [ ] **AAM-3** — Extract the 6 SQL query classes into `query-catalog`'s catalog | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 - [ ] **AAM-4** — Migrate output writes to PT-7's `PathResolver` + ISO-prefix filenames | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
