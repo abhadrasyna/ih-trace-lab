@@ -63,7 +63,7 @@ def _load_athena_dependencies() -> AthenaDependencies:
 def _load_setup_logging() -> Any:
     """Import the repo's shared logging setup only after the repo root is on ``sys.path``."""
 
-    from logs.setup_logging import setup_logging
+    from src.lib.logging.setup import setup_logging
 
     return setup_logging
 

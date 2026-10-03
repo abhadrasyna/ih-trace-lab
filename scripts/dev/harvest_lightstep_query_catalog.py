@@ -14,7 +14,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from logs.setup_logging import setup_logging
+from src.lib.logging.setup import setup_logging
 
 DEFAULT_SOURCE = Path("/Users/abhadra/github_copilot/applauseInvestigation/knowledge/lightstep-query-templates.md")
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]

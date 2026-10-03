@@ -14,7 +14,7 @@ from typing import Iterable
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from logs.setup_logging import setup_logging
+from src.lib.logging.setup import setup_logging
 
 LOGGER = logging.getLogger("scripts.dev.harvest_athena_query_catalog")
 

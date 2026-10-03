@@ -86,7 +86,7 @@ touches money or runs a long-lived concurrent service. -->
 - `(str, Enum)` for string enums — never `StrEnum` (py3.11+ only, this overlay targets 3.10+).
 - `Decimal` for monetary values, opt in only if this project actually touches money — do not add it speculatively.
 - `pyproject.toml` + `requirements.txt`/`requirements-dev.txt` (not a `pyproject.toml`-only dependency model).
-- Call `setup_logging()` from `logs/setup_logging.py` once at process start; never `logging.basicConfig` elsewhere, never bare `logging.getLogger(__name__)` in `scripts/` (loses module context when
+- Call `setup_logging()` from `src/lib/logging/setup.py` once at process start; never `logging.basicConfig` elsewhere, never bare `logging.getLogger(__name__)` in `scripts/` (loses module context when
   run as `__main__`).
 - Every new package directory under `src/`, `scripts/`, or `tests/` needs an `__init__.py`, even a one-line comment.
 - Design principles beyond the basics (SOLID as checkable triggers, named patterns): `PYTHON_DESIGN.md`, load on trigger only — not resident here.

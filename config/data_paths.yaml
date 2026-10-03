@@ -1,6 +1,7 @@
 data_root: data
 knowledge_root: knowledge
 investigations_root: investigations
+logs_root: logs
 tools:
   - har
   - lightstep
