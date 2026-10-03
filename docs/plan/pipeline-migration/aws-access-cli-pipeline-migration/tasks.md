@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: AAM-5, AAM-6.**
+**Open: AAM-5.**
 
 - [x] **AAM-1** — Audit `aws-access-cli/scripts/` and produce a per-file lib-vs-script classification table | Owner: AI agent | Model: n/a | Review: human read-through | SHA: 77a2a51
 - [x] **AAM-2** — Create `src/pipelines/aws-access-cli/` skeleton + thin `run_*.py` wrappers over `src/lib/*` | Owner: AI agent | Model: n/a | Review: tests green | SHA: 274fdd7
@@ -12,7 +12,7 @@ spec.
 - [x] **AAM-4** — Migrate output writes to PT-7's `PathResolver` + ISO-prefix filenames | Owner: AI agent | Model: n/a | Review: tests green | SHA: 6879fa1
   - Resolution note: keep `output/<TENANT>/<cadence>/` unchanged; use `PathResolver` only for snapshot/range/rollup filename generation, per the epic README's PT-7 constraint.
 - [ ] **AAM-5** — Execute PT-6's cron-cutover procedure for the 3 live crontab entries | Owner: human (crontab access required) | Model: n/a | Review: N consecutive parallel-run matches | SHA: <—>
-- [ ] **AAM-6** — Add tests for ported business-logic modules + `CONTEXT.md` pointer | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
+- [x] **AAM-6** — Add tests for ported business-logic modules + `CONTEXT.md` pointer | Owner: AI agent | Model: n/a | Review: tests green | SHA: 5f89050
 
 ## Story done when
 
