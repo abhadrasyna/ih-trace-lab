@@ -40,7 +40,31 @@ def _commit_all(root: Path, message: str) -> None:
 
 def test_resolve_worktree_path_and_plan_tasks_path_follow_conventions(tmp_path: Path) -> None:
     assert resolve_worktree_path("my-story", tmp_path) == tmp_path / "wt-my-story"
-    assert resolve_plan_tasks_path("my-story", tmp_path / "docs/plan") == tmp_path / "docs/plan/my-story/tasks.md"
+    plan_root = tmp_path / "docs/plan"
+    flat_tasks = plan_root / "my-story/tasks.md"
+    _write(flat_tasks)
+    assert resolve_plan_tasks_path("my-story", plan_root) == flat_tasks
+
+
+def test_resolve_plan_tasks_path_finds_epic_nested_stories(tmp_path: Path) -> None:
+    plan_root = tmp_path / "docs/plan"
+    nested_tasks = plan_root / "pipeline-migration/aws-access-cli-pipeline-migration/tasks.md"
+    _write(nested_tasks)
+    assert resolve_plan_tasks_path("aws-access-cli-pipeline-migration", plan_root) == nested_tasks
+
+
+def test_resolve_plan_tasks_path_returns_none_when_missing(tmp_path: Path) -> None:
+    plan_root = tmp_path / "docs/plan"
+    plan_root.mkdir(parents=True)
+    assert resolve_plan_tasks_path("no-such-story", plan_root) is None
+
+
+def test_resolve_plan_tasks_path_raises_on_ambiguous_duplicate_story_name(tmp_path: Path) -> None:
+    plan_root = tmp_path / "docs/plan"
+    _write(plan_root / "epic-a/dup-story/tasks.md")
+    _write(plan_root / "epic-b/dup-story/tasks.md")
+    with pytest.raises(ValueError, match="ambiguous"):
+        resolve_plan_tasks_path("dup-story", plan_root)
 
 
 def test_parse_tasks_file_splits_done_and_pending(tmp_path: Path) -> None:

@@ -51,9 +51,25 @@ def resolve_worktree_path(story: str, worktree_root: Path) -> Path:
     return worktree_root / f"wt-{story}"
 
 
-def resolve_plan_tasks_path(story: str, plan_root: Path) -> Path:
-    """Return the conventional tasks.md path `<plan_root>/<story>/tasks.md` for `story`."""
-    return plan_root / story / TASKS_FILE_NAME
+def resolve_plan_tasks_path(story: str, plan_root: Path) -> Path | None:
+    """Return `<plan_root>/<story>/tasks.md`, checking both flat and epic-nested story layouts.
+
+    Stories may live flat (`<plan_root>/<story>/tasks.md`) or nested one level under an epic folder
+    (`<plan_root>/<epic>/<story>/tasks.md`, per `docs/plan/README.md`'s epic-folder convention). Returns
+    None if no match is found, so callers can distinguish "doesn't exist" from "found at this path".
+
+    Raises ValueError if `story` resolves to more than one tasks.md (e.g. the same story name exists
+    flat and under an epic, or under two different epics) -- fail loudly instead of silently picking one.
+    """
+    flat = plan_root / story / TASKS_FILE_NAME
+    nested_matches = sorted(plan_root.glob(f"*/{story}/{TASKS_FILE_NAME}"))
+    matches = ([flat] if flat.exists() else []) + nested_matches
+    if len(matches) > 1:
+        raise ValueError(
+            f"story {story!r} is ambiguous: found at multiple paths under {plan_root}: "
+            f"{', '.join(str(m) for m in matches)}"
+        )
+    return matches[0] if matches else None
 
 
 def run_git(worktree: Path, *args: str) -> str:
@@ -117,7 +133,10 @@ def check_story(story: str, worktree_root: Path, plan_root: Path) -> Snapshot | 
         return None
     sha, subject = get_head(worktree)
     dirty_files = get_dirty_files(worktree)
-    done, pending = parse_tasks_file(worktree / plan_root / story / TASKS_FILE_NAME)
+    worktree_tasks_path = resolve_plan_tasks_path(story, worktree / plan_root)
+    if worktree_tasks_path is None:
+        raise FileNotFoundError(f"tasks file not found for story {story!r} under {worktree / plan_root}")
+    done, pending = parse_tasks_file(worktree_tasks_path)
     return Snapshot(
         story=story,
         timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -132,7 +151,7 @@ def check_story(story: str, worktree_root: Path, plan_root: Path) -> Snapshot | 
 
 def validate_story_names(stories: list[str], plan_root: Path) -> list[str]:
     """Return story names with no `plan_root/<story>/tasks.md` in the main checkout (likely typos)."""
-    return [story for story in stories if not resolve_plan_tasks_path(story, plan_root).exists()]
+    return [story for story in stories if resolve_plan_tasks_path(story, plan_root) is None]
 
 
 def describe_missing_worktree(story: str, plan_root: Path) -> str:
@@ -141,7 +160,9 @@ def describe_missing_worktree(story: str, plan_root: Path) -> str:
     A worktree disappears both when a story hasn't been launched yet AND after it's merged and cleaned up
     (STEP 4's `git worktree remove`) -- checking the main checkout's own tasks.md disambiguates the two.
     """
-    done, pending = parse_tasks_file(resolve_plan_tasks_path(story, plan_root))
+    tasks_path = resolve_plan_tasks_path(story, plan_root)
+    assert tasks_path is not None, f"story {story!r} should have been validated already"
+    done, pending = parse_tasks_file(tasks_path)
     if done and not pending:
         return "already completed (all tasks checked off in the main checkout, worktree removed post-merge)"
     return "not started yet (worktree not created)"
