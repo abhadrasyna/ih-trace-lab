@@ -7,11 +7,11 @@
     3. SM-VOD span-samples (sessionId, oldest_micros, youngest_micros,
                              duration_millis, error_flag, span_name, ...)
 
-Input file naming convention (in --input-dir, default ../inputCSV):
-    ctap_DDMMYYYY.csv       -- CTAP aggregate export
-    smvod_DDMMYYYY.csv      -- SM-VOD aggregate export
-    smvod_ts_DDMMYYYY.csv   -- SM-VOD span-samples export (has real timestamps
-                               but no lightstep.trace_id; bridged via sessionId)
+Input file naming convention (in --input-dir, default ../data/lightstep):
+    YYYY-MM-DD_ctap.csv      -- CTAP aggregate export
+    YYYY-MM-DD_smvod.csv     -- SM-VOD aggregate export
+    YYYY-MM-DD_smvod-ts.csv  -- SM-VOD span-samples export (has real timestamps
+                                but no lightstep.trace_id; bridged via sessionId)
 
 All files may contain extra Lightstep chart-aggregation columns
 (min, max, avg, sum, value) -- these are dropped automatically. Extra columns
@@ -40,12 +40,11 @@ predate that column), and match_status.
 Usage:
     python3 merge_ctap_smvod_csv.py --date 08072026
     python3 merge_ctap_smvod_csv.py --date 08072026 \
-        --input-dir ../inputCSV --out ../output/setupsession_08072026.csv
+        --input-dir ../data/lightstep --out ../output/setupsession_08072026.csv
 """
 import argparse
 from lib import csv_io_compat as csv
 import datetime
-import glob
 import os
 import re
 import sys
@@ -219,18 +218,19 @@ def micros_to_iso(micros_str):
     return dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + " UTC"
 
 
-def find_input_file(input_dir, prefix, date, required=True):
-    pattern = os.path.join(input_dir, f"{prefix}_{date}*.csv")
-    matches = sorted(glob.glob(pattern))
-    if not matches:
+def _iso_date_str(date_ddmmyyyy):
+    return datetime.datetime.strptime(date_ddmmyyyy, "%d%m%Y").strftime("%Y-%m-%d")
+
+
+def find_input_file(input_dir, artifact, date, required=True):
+    path = os.path.join(input_dir, f"{_iso_date_str(date)}_{artifact}.csv")
+    if not os.path.exists(path):
         if required:
-            print(f"ERROR: no file matching {pattern}", file=sys.stderr)
+            print(f"ERROR: missing expected file {path}", file=sys.stderr)
             sys.exit(1)
-        print(f"NOTE: no file matching {pattern} -- timestamps will be blank", file=sys.stderr)
+        print(f"NOTE: missing optional file {path} -- timestamps will be blank", file=sys.stderr)
         return []
-    if len(matches) > 1:
-        print(f"NOTE: multiple files matched {pattern}, using all of them: {matches}", file=sys.stderr)
-    return matches
+    return [path]
 
 
 SMVOD_FIELDS = ["householdId", "deviceId", "session.clientIp", "sessionId",
@@ -247,13 +247,13 @@ OUTPUT_FIELDS = (
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 08072026")
-    ap.add_argument("--input-dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "inputCSV"))
+    ap.add_argument("--input-dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "lightstep"))
     ap.add_argument("--out", default=None, help="Output CSV path (default: ../output/setupsession_<date>.csv)")
     args = ap.parse_args()
 
     ctap_files = find_input_file(args.input_dir, "ctap", args.date)
     smvod_files = find_input_file(args.input_dir, "smvod", args.date)
-    smvod_ts_files = find_input_file(args.input_dir, "smvod_ts", args.date, required=False)
+    smvod_ts_files = find_input_file(args.input_dir, "smvod-ts", args.date, required=False)
 
     ctap_rows = []
     for f in ctap_files:

@@ -16,10 +16,10 @@ Note: extract_position_report.py's --only-not-moved now defaults to on
 here if Step 6b's output needs to cover every session (e.g. before running
 Step 6c/7 by hand afterward).
 
-Step 1 (manually exporting the 3 Lightstep CSVs into inputCSV/) is NOT
-automated here -- it has no live API (see README.md §6) and must already be
-done before running this script; Step 2 will fail with a clear "file not
-found" error from merge_ctap_smvod_csv.py itself if they're missing.
+Step 1 (manually exporting the 3 Lightstep CSVs into data/lightstep/ as
+`YYYY-MM-DD_ctap.csv`, `YYYY-MM-DD_smvod.csv`, and
+`YYYY-MM-DD_smvod-ts.csv`) is NOT automated here -- it has no live API (see
+README.md §6) and must already be done before running this script.
 
 Fails fast: stops at the first step whose exit code is non-zero, printing
 which step failed and its exit code, instead of silently continuing with
@@ -59,6 +59,7 @@ import sys
 from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+LIGHTSTEP_DIR = os.path.join(SCRIPT_DIR, "..", "data", "lightstep")
 
 
 def _ddmmyyyy_to_iso(date_ddmmyyyy: str) -> str:
@@ -70,6 +71,30 @@ def _ddmmyyyy_to_iso(date_ddmmyyyy: str) -> str:
         ValueError: If `date_ddmmyyyy` isn't valid DDMMYYYY.
     """
     return datetime.strptime(date_ddmmyyyy, "%d%m%Y").strftime("%Y-%m-%d")
+
+
+def _step2_lightstep_paths(date_ddmmyyyy: str) -> dict[str, str]:
+    iso_date = _ddmmyyyy_to_iso(date_ddmmyyyy)
+    return {
+        "ctap": os.path.join(LIGHTSTEP_DIR, f"{iso_date}_ctap.csv"),
+        "smvod": os.path.join(LIGHTSTEP_DIR, f"{iso_date}_smvod.csv"),
+        "smvod-ts": os.path.join(LIGHTSTEP_DIR, f"{iso_date}_smvod-ts.csv"),
+    }
+
+
+def _ensure_step2_inputs_exist(date_ddmmyyyy: str) -> dict[str, str]:
+    expected = _step2_lightstep_paths(date_ddmmyyyy)
+    required_paths = [expected["ctap"], expected["smvod"]]
+    missing = [path for path in required_paths if not os.path.exists(path)]
+    if not missing:
+        return expected
+    raise FileNotFoundError(
+        "Step 1 is still manual. Export the required Lightstep CSVs into "
+        f"{LIGHTSTEP_DIR} using ISO-prefixed names "
+        f"({os.path.basename(expected['ctap'])}, {os.path.basename(expected['smvod'])}; "
+        f"optional span-samples file: {os.path.basename(expected['smvod-ts'])}). "
+        f"Missing: {', '.join(os.path.basename(path) for path in missing)}"
+    )
 
 
 def _step3_output_path(date_ddmmyyyy: str) -> str:
@@ -180,6 +205,13 @@ def main():
     except ValueError:
         print(f"ERROR: --date must be DDMMYYYY, got '{args.date}'", file=sys.stderr)
         sys.exit(1)
+
+    if not args.dry_run:
+        try:
+            _ensure_step2_inputs_exist(args.date)
+        except FileNotFoundError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(1)
 
     steps = _build_steps(args, date_iso)
 
