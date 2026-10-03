@@ -5,7 +5,7 @@ spec.
 
 **Open: CSM-1, CSM-2, CSM-3, CSM-4, CSM-5, CSM-6, CSM-7.**
 
-- [ ] **CSM-1** — Audit `ctap-smvod-session-report/scripts/` and produce a per-file lib-vs-script classification table | Owner: AI agent | Model: n/a | Review: human read-through | SHA: <—>
+- [x] **CSM-1** — Audit `ctap-smvod-session-report/scripts/` and produce a per-file lib-vs-script classification table | Owner: AI agent | Model: n/a | Review: human read-through | SHA: <—>
 - [ ] **CSM-2** — Create `investigations/ctap-smvod/` skeleton + port business-logic scripts over `src/lib/*` | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 - [ ] **CSM-3** — Relocate manual Lightstep exports to `data/lightstep/`, ISO-prefixed | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 - [ ] **CSM-4** — Relocate Athena-pull inputs to `data/athena/` via `src/lib/athena` | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
