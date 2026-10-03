@@ -28,6 +28,9 @@
 
 ## AAM-2 — `src/pipelines/aws-access-cli/` skeleton + thin wrappers
 
+**2026-10-03 path decision:** keep `aws-access-cli` as the external story/doc/path slug, but implement the Python package as `src/pipelines/aws_access_cli/` so imports, `__init__.py`, and tests use a
+valid module path. This is the requester-approved resolution of the AAM-2 hyphenated-package ambiguity.
+
 **Files to change / create:**
 - `src/pipelines/aws-access-cli/__init__.py`
 - `src/pipelines/aws-access-cli/scripts/*.py` — one thin wrapper per `run_*.py` entry point, plus one business-logic module per report family (`adoption.py`, `shaka_errors.py`, `position_report.py`),
