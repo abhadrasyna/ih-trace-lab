@@ -35,6 +35,8 @@ Read in this order the first time; after that, load whichever single doc matches
    efficiency) and how to close the loop on them session over session.
 6. **[`python-hygiene-and-automation.md`](./python-hygiene-and-automation.md)** — the other layer below `design-principles.md`: a line-level Python defect/design-smell checklist, and how to turn it
    from a document into mechanical enforcement (lint/typecheck/test targets, pre-commit hooks, an AI-reviewer hook for the shapes a static rule can't express, phased adoption).
+7. **[`architecture-diagrams.md`](./architecture-diagrams.md)** — drawing a "before" structure diagram at audit time and an "after" one once the new structure lands, excluding tests from both, and
+   what a visible improvement (not just a claimed one) looks like in the comparison.
 
 ## The one-sentence version
 
