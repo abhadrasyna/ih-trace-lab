@@ -7,7 +7,7 @@ from pathlib import Path
 import openpyxl
 import pytest
 
-from .conftest import load_script
+from conftest import load_script
 
 analyze_api_timing = load_script("analyze_api_timing.py")
 analyze_errorcode_correlation = load_script("analyze_errorcode_correlation.py")

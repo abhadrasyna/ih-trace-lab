@@ -1,1 +1,0 @@
-"""CTAP/SM-VOD tests."""

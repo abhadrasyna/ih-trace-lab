@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from .conftest import load_script
+from conftest import load_script
 
 analyze_debug_sample = load_script("analyze_debug_sample.py")
 build_debug_completeness_query = load_script("build_debug_completeness_query.py")

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from .conftest import load_script
+from conftest import load_script
 
 from lib import csv_io_compat
 
