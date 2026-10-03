@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Live boto3/Athena runner for BLUEPRINT.md Step 3 / queries/athena_session_outcome.md
+Live boto3/Athena runner for BLUEPRINT.md Step 3 / query-catalog slug
+`ctap-smvod-playback-outcome`
 ("playback outcome classification" enrichment). This is an *optional*
 automated alternative to the documented manual copy-paste-into-Athena-console
 workflow (README.md §6/§7) -- kept alongside it, same pattern as
 scripts/lightstep_ctap_smvod_join.py being kept as a reference direct-API
-attempt. The manual workflow remains the source of truth for the query text
-itself (queries/athena_session_outcome.md) -- this script only automates
-*running* that exact query and downloading the result.
+attempt. The query catalog remains the source of truth for the SQL text
+itself (`queries/athena/ctap-smvod-playback-outcome.sql`) -- this script
+only automates *running* that exact query and downloading the result.
 
 Requires an AWS SSO profile with read access to unified_e6auj7k7 (see
 scripts/lib/aws_sso.py / aws-access-cli/docs/aws-sso-setup.md); defaults to
@@ -34,34 +35,13 @@ import os
 import sys
 from datetime import datetime
 
+from lib.query_catalog import render_query
 from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, run_athena_query
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "data", "athena")
 
-QUERY_TEMPLATE = """SELECT
-  parent_session_id AS sessionId,
-  MAX(user_id)   AS householdId,
-  MAX(device_id) AS deviceId,
-  MAX(content)   AS content,
-  COALESCE(
-    MAX(CASE WHEN event_type = 'PLAY' THEN endreason END),
-    CASE WHEN MAX(CASE WHEN endreason = 'DESTROY' THEN 1 ELSE 0 END) = 1
-         THEN 'EBVS'
-         ELSE 'INCOMPLETE_NO_DESTROY'
-    END
-  ) AS playback_outcome,
-  MAX(CASE WHEN event_type = 'PLAY' THEN event_start END) AS event_start,
-  MAX(CASE WHEN event_type = 'PLAY' THEN event_end END)   AS event_end,
-  MAX(CASE WHEN event_type = 'REQUEST_VIEWING'
-           THEN date_diff('millisecond', event_start, event_end) END) AS startup_time_ms,
-  SUM(CASE WHEN event_type = 'BUFFERING' THEN 1 ELSE 0 END) AS buffering_count,
-  SUM(CASE WHEN event_type = 'BUFFERING'
-           THEN date_diff('millisecond', event_start, event_end) ELSE 0 END) AS buffering_total_ms
-FROM "unified_e6auj7k7"."unified_sessions"
-WHERE timestamp_formatted = '{date}'
-GROUP BY parent_session_id;
-"""
+QUERY_SLUG = "ctap-smvod-playback-outcome"
 
 
 def _default_output_path(date_iso: str, output_dir: str) -> str:
@@ -104,7 +84,7 @@ def main():
         print(f"ERROR: --date must be YYYY-MM-DD, got '{args.date}'", file=sys.stderr)
         sys.exit(1)
 
-    query = QUERY_TEMPLATE.format(date=date_iso)
+    query = render_query(QUERY_SLUG, {"database": args.database, "date": date_iso})
 
     if args.dry_run:
         sys.stdout.write(query)

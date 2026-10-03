@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Fill the §15/§16 "PLAYING but no PLAY row" follow-up query (see
-queries/QUERY_CATALOG.md) with the parent_session_id values from a CSV
+Fill the §15/§16 "PLAYING but no PLAY row" follow-up query (query-catalog
+slug `ctap-smvod-debug-completeness`) with the parent_session_id values from a CSV
 export (e.g. queries/exploration/playing_sessionid.csv, the output of the
 §15 unified_sessions query) and produce a ready-to-paste Athena query that
 checks e6auj7k7_ccl_debug_events for a complete CREATE->PLAYING->DESTROY
@@ -24,33 +24,9 @@ import argparse
 from lib import csv_io_compat as csv
 import sys
 
-QUERY_TEMPLATE = """WITH session_states AS (
-    SELECT DISTINCT
-        json_extract_scalar(eventdata, '$.sessionid') AS sessionId,
-        COALESCE(
-            json_extract_scalar(eventdata, '$.eventtype'),  -- CREATE/DESTROY
-            json_extract_scalar(eventdata, '$.state')       -- BUFFERING/PLAYING/PAUSED/STOPPED
-        ) AS state,
-        datetime
-    FROM "unified_e6auj7k7"."e6auj7k7_ccl_debug_events"
-    WHERE eventclass = 'PLAYER'
-      AND eventid IN ('PLAYER_SESSION_EVENT', 'PLAYER_STATE_CHANGE', 'PLAYER_ERROR')
-      AND datetime >= '{start}'
-      AND datetime <  '{end}'
-      AND json_extract_scalar(eventdata, '$.sessionid') IN (
-{session_ids}
-      )
-)
-SELECT
-    sessionId,
-    array_agg(state ORDER BY datetime) AS state_sequence
-FROM session_states
-GROUP BY sessionId
-HAVING SUM(CASE WHEN state = 'CREATE'   THEN 1 ELSE 0 END) > 0
-   AND SUM(CASE WHEN state = 'PLAYING'  THEN 1 ELSE 0 END) > 0
-   AND SUM(CASE WHEN state = 'DESTROY'  THEN 1 ELSE 0 END) > 0
-ORDER BY sessionId;
-"""
+from lib.query_catalog import render_query
+
+QUERY_SLUG = "ctap-smvod-debug-completeness"
 
 
 def main():
@@ -75,7 +51,16 @@ def main():
         sys.exit(1)
 
     session_ids_block = ",\n".join(f"          '{i}'" for i in ids)
-    query = QUERY_TEMPLATE.format(start=args.start, end=args.end, session_ids=session_ids_block)
+    query = render_query(
+        QUERY_SLUG,
+        {
+            "database": "unified_e6auj7k7",
+            "datetime_start": args.start,
+            "datetime_end": args.end,
+            "eventclass": "PLAYER",
+            "session_ids_block": session_ids_block,
+        },
+    )
 
     if args.out:
         with open(args.out, "w") as f:

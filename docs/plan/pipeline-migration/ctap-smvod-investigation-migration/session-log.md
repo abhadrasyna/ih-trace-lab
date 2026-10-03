@@ -10,3 +10,5 @@
 - 2026-10-03 — CSM-4: moved Athena enrichment pulls to `investigations/ctap-smvod/data/athena/`, updated the pipeline/report consumers to the ISO-prefixed names, and added pull-path adapter tests.
 
 - 2026-10-03 — CSM-5: switched investigation `output/` producers/consumers onto PT-7 snapshot/range/rollup filenames via the shared path resolver helpers and added output-path regression tests.
+
+- 2026-10-03 — CSM-6: moved CTAP/SM-VOD Athena query text into the root query catalog, rewired the Athena/debug scripts to render catalog templates, and added a no-inline-SQL regression test.

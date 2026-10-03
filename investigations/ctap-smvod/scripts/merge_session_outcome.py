@@ -8,24 +8,8 @@ source, join semantics, and dedup logic are quite different).
 Two additional Athena-derived inputs, joined on `sessionId`:
 
     1. data/athena/YYYY-MM-DD_session.csv
-       Export of:
-           SELECT
-             parent_session_id AS sessionId,
-             MAX(user_id)   AS householdId,
-             MAX(device_id) AS deviceId,
-             MAX(content)   AS content,
-             MAX(CASE WHEN event_type = 'PLAY' THEN endreason END)   AS playback_outcome,
-             MAX(CASE WHEN event_type = 'PLAY' THEN event_start END) AS event_start,
-             MAX(CASE WHEN event_type = 'PLAY' THEN event_end END)   AS event_end,
-             MAX(CASE WHEN event_type = 'REQUEST_VIEWING'
-                      THEN date_diff('millisecond', event_start, event_end) END) AS startup_time_ms,
-             SUM(CASE WHEN event_type = 'BUFFERING' THEN 1 ELSE 0 END) AS buffering_count,
-             SUM(CASE WHEN event_type = 'BUFFERING'
-                      THEN date_diff('millisecond', event_start, event_end) ELSE 0 END) AS buffering_total_ms
-           FROM "unified_e6auj7k7"."unified_sessions"
-           WHERE timestamp_formatted = '<YYYY-MM-DD>'
-           GROUP BY parent_session_id;
-       (see queries/athena_session_outcome.md)
+       Export of query-catalog slug `ctap-smvod-playback-outcome`
+       (`queries/athena/ctap-smvod-playback-outcome.sql`).
        One row per session -- aggregates ALL event_type rows for that
        session (PLAY, REQUEST_VIEWING, BUFFERING, ...) instead of filtering
        down to just PLAY, so nothing is lost: `playback_outcome` (from
@@ -36,27 +20,9 @@ Two additional Athena-derived inputs, joined on `sessionId`:
        session).
 
     2. data/athena/YYYY-MM-DD_debug_states.csv  (preferred -- combined error + lifecycle + position)
-       Export of (columns already extracted via json_extract_scalar, not raw
-       eventdata JSON):
-           SELECT DISTINCT
-             json_extract_scalar(eventdata, '$.sessionid') AS sessionId,
-             eventid,
-             COALESCE(
-               json_extract_scalar(eventdata, '$.eventtype'),  -- CREATE/DESTROY
-               json_extract_scalar(eventdata, '$.state')       -- BUFFERING/PLAYING/PAUSED/STOPPED
-             ) AS state,
-             json_extract_scalar(eventdata, '$.position')          AS position,
-             json_extract_scalar(eventdata, '$.errorcode')        AS errorcode,
-             json_extract_scalar(eventdata, '$.errordescription') AS errordescription,
-             datetime
-           FROM "unified_e6auj7k7"."e6auj7k7_ccl_debug_events"
-           WHERE eventid IN ('PLAYER_SESSION_EVENT', 'PLAYER_STATE_CHANGE', 'PLAYER_ERROR', 'PLAYER_POSITION', 'APP_KEEPALIVE')
-             AND datetime >= '<day start ISO-8601>'
-             AND datetime <  '<day end ISO-8601>'
-             AND json_extract_scalar(eventdata, '$.sessionid') IN (...)
-           ORDER BY sessionId, datetime;
-       (see queries/QUERY_CATALOG.md §11/§11a/§11b and
-       queries/exploration/04_position_tracking.md)
+       Export of query-catalog slug `ctap-smvod-debug-states`
+       (`queries/athena/ctap-smvod-debug-states.sql`), with columns already
+       extracted via json_extract_scalar instead of raw eventdata JSON.
        Zero or more rows per session -- drives THREE enrichments from a
        single export:
          a) `state_sequence` -- chronological, arrow-joined lifecycle string,
@@ -94,14 +60,8 @@ Two additional Athena-derived inputs, joined on `sessionId`:
        (on the full row tuple) handle that.
 
     2b. data/athena/YYYY-MM-DD_debug_errors.csv  (legacy fallback -- error-only)
-       Raw export of:
-           SELECT *
-           FROM "unified_e6auj7k7"."e6auj7k7_ccl_debug_events"
-           WHERE eventclass = 'PLAYER'
-             AND eventid = 'PLAYER_ERROR'
-             AND datetime >= TIMESTAMP '<day start>'
-             AND datetime <  TIMESTAMP '<day end>';
-       (see queries/exploration/02_sample_rows.md)
+       Raw export matching the legacy PLAYER_ERROR-only debug-event pull
+       documented in `queries/exploration/02_sample_rows.md`.
        Zero or more rows per session -- optional enrichment giving the
        *reason* for a failure (errorcode / errordescription), not just the
        flag. `sessionid`, `errorcode`, `errordescription` are nested inside

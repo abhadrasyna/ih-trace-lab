@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Live boto3/Athena runner for BLUEPRINT.md Step 4 ("error detail + lifecycle"
-enrichment against `e6auj7k7_ccl_debug_events`). Companion to
+enrichment against `e6auj7k7_ccl_debug_events`) using query-catalog slug
+`ctap-smvod-debug-states`. Companion to
 `run_athena_playback_outcome.py` (Step 3) -- same pattern (optional automated
 alternative to the documented manual copy-paste-into-Athena-console workflow,
 README.md §6/§7), but additionally folds in what used to be a separate manual
@@ -42,6 +43,7 @@ from datetime import datetime, timedelta
 
 import extract_session_ids
 
+from lib.query_catalog import render_query
 from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, investigation_output_dir, run_athena_query, snapshot_output_path
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -52,26 +54,7 @@ DEFAULT_OUTPUT_ROOT_DIR = str(investigation_output_dir())
 # APP_KEEPALIVE must stay in this list (it's sometimes the only signal a
 # session actually progressed) and why there's no eventclass = 'PLAYER'
 # filter (dropped 13 Jul 2026, see the same catalog sections).
-QUERY_TEMPLATE = """SELECT DISTINCT
-  json_extract_scalar(eventdata, '$.sessionid') AS sessionId,
-  eventid,
-  COALESCE(
-    json_extract_scalar(eventdata, '$.eventtype'),   -- CREATE/DESTROY
-    json_extract_scalar(eventdata, '$.state')        -- BUFFERING/PLAYING/PAUSED/STOPPED
-  ) AS state,
-  json_extract_scalar(eventdata, '$.position')          AS position,
-  json_extract_scalar(eventdata, '$.errorcode')        AS errorcode,
-  json_extract_scalar(eventdata, '$.errordescription') AS errordescription,
-  datetime
-FROM "{database}"."e6auj7k7_ccl_debug_events"
-WHERE eventid IN ('PLAYER_SESSION_EVENT', 'PLAYER_STATE_CHANGE', 'PLAYER_ERROR', 'PLAYER_POSITION', 'APP_KEEPALIVE')
-  AND datetime >= '{start}'
-  AND datetime <  '{end}'
-  AND json_extract_scalar(eventdata, '$.sessionid') IN (
-{session_ids}
-  )
-ORDER BY sessionId, datetime;
-"""
+QUERY_SLUG = "ctap-smvod-debug-states"
 
 
 def _default_output_path(date_iso: str, output_dir: str) -> str:
@@ -87,8 +70,15 @@ def _build_query(database, date, session_ids):
     next_day = (datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
     end = f"{next_day}T00:00:00.000Z"
     session_ids_block = ",\n".join(f"    '{sid}'" for sid in session_ids)
-    return QUERY_TEMPLATE.format(
-        database=database, start=start, end=end, session_ids=session_ids_block)
+    return render_query(
+        QUERY_SLUG,
+        {
+            "database": database,
+            "datetime_start": start,
+            "datetime_end": end,
+            "session_ids_block": session_ids_block,
+        },
+    )
 
 
 def _default_input_path(date):
