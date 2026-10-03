@@ -37,6 +37,8 @@ Read in this order the first time; after that, load whichever single doc matches
    from a document into mechanical enforcement (lint/typecheck/test targets, pre-commit hooks, an AI-reviewer hook for the shapes a static rule can't express, phased adoption).
 7. **[`architecture-diagrams.md`](./architecture-diagrams.md)** — drawing a "before" structure diagram at audit time and an "after" one once the new structure lands, excluding tests from both, and
    what a visible improvement (not just a claimed one) looks like in the comparison.
+8. **[`code-review-checklist.md`](./code-review-checklist.md)** — a short per-PR checklist limited to what a diff-scoped automated reviewer structurally cannot check (SOLID/pattern-shape judgment,
+   cross-project duplication, FCID correctness, diagram discipline, process discipline) — validated against this repo's actual `ruff`/pre-commit setup so it doesn't repeat what's already enforced.
 
 ## The one-sentence version
 
