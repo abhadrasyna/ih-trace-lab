@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 For every deviceId that has a WebView ("; wv") session on a given
-source date's output/setupsession_with_outcome_DDMMYYYY.csv report,
-scans *every* setupsession_with_outcome_DDMMYYYY.csv file in
+source date's output/YYYY-MM-DD_setupsession_with_outcome.csv report,
+scans *every* YYYY-MM-DD_setupsession_with_outcome.csv file in
 --input-dir (i.e. every date this pipeline has been run for) for that
 same deviceId, and reports each session found: its date, raw
 User-Agent, whether that UA is the same wv UA as the source date (or a
@@ -17,7 +17,7 @@ the parsed User-Agent `Platform` column) from analyze_webview_devices.py
 so both scripts agree on what counts as a WebView session.
 
 Writes one row per (deviceId, session) across all dates found to
-output/wv_device_cross_date_history_DDMMYYYY.csv (DDMMYYYY = the source
+output/YYYY-MM-DD_wv_device_cross_date_history.csv (date = the source
 date the wv deviceIds were selected from).
 
 Usage:
@@ -33,8 +33,9 @@ import re
 import sys
 
 from analyze_webview_devices import _is_wv, _is_success
+from lib.runtime import investigation_output_dir, snapshot_output_path
 
-FILE_RE = re.compile(r"setupsession_with_outcome_(\d{8})\.csv$")
+FILE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})_setupsession_with_outcome\.csv$")
 
 OUTPUT_COLUMNS = [
     "deviceId", "source_wv_user_agent",
@@ -60,7 +61,7 @@ def load_rows(path):
 def find_source_wv_devices(source_date, input_dir):
     """Returns {deviceId: source_wv_raw_user_agent} for every wv session
     in the source date's report."""
-    source_path = os.path.join(input_dir, f"setupsession_with_outcome_{source_date}.csv")
+    source_path = snapshot_output_path(source_date, "setupsession_with_outcome", output_dir=input_dir)
     if not os.path.exists(source_path):
         raise FileNotFoundError(f"source date input file not found: {source_path}")
     rows = load_rows(source_path)
@@ -75,11 +76,11 @@ def find_source_wv_devices(source_date, input_dir):
 
 
 def build_history_rows(wv_devices, input_dir):
-    """Scans every setupsession_with_outcome_DDMMYYYY.csv in input_dir
+    """Scans every YYYY-MM-DD_setupsession_with_outcome.csv in input_dir
     for sessions belonging to any deviceId in `wv_devices`, returning
     one output row per (deviceId, session) found, across all dates."""
     out_rows = []
-    files = sorted(glob.glob(os.path.join(input_dir, "setupsession_with_outcome_*.csv")))
+    files = sorted(glob.glob(os.path.join(input_dir, "*_setupsession_with_outcome.csv")))
     for path in files:
         m = FILE_RE.search(os.path.basename(path))
         if not m:
@@ -112,12 +113,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True,
                     help="Source date (DDMMYYYY) to pick wv=true deviceIds from, e.g. 18092026")
-    default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+    default_dir = str(investigation_output_dir())
     ap.add_argument("--input-dir", default=default_dir,
-                    help=f"Directory containing setupsession_with_outcome_DDMMYYYY.csv files "
+                    help=f"Directory containing YYYY-MM-DD_setupsession_with_outcome.csv files "
                          f"for every date to search (default: {default_dir})")
     ap.add_argument("--output-dir", default=default_dir,
-                    help=f"Directory to write wv_device_cross_date_history_DDMMYYYY.csv into "
+                    help=f"Directory to write YYYY-MM-DD_wv_device_cross_date_history.csv into "
                          f"(default: {default_dir})")
     ap.add_argument("--out", default=None, help="Explicit output path override")
     args = ap.parse_args()
@@ -129,7 +130,7 @@ def main():
 
     out_rows = build_history_rows(wv_devices, args.input_dir)
 
-    out_path = args.out or os.path.join(args.output_dir, f"wv_device_cross_date_history_{args.date}.csv")
+    out_path = args.out or snapshot_output_path(args.date, "wv_device_cross_date_history", output_dir=args.output_dir)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=OUTPUT_COLUMNS)

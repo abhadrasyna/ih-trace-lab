@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Correlates the CDN team's raw log export (cdnReport/results_sa_*) against
-our own output/position_report_DDMMYYYY.csv by IP address + time window,
+our own output/YYYY-MM-DD_position_report.csv by IP address + time window,
 and classifies each session's likely CDN/network/origin health.
 
 Background: the CDN team's export is a series of blocks, one per (IP,
@@ -35,9 +35,9 @@ before. See `content_uuid`/`content_match_method` output columns.
 
 Usage:
     python3 correlate_cdn_ips.py --date DDMMYYYY [--cdn-file ../cdnReport/NAME]
-                                  [--position-report ../output/position_report_DDMMYYYY.csv]
-                                  [--out ../output/cdn_correlation_DDMMYYYY.csv]
-                                  [--escalation-out ../output/mtn_escalation_ips_DDMMYYYY.csv]
+                                  [--position-report ../output/YYYY-MM-DD_position_report.csv]
+                                  [--out ../output/YYYY-MM-DD_cdn_correlation.csv]
+                                  [--escalation-out ../output/YYYY-MM-DD_mtn_escalation_ips.csv]
 
 Also writes an `mtn_escalation` yes/no column per session (see
 MTN_ESCALATION_HINTS below) and a separate MTN-escalation IP list CSV
@@ -49,6 +49,8 @@ from lib import csv_io_compat as csv
 import re
 import sys
 from datetime import datetime, timezone
+
+from lib.runtime import snapshot_output_path
 
 IP_LINE_RE = re.compile(r'^(\d{1,3}(?:\.\d{1,3}){3})\s+(\d+)\s+(\d+)\s*$')
 # vode (DRM-encrypted) or vodc (clear) delivery path -- both seen in real
@@ -98,7 +100,7 @@ def parse_cdn_blocks(cdn_file):
 
 
 def parse_sessions(position_report):
-    """Parse output/position_report_DDMMYYYY.csv, adding a start_epoch field."""
+    """Parse output/YYYY-MM-DD_position_report.csv, adding a start_epoch field."""
     sessions = []
     with open(position_report, encoding='utf-8') as f:
         for row in csv.DictReader(f):
@@ -436,18 +438,18 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--date', required=True, help='DDMMYYYY, used for default file names')
     ap.add_argument('--cdn-file', help='Path to CDN team export (default: guess from --date)')
-    ap.add_argument('--position-report', help='Path to position_report CSV (default: ../output/position_report_<date>.csv)')
-    ap.add_argument('--out', help='Output path (default: ../output/cdn_correlation_<date>.csv)')
+    ap.add_argument('--position-report', help='Path to position_report CSV (default: ../output/YYYY-MM-DD_position_report.csv)')
+    ap.add_argument('--out', help='Output path (default: ../output/YYYY-MM-DD_cdn_correlation.csv)')
     ap.add_argument('--escalation-out', help='Output path for the MTN-escalation IP list '
-                     '(default: ../output/mtn_escalation_ips_<date>.csv)')
+                     '(default: ../output/YYYY-MM-DD_mtn_escalation_ips.csv)')
     args = ap.parse_args()
 
     date = args.date
     yyyymmdd = date[4:8] + date[2:4] + date[0:2]
     cdn_file = args.cdn_file or f"../cdnReport/results_sa_{yyyymmdd}"
-    position_report = args.position_report or f"../output/position_report_{date}.csv"
-    out_file = args.out or f"../output/cdn_correlation_{date}.csv"
-    escalation_out_file = args.escalation_out or f"../output/mtn_escalation_ips_{date}.csv"
+    position_report = args.position_report or snapshot_output_path(date, "position_report")
+    out_file = args.out or snapshot_output_path(date, "cdn_correlation")
+    escalation_out_file = args.escalation_out or snapshot_output_path(date, "mtn_escalation_ips")
 
     correlate(cdn_file, position_report, out_file, escalation_out_file)
 

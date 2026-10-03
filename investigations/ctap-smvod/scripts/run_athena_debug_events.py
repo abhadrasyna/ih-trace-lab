@@ -20,7 +20,7 @@ Usage:
 
     # Explicit input CSV / sessionId column, if not the Step 2 default:
     python3 run_athena_debug_events.py --date 2026-07-08 \
-        --input ../output/setupsession_08072026.csv --column sessionId
+        --input ../output/2026-07-08_setupsession.csv --column sessionId
 
     # Preview the filled-in query (including the resolved sessionId list)
     # without touching Athena:
@@ -42,11 +42,11 @@ from datetime import datetime, timedelta
 
 import extract_session_ids
 
-from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, run_athena_query
+from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, investigation_output_dir, run_athena_query, snapshot_output_path
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "data", "athena")
-DEFAULT_OUTPUT_ROOT_DIR = os.path.join(SCRIPT_DIR, "..", "output")
+DEFAULT_OUTPUT_ROOT_DIR = str(investigation_output_dir())
 
 # See BLUEPRINT.md Step 4 / queries/QUERY_CATALOG.md §11/§11a/§11b for why
 # APP_KEEPALIVE must stay in this list (it's sometimes the only signal a
@@ -93,7 +93,7 @@ def _build_query(database, date, session_ids):
 
 def _default_input_path(date):
     ddmmyyyy = datetime.strptime(date, "%Y-%m-%d").strftime("%d%m%Y")
-    return os.path.join(DEFAULT_OUTPUT_ROOT_DIR, f"setupsession_{ddmmyyyy}.csv")
+    return snapshot_output_path(ddmmyyyy, "setupsession", output_dir=DEFAULT_OUTPUT_ROOT_DIR)
 
 
 def main():
@@ -104,7 +104,7 @@ def main():
     ap.add_argument(
         "--input", default=None,
         help="Step 2 merged report CSV to pull sessionIds from "
-             "(default: ../output/setupsession_DDMMYYYY.csv, derived from --date)")
+             "(default: ../output/YYYY-MM-DD_setupsession.csv, derived from --date)")
     ap.add_argument("--column", default="sessionId", help="sessionId column name (default: sessionId)")
     ap.add_argument("--profile", default=DEFAULT_PROFILE, help=f"AWS SSO profile (default: {DEFAULT_PROFILE})")
     ap.add_argument("--database", default="unified_e6auj7k7", help="Athena database (default: unified_e6auj7k7)")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Analyze a finished output/setupsession_with_outcome_DDMMYYYY.csv report and
+Analyze a finished output/YYYY-MM-DD_setupsession_with_outcome.csv report and
 print (or save) the recurring daily write-up: playback_outcome distribution,
 buffering/startup stats + outliers, state_sequence pattern checks, device/
 platform breakdowns, the "missing" root-cause investigation, and a
@@ -18,8 +18,8 @@ Usage:
     python3 analyze_outcome_report.py --date 09072026
     python3 analyze_outcome_report.py --date 09072026 --out ../docs/09072026.md
     python3 analyze_outcome_report.py --date 09072026 \
-        --report ../output/setupsession_with_outcome_09072026.csv \
-        --debug-states ../inputCSV/debug_states_09072026.csv
+        --report ../output/2026-07-09_setupsession_with_outcome.csv \
+        --debug-states ../data/athena/2026-07-09_debug_states.csv
 """
 import argparse
 from lib import csv_io_compat as csv
@@ -28,6 +28,9 @@ import re
 import statistics
 import sys
 from collections import Counter, defaultdict
+from datetime import datetime
+
+from lib.runtime import investigation_output_dir, snapshot_output_path
 
 SESSION_KEY = "sessionId"
 OUTCOMES = ["DESTROY", "EBVS", "INCOMPLETE_NO_DESTROY", "PLAYER_ERROR", "missing"]
@@ -39,6 +42,10 @@ HOUSEHOLD_ID_RE = re.compile(r"^[A-Za-z0-9_-]{40,60}$")
 def load_csv(path):
     with open(path, encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
+
+
+def _date_ddmmyyyy_to_iso(raw_date):
+    return datetime.strptime(raw_date, "%d%m%Y").strftime("%Y-%m-%d")
 
 
 def to_float(v):
@@ -317,7 +324,7 @@ def section_missing(rows, debug_states_rows):
     if debug_states_rows is None:
         lines.append("- No `debug_states` file supplied (`--debug-states`) -- cannot split the "
                      "remaining missing sessions into coverage-gap vs. no-trace-at-all. Re-run with "
-                     "`--debug-states inputCSV/debug_states_DDMMYYYY.csv` to complete this check.")
+                     "`--debug-states data/athena/YYYY-MM-DD_debug_states.csv` to complete this check.")
         lines.append("")
         return "\n".join(lines)
 
@@ -447,26 +454,35 @@ def build_report(rows, debug_states_rows, date_label, source_path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 09072026")
-    default_output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
-    default_input_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "inputCSV")
+    default_output_dir = str(investigation_output_dir())
+    default_input_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "athena")
     ap.add_argument("--report", default=None,
-                    help="Path to setupsession_with_outcome_<date>.csv "
-                         "(default: <output-dir>/setupsession_with_outcome_<date>.csv)")
+                    help="Path to YYYY-MM-DD_setupsession_with_outcome.csv "
+                         "(default: <output-dir>/YYYY-MM-DD_setupsession_with_outcome.csv)")
     ap.add_argument("--debug-states", default=None,
-                    help="Path to debug_states_<date>.csv, used to cross-check the 'missing' "
-                         "category (default: <input-dir>/debug_states_<date>.csv if present)")
+                    help="Path to YYYY-MM-DD_debug_states.csv, used to cross-check the 'missing' "
+                         "category (default: <input-dir>/YYYY-MM-DD_debug_states.csv if present)")
     ap.add_argument("--out", default=None,
                     help="Optional path to save the markdown report (default: print to stdout only)")
     args = ap.parse_args()
 
-    report_path = args.report or os.path.join(default_output_dir, f"setupsession_with_outcome_{args.date}.csv")
+    try:
+        date_iso = _date_ddmmyyyy_to_iso(args.date)
+    except ValueError:
+        print(f"ERROR: --date must be DDMMYYYY, got '{args.date}'", file=sys.stderr)
+        sys.exit(1)
+
+    report_path = args.report or snapshot_output_path(args.date, "setupsession_with_outcome", output_dir=default_output_dir)
     if not os.path.exists(report_path):
         print(f"ERROR: report file not found: {report_path} "
               f"(run merge_session_outcome.py first)", file=sys.stderr)
         sys.exit(1)
     rows = load_csv(report_path)
 
-    debug_states_path = args.debug_states or os.path.join(default_input_dir, f"debug_states_{args.date}.csv")
+    debug_states_path = args.debug_states or os.path.join(
+        default_input_dir,
+        f"{date_iso}_debug_states.csv",
+    )
     debug_states_rows = load_csv(debug_states_path) if os.path.exists(debug_states_path) else None
     if debug_states_rows is None:
         print(f"NOTE: no debug_states file found at {debug_states_path} -- "

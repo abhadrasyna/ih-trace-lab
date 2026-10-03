@@ -7,7 +7,7 @@ rows for a single errorcode (columns: datetime, messageid, clibversion,
 clientid, eventclass, eventid, eventdata), as saved under
 queries/exploration/.
 
-Input 2: one or more output/setupsession_with_outcome_<DDMMYYYY>.csv files
+Input 2: one or more output/YYYY-MM-DD_setupsession_with_outcome.csv files
 (Stage 2 merge output), used to look up householdId / contentId /
 externalPackageId / deviceId for each sessionId that appears in Input 1.
 Only dates with a matching merged output file will resolve household/
@@ -28,15 +28,19 @@ import json
 import os
 import re
 from collections import Counter, defaultdict
+from pathlib import Path
+
+from lib.bootstrap import REPO_ROOT
+from src.lib.paths import YamlPathResolver
 
 SESSION_FIELDS = ["householdId", "deviceId", "contentId", "externalPackageId"]
 
 
 def load_session_lookup(output_dir):
     """Build sessionId -> dict(householdId, deviceId, contentId, externalPackageId)
-    from every setupsession_with_outcome_*.csv found in output_dir."""
+    from every *_setupsession_with_outcome.csv found in output_dir."""
     lookup = {}
-    pattern = os.path.join(output_dir, "setupsession_with_outcome_*.csv")
+    pattern = os.path.join(output_dir, "*_setupsession_with_outcome.csv")
     for path in sorted(glob.glob(pattern)):
         with open(path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -78,11 +82,17 @@ def parse_error_rows(errors_csv):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--errors", required=True, help="Path to raw errorcode export CSV")
-    ap.add_argument("--output-dir", default="../output", help="Dir with setupsession_with_outcome_*.csv")
+    ap.add_argument("--output-dir", default=None, help="Dir with *_setupsession_with_outcome.csv")
     ap.add_argument("--top", type=int, default=15, help="Rows to show per breakdown")
     args = ap.parse_args()
 
-    lookup = load_session_lookup(args.output_dir)
+    if args.output_dir is None:
+        resolver = YamlPathResolver.from_file(REPO_ROOT / "config" / "data_paths.yaml", repo_root=REPO_ROOT)
+        output_dir = str(resolver.resolve_investigation_output_dir("ctap-smvod"))
+    else:
+        output_dir = str(Path(args.output_dir))
+
+    lookup = load_session_lookup(output_dir)
 
     total_rows = 0
     sessions_seen = set()

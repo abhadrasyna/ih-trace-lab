@@ -28,7 +28,7 @@ For each trace file, this script finds:
 
 Usage:
     python3 process_traces.py --input-dir raw_traces/09072026 \
-                               --out ../output/setupsession_09072026.csv
+                               --out ../output/2026-07-09_setupsession.csv
 """
 import argparse
 from lib import csv_io_compat as csv

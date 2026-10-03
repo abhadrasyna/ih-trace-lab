@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Concatenate multiple output/position_report_DDMMYYYY.csv files (produced by
+Concatenate multiple output/YYYY-MM-DD_position_report.csv files (produced by
 extract_position_report.py) and keep only rows matching a given
 error_codes value (default: 1003), writing them out with the exact same
 columns as the source files -- no extra columns added.
@@ -8,12 +8,14 @@ columns as the source files -- no extra columns added.
 Usage:
     python3 filter_error_code_report.py --dates 02082026,03082026,04082026,05082026,06082026,07082026,08082026
     python3 filter_error_code_report.py --dates 02082026,03082026 --error-code 1003 \
-        --out ../output/position_report_1003_02082026_08082026.csv
+        --out ../output/2026-08-02_2026-08-08_position_report_1003.csv
 """
 import argparse
 from lib import csv_io_compat as csv
 import os
 import sys
+
+from lib.runtime import investigation_output_dir, range_output_path, snapshot_output_path
 
 
 def _matches_error_code(cell_value, expected_code):
@@ -30,13 +32,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dates", required=True,
                     help="Comma-separated list of dates in DDMMYYYY format, e.g. 02082026,03082026")
-    default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+    default_dir = str(investigation_output_dir())
     ap.add_argument("--input-dir", default=default_dir,
-                    help="Directory containing position_report_<date>.csv files (default: ../output)")
+                    help="Directory containing YYYY-MM-DD_position_report.csv files (default: ../output)")
     ap.add_argument("--error-code", default="1003",
                     help="Value to match in the error_codes column (default: 1003)")
     ap.add_argument("--out", default=None,
-                    help="Output CSV path (default: <input-dir>/position_report_<code>_<first>_<last>.csv)")
+                    help="Output CSV path (default: <input-dir>/YYYY-MM-DD_YYYY-MM-DD_position_report_<code>.csv)")
     args = ap.parse_args()
 
     dates = [d.strip() for d in args.dates.split(",") if d.strip()]
@@ -45,14 +47,15 @@ def main():
         sys.exit(1)
 
     out_path = args.out or os.path.join(
-        args.input_dir, f"position_report_{args.error_code}_{dates[0]}_{dates[-1]}.csv"
+        args.input_dir,
+        os.path.basename(range_output_path(dates[0], dates[-1], "position_report", tag=args.error_code)),
     )
 
     header = None
     rows_written = 0
     matching_rows = []
     for date in dates:
-        in_path = os.path.join(args.input_dir, f"position_report_{date}.csv")
+        in_path = snapshot_output_path(date, "position_report", output_dir=args.input_dir)
         if not os.path.exists(in_path):
             print(f"WARNING: input file not found, skipping: {in_path}", file=sys.stderr)
             continue

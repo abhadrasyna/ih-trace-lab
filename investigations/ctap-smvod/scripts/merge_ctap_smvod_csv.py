@@ -40,7 +40,7 @@ predate that column), and match_status.
 Usage:
     python3 merge_ctap_smvod_csv.py --date 08072026
     python3 merge_ctap_smvod_csv.py --date 08072026 \
-        --input-dir ../data/lightstep --out ../output/setupsession_08072026.csv
+        --input-dir ../data/lightstep --out ../output/2026-07-08_setupsession.csv
 """
 import argparse
 from lib import csv_io_compat as csv
@@ -48,6 +48,8 @@ import datetime
 import os
 import re
 import sys
+
+from lib.runtime import snapshot_output_path
 
 TRACE_KEY = "lightstep.trace_id"
 SESSION_KEY = "sessionId"
@@ -58,7 +60,7 @@ SESSION_KEY = "sessionId"
 # abr-vod-a1082ec1-03d5-4c79-abec-721e7917a292 on 14072026 used
 # dash-clear/vodc/...) content-UUID directly (see docs/STATUS.md, 17 Jul
 # 2026 "RESOLVED" entry). Column is optional/new -- older
-# smvod_DDMMYYYY.csv exports won't have it, in which case content_uuid is
+# SM-VOD aggregate exports won't have it, in which case content_uuid is
 # just left blank.
 CONTENT_UUID_RE = re.compile(r'/vod[a-z]/([a-f0-9-]+)/')
 PLAYBACK_URL_KEYS = ("session.playbackURL", "playbackURL")
@@ -248,7 +250,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 08072026")
     ap.add_argument("--input-dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "lightstep"))
-    ap.add_argument("--out", default=None, help="Output CSV path (default: ../output/setupsession_<date>.csv)")
+    ap.add_argument("--out", default=None, help="Output CSV path (default: ../output/YYYY-MM-DD_setupsession.csv)")
     args = ap.parse_args()
 
     ctap_files = find_input_file(args.input_dir, "ctap", args.date)
@@ -341,7 +343,7 @@ def main():
         return (status_rank, r.get("start_time") or "9999")
     out_rows.sort(key=sort_key)
 
-    out_path = args.out or os.path.join(args.input_dir, "..", "output", f"setupsession_{args.date}.csv")
+    out_path = args.out or snapshot_output_path(args.date, "setupsession")
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=OUTPUT_FIELDS)

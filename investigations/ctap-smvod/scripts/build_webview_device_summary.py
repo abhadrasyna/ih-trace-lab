@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Consolidates the per-date output/webview_device_report_DDMMYYYY.csv
+Consolidates the per-date output/YYYY-MM-DD_webview_device_report.csv
 files (produced by analyze_webview_devices.py) into a single
 device-model-level summary CSV in output/, so the "which device models
 have unreliable WebView playback" question can be answered across the
@@ -8,7 +8,7 @@ whole date range in one place, without changing the per-date report
 convention (analyze_webview_devices.py deliberately never merges those
 -- see BLUEPRINT.md).
 
-Each webview_device_report_DDMMYYYY.csv row is one wv *session*, with
+Each YYYY-MM-DD_webview_device_report.csv row is one wv *session*, with
 device-level wv/non-wv aggregate counts repeated on every row for that
 deviceId on that date (see analyze_webview_devices.py). To roll this up
 by device_model across dates without double-counting the repeated
@@ -21,7 +21,7 @@ per-deviceId aggregate columns, this script:
      aggregates repeated across every wv row for that device that day.
 
 Writes:
-  output/webview_device_summary_report.csv
+  output/webview_device_summary_report_rollup.csv
       One row per device_model: total wv sessions/success/failure and
       wv success rate across all dates found, how many distinct
       deviceIds of that model appeared, how many dates it appeared on,
@@ -41,24 +41,22 @@ import os
 import re
 from collections import defaultdict
 
-FILE_RE = re.compile(r'webview_device_report_(\d{8})\.csv$')
+from lib.runtime import investigation_output_dir, rollup_output_path
 
-
-def date_to_iso(ddmmyyyy):
-    return f"{ddmmyyyy[4:8]}-{ddmmyyyy[2:4]}-{ddmmyyyy[0:2]}"
+FILE_RE = re.compile(r'(\d{4}-\d{2}-\d{2})_webview_device_report\.csv$')
 
 
 def load_rows(output_dir):
-    """Reads every webview_device_report_DDMMYYYY.csv in output_dir,
+    """Reads every YYYY-MM-DD_webview_device_report.csv in output_dir,
     tagging each row with its source `date` (ISO) so downstream dedup/
     aggregation can key on (date, deviceId)."""
-    files = sorted(glob.glob(os.path.join(output_dir, "webview_device_report_*.csv")))
+    files = sorted(glob.glob(os.path.join(output_dir, "*_webview_device_report.csv")))
     all_rows = []
     for path in files:
         m = FILE_RE.search(os.path.basename(path))
         if not m:
             continue
-        iso_date = date_to_iso(m.group(1))
+        iso_date = m.group(1)
         with open(path, encoding='utf-8') as f:
             for row in csv.DictReader(f):
                 row['date'] = iso_date
@@ -133,20 +131,20 @@ SUMMARY_COLUMNS = [
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+    default_dir = str(investigation_output_dir())
     ap.add_argument("--output-dir", default=default_dir,
-                    help=f"Directory containing webview_device_report_DDMMYYYY.csv files and to "
+                    help=f"Directory containing YYYY-MM-DD_webview_device_report.csv files and to "
                          f"write the summary into (default: {default_dir})")
     args = ap.parse_args()
 
     all_rows = load_rows(args.output_dir)
     if not all_rows:
-        print("No webview_device_report_*.csv files found -- nothing to summarize.")
+        print("No *_webview_device_report.csv files found -- nothing to summarize.")
         return
 
     summary_rows = build_summary_rows(all_rows)
 
-    out_path = os.path.join(args.output_dir, "webview_device_summary_report.csv")
+    out_path = rollup_output_path("webview_device_summary_report", output_dir=args.output_dir)
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=SUMMARY_COLUMNS)
         writer.writeheader()

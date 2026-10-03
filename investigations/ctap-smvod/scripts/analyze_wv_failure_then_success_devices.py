@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Scans every output/setupsession_with_outcome_DDMMYYYY.csv file
+Scans every output/YYYY-MM-DD_setupsession_with_outcome.csv file
 available (the full date range this pipeline has been run for) and
 finds every deviceId that had at least one WebView ("; wv") playback
 *failure* (playback_outcome != "DESTROY") on some date, but also had
@@ -18,8 +18,8 @@ scripts.
 
 Writes one row per deviceId (only devices matching the
 failure-then-success-elsewhere pattern) to
-output/wv_failure_then_success_report.csv, plus a raw evidence CSV
-(output/wv_failure_then_success_evidence.csv) with one row per
+output/wv_failure_then_success_report_rollup.csv, plus a raw evidence CSV
+(output/wv_failure_then_success_evidence_rollup.csv) with one row per
 underlying session so the failure/success dates and UAs can be
 inspected directly.
 
@@ -36,8 +36,9 @@ import sys
 from collections import defaultdict
 
 from analyze_webview_devices import _is_wv, _is_success
+from lib.runtime import investigation_output_dir, rollup_output_path
 
-FILE_RE = re.compile(r"setupsession_with_outcome_(\d{8})\.csv$")
+FILE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})_setupsession_with_outcome\.csv$")
 
 REPORT_COLUMNS = [
     "deviceId",
@@ -53,9 +54,8 @@ EVIDENCE_COLUMNS = [
 ]
 
 
-def _ddmmyyyy_sort_key(d):
-    """DDMMYYYY -> (YYYY, MM, DD) so dates sort chronologically."""
-    return (d[4:8], d[2:4], d[0:2])
+def _iso_sort_key(d):
+    return d
 
 
 def load_rows(path):
@@ -74,10 +74,10 @@ def load_rows(path):
 
 def collect_all_sessions(input_dir):
     """Returns {deviceId: [ (date, row_dict), ... ]}, one entry per
-    session found across every setupsession_with_outcome_*.csv in
+    session found across every *_setupsession_with_outcome.csv in
     input_dir, sorted chronologically per device."""
     by_device = defaultdict(list)
-    files = sorted(glob.glob(os.path.join(input_dir, "setupsession_with_outcome_*.csv")))
+    files = sorted(glob.glob(os.path.join(input_dir, "*_setupsession_with_outcome.csv")))
     for path in files:
         m = FILE_RE.search(os.path.basename(path))
         if not m:
@@ -92,7 +92,7 @@ def collect_all_sessions(input_dir):
                 by_device[device_id].append((file_date, row))
 
     for device_id in by_device:
-        by_device[device_id].sort(key=lambda t: _ddmmyyyy_sort_key(t[0]))
+        by_device[device_id].sort(key=lambda t: _iso_sort_key(t[0]))
     return by_device
 
 
@@ -105,7 +105,7 @@ def find_failure_then_success_devices(by_device):
 
     for device_id, sessions in by_device.items():
         failure_dates = sorted({d for d, r in sessions if _is_wv(r) and not _is_success(r)},
-                                key=_ddmmyyyy_sort_key)
+                                key=_iso_sort_key)
         if not failure_dates:
             continue
 
@@ -118,7 +118,7 @@ def find_failure_then_success_devices(by_device):
         if not success_entries:
             continue
 
-        success_dates = sorted({d for d, r in success_entries}, key=_ddmmyyyy_sort_key)
+        success_dates = sorted({d for d, r in success_entries}, key=_iso_sort_key)
         success_seen_on_wv = any(_is_wv(r) for _, r in success_entries)
         success_seen_on_non_wv = any(not _is_wv(r) for _, r in success_entries)
 
@@ -148,15 +148,15 @@ def find_failure_then_success_devices(by_device):
                     "playback_outcome": r.get("playback_outcome", ""),
                 })
 
-    report_rows.sort(key=lambda r: _ddmmyyyy_sort_key(r["first_wv_failure_date"]))
+    report_rows.sort(key=lambda r: _iso_sort_key(r["first_wv_failure_date"]))
     return report_rows, evidence_rows
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+    default_dir = str(investigation_output_dir())
     ap.add_argument("--input-dir", default=default_dir,
-                    help=f"Directory containing setupsession_with_outcome_DDMMYYYY.csv files "
+                    help=f"Directory containing YYYY-MM-DD_setupsession_with_outcome.csv files "
                          f"for every date to search (default: {default_dir})")
     ap.add_argument("--output-dir", default=default_dir,
                     help=f"Directory to write the report/evidence CSVs into (default: {default_dir})")
@@ -165,8 +165,8 @@ def main():
     by_device = collect_all_sessions(args.input_dir)
     report_rows, evidence_rows = find_failure_then_success_devices(by_device)
 
-    report_path = os.path.join(args.output_dir, "wv_failure_then_success_report.csv")
-    evidence_path = os.path.join(args.output_dir, "wv_failure_then_success_evidence.csv")
+    report_path = rollup_output_path("wv_failure_then_success_report", output_dir=args.output_dir)
+    evidence_path = rollup_output_path("wv_failure_then_success_evidence", output_dir=args.output_dir)
 
     with open(report_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=REPORT_COLUMNS)

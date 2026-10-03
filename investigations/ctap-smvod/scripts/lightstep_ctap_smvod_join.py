@@ -29,7 +29,7 @@ Usage:
         --org Synamedia-EU \
         --project mcs-go-prod-iye9omdf-eu \
         --base-url https://api.eu.lightstep.com \
-        --out ../output/setupsession_09072026.csv
+        --out ../output/2026-07-09_setupsession.csv
 """
 import argparse
 from lib import csv_io_compat as csv
@@ -39,6 +39,8 @@ import re
 import sys
 import time
 import requests
+
+from lib.runtime import snapshot_output_path
 
 CTAP_ROUTE = "/ctap/:uxApiVersion/devices/me/playsessions"
 
@@ -277,7 +279,7 @@ def main():
     ap.add_argument("--project", required=True, help="Lightstep project id, e.g. mcs-go-prod-iye9omdf-eu")
     ap.add_argument("--base-url", default="https://api.eu.lightstep.com",
                      help="Use https://api.lightstep.com for US projects")
-    ap.add_argument("--out", default=None, help="Output CSV path (default: ../output/setupsession_<date>.csv)")
+    ap.add_argument("--out", default=None, help="Output CSV path (default: ../output/YYYY-MM-DD_setupsession.csv)")
     ap.add_argument("--rate-limit-sleep", type=float, default=1.0,
                      help="Seconds to sleep between trace fetches")
     args = ap.parse_args()
@@ -288,9 +290,7 @@ def main():
         sys.exit(1)
 
     oldest, youngest = ddmmyyyy_to_window(args.date)
-    out_path = args.out or os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "output", f"setupsession_{args.date}.csv"
-    )
+    out_path = args.out or snapshot_output_path(args.date, "setupsession")
 
     print(f"Querying SetupSession spans {oldest} -> {youngest} ...")
     matches = query_setup_sessions(args.base_url, args.org, args.project, api_key, oldest, youngest)

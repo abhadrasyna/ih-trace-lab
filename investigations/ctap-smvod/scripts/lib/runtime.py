@@ -2,22 +2,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 
-from athena_runner.aws_clients import AwsClientFactory
-from athena_runner.config import RunConfig
-from athena_runner.query_executor import BotoAthenaQueryExecutor
-from athena_runner.result_downloader import S3ResultDownloader
-from athena_runner.sso_auth import SsoCredentialRefresher
-from src.lib.athena.adapter import AthenaAdapter
-from src.lib.auth.sso import SsoAuth
 from src.lib.csv_io.csv_file import CsvFileWriter
 from src.lib.paths import YamlPathResolver
 
 DEFAULT_PROFILE = "clarissa-insights-product"
+INVESTIGATION_SLUG = "ctap-smvod"
 _DEFAULT_OUTPUT_LOCATION = "s3://clarissaprod-apps-athena-query-results/"
 _DEFAULT_WORKGROUP = "primary"
 _DEFAULT_REGION = "eu-central-1"
@@ -40,7 +35,50 @@ def make_path_resolver() -> YamlPathResolver:
     return YamlPathResolver.from_file(REPO_ROOT / "config" / "data_paths.yaml", repo_root=REPO_ROOT)
 
 
+def ddmmyyyy_to_date(raw_date: str) -> date:
+    return datetime.strptime(raw_date, "%d%m%Y").date()
+
+
+def ddmmyyyy_to_iso(raw_date: str) -> str:
+    return ddmmyyyy_to_date(raw_date).isoformat()
+
+
+def investigation_output_dir(output_dir: str | Path | None = None) -> Path:
+    if output_dir is not None:
+        return Path(output_dir)
+    return make_path_resolver().resolve_investigation_output_dir(INVESTIGATION_SLUG)
+
+
+def snapshot_output_path(date_ddmmyyyy: str, artifact: str, *, output_dir: str | Path | None = None) -> str:
+    resolver = make_path_resolver()
+    return str(investigation_output_dir(output_dir) / resolver.format_snapshot_filename(ddmmyyyy_to_date(date_ddmmyyyy), artifact))
+
+
+def range_output_path(
+    start_ddmmyyyy: str,
+    end_ddmmyyyy: str,
+    artifact: str,
+    *,
+    tag: str | None = None,
+    output_dir: str | Path | None = None,
+) -> str:
+    resolver = make_path_resolver()
+    return str(
+        investigation_output_dir(output_dir)
+        / resolver.format_range_filename(ddmmyyyy_to_date(start_ddmmyyyy), ddmmyyyy_to_date(end_ddmmyyyy), artifact, tag=tag)
+    )
+
+
+def rollup_output_path(artifact: str, *, output_dir: str | Path | None = None) -> str:
+    resolver = make_path_resolver()
+    return str(investigation_output_dir(output_dir) / resolver.format_rollup_filename(artifact))
+
+
 def ensure_valid_credentials(profile_name: str) -> bool:
+    from athena_runner.aws_clients import AwsClientFactory
+    from athena_runner.sso_auth import SsoCredentialRefresher
+    from src.lib.auth.sso import SsoAuth
+
     auth = SsoAuth(
         refresher_factory=lambda profile: SsoCredentialRefresher(
             profile=profile,
@@ -63,6 +101,12 @@ def make_athena_adapter(
     timeout: int = _DEFAULT_TIMEOUT,
     database: str,
 ) -> AthenaAdapter:
+    from athena_runner.aws_clients import AwsClientFactory
+    from athena_runner.config import RunConfig
+    from athena_runner.query_executor import BotoAthenaQueryExecutor
+    from athena_runner.result_downloader import S3ResultDownloader
+    from src.lib.athena.adapter import AthenaAdapter
+
     factory = AwsClientFactory(profile, region=region)
     run_config = RunConfig(
         profile=profile,

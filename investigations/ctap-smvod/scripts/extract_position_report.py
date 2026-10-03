@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Extract a compact "position check" CSV from the final
-output/setupsession_with_outcome_DDMMYYYY.csv report (produced by
+output/YYYY-MM-DD_setupsession_with_outcome.csv report (produced by
 merge_session_outcome.py) -- trims the full enriched report down to just
 the columns needed to review sessions where playback position may not
 have moved: householdId, deviceId, session.clientIp, sessionId,
@@ -9,7 +9,7 @@ content_uuid, start_time, error_codes, error_descriptions, state_sequence,
 min_position, max_position, position_not_moved.
 
 `content_uuid` (added 17 Jul 2026) is blank for any date whose
-`smvod_DDMMYYYY.csv` predates the `playbackURL` column (see
+SM-VOD aggregate export predates the `playbackURL` column (see
 docs/STATUS.md) -- backward-compatible, not an error.
 
 Follows the same trim/select pattern as extract_session_timeline.py, but
@@ -23,7 +23,7 @@ every session, the previous default). `--error-code` optionally narrows
 further to sessions whose error_codes column contains a given code in this
 project's documented 1001-1010 range. Since Step 6c
 (`filter_error_code_report.py`) and Step 7 (`correlate_cdn_ips.py`) both
-consume this same `output/position_report_DDMMYYYY.csv` file expecting
+consume this same `output/YYYY-MM-DD_position_report.csv` file expecting
 *every* session (not just position-not-moved ones), re-run this script with
 `--no-only-not-moved` first if you need the full report for those steps.
 
@@ -34,13 +34,15 @@ Usage:
     python3 extract_position_report.py --date 10072026 --no-only-not-moved
     python3 extract_position_report.py --date 10072026 --error-code 1003
     python3 extract_position_report.py --date 10072026 \
-        --input ../output/setupsession_with_outcome_10072026.csv \
-        --out ../output/position_report_10072026.csv
+        --input ../output/2026-07-10_setupsession_with_outcome.csv \
+        --out ../output/2026-07-10_position_report.csv
 """
 import argparse
 from lib import csv_io_compat as csv
 import os
 import sys
+
+from lib.runtime import investigation_output_dir, snapshot_output_path
 
 DEFAULT_COLUMNS = [
     "householdId", "deviceId", "session.clientIp", "sessionId", "content_uuid",
@@ -66,11 +68,11 @@ def _row_has_error_code(row, error_code):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 10072026")
-    default_output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+    default_output_dir = str(investigation_output_dir())
     ap.add_argument("--input", default=None,
-                    help="Source CSV (default: <output-dir>/setupsession_with_outcome_<date>.csv)")
+                    help="Source CSV (default: <output-dir>/YYYY-MM-DD_setupsession_with_outcome.csv)")
     ap.add_argument("--out", default=None,
-                    help="Output CSV path (default: <output-dir>/position_report_<date>.csv)")
+                    help="Output CSV path (default: <output-dir>/YYYY-MM-DD_position_report.csv)")
     ap.add_argument("--columns", default=",".join(DEFAULT_COLUMNS),
                     help=f"Comma-separated columns to keep (default: {','.join(DEFAULT_COLUMNS)})")
     ap.add_argument(
@@ -86,7 +88,7 @@ def main():
              "default: no error-code filtering")
     args = ap.parse_args()
 
-    input_path = args.input or os.path.join(default_output_dir, f"setupsession_with_outcome_{args.date}.csv")
+    input_path = args.input or snapshot_output_path(args.date, "setupsession_with_outcome", output_dir=default_output_dir)
     if not os.path.exists(input_path):
         print(f"ERROR: input file not found: {input_path} "
               f"(run merge_session_outcome.py first)", file=sys.stderr)
@@ -102,7 +104,7 @@ def main():
             # Treat missing columns as optional/best-effort (same convention
             # as the rest of the pipeline -- e.g. content_uuid, added 17 Jul
             # 2026, won't exist at all in setupsession_with_outcome files
-            # generated before playbackURL was added to smvod_DDMMYYYY.csv).
+            # generated before playbackURL was added to the SM-VOD export).
             # Warn, don't hard-fail, and just leave those columns blank.
             print(f"WARNING: column(s) {missing} not found in {input_path} "
                   f"-- leaving blank in output. Available columns: {available}",
@@ -125,7 +127,7 @@ def main():
 
     rows = [{c: row.get(c, "") for c in columns} for row in source_rows]
 
-    out_path = args.out or os.path.join(default_output_dir, f"position_report_{args.date}.csv")
+    out_path = args.out or snapshot_output_path(args.date, "position_report", output_dir=default_output_dir)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
 
     with open(out_path, "w", newline="") as f:

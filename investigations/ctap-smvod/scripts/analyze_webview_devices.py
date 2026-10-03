@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Extract a per-device WebView ("wv") reliability report from the final
-output/setupsession_with_outcome_DDMMYYYY.csv report (produced by
+output/YYYY-MM-DD_setupsession_with_outcome.csv report (produced by
 merge_session_outcome.py).
 
 For every session whose parsed User-Agent `Platform` column ends in
@@ -16,7 +16,7 @@ own success/failure split.
 
 Deliberately does NOT collapse a date range into one combined CSV --
 each date in --start-date/--end-date gets its own independent
-output/webview_device_report_DDMMYYYY.csv, matching this project's
+output/YYYY-MM-DD_webview_device_report.csv, matching this project's
 per-date output file convention (see BLUEPRINT.md). Missing daily input
 files are skipped with a stderr warning rather than failing the whole
 range, same convention as filter_error_code_report.py.
@@ -29,8 +29,8 @@ Usage:
     python3 analyze_webview_devices.py --start-date 2026-09-01 --end-date 2026-09-10
 
     python3 analyze_webview_devices.py --date 18092026 \
-        --input ../output/setupsession_with_outcome_18092026.csv \
-        --out ../output/webview_device_report_18092026.csv
+        --input ../output/2026-09-18_setupsession_with_outcome.csv \
+        --out ../output/2026-09-18_webview_device_report.csv
 """
 import argparse
 from lib import csv_io_compat as csv
@@ -39,6 +39,8 @@ import re
 import sys
 from collections import defaultdict
 from datetime import date, timedelta
+
+from lib.runtime import investigation_output_dir, snapshot_output_path
 
 # Matches the Android WebView UA's build segment, e.g.
 # "Android 15; SM-A055F Build/AP3A.240905.015.A2; wv" -> model=SM-A055F,
@@ -134,7 +136,7 @@ def build_report_rows(source_rows):
 
 def process_one_date(date_ddmmyyyy, input_dir, output_dir, out_override=None):
     """Processes one DDMMYYYY date and returns a `(status, written_rows)` tuple."""
-    input_path = os.path.join(input_dir, f"setupsession_with_outcome_{date_ddmmyyyy}.csv")
+    input_path = snapshot_output_path(date_ddmmyyyy, "setupsession_with_outcome", output_dir=input_dir)
     if not os.path.exists(input_path):
         print(f"WARNING: skipping {date_ddmmyyyy} -- input file not found: {input_path}",
               file=sys.stderr)
@@ -154,7 +156,7 @@ def process_one_date(date_ddmmyyyy, input_dir, output_dir, out_override=None):
 
     out_rows = build_report_rows(source_rows)
 
-    out_path = out_override or os.path.join(output_dir, f"webview_device_report_{date_ddmmyyyy}.csv")
+    out_path = out_override or snapshot_output_path(date_ddmmyyyy, "webview_device_report", output_dir=output_dir)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
 
     with open(out_path, "w", newline="") as f:
@@ -188,11 +190,11 @@ def main():
                     help="Range start date in YYYY-MM-DD format, e.g. 2026-09-01 (use with --end-date)")
     ap.add_argument("--end-date", default=None,
                     help="Range end date in YYYY-MM-DD format, inclusive, e.g. 2026-09-10")
-    default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+    default_dir = str(investigation_output_dir())
     ap.add_argument("--input-dir", default=default_dir,
-                    help=f"Directory containing setupsession_with_outcome_DDMMYYYY.csv (default: {default_dir})")
+                    help=f"Directory containing YYYY-MM-DD_setupsession_with_outcome.csv (default: {default_dir})")
     ap.add_argument("--output-dir", default=default_dir,
-                    help=f"Directory to write webview_device_report_DDMMYYYY.csv into (default: {default_dir})")
+                    help=f"Directory to write YYYY-MM-DD_webview_device_report.csv into (default: {default_dir})")
     ap.add_argument("--out", default=None,
                     help="Explicit output path -- only valid with --date (single-date mode), "
                          "ignored/invalid for a --start-date/--end-date range since each date "
@@ -210,7 +212,7 @@ def main():
         sys.exit(1)
     if args.out and args.start_date:
         print("ERROR: --out is only valid with a single --date, not a date range "
-              "(each date in a range always writes its own webview_device_report_DDMMYYYY.csv).",
+              "(each date in a range always writes its own YYYY-MM-DD_webview_device_report.csv).",
               file=sys.stderr)
         sys.exit(1)
 

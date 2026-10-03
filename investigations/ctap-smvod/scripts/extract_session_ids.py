@@ -7,8 +7,8 @@ rows for exactly the sessions already present in a given day's report,
 instead of scanning a full day's partition.
 
 Usage:
-    python3 extract_session_ids.py --input ../output/setupsession_08072026.csv
-    python3 extract_session_ids.py --input ../output/setupsession_08072026.csv \
+    python3 extract_session_ids.py --input ../output/2026-07-08_setupsession.csv
+    python3 extract_session_ids.py --input ../output/2026-07-08_setupsession.csv \
         --column sessionId --out ../queries/exploration/session_ids_08072026.sql
 
 Output (default: stdout) looks like:

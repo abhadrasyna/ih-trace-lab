@@ -8,8 +8,8 @@ spec.
 - [x] **CSM-1** — Audit `ctap-smvod-session-report/scripts/` and produce a per-file lib-vs-script classification table | Owner: AI agent | Model: n/a | Review: human read-through | SHA: 7da5a54
 - [x] **CSM-2** — Create `investigations/ctap-smvod/` skeleton + port business-logic scripts over `src/lib/*` | Owner: AI agent | Model: n/a | Review: tests green | SHA: 440d2fd
 - [x] **CSM-3** — Relocate manual Lightstep exports to `data/lightstep/`, ISO-prefixed | Owner: AI agent | Model: n/a | Review: tests green | SHA: 080508e
-- [x] **CSM-4** — Relocate Athena-pull inputs to `data/athena/` via `src/lib/athena` | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
-- [ ] **CSM-5** — Migrate `output/` to PT-7's snapshot/range/rollup convention | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
+- [x] **CSM-4** — Relocate Athena-pull inputs to `data/athena/` via `src/lib/athena` | Owner: AI agent | Model: n/a | Review: tests green | SHA: d40a6d9
+- [x] **CSM-5** — Migrate `output/` to PT-7's snapshot/range/rollup convention | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 - [ ] **CSM-6** — Extract the 45 query files into `query-catalog` | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 - [ ] **CSM-7** — Add tests + `RETENTION.md` + `CONTEXT.md` pointer | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 

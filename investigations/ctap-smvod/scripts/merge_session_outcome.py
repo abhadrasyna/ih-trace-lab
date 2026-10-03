@@ -7,9 +7,8 @@ source, join semantics, and dedup logic are quite different).
 
 Two additional Athena-derived inputs, joined on `sessionId`:
 
-    1. inputCSV/athena_session_DDMMYYYY.csv
-       Export of (table name is `unified_sessions`, hence the `athena_session_`
-       filename prefix):
+    1. data/athena/YYYY-MM-DD_session.csv
+       Export of:
            SELECT
              parent_session_id AS sessionId,
              MAX(user_id)   AS householdId,
@@ -36,7 +35,7 @@ Two additional Athena-derived inputs, joined on `sessionId`:
        signal), plus `content` (title, constant across all rows for a
        session).
 
-    2. inputCSV/debug_states_DDMMYYYY.csv  (preferred -- combined error + lifecycle + position)
+    2. data/athena/YYYY-MM-DD_debug_states.csv  (preferred -- combined error + lifecycle + position)
        Export of (columns already extracted via json_extract_scalar, not raw
        eventdata JSON):
            SELECT DISTINCT
@@ -94,7 +93,7 @@ Two additional Athena-derived inputs, joined on `sessionId`:
        delivery) -- both the Athena `DISTINCT` and this script's own dedup
        (on the full row tuple) handle that.
 
-    2b. inputCSV/debug_errors_DDMMYYYY.csv  (legacy fallback -- error-only)
+    2b. data/athena/YYYY-MM-DD_debug_errors.csv  (legacy fallback -- error-only)
        Raw export of:
            SELECT *
            FROM "unified_e6auj7k7"."e6auj7k7_ccl_debug_events"
@@ -109,21 +108,21 @@ Two additional Athena-derived inputs, joined on `sessionId`:
        the `eventdata` JSON string column, not first-class columns.
        This table is known to emit exact-duplicate rows (at-least-once log
        delivery) -- this script dedupes them.
-       Used only if debug_states_DDMMYYYY.csv is not present for the given
+       Used only if YYYY-MM-DD_debug_states.csv is not present for the given
        date -- in that case `state_sequence` stays blank (no lifecycle data
        in this legacy format), but error_codes/error_descriptions/etc. are
        still populated same as before.
 
 Both are merged into the existing CTAP/SM-VOD report
-(output/setupsession_DDMMYYYY.csv, produced by merge_ctap_smvod_csv.py) via
+(output/YYYY-MM-DD_setupsession.csv, produced by merge_ctap_smvod_csv.py) via
 `sessionId`, producing a new enriched report -- the original report is left
 untouched.
 
 Usage:
     python3 merge_session_outcome.py --date 08072026
     python3 merge_session_outcome.py --date 08072026 \
-        --input-dir ../inputCSV --report ../output/setupsession_08072026.csv \
-        --out ../output/setupsession_with_outcome_08072026.csv
+        --input-dir ../data/athena --report ../output/2026-07-08_setupsession.csv \
+        --out ../output/2026-07-08_setupsession_with_outcome.csv
 """
 import argparse
 from lib import csv_io_compat as csv
@@ -132,6 +131,9 @@ import json
 import os
 import re
 import sys
+from datetime import datetime
+
+from lib.runtime import investigation_output_dir, snapshot_output_path
 
 SESSION_KEY = "sessionId"
 
@@ -156,7 +158,8 @@ def load_csv(path):
 
 
 def find_input_file(input_dir, prefix, date, required=True):
-    pattern = os.path.join(input_dir, f"{prefix}_{date}*.csv")
+    iso_date = datetime.strptime(date, "%d%m%Y").strftime("%Y-%m-%d")
+    pattern = os.path.join(input_dir, f"{iso_date}_{prefix}*.csv")
     matches = sorted(glob.glob(pattern))
     if not matches:
         if required:
@@ -395,25 +398,42 @@ def load_debug_states(files):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 08072026")
-    default_input_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "inputCSV")
-    default_output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
+    default_input_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "athena")
+    default_output_dir = str(investigation_output_dir())
     ap.add_argument("--input-dir", default=default_input_dir)
     ap.add_argument("--report", default=None,
-                    help="Existing merged report to enrich (default: <output-dir>/setupsession_<date>.csv)")
+                    help="Existing merged report to enrich (default: <output-dir>/YYYY-MM-DD_setupsession.csv)")
     ap.add_argument("--out", default=None,
-                    help="Output CSV path (default: <output-dir>/setupsession_with_outcome_<date>.csv)")
+                    help="Output CSV path (default: <output-dir>/YYYY-MM-DD_setupsession_with_outcome.csv)")
     args = ap.parse_args()
 
-    report_path = args.report or os.path.join(default_output_dir, f"setupsession_{args.date}.csv")
+    report_path = args.report or snapshot_output_path(args.date, "setupsession", output_dir=default_output_dir)
     if not os.path.exists(report_path):
         print(f"ERROR: report file not found: {report_path} "
               f"(run merge_ctap_smvod_csv.py first)", file=sys.stderr)
         sys.exit(1)
 
-    athena_files = find_input_file(args.input_dir, "athena_session", args.date, required=False)
+    athena_files = find_input_file(args.input_dir, "session", args.date, required=False)
     debug_states_files = find_input_file(args.input_dir, "debug_states", args.date, required=False)
+    debug_error_files = []
+    if not debug_states_files:
+        debug_error_files = find_input_file(args.input_dir, "debug_errors", args.date, required=False)
 
     report_rows = load_csv(report_path)
+    if report_rows and not athena_files:
+        print(
+            "WARNING: no Athena session enrichment file was found in "
+            f"{args.input_dir} for {args.date}; playback/session columns will remain blank "
+            "unless you move the export into data/athena/ with the new ISO-prefixed name.",
+            file=sys.stderr,
+        )
+    if report_rows and not debug_states_files and not debug_error_files:
+        print(
+            "WARNING: no Athena debug enrichment files were found in "
+            f"{args.input_dir} for {args.date}; error/lifecycle/position columns will remain blank "
+            "unless you move the exports into data/athena/ with the new ISO-prefixed names.",
+            file=sys.stderr,
+        )
     outcomes_by_session = load_athena_outcomes(athena_files)
 
     if debug_states_files:
@@ -423,7 +443,6 @@ def main():
         debug_source_note = f"debug_states ({len(debug_states_files)} file(s))"
     else:
         # Legacy fallback: error-only export, no lifecycle/state_sequence/position data.
-        debug_error_files = find_input_file(args.input_dir, "debug_errors", args.date, required=False)
         states_by_session = {}
         positions_by_session = {}
         errors_by_session = load_debug_errors(debug_error_files)
@@ -478,7 +497,7 @@ def main():
         new_row["outcome_match_status"] = status
         out_rows.append(new_row)
 
-    out_path = args.out or os.path.join(default_output_dir, f"setupsession_with_outcome_{args.date}.csv")
+    out_path = args.out or snapshot_output_path(args.date, "setupsession_with_outcome", output_dir=default_output_dir)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
 
     fieldnames = list(report_rows[0].keys()) if report_rows else []
