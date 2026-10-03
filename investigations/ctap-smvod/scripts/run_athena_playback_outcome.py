@@ -26,7 +26,7 @@ Usage:
         --database unified_e6auj7k7 \
         --workgroup primary \
         --output-location s3://clarissaprod-apps-athena-query-results/ \
-        --output-dir ../inputCSV
+        --output-dir ../data/athena
 """
 import argparse
 import logging
@@ -37,7 +37,7 @@ from datetime import datetime
 from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, run_athena_query
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "inputCSV")
+DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "data", "athena")
 
 QUERY_TEMPLATE = """SELECT
   parent_session_id AS sessionId,
@@ -64,6 +64,14 @@ GROUP BY parent_session_id;
 """
 
 
+def _default_output_path(date_iso: str, output_dir: str) -> str:
+    return os.path.join(output_dir, f"{date_iso}_session.csv")
+
+
+def _validated_date_iso(raw_date: str) -> str:
+    return datetime.strptime(raw_date, "%Y-%m-%d").strftime("%Y-%m-%d")
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
 
@@ -83,7 +91,7 @@ def main():
              "--output-location results bucket only exists there, which "
              "differs from this profile's own configured region, "
              "us-east-1)")
-    ap.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Directory to write the CSV to (default: <repo>/inputCSV)")
+    ap.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Directory to write the CSV to (default: <repo>/data/athena)")
     ap.add_argument("--poll-interval", type=int, default=2, help="Seconds between status polls (default: 2)")
     ap.add_argument("--timeout", type=int, default=300, help="Max seconds to wait for query completion (default: 300)")
     ap.add_argument("--dry-run", action="store_true", help="Print the filled-in query and exit, without touching Athena")
@@ -91,12 +99,12 @@ def main():
     args = ap.parse_args()
 
     try:
-        datetime.strptime(args.date, "%Y-%m-%d")
+        date_iso = _validated_date_iso(args.date)
     except ValueError:
         print(f"ERROR: --date must be YYYY-MM-DD, got '{args.date}'", file=sys.stderr)
         sys.exit(1)
 
-    query = QUERY_TEMPLATE.format(date=args.date)
+    query = QUERY_TEMPLATE.format(date=date_iso)
 
     if args.dry_run:
         sys.stdout.write(query)
@@ -111,12 +119,10 @@ def main():
         if not already_valid:
             print(f"Refreshed SSO credentials for profile '{args.profile}' via aws-sso.", file=sys.stderr)
 
-    ddmmyyyy = datetime.strptime(args.date, "%Y-%m-%d").strftime("%d%m%Y")
-    out_filename = f"athena_session_{ddmmyyyy}.csv"
     os.makedirs(args.output_dir, exist_ok=True)
-    out_path = os.path.join(args.output_dir, out_filename)
+    out_path = _default_output_path(date_iso, args.output_dir)
 
-    print(f"Starting Athena query on {args.database}.unified_sessions for {args.date} "
+    print(f"Starting Athena query on {args.database}.unified_sessions for {date_iso} "
           f"(profile={args.profile}, workgroup={args.workgroup})...", file=sys.stderr)
     try:
         result = run_athena_query(
