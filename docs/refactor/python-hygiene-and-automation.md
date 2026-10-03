@@ -68,6 +68,50 @@ runs the same way on every commit regardless of who (or what) is writing the cod
    job runs; it should wrap `ruff`/`flake8` (fast line-level lint + import order + many of the defect patterns above), `mypy`/`pyright` (catches a large fraction of the type-shaped defects — `Any`
    leakage, broad return types, some `None`-handling bugs — for free), and `pytest`. Keep a `make help`-style self-documenting target so the list of available checks doesn't silently drift out of sync
    with what's actually wired up.
+
+### Pin an explicit rule selection — don't rely on a tool's shifting defaults
+
+A linter's *default* rule set is itself an implicit dependency: it changes across tool versions without this doc changing, which is exactly the "explicit is better than implicit" problem the rest of
+this playbook argues against elsewhere. Two projects pinning the same `ruff`/`mypy` *version* but relying on defaults can still end up enforcing different things a year apart, or a new project started
+today can silently end up enforcing *more* or *less* than the project this playbook came from. Select rules explicitly in `pyproject.toml` instead, so the enforced set is a reviewable,
+version-controlled fact, not a side effect of whichever version happens to be installed. The selection below is one concrete mapping from this doc's own defect/design-quality catalog onto `ruff` rule
+codes — verify against your installed `ruff` version's own rule list before trusting it (`ruff check --show-settings <file>` prints the actually-resolved set), since codes do get renamed or
+reorganized between major versions:
+
+```toml
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",     # pycodestyle + pyflakes — baseline correctness/style
+    "B",               # flake8-bugbear — mutable defaults (B006), late-binding closures (B023),
+                       # function-call-in-default-argument (B008), and friends
+    "B9",              # bugbear's opinionated extras — zip-without-explicit-strict (B905) lives here,
+                       # NOT in the plain "B" set; must be selected explicitly
+    "BLE",             # blind/bare `except Exception` (BLE001)
+    "S",               # flake8-bandit — the FULL injection/secrets/security set (hardcoded SQL,
+                       # subprocess shell=True, hardcoded passwords); only S102/S110/S112 ship by
+                       # default, the rest of "S" must be selected explicitly
+    "C4",              # flake8-comprehensions — unnecessary/overcomplicated comprehensions
+    "SIM",             # flake8-simplify — manual patterns `collections`/stdlib already solves
+    "ASYNC",           # flake8-async — blocking calls inside `async def`
+    "RUF",             # ruff-native rules — mutable dataclass defaults (RUF008/009), and more
+    "PLR0913",         # too-many-arguments — NOT included by plain "PLR"; add explicitly
+    "C901",            # McCabe complexity — the `max-complexity` setting exists by default but the
+                        # rule itself is NOT enabled unless selected explicitly
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.mypy]
+disallow_untyped_defs = true   # every public function needs a type-hinted signature
+warn_return_any = true         # catches `Any` leaking out of a function boundary
+no_implicit_optional = true    # catches the "None used as a sentinel" shape at the type level
+strict_equality = true         # flags `==`/`!=` between incompatible types
+```
+
+Treat this as a starting point to adapt, not a value to copy blindly — a project with no `async` code gets no value from the `ASYNC` category, and a project that genuinely needs `Any` at its
+boundaries (e.g. heavy `dict`-shaped third-party JSON) should scope `warn_return_any` exceptions explicitly rather than fighting it everywhere. The discipline that matters is *explicit selection*, not
+this exact list.
 2. **A `pre-commit` hook running the same checks locally, before a commit lands** — this is what turns "the CI will catch it eventually" into "it never gets committed in the first place." Wire actual
    tool hooks (`ruff`, `mypy`, a secrets scanner, a basic security linter) here, not just formatting checks — a hook that only reformats whitespace is leaving most of the defect list above uncaught.
 3. **A security/secrets layer** — a static-analysis security linter (flags the injection/`shell=True`/unsafe-deserialization shapes above) and a secrets scanner (blocks a credential literal from ever
