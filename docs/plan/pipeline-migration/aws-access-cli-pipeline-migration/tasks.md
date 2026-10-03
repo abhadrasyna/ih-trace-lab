@@ -10,6 +10,7 @@ spec.
   - Path note: implemented as importable package `src/pipelines/aws_access_cli/`; keep `aws-access-cli` as the external slug only.
 - [x] **AAM-3** — Extract the 6 SQL query classes into `query-catalog`'s catalog | Owner: AI agent | Model: n/a | Review: tests green | SHA: e46d73f
 - [ ] **AAM-4** — Migrate output writes to PT-7's `PathResolver` + ISO-prefix filenames | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
+  - Resolution note: keep `output/<TENANT>/<cadence>/` unchanged; use `PathResolver` only for snapshot/range/rollup filename generation, per the epic README's PT-7 constraint.
 - [ ] **AAM-5** — Execute PT-6's cron-cutover procedure for the 3 live crontab entries | Owner: human (crontab access required) | Model: n/a | Review: N consecutive parallel-run matches | SHA: <—>
 - [ ] **AAM-6** — Add tests for ported business-logic modules + `CONTEXT.md` pointer | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 

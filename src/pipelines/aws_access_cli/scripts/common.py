@@ -108,7 +108,7 @@ def _base_output_dir(args: argparse.Namespace, period: str) -> Path:
     base_dir = Path(args.output_dir)
     if not base_dir.is_absolute():
         base_dir = repo_root() / base_dir
-    return base_dir / (get_tenant(args.tenant).code if args.tenant else "ZA") / ({"day": "daily", "week": "weekly", "month": "monthly"}[period])
+    return base_dir / get_tenant(args.tenant).code / ({"day": "daily", "week": "weekly", "month": "monthly"}[period])
 
 
 def _end_date_exclusive(value: str) -> str:

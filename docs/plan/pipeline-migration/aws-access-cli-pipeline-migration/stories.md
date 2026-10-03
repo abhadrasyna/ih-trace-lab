@@ -91,6 +91,10 @@ sequenceDiagram
 
 ## AAM-4 — Output-path migration to PT-7 convention
 
+**2026-10-03 resolution:** keep `output/<TENANT>/<cadence>/` as-is and apply PT-7 only to filename generation (`format_snapshot_filename` / `format_range_filename` / `format_rollup_filename`).
+
+This follows the epic README's cross-cutting constraint that `config/data_paths.yaml` template definitions are consumed as-is, not extended by this story.
+
 **Files to change / create:**
 - `src/pipelines/aws-access-cli/scripts/*.py` — replace ad hoc output paths with `PathResolver` calls.
 - `config/data_paths.yaml` — add/confirm the templates this pipeline needs (owned by PT-7; only add entries here, don't redesign the schema).

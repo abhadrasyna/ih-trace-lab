@@ -5,3 +5,4 @@
 - 2026-10-03 — AAM-2 resolution received: use `src/pipelines/aws_access_cli/` for imports, keep `aws-access-cli` as the external slug, and preserve a valid Python module path.
 - 2026-10-03 — AAM-2 completed in `274fdd7`: created `src/pipelines/aws_access_cli/` with thin `run_*.py` wrappers and catalog-backed query templates; smoke and helper tests passed.
 - 2026-10-03 — AAM-3 completed in `e46d73f`: added catalog-lookup and no-inline-SQL regression tests; all 15 targeted pipeline tests passed.
+- 2026-10-03 — AAM-4 resolution received: keep `output/<TENANT>/<cadence>/` as-is and apply PT-7 only to filename generation, matching the epic README's "consume `config/data_paths.yaml` as-is" rule.
