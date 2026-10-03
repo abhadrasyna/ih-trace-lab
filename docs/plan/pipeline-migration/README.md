@@ -94,8 +94,8 @@ graph TB
 
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
-| `aws-access-cli-pipeline-migration/` | Port Athena reports to `src/pipelines/aws-access-cli/`, incl. PT-6 cutover | 🔄 In progress | taxonomy PT-1/2/6/7, lib-migration, catalog | `5f89050` |
-| `ctap-smvod-investigation-migration/` | Port campaign to `investigations/ctap-smvod/`, incl. manual-step + output reorg | 🔄 In progress | taxonomy PT-1/2/7, lib-migration, catalog | `b417cfa` |
+| `aws-access-cli-pipeline-migration/` | Port Athena reports to `src/pipelines/aws-access-cli/`, incl. PT-6 cutover | 🔄 In progress (merged) | taxonomy PT-1/2/6/7, lib-migration, catalog | `5f89050` |
+| `ctap-smvod-investigation-migration/` | Port campaign to `investigations/ctap-smvod/`, incl. manual-step + output reorg | ✅ Done (merged) | taxonomy PT-1/2/7, lib-migration, catalog | `b417cfa` |
 
 Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.
 
@@ -114,8 +114,11 @@ Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic
   mechanism. `aws-access-cli-pipeline-migration` ran on branch `plan/aws-access-cli-pipeline-migration` in `../wt-aws-access-cli-pipeline-migration`, completed AAM-1..4 and AAM-6 (closing SHA
   `5f89050`), and halted at AAM-5 (cron cutover) since it is explicitly owner: human (crontab access required) — see that story's own `session-log.md` for the operator runbook.
   `ctap-smvod-investigation-migration` ran on branch `plan/ctap-smvod-investigation-migration` in `../wt-ctap-smvod-investigation-migration` and completed all of CSM-1..7 (closing SHA `b417cfa`).
-  Neither branch is merged yet; neither worktree has been removed; neither story has been archived — all three are pending human review of both stories together, per the batch-review cadence confirmed
-  for this run.
+- **2026-10-04:** both branches were merged into `main` (`--no-ff`) per operator go-ahead: `ctap-smvod-investigation-migration` as `f04efa2` (clean, no conflicts), `aws-access-cli-pipeline-migration`
+  as `875cde7` (one `CONTEXT.md` conflict, resolved by hand-writing a fresh bullet reflecting both stories' true final state). Full merged test suite green (82 passed). Neither worktree has been
+  removed nor branch deleted yet. Archiving is still blocked: both stories are sub-stories nested under this epic, so `scripts/dev/archive_completed_story.py` only archives the whole epic at once,
+  once every sub-story's `tasks.md` shows `Open: none` — `aws-access-cli-pipeline-migration` still has AAM-5 (PT-6 cron cutover) open, owner: human, deferred to the operator to run the parallel-cron
+  cutover and report back before the epic can be archived.
 - `functional-code-taxonomy` FCT-1's audit-citation list and `query-catalog`'s own file inventory should, once picked up, cross-reference this epic's stories as the actual consumers/movers of the
   files they cite — this epic does not edit those stories' files itself (both are not yet started); this note is the coordination record.
 - `aws-access-cli-pipeline-migration`'s cron-cutover step is the first real exercise of `project-taxonomy` PT-6's procedure — if that procedure proves incomplete in practice, the fix belongs in PT-6's

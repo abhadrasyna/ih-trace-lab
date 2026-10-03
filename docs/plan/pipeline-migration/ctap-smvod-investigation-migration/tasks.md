@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: CSM-1, CSM-2, CSM-3, CSM-4, CSM-5, CSM-6, CSM-7.**
+**Open: none.**
 
 - [x] **CSM-1** — Audit `ctap-smvod-session-report/scripts/` and produce a per-file lib-vs-script classification table | Owner: AI agent | Model: n/a | Review: human read-through | SHA: 7da5a54
 - [x] **CSM-2** — Create `investigations/ctap-smvod/` skeleton + port business-logic scripts over `src/lib/*` | Owner: AI agent | Model: n/a | Review: tests green | SHA: 440d2fd
