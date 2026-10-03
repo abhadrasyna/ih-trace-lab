@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class AuthProtocol(Protocol):
     """DIP seam: AWS SSO profile-session auth, for non-Athena consumers needing an authenticated `boto3.Session`."""
 
-    def ensure_session(self, profile_name: str) -> "boto3.Session":
+    def ensure_session(self, profile_name: str) -> boto3.Session:
         ...
 
     def refresh_if_expired(self, profile_name: str) -> bool:

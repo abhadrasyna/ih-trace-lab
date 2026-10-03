@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 
 from src.pipelines.aws_access_cli.schedule import SubReport, run_for_all_tenants
-from src.pipelines.aws_access_cli.scripts.common import DEFAULT_RUNTIME, make_auth
 from src.pipelines.aws_access_cli.scripts import (
     run_adoption_report,
     run_adoption_session_report,
@@ -13,6 +12,7 @@ from src.pipelines.aws_access_cli.scripts import (
     run_shaka_error_hhid_report,
     run_shaka_error_session_report,
 )
+from src.pipelines.aws_access_cli.scripts.common import DEFAULT_RUNTIME, make_auth
 from src.pipelines.aws_access_cli.tenants import TenantConfig
 
 _SUB_REPORTS = [

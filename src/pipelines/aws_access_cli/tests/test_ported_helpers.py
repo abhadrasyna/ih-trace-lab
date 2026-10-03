@@ -7,7 +7,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.pipelines.aws_access_cli import adoption, position_report, schedule, shaka_errors
+from src.pipelines.aws_access_cli import (
+    adoption,
+    position_report,
+    schedule,
+    shaka_errors,
+)
 from src.pipelines.aws_access_cli.scripts import common
 from src.pipelines.aws_access_cli.tenants import DEFAULT_TENANT
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import importlib
 
-
 WRAPPERS = [
     'src.pipelines.aws_access_cli.scripts.run_adoption_report',
     'src.pipelines.aws_access_cli.scripts.run_adoption_session_report',

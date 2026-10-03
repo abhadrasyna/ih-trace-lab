@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 _SECTION_BEGIN = "<!-- DDL_SECTION:BEGIN -->"
 _SECTION_END = "<!-- DDL_SECTION:END -->"

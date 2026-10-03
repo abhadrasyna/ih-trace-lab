@@ -9,7 +9,6 @@ from pathlib import Path
 from src.lib.athena.protocols import AthenaClient
 from src.lib.csv_io.protocols import CsvWriterProtocol
 from src.lib.paths.protocols import PathResolver
-
 from src.pipelines.aws_access_cli.catalog import QueryCatalog, quote_sql_literal
 from src.pipelines.aws_access_cli.tenants import TenantConfig
 

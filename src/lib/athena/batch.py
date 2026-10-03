@@ -35,7 +35,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from athena_runner.config import RunConfig
 
 from src.lib.athena.cache import QueryResultCache, fingerprint_query
-from src.lib.athena.exceptions import AthenaAdapterError, AthenaBatchExecutionError, AthenaQueryExecutionError
+from src.lib.athena.exceptions import (
+    AthenaAdapterError,
+    AthenaBatchExecutionError,
+    AthenaQueryExecutionError,
+)
 from src.lib.athena.protocols import AthenaClient, QueryResult
 from src.lib.logging.context import FcidLogFilter
 
@@ -126,7 +130,7 @@ class BatchQueryRunner:
         except AthenaAdapterError as exc:
             logger.error("batch query %s failed: %s", caller_key, exc)
             return caller_key, None, exc
-        except Exception as exc:  # noqa: BLE001 - deliberately broad: module docstring promises every
+        except Exception as exc:
             # propagated exception is this module's own AthenaAdapterError hierarchy, and every query in the
             # batch must be allowed to finish regardless of what any single one raises (see module docstring).
             logger.error("batch query %s raised an unexpected error: %s", caller_key, exc, exc_info=True)

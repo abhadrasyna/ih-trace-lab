@@ -13,7 +13,7 @@ class TenantConfig:
     debug_events_table: str
 
     @classmethod
-    def from_tenant_id(cls, tenant_id: str, code: str, country: str) -> "TenantConfig":
+    def from_tenant_id(cls, tenant_id: str, code: str, country: str) -> TenantConfig:
         return cls(
             tenant_id=tenant_id,
             code=code,

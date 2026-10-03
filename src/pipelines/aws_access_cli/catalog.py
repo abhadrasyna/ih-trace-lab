@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping
 
 _PLACEHOLDER_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
 

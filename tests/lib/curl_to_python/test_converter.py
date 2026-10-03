@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import pytest
 
-from src.lib.curl_to_python.converter import CurlToRequestsConverter, UnsupportedCurlFlagError
+from src.lib.curl_to_python.converter import (
+    CurlToRequestsConverter,
+    UnsupportedCurlFlagError,
+)
 
 
 def test_convert_get_request() -> None:
@@ -101,7 +104,7 @@ def test_convert_non_ascii_data_is_emitted_as_utf8_bytes() -> None:
 
     result = converter.convert('curl https://example.com/api -d \'{"name": "日本"}\'')
 
-    assert "data = " + repr('{"name": "日本"}'.encode("utf-8")) in result
+    assert "data = " + repr('{"name": "日本"}'.encode()) in result
 
 
 def test_convert_header_without_colon_is_unsupported() -> None:

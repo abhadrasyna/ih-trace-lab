@@ -11,7 +11,8 @@ itself (DIP): all SSO-refresh and session-construction logic stays with the inje
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Protocol, runtime_checkable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     import boto3
@@ -56,6 +57,6 @@ class SsoAuth:
         was_already_valid = self._refresher_factory(profile_name).ensure_valid()
         return not was_already_valid
 
-    def ensure_session(self, profile_name: str) -> "boto3.Session":
+    def ensure_session(self, profile_name: str) -> "boto3.Session":  # noqa: UP037 - quoted intentionally; see test_ensure_session_does_not_construct_own_boto3_client
         self.refresh_if_expired(profile_name)
         return self._session_factory(profile_name)

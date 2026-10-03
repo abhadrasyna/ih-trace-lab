@@ -12,7 +12,11 @@ from athena_runner.config import RunConfig
 
 from src.lib.athena.batch import BatchQueryRunner
 from src.lib.athena.cache import InMemoryTtlCache, fingerprint_query
-from src.lib.athena.exceptions import AthenaAdapterError, AthenaBatchExecutionError, AthenaQueryExecutionError
+from src.lib.athena.exceptions import (
+    AthenaAdapterError,
+    AthenaBatchExecutionError,
+    AthenaQueryExecutionError,
+)
 from src.lib.athena.protocols import QueryResult
 from src.lib.logging.context import bind_fcid, current_fcid
 
@@ -32,7 +36,7 @@ class _FakeClient:
 
     def __init__(
         self,
-        high_water_mark: "_HighWaterMark | None" = None,
+        high_water_mark: _HighWaterMark | None = None,
         fail_sql: str | None = None,
         raise_unexpected_for_sql: str | None = None,
     ) -> None:
@@ -182,8 +186,8 @@ def test_put_evicts_other_expired_entries_without_being_read_first() -> None:
     clock.advance(11)
     cache.put("other-fp", result)
 
-    assert len(cache._entries) == 1  # noqa: SLF001 - internal-state assertion is this test's whole point
-    assert "one-off-fp" not in cache._entries  # noqa: SLF001
+    assert len(cache._entries) == 1
+    assert "one-off-fp" not in cache._entries
 
 
 def test_run_batch_preserves_caller_keys() -> None:

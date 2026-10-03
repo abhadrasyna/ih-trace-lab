@@ -7,28 +7,41 @@ from pathlib import Path
 from typing import Any
 
 from src.lib.report_render.factory import make_report_writer
-
 from src.pipelines.aws_access_cli.adoption import (
     GAP_HOUSEHOLD_METRICS,
     GAP_SESSION_METRICS,
     GUEST_METRICS,
     HOUSEHOLD_METRICS,
-    MetricSpec,
     SESSION_METRICS,
+    MetricSpec,
     build_adoption_report,
+)
+from src.pipelines.aws_access_cli.adoption import (
     resolve_filename as resolve_adoption_filename,
+)
+from src.pipelines.aws_access_cli.adoption import (
     write_report as write_adoption_report,
 )
 from src.pipelines.aws_access_cli.catalog import QueryCatalog, comma_join_quoted
 from src.pipelines.aws_access_cli.position_report import run_position_report
-from src.pipelines.aws_access_cli.runtime import RuntimeConfig, make_athena_client, make_auth, make_csv_writer, make_path_resolver, repo_root
+from src.pipelines.aws_access_cli.runtime import (
+    RuntimeConfig,
+    make_athena_client,
+    make_auth,
+    make_csv_writer,
+    make_path_resolver,
+    repo_root,
+)
 from src.pipelines.aws_access_cli.shaka_errors import (
     build_shaka_error_report,
+)
+from src.pipelines.aws_access_cli.shaka_errors import (
     resolve_filename as resolve_shaka_filename,
+)
+from src.pipelines.aws_access_cli.shaka_errors import (
     write_report as write_shaka_report,
 )
 from src.pipelines.aws_access_cli.tenants import TENANTS_BY_CODE, get_tenant
-
 
 DEFAULT_RUNTIME = RuntimeConfig()
 _SESSION_ID_BATCH_SIZE = 250

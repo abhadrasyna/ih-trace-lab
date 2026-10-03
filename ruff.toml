@@ -1,0 +1,9 @@
+line-length = 120
+
+[lint]
+# Curated, intentional rule set — this repo had no ruff config before, so ruff was
+# silently defaulting to its full broad rule set (hundreds of rules), surfacing noise
+# unrelated to real bugs (e.g. DTZ007 flagging plain calendar-date parsing with no
+# time component). Selected here: pyflakes (F), core pycodestyle errors (E4/E7/E9),
+# isort (I), pyupgrade (UP), bugbear (B), flake8-simplify (SIM), comprehensions (C4).
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "C4"]

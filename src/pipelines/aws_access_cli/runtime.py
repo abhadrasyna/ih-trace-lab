@@ -51,7 +51,9 @@ def make_auth() -> SsoAuth:
 
 
 def make_athena_client(runtime: RuntimeConfig, database: str) -> Any:
-    from athena_runner import aws_clients, config as config_lib, query_executor, result_downloader
+    from athena_runner import aws_clients, query_executor, result_downloader
+    from athena_runner import config as config_lib
+
     from src.lib.athena.adapter import AthenaAdapter
 
     factory = aws_clients.AwsClientFactory(runtime.profile, runtime.region)

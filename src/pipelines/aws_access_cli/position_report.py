@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from src.lib.athena.protocols import AthenaClient
-
 from src.pipelines.aws_access_cli.catalog import QueryCatalog, comma_join_quoted
 from src.pipelines.aws_access_cli.tenants import TenantConfig
 

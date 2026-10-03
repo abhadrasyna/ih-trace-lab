@@ -47,7 +47,8 @@ from src.lib.athena.exceptions import (
 from src.lib.athena.protocols import QueryResult
 
 if TYPE_CHECKING:
-    from athena_runner.query_executor import AthenaQueryExecutor, QueryResult as RunnerQueryResult
+    from athena_runner.query_executor import AthenaQueryExecutor
+    from athena_runner.query_executor import QueryResult as RunnerQueryResult
     from athena_runner.result_downloader import ResultDownloader
 
 _logger = logging.getLogger(__name__)
@@ -85,8 +86,8 @@ class AthenaAdapter:
 
     def __init__(
         self,
-        executor: "AthenaQueryExecutor",
-        downloader: "ResultDownloader",
+        executor: AthenaQueryExecutor,
+        downloader: ResultDownloader,
         config: athena_runner_config.RunConfig,
         database: str,
         *,
@@ -141,7 +142,7 @@ class AthenaAdapter:
         except KeyError as exc:
             raise ValueError(f"SQL template references a parameter not present in params={sorted(params)}: {exc}") from exc
 
-    def _run_with_retry(self, sql: str) -> "RunnerQueryResult":
+    def _run_with_retry(self, sql: str) -> RunnerQueryResult:
         attempt = 0
         while True:
             try:
@@ -158,7 +159,7 @@ class AthenaAdapter:
                 self._sleep_backoff(attempt)
                 attempt += 1
 
-    def _download_and_translate(self, runner_result: "RunnerQueryResult") -> QueryResult:
+    def _download_and_translate(self, runner_result: RunnerQueryResult) -> QueryResult:
         csv_path = str(Path(self._config.output_dir) / f"{runner_result.query_execution_id}.csv")
         self._download_with_retry(runner_result.output_location, csv_path)
         rows = self._read_rows(csv_path)

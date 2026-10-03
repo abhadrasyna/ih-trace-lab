@@ -14,7 +14,11 @@ Consumers should call `make_report_writer(shape)` and never import `MarkdownTabl
 from __future__ import annotations
 
 from .protocols import ReportRenderer
-from .writers import CategoryBreakdownWriter, MarkdownTableWriter, StatisticalWriteupWriter
+from .writers import (
+    CategoryBreakdownWriter,
+    MarkdownTableWriter,
+    StatisticalWriteupWriter,
+)
 
 REPORT_SHAPE_REGISTRY: dict[str, type[ReportRenderer]] = {
     "markdown_table": MarkdownTableWriter,
