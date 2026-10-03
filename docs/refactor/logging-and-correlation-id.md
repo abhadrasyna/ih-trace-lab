@@ -41,8 +41,13 @@ The naive approach — add an `fcid: str` parameter to every function/method alo
 violates a shared library's own "thin, constructor-injected, delegation-only" shape once that shape exists (see `design-principles.md`'s DIP section): every adapter method picks up a parameter that
 has nothing to do with its actual job.
 
-Prefer your language's ambient-context mechanism instead (e.g. Python's `contextvars`, a thread-local, or an async-local equivalent in other ecosystems): a module-level context variable set once at
-the entry point, read implicitly by the logging layer. In Python:
+**This is a deliberate exception to "explicit is better than implicit," not a silent violation of it.** Zen's default is explicit data flow — an ordinary domain value belongs in a function's own
+signature, not smuggled in via ambient state, and most of this playbook's own guidance (constructor injection, no hidden collaborators) pushes the opposite direction from what's being chosen here. The
+exception is narrow and specific: FCID is not a domain value any function's logic actually consumes, it's pure cross-cutting infrastructure (identical in spirit to a logger instance or a request id in
+a web framework's middleware stack) — threading it explicitly would add a parameter to every function in the call graph that no function's own logic needs or uses. Don't generalize this exception to
+anything that *is* a real input to the logic it's passed to; `contextvars` is for infrastructure plumbing, not for passing data your function actually operates on.
+
+Python's ambient-context primitive for this is `contextvars`:
 
 ```python
 from contextvars import ContextVar
@@ -58,9 +63,9 @@ def current_fcid() -> str | None:
 
 This is stdlib, thread-safe, and — with an explicit context-copy call — safe across thread-pool/async-task boundaries, which matters the moment any part of a run does concurrent work (e.g. batched API
 calls) under one FCID. **This is the one real gotcha**: naively submitting work to a thread pool or async task from inside a context that has the FCID bound does *not* guarantee the worker sees it —
-you must explicitly capture and carry the context across that boundary, or the FCID silently vanishes inside worker threads/tasks. Treat this as a concrete test case (submit from a bound context,
-assert the worker-side log line still carries the FCID), not just a reasoning claim — a real implementation found and fixed exactly this defect after an initial design review had already signed off on
-a previous version of the concurrency-handling code.
+you must explicitly capture and carry the context across that boundary (`contextvars.copy_context()`, or `asyncio`'s own context propagation), or the FCID silently vanishes inside worker
+threads/tasks. Treat this as a concrete test case (submit from a bound context, assert the worker-side log line still carries the FCID), not just a reasoning claim — a real implementation found and
+fixed exactly this defect after an initial design review had already signed off on a previous version of the concurrency-handling code.
 
 ### Log-line shape — auto-injected, never a manual call-site kwarg
 

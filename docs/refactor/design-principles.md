@@ -3,11 +3,11 @@
 > Code-level discipline applied while re-implementing legacy logic. This is the restated, project-agnostic form of a "Python design reference" doc used during a real refactor — keep it as a
 > trigger-based reference loaded on demand, not a resident essay re-read every session.
 
-## Governing frame: simplicity first
+## Governing frame: simplicity first (PEP 20)
 
-Whatever language-level style guide your ecosystem has (PEP 20 for Python, idiomatic-X for others), treat its core tenets as non-negotiable, not style preferences: explicit over implicit, simple over
-complex, flat over nested. A deeply nested conditional chain inside a decision method is both a readability violation *and*, almost always, the concrete Open/Closed violation described below. If a
-change makes a function harder to read top-to-bottom, or adds another branch to logic that already branches, stop before writing it — that feeling is the signal, not a thing to push through.
+Treat the Zen of Python's core tenets as non-negotiable, not style preferences: explicit over implicit, simple over complex, flat over nested. A deeply nested conditional chain inside a decision
+method is both a readability violation *and*, almost always, the concrete Open/Closed violation described below. If a change makes a function harder to read top-to-bottom, or adds another branch to
+logic that already branches, stop before writing it — that feeling is the signal, not a thing to push through. Run `python -c "import this"` if the list ever needs re-reading in full.
 
 ## SOLID — as checkable triggers, not an essay
 
@@ -24,6 +24,14 @@ or reviewing a class, not as background reading:
   implements only the ones it actually needs.
 - **DIP — trigger:** a class constructs its own collaborator directly (e.g. `self.store = ConcreteStore()`) instead of receiving it. **Do instead:** inject the collaborator via the constructor, typed
   as an interface, not a concrete class — this is what makes the class testable without a real DB/network/external call.
+
+### `Protocol` over `abc.ABC` — the Pythonic default for the "interface" above
+
+Every "interface" referenced above should default to `typing.Protocol` (PEP 544), not `abc.ABC`, unless you specifically need shared default-method bodies or `isinstance`-based runtime registration
+that only nominal inheritance gives you. `Protocol` is structural: a class satisfies it by shape alone, with no explicit `class Foo(MyProtocol):` inheritance required. This is duck typing made
+checkable rather than duck typing abandoned for a Java-style nominal interface — it's the more Pythonic choice precisely because it doesn't force every implementer into an inheritance relationship it
+doesn't otherwise need. Mark it `@runtime_checkable` only where an actual `isinstance(x, MyProtocol)` check is needed at runtime (most call sites don't need one — static type-checking already covers
+the common case).
 
 ### Why DIP is usually the first one to land
 
@@ -47,21 +55,42 @@ Orchestrator                  # sequencing only — e.g. check entry condition, 
 The orchestrator structurally cannot grow past a few hundred lines — it has nowhere to put variant-specific logic. A new variant is a new `EntryRule`/`ReschedulePolicy` implementation, not a fork of
 an existing file, and not a new branch inside one.
 
-## Named patterns worth knowing by name (not the full catalogue)
+## Named patterns worth knowing by name — and their Python-native shape
 
-- **Strategy** — the seam above. Interchangeable algorithms behind a common interface, selected at construction/config time. This is what interface-based dependency injection *is*, once named.
-- **Factory Method** — trigger: a constructor branches on a `type`/config string to decide which concrete class to build. Do instead: a factory function/class owns that branching once; callers just
-  ask for "the implementation for config X."
-- **Template Method** — a fixed sequence (e.g. entry → size → monitor → exit) is the template; each step delegates to an injected Strategy object rather than containing logic itself.
-- **Decorator** — trigger: adding a conditional guard (e.g. a validation or rate-limit check) by editing an existing class's method. Do instead: wrap the base object in a decorator implementing the
-  same interface, which the base object never knows about — same OCP shape, applied to cross-cutting concerns.
-- **Observer** — only reach for this once something already needs to react to state changes (a tracker, a notifier) and a direct call/return value is getting awkward. Don't introduce it preemptively —
-  an unused Observer is complexity the simplicity-first rule already tells you to avoid.
+Classic design-pattern names are useful vocabulary, but applying them as if Python were Java produces more class hierarchy than the language needs. For each, know the GoF shape *and* the
+usually-simpler Python-native shape, and default to the latter unless the GoF shape is genuinely earning its weight (e.g. several implementations really do share non-trivial state/behavior, not just
+one method):
+
+- **Strategy** — the DIP seam above, generalized: interchangeable algorithms selected at construction/config time. In Python this is often just a `Callable`-typed parameter or a plain function passed
+  around — a class implementing a one-method `Protocol` is only better than a bare function when the strategy needs to carry its own state/config across calls. Don't default to a class if a function
+  does the job; "there should be one obvious way to do it" argues for the plain function first.
+- **Factory Method** — trigger: a constructor is branching on a `type`/config string to decide which concrete class to build. In Python, this is most often a module-level function or a registry `dict`
+  (`{"csv": CsvWriter, "json": JsonWriter}[fmt]()`), not a `Factory` class — a `dict` lookup is flatter and more explicit than a class whose only job is to branch once. Reach for a full Factory class
+  only once construction itself needs multiple steps or shared setup, not merely a type-to-class mapping.
+- **Template Method** — a fixed sequence (e.g. entry → size → monitor → exit) is the template; each step delegates to an injected Strategy object (or function) rather than containing logic itself.
+  This one does genuinely want a class in Python too, since the *sequence* itself is the thing being reused across variants, not a single swappable step.
+- **Decorator (the pattern) vs. `@decorator` (the Python feature)** — same name, often conflated. The GoF pattern (trigger: adding a conditional guard, e.g. a validation or rate-limit check, by
+  editing an existing class's method) is "wrap the base object in a new class implementing the same interface, which the base object never knows about." In Python, the *language's own* decorator
+  syntax routinely solves the identical cross-cutting-guard problem more simply — a plain `@decorator`-wrapped function, or a context manager, rather than a parallel class hierarchy — because Python
+  functions are first-class objects and don't need an interface to be substitutable. Default to a function decorator or context manager for a cross-cutting guard around a function; reach for the
+  class-wrapping GoF shape only when the thing being decorated is itself a stateful object with multiple methods, not a single callable.
+- **Observer** — only reach for this once something already needs to react to state changes (a tracker, a notifier) and a direct call/return value is getting awkward. In Python this is usually a plain
+  `list[Callable]` of listener callbacks on the subject, not a formal `Observer` abstract base — a callback list is simpler and is exactly what "flat is better than nested" and "simple is better than
+  complex" are arguing for; don't introduce a class hierarchy for something a list of functions already solves.
+
+## EAFP over LBYL
+
+Python's idiom is "easier to ask forgiveness than permission": prefer a `try`/`except` around an operation that might fail over a pre-flight check that duplicates the failure condition (e.g. prefer
+`try: value = d[key]` / `except KeyError` over `if key in d: value = d[key]` when the dict access is the actual intent). This isn't just a style tic — a pre-flight check is itself a race condition in
+anything concurrent, and it duplicates the failure logic the exception path has to handle anyway. This is also why the module-boundary exception wrapping above matters: EAFP only stays readable when
+the exceptions being caught are specific and few — a module that lets a dozen different unwrapped third-party exception types leak through turns every caller's `except` block into a guessing game,
+defeating the whole point of EAFP being simpler than LBYL.
 
 ## When these rules don't resolve the situation at hand
 
-Have a short, named escalation path (a couple of reference links or a senior reviewer) for edge cases — don't let "SOLID didn't obviously apply" become license to skip design thought. These rules
-should resolve the common cases on their own; reserve escalation for genuine edge cases.
+"Although practicality beats purity" is the Zen line that governs this section: have a short, named escalation path (a couple of reference links or a senior reviewer) for edge cases — don't let "SOLID
+didn't obviously apply" become license to skip design thought, but don't force a pattern onto a case that genuinely doesn't fit it either. These rules should resolve the common cases on their own;
+reserve escalation for genuine edge cases.
 
 ## When a static doc stops being enough: consider active enforcement instead
 

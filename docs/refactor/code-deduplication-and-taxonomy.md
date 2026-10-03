@@ -31,9 +31,10 @@ Produce one reference document (e.g. `docs/guides/code-module-map.md`) that stat
 
 ### Design the riskiest modules' interfaces first — skeletons only
 
-For the modules with the strongest audit evidence (highest duplicate count, clearest DIP/OCP violation), design the interface (Protocol/abstract base/trait) **before** writing any concrete
-implementation — interface-only skeletons, with a conformance test proving a minimal stub satisfies the interface. Defer concrete implementations and the interfaces for lower-evidence modules to a
-follow-up, triggered the first time a real consumer actually needs them (YAGNI) — don't build six modules' worth of production code speculatively because the module map named six candidates.
+For the modules with the strongest audit evidence (highest duplicate count, clearest DIP/OCP violation), design the interface — `Protocol` by default, per `design-principles.md`'s structural-typing
+rationale — **before** writing any concrete implementation: interface-only skeletons, with a conformance test proving a minimal stub satisfies the `Protocol` (`@runtime_checkable` + `isinstance`
+check, where that's actually exercised at runtime rather than only by a type-checker). Defer concrete implementations and the `Protocol`s for lower-evidence modules to a follow-up, triggered the first
+time a real consumer actually needs them (YAGNI) — don't build six modules' worth of production code speculatively because the module map named six candidates.
 
 ### Make dependency direction explicit
 

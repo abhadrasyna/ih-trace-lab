@@ -1,8 +1,10 @@
 # Refactor playbook — index
 
-> A generic method for taking a sprawl of ad hoc, duplicated scripts/projects accumulated over time and re-implementing them, with discipline, as a single well-structured codebase. Distilled from a
-> real multi-week refactor; every project-specific name has been stripped out. Apply this when the problem shape matches: a loose folder of organically-grown projects/scripts (no shared library, no
-> taxonomy, no planning discipline) that needs to become one deliberately designed codebase, with the old tree kept read-only as reference until the new one fully replaces it.
+> A generic method, scoped to **Python** projects, for taking a sprawl of ad hoc, duplicated scripts/projects accumulated over time and re-implementing them, with discipline, as a single
+> well-structured codebase. Distilled from a real multi-week refactor; every project-specific name has been stripped out, but the design-level guidance is intentionally Python-specific (PEP 20,
+> `Protocol`/structural typing, `contextvars`, EAFP) rather than translated into language-neutral abstractions — Python already bakes a lot of classic design-pattern shape into the language itself,
+> and a generic "interface"/"trait" framing would obscure that rather than use it. Apply this when the problem shape matches: a loose folder of organically-grown Python projects/scripts (no shared
+> library, no taxonomy, no planning discipline) that needs to become one deliberately designed codebase, with the old tree kept read-only as reference until the new one fully replaces it.
 
 ## When this model fits — and when it doesn't
 
@@ -34,6 +36,6 @@ Read in this order the first time; after that, load whichever single doc matches
 
 ## The one-sentence version
 
-Audit first (find real, evidenced duplication — don't guess), design the seam before writing the implementation (Protocol-based dependency injection, named patterns only where a concrete trigger
-fires), track the work as small plan-bearing story units with a pre-implementation design-review pass, and close every loop (docs, tests, commit) before moving to the next unit — with a feedback
-mechanism that turns recurring process mistakes into a ranked, visible backlog instead of repeating silently.
+Audit first (find real, evidenced duplication — don't guess), design the seam before writing the implementation (`Protocol`-based dependency injection, named patterns only where a concrete trigger
+fires — and only in their Pythonic shape, not a transplanted Java one), track the work as small plan-bearing story units with a pre-implementation design-review pass, and close every loop (docs,
+tests, commit) before moving to the next unit — with a feedback mechanism that turns recurring process mistakes into a ranked, visible backlog instead of repeating silently.
