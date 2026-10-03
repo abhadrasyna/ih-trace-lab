@@ -9,8 +9,8 @@
 |---|---|---|---|---|---|---|---|---|---|
 | South Africa | `iye9omdf` | `mcs-go-prod-iye9omdf-eu` | EU | No | n/a (`syna.tenant` = Go ID) | `1z5vo5g2` | `rxviifsu` | `e6auj7k7` | `clarissa-insights-product`, `eu-central-1` |
 | Nigeria | `q95itlcu` | `mcs-go-prod-q95itlcu-eu` | EU | No | n/a (`syna.tenant` = Go ID) | `4l5rt293` | `y54b5mqr` | `jsxgloje` | `clarissa-insights-product`, `eu-central-1` |
-| Zambia | `dtunf6yo` | `mcs-go-prod-mtn-1-eu` | EU | **Yes** | `sessionInfo.busUnitId = dtunf6yo` (`syna.tenant` = `mtn-1`, not opco-specific) | `lsok8ywy` | `p0yxunm4` | `a7vli5h8` | `clarissa-insights-product`, `eu-central-1` |
-| Ghana | `apbyfj9d` | `mcs-go-prod-mtn-1-eu` | EU | **Yes** | `sessionInfo.busUnitId = apbyfj9d` (`syna.tenant` = `mtn-1`, not opco-specific) | `0800cgn3` | `hkq8wgfy` | `is1aldzq` | `clarissa-insights-product`, `eu-central-1` |
+| Zambia | `dtunf6yo` | `mcs-go-prod-mtn-1-eu` | EU | **Yes** | `busUnitId`=Go ID (`syna.tenant`=`mtn-1`) | `lsok8ywy` | `p0yxunm4` | `a7vli5h8` | `clarissa-insights-product`, `eu-central-1` |
+| Ghana | `apbyfj9d` | `mcs-go-prod-mtn-1-eu` | EU | **Yes** | `busUnitId`=Go ID (`syna.tenant`=`mtn-1`) | `0800cgn3` | `hkq8wgfy` | `is1aldzq` | `clarissa-insights-product`, `eu-central-1` |
 
 Athena `database` for each opco is `unified_<athena_tenant_id>` (confirmed pattern, matches `aws-access-cli/scripts/athena_runner/tenants.py`).
 

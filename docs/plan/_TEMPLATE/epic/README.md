@@ -2,8 +2,7 @@
 
 # <Epic title> — epic index
 
-> One-paragraph statement of what the epic delivers and why it is one epic rather than
-> separate stories.
+> One-paragraph statement of what the epic delivers and why it is one epic rather than separate stories.
 
 ## Why this epic exists
 
@@ -22,14 +21,12 @@ YYYY-MM-DD"). These are the decisions a sub-story must not silently re-open. -->
 | `<story-b>/` | <one line> | ⬜ Not started | `<story-a>` | — |
 | `<story-c>/` | <one line> | ⬜ Not started | `<story-b>` | — |
 
-Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view —
-per-task checkboxes live only in each sub-story's `tasks.md`.
+Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.
 
 ## Cross-cutting constraints
 
 <!-- Rules every sub-story must honour — invariants, naming conventions, anything that would
-be wrong to restate per-story. A constraint that applies to only one story belongs in that
-story's files, not here. -->
+be wrong to restate per-story. A constraint that applies to only one story belongs in that story's files, not here. -->
 
 ## Supersession / coordination
 
@@ -39,8 +36,7 @@ state of that coordination. -->
 ## Epic done when
 
 <!-- Prose acceptance list, no `- [ ]` checkboxes — this file tracks status via the table
-above, not checkboxes. One bold story id per line + its done criterion. Verified at epic
-close. -->
+above, not checkboxes. One bold story id per line + its done criterion. Verified at epic close. -->
 
 - **<story-a>** — <criterion>
 - **<story-b>** — <criterion>

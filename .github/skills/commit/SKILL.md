@@ -1,6 +1,6 @@
 ---
 name: commit
-description: Execute the full commit workflow (diff review, run tests, format the commit message, stage and commit, confirm the SHA). Use when the user asks to commit changes, or after any approved change that this project's protocol requires closing out with a commit.
+description: Execute the full commit workflow (diff review, tests, message, stage, commit, confirm SHA). Use when asked to commit, or after any approved change needing a closing commit.
 ---
 
 # Commit Executor
