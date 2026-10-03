@@ -33,6 +33,8 @@ Read in this order the first time; after that, load whichever single doc matches
    including the propagation mechanism, what was deliberately deferred, and why.
 5. **[`process-discipline.md`](./process-discipline.md)** — the meta-layer: the recurring protocol failures a real refactor of this kind produces (plan-before-editing, re-reading context, token
    efficiency) and how to close the loop on them session over session.
+6. **[`python-hygiene-and-automation.md`](./python-hygiene-and-automation.md)** — the other layer below `design-principles.md`: a line-level Python defect/design-smell checklist, and how to turn it
+   from a document into mechanical enforcement (lint/typecheck/test targets, pre-commit hooks, an AI-reviewer hook for the shapes a static rule can't express, phased adoption).
 
 ## The one-sentence version
 

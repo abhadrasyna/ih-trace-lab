@@ -101,3 +101,7 @@ method has a 4th branch on decision logic, extract an interface implementer" or 
 That is a materially different investment than a reference doc — closer to a linter/static-analysis rule than a style guide — and it's worth building only once there is *evidence* the doc-based
 approach isn't enough: review keeps catching the same violation shape after the doc already states it, meaning the guidance isn't being self-applied reliably and needs to become an enforced check.
 Don't build that enforcement preemptively; it's real infrastructure (a rule engine, a CI gate, ongoing maintenance) for a problem you don't have evidence of yet.
+
+The architecture-level principles above are rarely where this threshold gets crossed first, though — they're judgment calls about class/module shape, not mechanically checkable facts. The line-level
+Python defect patterns that recur in day-to-day diffs (mutable defaults, bare `except`, injection-shaped string formatting, and the rest) are exactly the content that *should* cross this threshold
+immediately rather than live in a reference doc at all — see `python-hygiene-and-automation.md` for that checklist and the lint/typecheck/pre-commit/AI-reviewer layering that enforces it.

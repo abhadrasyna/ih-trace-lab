@@ -5,9 +5,10 @@
 
 ## What Exists
 
-- `docs/refactor/` — a generic, project-agnostic refactor playbook (`README.md` index + `design-principles.md`, `code-deduplication-and-taxonomy.md`, `planning-protocol.md`,
-  `logging-and-correlation-id.md`, `process-discipline.md`) distilling this repo's own `docs/archive/`, `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable method for refactoring a different
-  ad hoc legacy tree later. No project-specific names (entities, tenants, repos) appear in it by design — it is meant to be read by a future, unrelated project.
+- `docs/refactor/` — a generic (Python-scoped) refactor playbook (`README.md` index + `design-principles.md`, `code-deduplication-and-taxonomy.md`, `planning-protocol.md`,
+  `logging-and-correlation-id.md`, `process-discipline.md`, `python-hygiene-and-automation.md`) distilling this repo's own `docs/archive/`, `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable
+  method for refactoring a different ad hoc Python legacy tree later. No project-specific names (entities, tenants, repos) appear in it by design — it is meant to be read by a future, unrelated Python
+  project.
 - `.github/hooks/session-context.json` — a native Copilot CLI `sessionStart` hook (not a git hook) that auto-injects a short reminder into every new/resumed session: read `CONTEXT.md`, state
   `CONTEXT.md ✓`, confirm scope when files aren't named, and state a plan + wait for go-ahead before non-trivial changes. Added to cut the highest-recurrence rows in `suggestions.md`
   (`wait-for-explicit-go-ahead-before-editing`, `state-context-md-checkmark-explicitly`, etc.) at the source instead of only catching them after the fact in `session-close`. Injects a short pointer,
