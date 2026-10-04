@@ -8,7 +8,7 @@ them from live systems each time.
 Use one file per Athena database, named `knowledge/<project>-athena-<database>-tables.md`.
 
 2026-10-05 update: this workflow's local CLIs (`scripts/athena/discover_athena_tables.py`, `scripts/athena/run_table_ddl_export.py`, and the follow-on doc refresher
-`scripts/dev/update_athena_table_ddl_knowledge.py`) were retrofitted onto `src/lib/logging/bootstrap.py`'s `init_logging()` by `docs/plan/logging-framework/`'s LFR-6b task; the direct
+`scripts/dev/update_athena_table_ddl_knowledge.py`) were retrofitted onto `src/lib/logging/bootstrap.py`'s `init_logging()` by `docs/archive/logging-framework/`'s LFR-6b task; the direct
 `setup_logging()` calls are gone.
 
 Each file should combine two things:

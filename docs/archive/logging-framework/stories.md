@@ -103,7 +103,7 @@
 - `docs/refactor/code-review-checklist.md` — new numbered section (after the existing "4. FCID / cross-cutting ambient-context correctness" section, renumbering subsequent sections), same
   one-box-per-trigger shape.
 - `CONTEXT.md` — update the `src/lib/logging/context.py` bullet (currently ends "...remain deferred future work, not yet owned by any `docs/plan/` task") to point at this story instead; add one new
-  bullet for `docs/plan/logging-framework/` itself, in the same style as other in-progress story bullets (e.g. `pipeline-migration`'s).
+  bullet for `docs/archive/logging-framework/` itself, in the same style as other in-progress story bullets (e.g. `pipeline-migration`'s).
 
 **What to implement:**
 
@@ -118,7 +118,7 @@
          shape found in the 2026-10-04 cron log investigation.
    - [ ] Any new log line carrying request/query parameters uses `redact_params()` rather than logging an opaque param dump.
    ```
-2. `CONTEXT.md` edit: replace the stale "not yet owned by any `docs/plan/` task" clause with a pointer to `docs/plan/logging-framework/`, and add a new bullet describing this story's existence and
+2. `CONTEXT.md` edit: replace the stale "not yet owned by any `docs/plan/` task" clause with a pointer to `docs/archive/logging-framework/`, and add a new bullet describing this story's existence and
    current task progress (update again at story close, per `docs/plan/README.md`'s own "After each task" convention).
 
 **Tests:** N/A — docs-only task.
@@ -138,7 +138,7 @@
 **What to implement:**
 
 1. One dated line per unretrofitted consumer, in the same style as this project's existing "Coordination without ownership" notes (e.g. `pipeline-migration/README.md`'s FCID coordination line):
-   "2026-10-XX: this consumer does not yet call `src/lib/logging/bootstrap.py`'s `init_logging()`; see `docs/plan/logging-framework/` — coordination record only, not implemented here."
+   "2026-10-XX: this consumer does not yet call `src/lib/logging/bootstrap.py`'s `init_logging()`; see `docs/archive/logging-framework/` — coordination record only, not implemented here."
 2. Do not modify any of these consumers' actual code or tests in this task — notes only.
 
 **Tests:** N/A — docs-only task.
@@ -246,8 +246,8 @@ though it would otherwise match).
 - Root `README.md` — update the 2026-10-04 coordination note (same file/line LFR-5 added) to say the `scripts/dev/*.py` retrofit landed in LFR-6b, keeping the hooks/`tooling/docs-plan` carve-out note
   since that part is still accurate.
 - `knowledge/README.md` — same update for the `scripts/athena/*.py` + `update_athena_table_ddl_knowledge.py` coordination note.
-- `CONTEXT.md` — update the `docs/plan/logging-framework/` bullet to say the story is complete through LFR-8, name `scripts/dev/hooks/check_logging_contract.py` as the new enforcement mechanism, and
-  drop the "LFR-1..5" range to "LFR-1..8".
+- `CONTEXT.md` — update the `docs/archive/logging-framework/` bullet to say the story is complete through LFR-8, name `scripts/dev/hooks/check_logging_contract.py` as the new enforcement mechanism,
+  and drop the "LFR-1..5" range to "LFR-1..8".
 
 **What to implement:** append-only dated lines in each doc (this project's convention is a status trail, not rewriting prior entries) stating what landed and pointing at the task IDs/commit SHAs.
 

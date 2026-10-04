@@ -11,7 +11,7 @@ Early / active. First story (`docs/archive/tenant-registry/`) is not yet impleme
 `docs/archive/functional-code-taxonomy/` are complete; `docs/archive/query-catalog/` is still planned. Reusable project tooling now includes both registry generators under `scripts/dev/`, and
 production `src/lib/` code has started with shared Protocol/config layers for `athena`, `report_render`, `har`, and `paths`.
 
-2026-10-05 update: `docs/plan/logging-framework/`'s LFR-6b task retrofitted every root `scripts/dev/*.py` and `scripts/athena/*.py` entry point (plus `scripts/reference_diagram/main.py` and
+2026-10-05 update: `docs/archive/logging-framework/`'s LFR-6b task retrofitted every root `scripts/dev/*.py` and `scripts/athena/*.py` entry point (plus `scripts/reference_diagram/main.py` and
 `scripts/resolve_tenant.py`) onto `src/lib/logging/bootstrap.py`'s `init_logging()`; the prior `setup_logging()` direct-call pattern in `scripts/dev/harvest_athena_query_catalog.py` and
 `scripts/dev/harvest_lightstep_query_catalog.py` is gone. A non-blocking `logging-contract-check` pre-commit hook (LFR-7) now flags any new entry point that skips `init_logging()`, so this gap should
 not recur.

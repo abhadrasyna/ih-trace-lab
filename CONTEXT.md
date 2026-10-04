@@ -81,10 +81,10 @@
   method/URL/headers/data grammar only (any other flag/quoting form raises `UnsupportedCurlFlagError` by name rather than producing silently-wrong output) and renders Python `requests.request(...)`
   source text; never executes the converted request.
 - `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
-  prerequisite so FCID survives a `ThreadPoolExecutor` boundary. `docs/plan/logging-framework/` has now started implementing the rest of FCID-1's deferred runtime wiring around it:
+  prerequisite so FCID survives a `ThreadPoolExecutor` boundary. `docs/archive/logging-framework/` has now started implementing the rest of FCID-1's deferred runtime wiring around it:
   `src/lib/logging/bootstrap.py` mints/binds one FCID per entry point, `src/lib/logging/setup.py` injects `%(fcid)s` on every handler, and `src/lib/logging/redact.py` provides allow-list-based
   parameter masking.
-- `docs/plan/logging-framework/` — story complete (LFR-1..8): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README. It added
+- `docs/archive/logging-framework/` — story complete (LFR-1..8): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README. It added
   `src/lib/logging/bootstrap.py`'s `init_logging()`, handler-level FCID injection, and allow-list parameter masking; defined the minimum logging contract in
   `docs/refactor/logging-and-correlation-id.md`; applied that contract to `src/lib/athena/adapter.py` plus the `aws_access_cli` adoption/Shaka/position business-logic modules; wired `init_logging()`
   into every `src/pipelines/aws_access_cli/scripts/run_*.py` entry point before argument parsing; made report-preview table output opt-in via `--preview`; made the contract binding in

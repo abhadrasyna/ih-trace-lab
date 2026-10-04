@@ -29,7 +29,7 @@ spec.
 - **LFR-4** — `code-review-checklist.md` has a new numbered "Logging" section (same one-box-per-trigger shape as its existing FCID section); `CONTEXT.md`'s `src/lib/logging/context.py` bullet no
   longer says "not yet owned by any `docs/plan/` task."
 - **LFR-5** — `investigations/ctap-smvod/` and any other unretrofitted entry point's own planning/README doc carries one dated line: "this story does not implement the logging bootstrap here; see
-  `docs/plan/logging-framework/` — coordination record only."
+  `docs/archive/logging-framework/` — coordination record only."
 - **LFR-6a** — every script under `investigations/ctap-smvod/scripts/` with a `__main__` guard calls `init_logging()` as the first statement of its entry function; `pipeline.log` (produced by
   `run_pipeline.py`) shows the same `%(asctime)s [%(levelname)s] [%(name)s] [fcid=%(fcid)s]` shape as `cron_daily_reports_v2.out`, verified by a `caplog`-based test per script group (not 24 individual
   tests — group scripts sharing a common CLI helper and test the helper once, per this story's own CSM-7 testing precedent).
