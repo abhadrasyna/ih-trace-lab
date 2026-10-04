@@ -8,7 +8,7 @@
 
 ## How to use this
 
-Run through the six sections below on a pull request / review pass that a diff-scoped automated reviewer has already cleared. Each box names what to look for and which `docs/refactor/` doc has the
+Run through the seven sections below on a pull request / review pass that a diff-scoped automated reviewer has already cleared. Each box names what to look for and which `docs/refactor/` doc has the
 full reasoning if the trigger fires. This is a human (or a reviewer with repo-wide context, not just the diff) checklist — don't expect an automated pre-commit hook to tick these for you.
 
 ## 1. SOLID triggers (`design-principles.md`)
@@ -41,14 +41,23 @@ full reasoning if the trigger fires. This is a human (or a reviewer with repo-wi
 - [ ] No new cross-cutting concern has been threaded explicitly through every function signature where an existing ambient-context mechanism already exists for exactly that purpose (and vice versa —
   no genuine domain value has been smuggled into ambient context instead of being passed explicitly).
 
-## 5. Before/after architecture diagrams (`architecture-diagrams.md`)
+## 5. Logging coverage (`logging-and-correlation-id.md`'s minimum contract)
+
+- [ ] Any new entry point (`run_*.py` `main()`, a tool CLI `main()`, an investigation script's top-level call) calls `init_logging()` as its first statement, not `setup_logging()` /
+      `logging.basicConfig()` directly.
+- [ ] Any new external-call site (Athena/network/subprocess) logs call-start at `DEBUG` and call-success at `INFO` with a duration, per the minimum contract — not just a failure path.
+- [ ] Any new `except` block that logs a failure does so exactly once, at the layer that first catches it — a re-raising layer does not also log, to avoid the duplicate bare-message-plus-traceback
+      shape found in the 2026-10-04 cron-log investigation.
+- [ ] Any new log line carrying request/query parameters uses `redact_params()` rather than logging an opaque param dump.
+
+## 6. Before/after architecture diagrams (`architecture-diagrams.md`)
 
 - [ ] A "before" diagram exists for any module this change claims to be converging/refactoring, generated from the actual tree at audit time — not authored from memory after the fact.
 - [ ] Once the new structure lands, the "after" diagram has been regenerated the same mechanical way, with tests excluded from both.
 - [ ] The before/after comparison shows a concrete, named improvement (convergence edges collapsing to one target, orchestrator decision-node count dropping, dependency direction flipping toward the
   abstraction) — not just an unverified claim that it's "cleaner."
 
-## 6. Process discipline (`planning-protocol.md`, `process-discipline.md`)
+## 7. Process discipline (`planning-protocol.md`, `process-discipline.md`)
 
 - [ ] The plan was stated (what changes, which files, why) and an explicit go-ahead received before this work started, for anything beyond a trivial single-file tweak.
 - [ ] Tests exist for new public functions (one happy-path, one edge/error-case), green before this review.

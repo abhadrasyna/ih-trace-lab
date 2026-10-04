@@ -3,12 +3,12 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LFR-3, LFR-4, LFR-5.**
+**Open: LFR-4, LFR-5.**
 
 - [x] **LFR-1** — Build the `init_logging()` bootstrap (setup + FCID bind + formatter wiring + redaction) | Owner: AI agent | Model: n/a | Review: tests green | SHA: 6529c9c
 - [x] **LFR-2** — Define the minimum logging contract; apply it to the Athena adapter + `aws_access_cli` business logic | Owner: AI agent | Model: n/a | Review: tests green | SHA: 2038167
-- [ ] **LFR-3** — Wire the bootstrap into every `aws_access_cli` entry point; separate preview output from the log stream | Owner: AI agent | Model: n/a | Review: tests green + `py-code-review` | SHA:
-  —
+- [x] **LFR-3** — Wire the bootstrap into every `aws_access_cli` entry point; separate preview output from the log stream | Owner: AI agent | Model: n/a | Review: tests green + `py-code-review` | SHA:
+  473621c
 - [ ] **LFR-4** — Add a binding "Logging" section to `code-review-checklist.md`; update `CONTEXT.md` | Owner: AI agent | Model: n/a | Review: none | SHA: —
 - [ ] **LFR-5** — Dated coordination notes in unretrofitted consumers (`investigations/ctap-smvod`, remaining dev scripts) | Owner: AI agent | Model: n/a | Review: none | SHA: —
 

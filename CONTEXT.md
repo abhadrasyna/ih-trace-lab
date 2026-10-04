@@ -84,12 +84,12 @@
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. `docs/plan/logging-framework/` has now started implementing the rest of FCID-1's deferred runtime wiring around it:
   `src/lib/logging/bootstrap.py` mints/binds one FCID per entry point, `src/lib/logging/setup.py` injects `%(fcid)s` on every handler, and `src/lib/logging/redact.py` provides allow-list-based
   parameter masking.
-- `docs/plan/logging-framework/` — story (open; LFR-1..3 done, LFR-4..5 remaining): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README.
+- `docs/plan/logging-framework/` — story (open; LFR-1..4 done, LFR-5 remaining): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README.
   LFR-1 added `init_logging()` plus handler-level FCID injection and allow-list parameter masking. LFR-2 defined the minimum logging contract in `docs/refactor/logging-and-correlation-id.md` and
-  applied it to `src/lib/athena/adapter.py` plus the `aws_access_cli` adoption/Shaka/position business-logic modules. LFR-3 now wires `init_logging()` into every
+  applied it to `src/lib/athena/adapter.py` plus the `aws_access_cli` adoption/Shaka/position business-logic modules. LFR-3 wires `init_logging()` into every
   `src/pipelines/aws_access_cli/scripts/run_*.py` entry point before argument parsing, keeps report-preview table output opt-in via `--preview`, and verifies `schedule.py` failures log once with the
-  bound FCID. Remaining tasks make the contract binding in `code-review-checklist.md` and add coordination notes for still-unretrofitted consumers. `investigations/ctap-smvod/` and other consumers are
-  explicitly deferred (LFR-5 coordination notes only), not retrofitted here.
+  bound FCID. LFR-4 makes that minimum contract binding for future review in `docs/refactor/code-review-checklist.md`. The final task adds coordination notes for still-unretrofitted consumers.
+  `investigations/ctap-smvod/` and other consumers are explicitly deferred (LFR-5 coordination notes only), not retrofitted here.
 - `src/lib/logging/setup.py` — the canonical `setup_logging()` entrypoint (moved here from `logs/setup_logging.py` so code and its own generated runtime artifact, `logs/app.log`, aren't colocated in
   one directory). Resolves its log directory from a new `logs_root` key in `config/data_paths.yaml` (default `logs`) instead of a hardcoded path relative to the module file, consistent with the
   project's single-config-loading-convention guidance; `logs/` itself still holds the generated `app.log` and its `.gitignore`. All 4 prior `logs.setup_logging` import sites were updated to
