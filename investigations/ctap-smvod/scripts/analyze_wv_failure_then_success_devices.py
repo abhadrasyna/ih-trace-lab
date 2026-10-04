@@ -28,12 +28,17 @@ Usage:
     python3 analyze_wv_failure_then_success_devices.py --input-dir ../output --output-dir ../output
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import glob
 import os
 import re
 import sys
 from collections import defaultdict
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_wv_failure_then_success_devices")
 
 from analyze_webview_devices import _is_wv, _is_success
 from lib.runtime import investigation_output_dir, rollup_output_path
@@ -153,6 +158,8 @@ def find_failure_then_success_devices(by_device):
 
 
 def main():
+    init_logging("ctap-smvod-analyze_wv_failure_then_success_devices")
+    LOGGER.info("Starting analyze_wv_failure_then_success_devices")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     default_dir = str(investigation_output_dir())
     ap.add_argument("--input-dir", default=default_dir,
@@ -187,6 +194,12 @@ def main():
               f"first_success={r['first_success_date']} "
               f"(wv_failures={r['wv_failure_count']} success_dates={r['success_count']})",
               file=sys.stderr)
+
+    LOGGER.info(
+        "Completed analyze_wv_failure_then_success_devices devices=%d evidence_rows=%d",
+        len(report_rows),
+        len(evidence_rows),
+    )
 
 
 if __name__ == "__main__":

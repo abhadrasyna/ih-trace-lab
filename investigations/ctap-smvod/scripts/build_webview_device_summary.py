@@ -35,11 +35,16 @@ Usage:
     python3 build_webview_device_summary.py --output-dir ../output
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import glob
 import os
 import re
 from collections import defaultdict
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.build_webview_device_summary")
 
 from lib.runtime import investigation_output_dir, rollup_output_path
 
@@ -130,6 +135,8 @@ SUMMARY_COLUMNS = [
 
 
 def main():
+    init_logging("ctap-smvod-build_webview_device_summary")
+    LOGGER.info("Starting build_webview_device_summary")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     default_dir = str(investigation_output_dir())
     ap.add_argument("--output-dir", default=default_dir,
@@ -154,6 +161,12 @@ def main():
     print(f"Summarized {len(all_rows)} wv session rows across {len(dates_covered)} date(s) "
           f"({dates_covered[0]}..{dates_covered[-1]}) into {len(summary_rows)} device_model row(s) "
           f"-> {out_path}")
+    LOGGER.info(
+        "Completed build_webview_device_summary rows=%d summary_rows=%d out=%s",
+        len(all_rows),
+        len(summary_rows),
+        out_path,
+    )
 
 
 if __name__ == "__main__":

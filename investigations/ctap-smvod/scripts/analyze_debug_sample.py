@@ -14,11 +14,18 @@ Usage:
         --input ../queries/exploration/debug_events_broad_sample_08072026.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 from collections import Counter
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_debug_sample")
 
 
 def main():
+    init_logging("ctap-smvod-analyze_debug_sample")
+    LOGGER.info("Starting analyze_debug_sample")
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True)
     args = ap.parse_args()
@@ -49,6 +56,8 @@ def main():
             n += 1
             if n >= 3:
                 break
+
+    LOGGER.info("Completed analyze_debug_sample rows=%d input=%s", len(rows), args.input)
 
 
 if __name__ == "__main__":

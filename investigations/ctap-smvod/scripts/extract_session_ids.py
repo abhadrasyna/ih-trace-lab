@@ -19,8 +19,13 @@ Output (default: stdout) looks like:
     )
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.extract_session_ids")
 
 
 def extract_ids(input_path, column="sessionId"):
@@ -51,6 +56,8 @@ def format_in_clause(ids):
 
 
 def main():
+    init_logging("ctap-smvod-extract_session_ids")
+    LOGGER.info("Starting extract_session_ids")
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True, help="CSV file to read sessionIds from")
     ap.add_argument("--column", default="sessionId", help="Column name to extract (default: sessionId)")
@@ -78,6 +85,12 @@ def main():
     else:
         sys.stdout.write(clause)
         print(f"\n({len(ids)} distinct {args.column} values)", file=sys.stderr)
+
+    LOGGER.info(
+        "Completed extract_session_ids distinct_ids=%d destination=%s",
+        len(ids),
+        args.out or "stdout",
+    )
 
 
 if __name__ == "__main__":

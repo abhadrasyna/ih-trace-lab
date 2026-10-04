@@ -24,9 +24,14 @@ Usage:
 Prints frequency breakdowns to stdout. Does not write any files.
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import re
 from collections import Counter
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.parse_debug_user_agents")
 
 # Matches the common embedded-Android-WebView UA shape, e.g.:
 # "Mozilla/5.0 (Linux; Android 14; SM-A047F Build/UP1A.231005.007; wv) ...
@@ -187,6 +192,8 @@ def print_full_table(title, col_label, counter):
 
 
 def main():
+    init_logging("ctap-smvod-parse_debug_user_agents")
+    LOGGER.info("Starting parse_debug_user_agents")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input", required=True, help="Path to flattened PLAYER_ERROR debug-event export CSV")
     ap.add_argument("--top", type=int, default=15, help="Rows to show per breakdown")
@@ -237,6 +244,12 @@ def main():
     if args.full_tables:
         print_full_table("Device model vs. error (unique-session) count", "device_model", device_model_counter)
         print_full_table("HHID vs. unique-session count", "hhid", hhid_counter)
+
+    LOGGER.info(
+        "Completed parse_debug_user_agents raw_rows=%d distinct_sessions=%d",
+        total_rows,
+        len(rows),
+    )
 
 
 if __name__ == "__main__":

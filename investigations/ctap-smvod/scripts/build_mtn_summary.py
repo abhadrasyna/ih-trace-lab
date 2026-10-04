@@ -26,11 +26,16 @@ the consolidated files in sync. See docs/STATUS.md ("MTN network-team
 escalation criteria") for the underlying trigger/process this supports.
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import glob
 import os
 import re
 from collections import defaultdict
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.build_mtn_summary")
 
 from lib.runtime import investigation_output_dir, rollup_output_path
 
@@ -101,11 +106,14 @@ def build_summary(output_dir):
 
 
 def main():
+    init_logging("ctap-smvod-build_mtn_summary")
+    LOGGER.info("Starting build_mtn_summary")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     default_dir = str(investigation_output_dir())
     ap.add_argument('--output-dir', default=default_dir, help='Directory containing YYYY-MM-DD_mtn_escalation_ips.csv (default: ../output)')
     args = ap.parse_args()
     build_summary(args.output_dir)
+    LOGGER.info("Completed build_mtn_summary output_dir=%s", args.output_dir)
 
 
 if __name__ == '__main__':

@@ -26,11 +26,16 @@ Usage:
         --input-dir ../output --output-dir ../output
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import glob
 import os
 import re
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_wv_device_cross_date_success")
 
 from analyze_webview_devices import _is_wv, _is_success
 from lib.runtime import investigation_output_dir, snapshot_output_path
@@ -110,6 +115,8 @@ def build_history_rows(wv_devices, input_dir):
 
 
 def main():
+    init_logging("ctap-smvod-analyze_wv_device_cross_date_success")
+    LOGGER.info("Starting analyze_wv_device_cross_date_success")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True,
                     help="Source date (DDMMYYYY) to pick wv=true deviceIds from, e.g. 18092026")
@@ -147,6 +154,13 @@ def main():
     for r in other_ua_success:
         print(f"    deviceId={r['deviceId']} date={r['history_date']} session={r['sessionId']} "
               f"ua={r['raw_user_agent']}", file=sys.stderr)
+
+    LOGGER.info(
+        "Completed analyze_wv_device_cross_date_success devices=%d rows=%d out=%s",
+        len(wv_devices),
+        len(out_rows),
+        out_path,
+    )
 
 
 if __name__ == "__main__":

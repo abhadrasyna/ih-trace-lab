@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -80,3 +81,14 @@ def test_build_steps_passes_athena_output_dir(tmp_path: Path, monkeypatch: pytes
 
     assert ["--output-dir", str(athena_dir)] == steps[1][1][-2:]
     assert ["--output-dir", str(athena_dir)] == steps[2][1][-2:]
+
+
+def test_main_dry_run_calls_init_logging(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.setattr(sys, "argv", ["run_pipeline.py", "--date", "30092026", "--dry-run"])
+    init_logging = Mock()
+    monkeypatch.setattr(run_pipeline, "init_logging", init_logging)
+
+    run_pipeline.main()
+
+    init_logging.assert_called_once_with("ctap-smvod-run_pipeline")
+    assert "# Step 2 - base merge (merge_ctap_smvod_csv.py)" in capsys.readouterr().out

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -41,18 +43,43 @@ def test_flatten_debug_events_main_flattens_and_warns_on_unknown_eventid(
         writer.writerow(['2026-09-30T00:00:00Z', 'dev:hh', 'PLAYER', 'PLAYER_ERROR', json.dumps({'sessionid': 's1', 'errorcode': '1003', 'errordescription': 'boom'})])
         writer.writerow(['2026-09-30T00:01:00Z', 'dev:hh', 'PLAYER', 'UNKNOWN', json.dumps({'sessionid': 's2'})])
     monkeypatch.setattr(
-        __import__("sys"),
+        sys,
         "argv",
         ["flatten_debug_events.py", "--input", str(source), "--out", str(out)],
     )
+    init_logging = Mock()
+    monkeypatch.setattr(flatten_debug_events, "init_logging", init_logging)
 
     flatten_debug_events.main()
 
     rows = list(csv.DictReader(out.open(encoding="utf-8")))
     err = capsys.readouterr().err
+    init_logging.assert_called_once_with("ctap-smvod-flatten_debug_events")
     assert rows[0]["errorcode"] == "1003"
     assert rows[1]["eventid"] == "UNKNOWN"
     assert "no dedicated extractor" in err
+
+
+def test_process_traces_main_calls_init_logging(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = tmp_path / "trace.json"
+    out = tmp_path / "out.csv"
+    source.write_text(json.dumps({}), encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["process_traces.py", "--input-dir", str(tmp_path), "--out", str(out)],
+    )
+    init_logging = Mock()
+    monkeypatch.setattr(process_traces, "init_logging", init_logging)
+
+    process_traces.main()
+
+    init_logging.assert_called_once_with("ctap-smvod-process_traces")
+    assert "no SetupSession span found" in capsys.readouterr().out
 
 
 def test_process_traces_extract_row_returns_joined_fields() -> None:
@@ -130,3 +157,4 @@ def test_correlate_cdn_ips_root_cause_hint_flags_manifest_only_edge() -> None:
     hint = correlate_cdn_ips.root_cause_hint(1, 0, 0, 0, 0, manifest_only=True)
 
     assert hint == "manifest_only_no_segment_requests (client never requested media after manifest)"
+

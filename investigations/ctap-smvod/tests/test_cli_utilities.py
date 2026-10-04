@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -27,10 +28,13 @@ def test_analyze_debug_sample_reports_distribution(tmp_path: Path, monkeypatch: 
         encoding="utf-8",
     )
     monkeypatch.setattr(sys, "argv", ["analyze_debug_sample.py", "--input", str(sample)])
+    init_logging = Mock()
+    monkeypatch.setattr(analyze_debug_sample, "init_logging", init_logging)
 
     analyze_debug_sample.main()
 
     out = capsys.readouterr().out
+    init_logging.assert_called_once_with("ctap-smvod-analyze_debug_sample")
     assert "total rows: 2" in out
     assert "PLAYER_ERROR" in out
     assert "distinct sessionIds: ['s1', 's2']" in out
@@ -67,10 +71,13 @@ def test_build_debug_completeness_query_writes_catalog_query(tmp_path: Path, mon
             str(out),
         ],
     )
+    init_logging = Mock()
+    monkeypatch.setattr(build_debug_completeness_query, "init_logging", init_logging)
 
     build_debug_completeness_query.main()
 
     text = out.read_text(encoding="utf-8")
+    init_logging.assert_called_once_with("ctap-smvod-build_debug_completeness_query")
     assert 'FROM "unified_e6auj7k7"."e6auj7k7_ccl_debug_events"' in text
     assert "'sess-1'" in text
     assert "'sess-2'" in text
@@ -133,6 +140,16 @@ def test_build_mtn_summary_handles_empty_directory(tmp_path: Path, capsys: pytes
     assert not list(tmp_path.iterdir())
 
 
+def test_build_mtn_summary_main_calls_init_logging(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "argv", ["build_mtn_summary.py", "--output-dir", str(tmp_path)])
+    init_logging = Mock()
+    monkeypatch.setattr(build_mtn_summary, "init_logging", init_logging)
+
+    build_mtn_summary.main()
+
+    init_logging.assert_called_once_with("ctap-smvod-build_mtn_summary")
+
+
 def test_build_webview_device_summary_deduplicates_non_wv_counts() -> None:
     rows = [
         {
@@ -178,6 +195,16 @@ def test_build_webview_device_summary_load_rows_returns_empty_when_no_reports(tm
     assert build_webview_device_summary.load_rows(str(tmp_path)) == []
 
 
+def test_build_webview_device_summary_main_calls_init_logging(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "argv", ["build_webview_device_summary.py", "--output-dir", str(tmp_path)])
+    init_logging = Mock()
+    monkeypatch.setattr(build_webview_device_summary, "init_logging", init_logging)
+
+    build_webview_device_summary.main()
+
+    init_logging.assert_called_once_with("ctap-smvod-build_webview_device_summary")
+
+
 def test_extract_position_report_filters_rows_and_warns_for_optional_columns(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -206,11 +233,14 @@ def test_extract_position_report_filters_rows_and_warns_for_optional_columns(
             "1003",
         ],
     )
+    init_logging = Mock()
+    monkeypatch.setattr(extract_position_report, "init_logging", init_logging)
 
     extract_position_report.main()
 
     rows = list(csv.DictReader(out.open(encoding="utf-8")))
     err = capsys.readouterr().err
+    init_logging.assert_called_once_with("ctap-smvod-extract_position_report")
     assert rows == [{"householdId": "", "deviceId": "", "session.clientIp": "", "sessionId": "s1", "content_uuid": "", "start_time": "2026-09-30 10:00:00.000 UTC", "error_codes": "1003; 1005", "error_descriptions": "", "state_sequence": "", "min_position": "", "max_position": "", "position_not_moved": "true"}]
     assert "leaving blank in output" in err
 
@@ -247,6 +277,23 @@ def test_extract_session_ids_rejects_empty_clause() -> None:
         extract_session_ids.format_in_clause([])
 
 
+def test_extract_session_ids_main_calls_init_logging(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = tmp_path / "report.csv"
+    source.write_text("sessionId\nbeta\nalpha\n", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["extract_session_ids.py", "--input", str(source)])
+    init_logging = Mock()
+    monkeypatch.setattr(extract_session_ids, "init_logging", init_logging)
+
+    extract_session_ids.main()
+
+    init_logging.assert_called_once_with("ctap-smvod-extract_session_ids")
+    assert "'alpha'" in capsys.readouterr().out
+
+
 def test_extract_session_timeline_sorts_rows_by_event_start(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     source = tmp_path / "session.csv"
     out = tmp_path / "timeline.csv"
@@ -257,10 +304,13 @@ def test_extract_session_timeline_sorts_rows_by_event_start(tmp_path: Path, monk
         encoding="utf-8",
     )
     monkeypatch.setattr(sys, "argv", ["extract_session_timeline.py", "--input", str(source), "--out", str(out)])
+    init_logging = Mock()
+    monkeypatch.setattr(extract_session_timeline, "init_logging", init_logging)
 
     extract_session_timeline.main()
 
     rows = list(csv.DictReader(out.open(encoding="utf-8")))
+    init_logging.assert_called_once_with("ctap-smvod-extract_session_timeline")
     assert [row["event_type"] for row in rows] == ["PLAY", "BUFFERING"]
     assert "Wrote 2 rows" in capsys.readouterr().err
 
@@ -287,9 +337,12 @@ def test_filter_error_code_report_errors_without_valid_inputs(tmp_path: Path, mo
         "argv",
         ["filter_error_code_report.py", "--dates", "30092026", "--input-dir", str(tmp_path)],
     )
+    init_logging = Mock()
+    monkeypatch.setattr(filter_error_code_report, "init_logging", init_logging)
 
     with pytest.raises(SystemExit) as exc_info:
         filter_error_code_report.main()
 
+    init_logging.assert_called_once_with("ctap-smvod-filter_error_code_report")
     assert exc_info.value.code == 1
     assert "no valid input files processed" in capsys.readouterr().err

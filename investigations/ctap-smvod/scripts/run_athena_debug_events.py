@@ -43,8 +43,12 @@ from datetime import datetime, timedelta
 
 import extract_session_ids
 
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.query_catalog import render_query
 from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, investigation_output_dir, run_athena_query, snapshot_output_path
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_athena_debug_events")
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "data", "athena")
@@ -87,8 +91,8 @@ def _default_input_path(date):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
-
+    init_logging("ctap-smvod-run_athena_debug_events")
+    LOGGER.info("Starting run_athena_debug_events")
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Partition date, YYYY-MM-DD (e.g. 2026-07-08)")
     ap.add_argument(
@@ -138,6 +142,7 @@ def main():
 
     if args.dry_run:
         sys.stdout.write(query)
+        LOGGER.info("Completed run_athena_debug_events dry_run date=%s", date_iso)
         return
 
     if not args.skip_auth_check:
@@ -174,6 +179,11 @@ def main():
         sys.exit(1)
 
     print(f"Wrote {result.row_count} rows to {out_path}", file=sys.stderr)
+    LOGGER.info(
+        "Completed run_athena_debug_events rows=%d out=%s",
+        result.row_count,
+        out_path,
+    )
 
 
 if __name__ == "__main__":

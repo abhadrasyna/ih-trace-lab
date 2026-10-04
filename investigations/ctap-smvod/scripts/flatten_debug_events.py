@@ -19,8 +19,13 @@ Usage:
         --out ../queries/exploration/<hhid>/e6auj7k7_ccl_debug_events_flat.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.flatten_debug_events")
 
 from lib.debug_event_parser import COMMON_FIELDS, EXTRA_FIELDS_BY_EVENTID, flatten_row
 
@@ -43,6 +48,8 @@ ALL_FIELDNAMES = _all_fieldnames()
 
 
 def main():
+    init_logging("ctap-smvod-flatten_debug_events")
+    LOGGER.info("Starting flatten_debug_events")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input", required=True, help="Path to raw e6auj7k7_ccl_debug_events CSV export")
     ap.add_argument("--out", required=True, help="Path to write the flattened CSV")
@@ -66,6 +73,12 @@ def main():
     if unhandled_eventids:
         print(f"WARNING: {len(unhandled_eventids)} eventid(s) had no dedicated extractor "
               f"(common fields + raw_eventdata only): {sorted(unhandled_eventids)}", file=sys.stderr)
+
+    LOGGER.info(
+        "Completed flatten_debug_events rows=%d out=%s",
+        total,
+        args.out,
+    )
 
 
 if __name__ == "__main__":

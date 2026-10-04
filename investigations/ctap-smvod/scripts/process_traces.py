@@ -31,12 +31,17 @@ Usage:
                                --out ../output/2026-07-09_setupsession.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import glob
 import json
 import os
 import re
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.process_traces")
 
 CTAP_ROUTE = "/ctap/:uxApiVersion/devices/me/playsessions"
 
@@ -199,6 +204,8 @@ FIELDS = [
 
 
 def main():
+    init_logging("ctap-smvod-process_traces")
+    LOGGER.info("Starting process_traces")
     ap = argparse.ArgumentParser()
     ap.add_argument("--input-dir", required=True,
                      help="Directory of raw trace JSON files (one per trace, as returned by "
@@ -233,6 +240,11 @@ def main():
         writer.writerows(rows)
 
     print(f"\nWrote {len(rows)} rows to {args.out}")
+    LOGGER.info(
+        "Completed process_traces rows=%d out=%s",
+        len(rows),
+        args.out,
+    )
 
 
 if __name__ == "__main__":

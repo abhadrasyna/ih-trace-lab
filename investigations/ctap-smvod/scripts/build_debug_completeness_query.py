@@ -21,8 +21,13 @@ Usage:
         --out   ../queries/exploration/playing_no_play_debug_check.sql
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.build_debug_completeness_query")
 
 from lib.query_catalog import render_query
 
@@ -30,6 +35,8 @@ QUERY_SLUG = "ctap-smvod-debug-completeness"
 
 
 def main():
+    init_logging("ctap-smvod-build_debug_completeness_query")
+    LOGGER.info("Starting build_debug_completeness_query")
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True, help="CSV with a parent_session_id/sessionId column (e.g. §15 export)")
     ap.add_argument("--column", default="parent_session_id", help="Column name to extract (default: parent_session_id)")
@@ -72,6 +79,12 @@ def main():
     else:
         sys.stdout.write(query)
         print(f"\n({len(ids)} distinct {args.column} values)", file=sys.stderr)
+
+    LOGGER.info(
+        "Completed build_debug_completeness_query session_ids=%d destination=%s",
+        len(ids),
+        args.out or "stdout",
+    )
 
 
 if __name__ == "__main__":

@@ -38,9 +38,14 @@ Usage:
         --out ../output/2026-07-10_position_report.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import os
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.extract_position_report")
 
 from lib.runtime import investigation_output_dir, snapshot_output_path
 
@@ -66,6 +71,8 @@ def _row_has_error_code(row, error_code):
 
 
 def main():
+    init_logging("ctap-smvod-extract_position_report")
+    LOGGER.info("Starting extract_position_report")
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 10072026")
     default_output_dir = str(investigation_output_dir())
@@ -136,6 +143,11 @@ def main():
         writer.writerows(rows)
 
     print(f"Wrote {len(rows)} rows ({len(columns)} columns) to {out_path}", file=sys.stderr)
+    LOGGER.info(
+        "Completed extract_position_report rows=%d out=%s",
+        len(rows),
+        out_path,
+    )
 
 
 if __name__ == "__main__":

@@ -38,8 +38,13 @@ Usage:
         plus per-phase avg for dns/tcp_connect/tls/ttfb/download, all ms).
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import statistics
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_api_timing")
 
 import openpyxl
 
@@ -247,6 +252,8 @@ def cmd_csv_summary(args):
 
 
 def main():
+    init_logging("ctap-smvod-analyze_api_timing")
+    LOGGER.info("Starting analyze_api_timing")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -285,6 +292,7 @@ def main():
 
     args = parser.parse_args()
     args.func(args)
+    LOGGER.info("Completed analyze_api_timing command=%s", args.command)
 
 
 if __name__ == "__main__":

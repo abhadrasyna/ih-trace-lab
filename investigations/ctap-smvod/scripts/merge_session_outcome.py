@@ -85,6 +85,7 @@ Usage:
         --out ../output/2026-07-08_setupsession_with_outcome.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import glob
 import json
@@ -92,6 +93,10 @@ import os
 import re
 import sys
 from datetime import datetime
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.merge_session_outcome")
 
 from lib.runtime import investigation_output_dir, snapshot_output_path
 
@@ -356,6 +361,8 @@ def load_debug_states(files):
 
 
 def main():
+    init_logging("ctap-smvod-merge_session_outcome")
+    LOGGER.info("Starting merge_session_outcome")
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 08072026")
     default_input_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "athena")
@@ -482,6 +489,11 @@ def main():
     print(f"Sessions enriched with state_sequence: {state_enriched}")
     print(f"Sessions enriched with position data:  {position_enriched}")
     print(f"\nWrote {len(out_rows)} rows to {out_path}")
+    LOGGER.info(
+        "Completed merge_session_outcome rows=%d out=%s",
+        len(out_rows),
+        out_path,
+    )
 
 
 if __name__ == "__main__":

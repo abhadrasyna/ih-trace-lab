@@ -22,6 +22,7 @@ Usage:
         --debug-states ../data/athena/2026-07-09_debug_states.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import os
 import re
@@ -29,6 +30,10 @@ import statistics
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_outcome_report")
 
 from lib.runtime import investigation_output_dir, snapshot_output_path
 
@@ -452,6 +457,8 @@ def build_report(rows, debug_states_rows, date_label, source_path):
 
 
 def main():
+    init_logging("ctap-smvod-analyze_outcome_report")
+    LOGGER.info("Starting analyze_outcome_report")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 09072026")
     default_output_dir = str(investigation_output_dir())
@@ -497,6 +504,12 @@ def main():
         print(f"Wrote report to {args.out}", file=sys.stderr)
     else:
         print(report_md)
+
+    LOGGER.info(
+        "Completed analyze_outcome_report rows=%d destination=%s",
+        len(rows),
+        args.out or "stdout",
+    )
 
 
 if __name__ == "__main__":

@@ -11,9 +11,14 @@ Usage:
         --out ../output/2026-08-02_2026-08-08_position_report_1003.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import os
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.filter_error_code_report")
 
 from lib.runtime import investigation_output_dir, range_output_path, snapshot_output_path
 
@@ -29,6 +34,8 @@ def _matches_error_code(cell_value, expected_code):
 
 
 def main():
+    init_logging("ctap-smvod-filter_error_code_report")
+    LOGGER.info("Starting filter_error_code_report")
     ap = argparse.ArgumentParser()
     ap.add_argument("--dates", required=True,
                     help="Comma-separated list of dates in DDMMYYYY format, e.g. 02082026,03082026")
@@ -89,6 +96,11 @@ def main():
         writer.writerows(matching_rows)
 
     print(f"Wrote {rows_written} rows (error_codes={args.error_code}) to {out_path}")
+    LOGGER.info(
+        "Completed filter_error_code_report rows=%d out=%s",
+        rows_written,
+        out_path,
+    )
 
 
 if __name__ == "__main__":

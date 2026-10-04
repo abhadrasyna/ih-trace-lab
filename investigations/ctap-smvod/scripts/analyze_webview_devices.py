@@ -33,12 +33,17 @@ Usage:
         --out ../output/2026-09-18_webview_device_report.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import os
 import re
 import sys
 from collections import defaultdict
 from datetime import date, timedelta
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_webview_devices")
 
 from lib.runtime import investigation_output_dir, snapshot_output_path
 
@@ -184,6 +189,8 @@ def _daterange_ddmmyyyy(start_str, end_str):
 
 
 def main():
+    init_logging("ctap-smvod-analyze_webview_devices")
+    LOGGER.info("Starting analyze_webview_devices")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", default=None, help="Single date in DDMMYYYY format, e.g. 18092026")
     ap.add_argument("--start-date", default=None,
@@ -240,6 +247,12 @@ def main():
         f"\nDone: {processed} date(s) written, {missing_input} date(s) skipped for missing input, "
         f"{missing_columns} date(s) skipped for missing columns.",
         file=sys.stderr,
+    )
+    LOGGER.info(
+        "Completed analyze_webview_devices processed=%d missing_input=%d missing_columns=%d",
+        processed,
+        missing_input,
+        missing_columns,
     )
     if processed == 0:
         sys.exit(1)

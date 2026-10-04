@@ -22,6 +22,7 @@ Prints frequency breakdowns (top households, top content, top devices/app
 versions) to stdout. Does not write any files.
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import glob
 import json
@@ -30,8 +31,11 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from lib.bootstrap import REPO_ROOT
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
 from src.lib.paths import YamlPathResolver
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_errorcode_correlation")
 
 SESSION_FIELDS = ["householdId", "deviceId", "contentId", "externalPackageId"]
 
@@ -80,6 +84,8 @@ def parse_error_rows(errors_csv):
 
 
 def main():
+    init_logging("ctap-smvod-analyze_errorcode_correlation")
+    LOGGER.info("Starting analyze_errorcode_correlation")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--errors", required=True, help="Path to raw errorcode export CSV")
     ap.add_argument("--output-dir", default=None, help="Dir with *_setupsession_with_outcome.csv")
@@ -154,6 +160,12 @@ def main():
     print(f"\n=== Distinct shaka error messages ===")
     for msg, cnt in message_counter.most_common(args.top):
         print(f"  {cnt:4d}  {msg}")
+
+    LOGGER.info(
+        "Completed analyze_errorcode_correlation rows=%d unique_sessions=%d",
+        total_rows,
+        len(sessions_seen),
+    )
 
 
 if __name__ == "__main__":

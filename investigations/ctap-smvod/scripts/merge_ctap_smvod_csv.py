@@ -43,11 +43,16 @@ Usage:
         --input-dir ../data/lightstep --out ../output/2026-07-08_setupsession.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import datetime
 import os
 import re
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.merge_ctap_smvod_csv")
 
 from lib.runtime import snapshot_output_path
 
@@ -247,6 +252,8 @@ OUTPUT_FIELDS = (
 
 
 def main():
+    init_logging("ctap-smvod-merge_ctap_smvod_csv")
+    LOGGER.info("Starting merge_ctap_smvod_csv")
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 08072026")
     ap.add_argument("--input-dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "lightstep"))
@@ -359,6 +366,11 @@ def main():
     print(f"Timestamp matched (via sessionId):   {ts_matched}")
     print(f"Timestamp missing (via sessionId):   {ts_missing}")
     print(f"\nWrote {len(out_rows)} rows to {out_path}")
+    LOGGER.info(
+        "Completed merge_ctap_smvod_csv rows=%d out=%s",
+        len(out_rows),
+        out_path,
+    )
 
 
 if __name__ == "__main__":

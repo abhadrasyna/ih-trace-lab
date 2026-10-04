@@ -45,10 +45,15 @@ listing just the sessions/IPs that qualify as evidence per docs/STATUS.md
 ("MTN network-team escalation criteria").
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import re
 import sys
 from datetime import datetime, timezone
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.correlate_cdn_ips")
 
 from lib.runtime import snapshot_output_path
 
@@ -435,6 +440,8 @@ def correlate(cdn_file, position_report, out_file, escalation_out_file=None):
 
 
 def main():
+    init_logging("ctap-smvod-correlate_cdn_ips")
+    LOGGER.info("Starting correlate_cdn_ips")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--date', required=True, help='DDMMYYYY, used for default file names')
     ap.add_argument('--cdn-file', help='Path to CDN team export (default: guess from --date)')
@@ -452,6 +459,12 @@ def main():
     escalation_out_file = args.escalation_out or snapshot_output_path(date, "mtn_escalation_ips")
 
     correlate(cdn_file, position_report, out_file, escalation_out_file)
+    LOGGER.info(
+        "Completed correlate_cdn_ips date=%s out=%s escalation_out=%s",
+        date,
+        out_file,
+        escalation_out_file,
+    )
 
 
 if __name__ == '__main__':

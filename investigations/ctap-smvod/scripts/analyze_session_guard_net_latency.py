@@ -26,8 +26,13 @@ Usage:
         HAR waterfall sample when no FCID is available.
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import statistics
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_session_guard_net_latency")
 
 
 def load_rows(path):
@@ -129,6 +134,8 @@ def cmd_locate(args):
 
 
 def main():
+    init_logging("ctap-smvod-analyze_session_guard_net_latency")
+    LOGGER.info("Starting analyze_session_guard_net_latency")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -155,6 +162,7 @@ def main():
 
     args = parser.parse_args()
     args.func(args)
+    LOGGER.info("Completed analyze_session_guard_net_latency command=%s", args.command)
 
 
 if __name__ == "__main__":

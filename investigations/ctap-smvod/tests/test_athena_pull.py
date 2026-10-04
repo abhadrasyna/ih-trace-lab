@@ -27,38 +27,43 @@ debug = _load_module("ctap_smvod_run_athena_debug", "run_athena_debug_events.py"
 
 def _run_cli(module, argv: list[str], monkeypatch, fake_run_query, *, fake_extract_ids=None) -> dict[str, object]:
     captured: dict[str, object] = {}
+    init_logging_calls: list[str] = []
 
     def recorder(**kwargs):
         captured.update(kwargs)
         return fake_run_query(**kwargs)
 
+    monkeypatch.setattr(module, "init_logging", lambda slug: init_logging_calls.append(slug))
     monkeypatch.setattr(module, "run_athena_query", recorder)
     if fake_extract_ids is not None:
         monkeypatch.setattr(module.extract_session_ids, "extract_ids", fake_extract_ids)
     monkeypatch.setattr(sys, "argv", argv)
     module.main()
+    captured["init_logging_calls"] = init_logging_calls
     return captured
 
 
 @pytest.mark.parametrize(
-    ("module", "argv", "expected_name", "extract_ids"),
+    ("module", "argv", "expected_name", "extract_ids", "expected_slug"),
     [
         (
             playback,
             ["run_athena_playback_outcome.py", "--date", "2026-09-30", "--output-dir"],
             "2026-09-30_session.csv",
             None,
+            "ctap-smvod-run_athena_playback_outcome",
         ),
         (
             debug,
             ["run_athena_debug_events.py", "--date", "2026-09-30", "--input"],
             "2026-09-30_debug_states.csv",
             lambda path, column: ["abc"],
+            "ctap-smvod-run_athena_debug_events",
         ),
     ],
 )
 def test_athena_pull_writes_iso_prefixed_file(
-    tmp_path: Path, monkeypatch, module, argv, expected_name, extract_ids
+    tmp_path: Path, monkeypatch, module, argv, expected_name, extract_ids, expected_slug
 ) -> None:
     report_path = tmp_path / "setupsession_30092026.csv"
     report_path.write_text("sessionId\nabc\n", encoding="utf-8")
@@ -77,6 +82,7 @@ def test_athena_pull_writes_iso_prefixed_file(
     )
 
     assert captured["output_path"] == str(tmp_path / expected_name)
+    assert captured["init_logging_calls"] == [expected_slug]
 
 
 def test_athena_pull_uses_lib_adapter(tmp_path: Path, monkeypatch) -> None:

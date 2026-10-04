@@ -55,10 +55,16 @@ Usage:
     python3 run_pipeline.py --date 18092026 --profile clarissa-insights-product --skip-auth-check
 """
 import argparse
+import logging
 import os
 import subprocess
 import sys
 from datetime import datetime
+
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_pipeline")
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LIGHTSTEP_DIR = os.path.join(SCRIPT_DIR, "..", "data", "lightstep")
@@ -174,6 +180,8 @@ def _build_steps(args, date_iso: str):
 
 
 def main():
+    init_logging("ctap-smvod-run_pipeline")
+    LOGGER.info("Starting run_pipeline")
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 18092026")
@@ -224,6 +232,7 @@ def main():
             marker = "(skipped)" if skip else ""
             print(f"# {label} {marker}".rstrip())
             print(" ".join(command))
+        LOGGER.info("Completed run_pipeline dry_run date=%s", args.date)
         return
 
     for label, command, skip in steps:
@@ -243,6 +252,7 @@ def main():
             sys.exit(result.returncode)
 
     print(f"\nPipeline complete for {args.date}.", file=sys.stderr)
+    LOGGER.info("Completed run_pipeline date=%s", args.date)
 
 
 if __name__ == "__main__":

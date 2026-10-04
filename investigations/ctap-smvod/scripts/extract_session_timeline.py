@@ -15,13 +15,20 @@ Usage:
         --columns event_type,event_start,event_end,content,endreason
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import sys
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.extract_session_timeline")
 
 DEFAULT_COLUMNS = ["event_type", "event_start", "event_end", "content", "endreason"]
 
 
 def main():
+    init_logging("ctap-smvod-extract_session_timeline")
+    LOGGER.info("Starting extract_session_timeline")
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True, help="Raw unified_sessions CSV export")
     ap.add_argument("--out", default=None, help="Write trimmed CSV here instead of stdout")
@@ -52,6 +59,12 @@ def main():
     if args.out:
         out_f.close()
         print(f"Wrote {len(rows)} rows ({len(columns)} columns) to {args.out}", file=sys.stderr)
+
+    LOGGER.info(
+        "Completed extract_session_timeline rows=%d destination=%s",
+        len(rows),
+        args.out or "stdout",
+    )
 
 
 if __name__ == "__main__":

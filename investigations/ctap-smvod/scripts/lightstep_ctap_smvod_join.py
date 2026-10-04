@@ -32,6 +32,7 @@ Usage:
         --out ../output/2026-07-09_setupsession.csv
 """
 import argparse
+import logging
 from lib import csv_io_compat as csv
 import datetime
 import os
@@ -39,6 +40,10 @@ import re
 import sys
 import time
 import requests
+from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from src.lib.logging.bootstrap import init_logging
+
+LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.lightstep_ctap_smvod_join")
 
 from lib.runtime import snapshot_output_path
 
@@ -273,6 +278,8 @@ def ddmmyyyy_to_window(date_str):
 
 
 def main():
+    init_logging("ctap-smvod-lightstep_ctap_smvod_join")
+    LOGGER.info("Starting lightstep_ctap_smvod_join")
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 09072026. Queries full 24h UTC.")
     ap.add_argument("--org", required=True, help="Lightstep organization, e.g. Synamedia-EU")
@@ -319,6 +326,11 @@ def main():
         writer.writerows(rows)
 
     print(f"\nWrote {len(rows)} rows to {out_path}")
+    LOGGER.info(
+        "Completed lightstep_ctap_smvod_join rows=%d out=%s",
+        len(rows),
+        out_path,
+    )
 
 
 if __name__ == "__main__":

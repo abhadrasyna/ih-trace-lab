@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 _SCRIPTS_DIR = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
@@ -43,6 +44,8 @@ def test_merge_warns_when_no_athena_inputs_exist(tmp_path: Path, monkeypatch, ca
             str(out_path),
         ],
     )
+    init_logging = Mock()
+    monkeypatch.setattr(merge_session_outcome, "init_logging", init_logging)
     written: dict[str, object] = {}
 
     class FakeWriter:
@@ -62,6 +65,7 @@ def test_merge_warns_when_no_athena_inputs_exist(tmp_path: Path, monkeypatch, ca
     merge_session_outcome.main()
 
     stderr = capsys.readouterr().err
+    init_logging.assert_called_once_with("ctap-smvod-merge_session_outcome")
     assert "WARNING: no Athena session enrichment file was found" in stderr
     assert "WARNING: no Athena debug enrichment files were found" in stderr
     assert written["path"] == str(out_path)
