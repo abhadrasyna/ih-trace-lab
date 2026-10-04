@@ -84,12 +84,11 @@
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. `docs/plan/logging-framework/` has now started implementing the rest of FCID-1's deferred runtime wiring around it:
   `src/lib/logging/bootstrap.py` mints/binds one FCID per entry point, `src/lib/logging/setup.py` injects `%(fcid)s` on every handler, and `src/lib/logging/redact.py` provides allow-list-based
   parameter masking.
-- `docs/plan/logging-framework/` — story complete (LFR-1..5): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README. It added
+- `docs/plan/logging-framework/` — story in progress (LFR-1..6a complete): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README. It added
   `src/lib/logging/bootstrap.py`'s `init_logging()`, handler-level FCID injection, and allow-list parameter masking; defined the minimum logging contract in
   `docs/refactor/logging-and-correlation-id.md`; applied that contract to `src/lib/athena/adapter.py` plus the `aws_access_cli` adoption/Shaka/position business-logic modules; wired `init_logging()`
-  into every `src/pipelines/aws_access_cli/scripts/run_*.py` entry point before argument parsing; made report-preview table output opt-in via `--preview`; and made the contract binding in
-  `docs/refactor/code-review-checklist.md`. `investigations/ctap-smvod/`, root `scripts/dev/`, and the Athena DDL-cache scripts now carry dated coordination notes pointing here rather than being
-  retrofitted in this story.
+  into every `src/pipelines/aws_access_cli/scripts/run_*.py` entry point before argument parsing; made report-preview table output opt-in via `--preview`; made the contract binding in
+  `docs/refactor/code-review-checklist.md`; and retrofitted every `investigations/ctap-smvod/scripts/*.py` entry point with `init_logging()` plus start/end run logs. Open tasks: LFR-6b..8.
 - `src/lib/logging/setup.py` — the canonical `setup_logging()` entrypoint (moved here from `logs/setup_logging.py` so code and its own generated runtime artifact, `logs/app.log`, aren't colocated in
   one directory). Resolves its log directory from a new `logs_root` key in `config/data_paths.yaml` (default `logs`) instead of a hardcoded path relative to the module file, consistent with the
   project's single-config-loading-convention guidance; `logs/` itself still holds the generated `app.log` and its `.gitignore`. All 4 prior `logs.setup_logging` import sites were updated to
