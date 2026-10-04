@@ -17,9 +17,12 @@ from pathlib import Path
 
 import yaml
 
+from src.lib.logging.context import FcidLogFilter
+
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _DATA_PATHS_CONFIG = _REPO_ROOT / "config" / "data_paths.yaml"
 _DEFAULT_LOGS_ROOT = "logs"
+_FCID_LOG_FILTER = FcidLogFilter()
 
 
 def _logs_dir() -> Path:
@@ -75,10 +78,12 @@ def setup_logging(*, level: str = "INFO", to_file: bool = True) -> None:
         logs_dir = _logs_dir()
         logs_dir.mkdir(parents=True, exist_ok=True)
         handlers.append(logging.FileHandler(logs_dir / "app.log"))
+    for handler in handlers:
+        handler.addFilter(_FCID_LOG_FILTER)
 
     logging.basicConfig(
         level=level_value,
-        format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+        format="%(asctime)s [%(levelname)s] [%(name)s] [fcid=%(fcid)s] %(message)s",
         handlers=handlers,
         force=True,
     )

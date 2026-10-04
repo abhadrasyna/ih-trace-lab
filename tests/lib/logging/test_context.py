@@ -4,8 +4,18 @@ from __future__ import annotations
 import contextvars
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Iterator
 
-from src.lib.logging.context import FcidLogFilter, bind_fcid, current_fcid
+import pytest
+
+from src.lib.logging.context import FcidLogFilter, _fcid_var, bind_fcid, current_fcid
+
+
+@pytest.fixture(autouse=True)
+def _reset_fcid_context() -> Iterator[None]:
+    token = _fcid_var.set(None)
+    yield
+    _fcid_var.reset(token)
 
 
 def test_current_fcid_defaults_to_none() -> None:

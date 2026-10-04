@@ -81,13 +81,14 @@
   method/URL/headers/data grammar only (any other flag/quoting form raises `UnsupportedCurlFlagError` by name rather than producing silently-wrong output) and renders Python `requests.request(...)`
   source text; never executes the converted request.
 - `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
-  prerequisite so FCID survives a `ThreadPoolExecutor` boundary. Scoped to exactly what `docs/archive/flow-correlation-id-logging`'s FCID-1 already fully specifies; `redact_params` and a project-wide
-  `setup_logging()` formatter wiring are now owned by `docs/plan/logging-framework/` (LFR-1/LFR-2), opened 2026-10-04 after a cron-log investigation found almost no real entry point calls
-  `setup_logging()` at all.
-- `docs/plan/logging-framework/` — story (open, LFR-1..5 all unchecked as of 2026-10-04): builds `src/lib/logging/bootstrap.py`'s `init_logging()` (setup + FCID bind + `%(fcid)s` formatter wiring +
-  `redact_params`, the implementation FCID-1 deferred and no task ever picked up), defines a minimum logging contract, applies both to `src/lib/athena/adapter.py` and the `aws_access_cli` pipeline
-  (the concrete case that triggered this story), separates report-preview `print()` output from the operational log stream, and makes the contract binding for all future code via
-  `code-review-checklist.md`. `investigations/ctap-smvod/` and other consumers are explicitly deferred (LFR-5 coordination notes only), not retrofitted here.
+  prerequisite so FCID survives a `ThreadPoolExecutor` boundary. `docs/plan/logging-framework/` has now started implementing the rest of FCID-1's deferred runtime wiring around it:
+  `src/lib/logging/bootstrap.py` mints/binds one FCID per entry point, `src/lib/logging/setup.py` injects `%(fcid)s` on every handler, and `src/lib/logging/redact.py` provides allow-list-based
+  parameter masking.
+- `docs/plan/logging-framework/` — story (open; LFR-1 done, LFR-2..5 remaining): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README.
+  LFR-1 is complete: `init_logging()` now composes `setup_logging()` + FCID binding, `setup_logging()` auto-injects `fcid` into every record via handler filters, and `redact_params()` implements the
+  FCID-1 allow-list masking rule. Remaining tasks define/apply the minimum logging contract, wire the bootstrap into `aws_access_cli` entry points, make the contract binding in
+  `code-review-checklist.md`, and add coordination notes for still-unretrofitted consumers. `investigations/ctap-smvod/` and other consumers are explicitly deferred (LFR-5 coordination notes only),
+  not retrofitted here.
 - `src/lib/logging/setup.py` — the canonical `setup_logging()` entrypoint (moved here from `logs/setup_logging.py` so code and its own generated runtime artifact, `logs/app.log`, aren't colocated in
   one directory). Resolves its log directory from a new `logs_root` key in `config/data_paths.yaml` (default `logs`) instead of a hardcoded path relative to the module file, consistent with the
   project's single-config-loading-convention guidance; `logs/` itself still holds the generated `app.log` and its `.gitignore`. All 4 prior `logs.setup_logging` import sites were updated to
