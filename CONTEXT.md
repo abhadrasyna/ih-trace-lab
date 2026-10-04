@@ -82,7 +82,12 @@
   source text; never executes the converted request.
 - `src/lib/logging/context.py` — minimal FCID (flow-correlation-id) `contextvars` propagation slice (`bind_fcid`/`current_fcid`/`FcidLogFilter`), built as an `athena-lib-integration` ALI-5
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. Scoped to exactly what `docs/archive/flow-correlation-id-logging`'s FCID-1 already fully specifies; `redact_params` and a project-wide
-  `setup_logging()` formatter wiring remain deferred future work, not yet owned by any `docs/plan/` task.
+  `setup_logging()` formatter wiring are now owned by `docs/plan/logging-framework/` (LFR-1/LFR-2), opened 2026-10-04 after a cron-log investigation found almost no real entry point calls
+  `setup_logging()` at all.
+- `docs/plan/logging-framework/` — story (open, LFR-1..5 all unchecked as of 2026-10-04): builds `src/lib/logging/bootstrap.py`'s `init_logging()` (setup + FCID bind + `%(fcid)s` formatter wiring +
+  `redact_params`, the implementation FCID-1 deferred and no task ever picked up), defines a minimum logging contract, applies both to `src/lib/athena/adapter.py` and the `aws_access_cli` pipeline
+  (the concrete case that triggered this story), separates report-preview `print()` output from the operational log stream, and makes the contract binding for all future code via
+  `code-review-checklist.md`. `investigations/ctap-smvod/` and other consumers are explicitly deferred (LFR-5 coordination notes only), not retrofitted here.
 - `src/lib/logging/setup.py` — the canonical `setup_logging()` entrypoint (moved here from `logs/setup_logging.py` so code and its own generated runtime artifact, `logs/app.log`, aren't colocated in
   one directory). Resolves its log directory from a new `logs_root` key in `config/data_paths.yaml` (default `logs`) instead of a hardcoded path relative to the module file, consistent with the
   project's single-config-loading-convention guidance; `logs/` itself still holds the generated `app.log` and its `.gitignore`. All 4 prior `logs.setup_logging` import sites were updated to
@@ -137,6 +142,12 @@
   `src/lib/paths/config.py`'s `PathConfig`), import-cycle/dependency-direction (one-directional `src/lib/*` graph, future `test_no_import_cycles.py`), shared test-fixture dedup (future
   `tests/lib/conftest.py`), and the packaging/import-path gap (no root `pyproject.toml`/`conftest.py` yet — `python -m pytest`-from-repo-root is the only reason `from src.lib...` imports currently
   work; flagged as an open item for `pipeline-migration`'s first integration task).
+- `ruff.toml` (root) — added 2026-10-03 after `make lint` surfaced 72 errors across 7 unrelated rule families (`DTZ007`, `EXE001`, `PLW1510`, `PIE810`, `G201`, `PYI018`, `TRY401`); root had no ruff
+  config at all, so `ruff check` was silently defaulting to its full broad rule set rather than an intentional selection. Curated `select` to `E4`/`E7`/`E9` (core pycodestyle errors), `F` (pyflakes),
+  `I` (isort), `UP` (pyupgrade), `B` (bugbear), `SIM` (flake8-simplify), `C4` (comprehensions) — this is a lint-rule-selection gap only, separate from the still-open
+  pytest-import-path/root-`pyproject.toml` gap noted above. An earlier `ruff check --fix` pass (run before this file existed) had also auto-unquoted `src/lib/auth/sso.py`'s `ensure_session(...) ->
+  "boto3.Session"` annotation (UP037), which broke `test_ensure_session_does_not_construct_own_boto3_client` (an AST-based test enforcing SsoAuth never references `boto3` directly); re-quoted with `#
+  noqa: UP037` and a pointer to the guarding test so future `--fix` runs don't regress it again.
 
 ## Key Decisions
 
