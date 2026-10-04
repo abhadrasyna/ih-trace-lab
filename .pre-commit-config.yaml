@@ -31,5 +31,13 @@ repos:
         pass_filenames: false
         verbose: true
 
+      - id: logging-contract-check
+        name: "warn on new entry points missing init_logging()"
+        language: system
+        entry: python scripts/dev/hooks/check_logging_contract.py
+        files: '\.py$'
+        pass_filenames: true
+        verbose: true
+
 # NOTE (phase0): ruff/mypy/pytest-gate/bandit/detect-secrets hooks are deferred
 # until pyproject.toml, tests/unit/, and src/ are (re)added to the python piece.
