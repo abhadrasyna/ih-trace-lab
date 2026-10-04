@@ -66,6 +66,7 @@ def base_parser(description: str) -> argparse.ArgumentParser:
     parser.add_argument("--poll-interval", type=int, default=DEFAULT_RUNTIME.poll_interval)
     parser.add_argument("--timeout", type=int, default=DEFAULT_RUNTIME.timeout)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--preview", action="store_true")
     parser.add_argument("--skip-auth-check", action="store_true")
     return parser
 
@@ -102,6 +103,11 @@ def resolve_range(args: argparse.Namespace) -> tuple[str, str, str]:
 def render_summary(rows: list[dict[str, str]]) -> str:
     preview = rows[:5]
     return make_report_writer("markdown_table").render(preview or [{"status": "no rows"}])
+
+
+def _maybe_print_preview(rows: list[dict[str, str]], *, enabled: bool) -> None:
+    if enabled:
+        print(render_summary(rows))
 
 
 def _runtime_from_args(args: argparse.Namespace) -> RuntimeConfig:
@@ -157,7 +163,7 @@ def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[Me
     athena = make_athena_client(_runtime_from_args(args), tenant.database)
     rows = build_adoption_report(athena, catalog, tenant, start_date, end_date, period=period, metrics=metrics, table_override=args.table)
     write_adoption_report(output_path, make_csv_writer(), rows, metrics)
-    print(render_summary(rows))
+    _maybe_print_preview(rows, enabled=args.preview)
     return 0
 
 
@@ -188,7 +194,7 @@ def run_shaka_cli(argv: list[str] | None, *, artifact: str, by: str) -> int:
         table_override=args.table,
     )
     write_shaka_report(output_path, make_csv_writer(), rows)
-    print(render_summary(rows))
+    _maybe_print_preview(rows, enabled=args.preview)
     return 0
 
 
@@ -207,7 +213,7 @@ def run_position_cli(argv: list[str] | None) -> int:
         make_auth().ensure_session(args.profile)
     rows = run_position_report(make_athena_client(_runtime_from_args(args), tenant.database), QueryCatalog(), tenant, start_date, table_override=args.table)
     write_shaka_report(output_path, make_csv_writer(), rows)
-    print(render_summary(rows))
+    _maybe_print_preview(rows, enabled=args.preview)
     return 0
 
 
@@ -272,7 +278,7 @@ def run_incomplete_investigation_cli(argv: list[str] | None) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     writer.write_rows(str(output_dir / session_filename), session_rows, list(session_rows[0]) if session_rows else ['session_date', 'session_id'])
     writer.write_rows(str(output_dir / debug_filename), debug_rows, list(debug_rows[0]) if debug_rows else ['datetime', 'eventclass', 'eventid', 'clientid', 'session_id', 'eventdata'])
-    print(render_summary(session_rows))
+    _maybe_print_preview(session_rows, enabled=args.preview)
     return 0
 
 
@@ -328,7 +334,7 @@ def run_query_cli(argv: list[str] | None) -> int:
     output_path = output_dir / filename
     rows = athena.fetch_results(athena.start_query(sql, {})).rows
     write_shaka_report(output_path, make_csv_writer(), rows)
-    print(render_summary(rows))
+    _maybe_print_preview(rows, enabled=args.preview)
     return 0
 
 

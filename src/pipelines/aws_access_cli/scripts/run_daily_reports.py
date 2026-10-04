@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 
+from src.lib.logging.bootstrap import init_logging
 from src.pipelines.aws_access_cli.schedule import SubReport, run_for_all_tenants
 from src.pipelines.aws_access_cli.scripts import (
     run_adoption_report,
@@ -26,6 +27,7 @@ _SUB_REPORTS = [
 
 
 def main(argv: list[str] | None = None) -> int:
+    init_logging("aws-access-cli-daily-reports")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--date', required=True)
     args = parser.parse_args(argv)
