@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
+from scripts.dev import promote_scratch_scripts as promote_scratch_scripts_module
 from scripts.dev.promote_scratch_scripts import find_promotion_candidates, promote
 
 
@@ -78,3 +81,14 @@ def test_promote_rejects_path_outside_scratch(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="not under"):
         promote(outside_script, dest_dir)
+
+
+def test_main_calls_init_logging(monkeypatch: pytest.MonkeyPatch) -> None:
+    init_logging = Mock()
+    monkeypatch.setattr(promote_scratch_scripts_module, "init_logging", init_logging)
+    monkeypatch.setattr(promote_scratch_scripts_module, "find_promotion_candidates", lambda scratch_dir, days: [])
+    monkeypatch.setattr(sys, "argv", ["promote_scratch_scripts.py", "--list"])
+
+    promote_scratch_scripts_module.main()
+
+    init_logging.assert_called_once_with("promote-scratch-scripts")

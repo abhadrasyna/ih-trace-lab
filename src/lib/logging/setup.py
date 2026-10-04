@@ -65,7 +65,7 @@ def setup_logging(*, level: str = "INFO", to_file: bool = True) -> None:
     Args:
         level: Standard library level name (``DEBUG``, ``INFO``, ``WARNING``, ...). Raises
             ``ValueError`` on an unrecognized name rather than silently falling back to ``INFO``.
-        to_file: When ``True``, also write to ``<logs_root>/app.log`` alongside stdout.
+        to_file: When ``True``, also write to ``<logs_root>/app.log`` alongside stderr.
     """
     level_name = level.upper()
     try:
@@ -73,7 +73,11 @@ def setup_logging(*, level: str = "INFO", to_file: bool = True) -> None:
     except KeyError:
         raise ValueError(f"unrecognized logging level {level!r}; expected one of {sorted(_LEVEL_NAMES)}") from None
 
-    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    # stderr, not stdout: several entry points (resolve_tenant.py's JSON, generate_scripts_registry.py's
+    # path, etc.) treat stdout as their actual program output. Log lines belong on the diagnostic
+    # stream so they never interleave with a consumer parsing stdout. Cron captures are unaffected —
+    # this project's crontab entries redirect both streams into the same .out file (`2>&1`).
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stderr)]
     if to_file:
         logs_dir = _logs_dir()
         logs_dir.mkdir(parents=True, exist_ok=True)

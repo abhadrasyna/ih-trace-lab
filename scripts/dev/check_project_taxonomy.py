@@ -10,7 +10,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 CATEGORY_MARKERS: dict[str, tuple[str, ...]] = {
     "investigation": ("docs", "scripts", "tests"),
@@ -73,28 +73,29 @@ def main() -> None:
     init_logging("check-project-taxonomy")
     logger = logging.getLogger("scripts.dev.check_project_taxonomy")
     logger.info("Run started")
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--root",
-        type=Path,
-        default=Path(__file__).resolve().parents[2],
-        help="Repository root to audit (default: this file's repo root).",
-    )
-    parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Exit non-zero when unclassified directories are found.",
-    )
-    args = parser.parse_args()
+    try:
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument(
+            "--root",
+            type=Path,
+            default=Path(__file__).resolve().parents[2],
+            help="Repository root to audit (default: this file's repo root).",
+        )
+        parser.add_argument(
+            "--strict",
+            action="store_true",
+            help="Exit non-zero when unclassified directories are found.",
+        )
+        args = parser.parse_args()
 
-    root = args.root.resolve()
-    unclassified = find_unclassified_dirs(root, DEFAULT_IGNORE)
-    for path in unclassified:
-        print(f"{path.relative_to(root)}: run PT-3's checklist before deciding this directory's category.")
-    if args.strict and unclassified:
+        root = args.root.resolve()
+        unclassified = find_unclassified_dirs(root, DEFAULT_IGNORE)
+        for path in unclassified:
+            print(f"{path.relative_to(root)}: run PT-3's checklist before deciding this directory's category.")
+        if args.strict and unclassified:
+            raise SystemExit(1)
+    finally:
         logger.info("Run finished")
-        raise SystemExit(1)
-    logger.info("Run finished")
 
 
 def _has_markers(child_names: set[str], markers: tuple[str, ...]) -> bool:

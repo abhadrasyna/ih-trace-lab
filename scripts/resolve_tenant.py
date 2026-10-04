@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 from src.tenant_registry import (  # noqa: E402 - must follow the sys.path.insert above
     AthenaQueryTarget,
     LightstepGoQueryTarget,
@@ -28,8 +28,8 @@ def main(argv: list[str] | None = None) -> int:
 
     init_logging("resolve-tenant")
     logger = logging.getLogger("scripts.resolve_tenant")
+    logger.info("Run started")
     try:
-        logger.info("Run started")
         parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument("--system", choices=("lightstep_go", "matisse", "athena"), required=True)
         parser.add_argument("--tenant", required=True)

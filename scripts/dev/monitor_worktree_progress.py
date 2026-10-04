@@ -34,7 +34,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 CHECKBOX_RE = re.compile(r"^-\s*\[( |x|X)\]\s*\*\*([A-Za-z0-9_-]+)\*\*")
 TASKS_FILE_NAME = "tasks.md"
@@ -191,57 +191,57 @@ def main() -> int:
     init_logging("monitor-worktree-progress")
     logger = logging.getLogger("scripts.dev.monitor_worktree_progress")
     logger.info("Run started")
-    doc_summary = (__doc__ or "").splitlines()
-    parser = argparse.ArgumentParser(description=doc_summary[0] if doc_summary else None)
-    parser.add_argument(
-        "--story",
-        action="append",
-        required=True,
-        dest="stories",
-        help="Story name to track; repeatable. Worktree/tasks.md paths follow this project's "
-        "../wt-<story> and docs/plan/<story>/tasks.md conventions.",
-    )
-    parser.add_argument(
-        "--worktree-root", type=Path, default=Path(".."), help="Parent directory holding wt-<story> dirs."
-    )
-    parser.add_argument(
-        "--plan-root", type=Path, default=Path("docs/plan"), help="Root directory holding <story>/tasks.md."
-    )
-    parser.add_argument("--watch", action="store_true", help="Poll repeatedly instead of checking once.")
-    parser.add_argument(
-        "--interval", type=int, default=300, help="Seconds between polls when --watch is set (default 300)."
-    )
-    args = parser.parse_args()
-
-    if args.interval < 1:
-        print(f"error: --interval must be >= 1 (got {args.interval})", file=sys.stderr)
-        logger.info("Run finished")
-        return 1
-
-    bad_names = validate_story_names(args.stories, args.plan_root)
-    if bad_names:
-        print(f"error: no {args.plan_root}/<story>/tasks.md found for: {', '.join(bad_names)}", file=sys.stderr)
-        logger.info("Run finished")
-        return 1
-
-    previous: dict[str, Snapshot] = {}
     try:
-        while True:
-            for story in args.stories:
-                snap = check_story(story, args.worktree_root, args.plan_root)
-                if snap is None:
-                    reason = describe_missing_worktree(story, args.plan_root)
-                    print(f"[{datetime.now(timezone.utc).isoformat(timespec='seconds')}] {story}: {reason}")
-                    continue
-                print(format_snapshot(snap, previous.get(story)))
-                previous[story] = snap
-            if not args.watch:
-                break
-            time.sleep(args.interval)
-    except KeyboardInterrupt:
-        print("\nstopped.")
-    logger.info("Run finished")
-    return 0
+        doc_summary = (__doc__ or "").splitlines()
+        parser = argparse.ArgumentParser(description=doc_summary[0] if doc_summary else None)
+        parser.add_argument(
+            "--story",
+            action="append",
+            required=True,
+            dest="stories",
+            help="Story name to track; repeatable. Worktree/tasks.md paths follow this project's "
+            "../wt-<story> and docs/plan/<story>/tasks.md conventions.",
+        )
+        parser.add_argument(
+            "--worktree-root", type=Path, default=Path(".."), help="Parent directory holding wt-<story> dirs."
+        )
+        parser.add_argument(
+            "--plan-root", type=Path, default=Path("docs/plan"), help="Root directory holding <story>/tasks.md."
+        )
+        parser.add_argument("--watch", action="store_true", help="Poll repeatedly instead of checking once.")
+        parser.add_argument(
+            "--interval", type=int, default=300, help="Seconds between polls when --watch is set (default 300)."
+        )
+        args = parser.parse_args()
+
+        if args.interval < 1:
+            print(f"error: --interval must be >= 1 (got {args.interval})", file=sys.stderr)
+            return 1
+
+        bad_names = validate_story_names(args.stories, args.plan_root)
+        if bad_names:
+            print(f"error: no {args.plan_root}/<story>/tasks.md found for: {', '.join(bad_names)}", file=sys.stderr)
+            return 1
+
+        previous: dict[str, Snapshot] = {}
+        try:
+            while True:
+                for story in args.stories:
+                    snap = check_story(story, args.worktree_root, args.plan_root)
+                    if snap is None:
+                        reason = describe_missing_worktree(story, args.plan_root)
+                        print(f"[{datetime.now(timezone.utc).isoformat(timespec='seconds')}] {story}: {reason}")
+                        continue
+                    print(format_snapshot(snap, previous.get(story)))
+                    previous[story] = snap
+                if not args.watch:
+                    break
+                time.sleep(args.interval)
+        except KeyboardInterrupt:
+            print("\nstopped.")
+        return 0
+    finally:
+        logger.info("Run finished")
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("scripts.dev.harvest_athena_query_catalog")
 
@@ -325,31 +325,34 @@ def write_catalog(root: str | Path, catalog: Iterable[CatalogEntry]) -> None:
 def main() -> None:
     """Run the harvest pipeline from markdown sources to ``queries/athena/``."""
     init_logging("harvest-athena-query-catalog")
-    LOGGER.info("Run started")
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--sources",
-        type=Path,
-        nargs="+",
-        default=list(DEFAULT_SOURCES),
-        help="One or more markdown files to harvest (default: the 6 reference files).",
-    )
-    parser.add_argument(
-        "--root",
-        type=Path,
-        default=Path(__file__).resolve().parents[2],
-        help="Repository root to write queries/athena into (default: this repo root).",
-    )
-    args = parser.parse_args()
+    logger = LOGGER
+    logger.info("Run started")
+    try:
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument(
+            "--sources",
+            type=Path,
+            nargs="+",
+            default=list(DEFAULT_SOURCES),
+            help="One or more markdown files to harvest (default: the 6 reference files).",
+        )
+        parser.add_argument(
+            "--root",
+            type=Path,
+            default=Path(__file__).resolve().parents[2],
+            help="Repository root to write queries/athena into (default: this repo root).",
+        )
+        args = parser.parse_args()
 
-    catalog = build_catalog(args.sources)
-    write_catalog(args.root, catalog)
+        catalog = build_catalog(args.sources)
+        write_catalog(args.root, catalog)
 
-    total_raw_queries = sum(entry.raw_query_count for entry in catalog)
-    print(f"Wrote {len(catalog)} Athena query shapes from {total_raw_queries} raw SQL blocks.")
-    for entry in sorted(catalog, key=lambda item: item.slug):
-        print(f"  {entry.slug}: {entry.raw_query_count} raw quer{'y' if entry.raw_query_count == 1 else 'ies'}")
-    LOGGER.info("Run finished")
+        total_raw_queries = sum(entry.raw_query_count for entry in catalog)
+        print(f"Wrote {len(catalog)} Athena query shapes from {total_raw_queries} raw SQL blocks.")
+        for entry in sorted(catalog, key=lambda item: item.slug):
+            print(f"  {entry.slug}: {entry.raw_query_count} raw quer{'y' if entry.raw_query_count == 1 else 'ies'}")
+    finally:
+        logger.info("Run finished")
 
 
 def _canonical_rank(item: dict[str, object]) -> tuple[int, int, int]:

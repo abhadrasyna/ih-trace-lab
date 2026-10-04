@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
+from scripts.dev import monitor_worktree_progress as monitor_worktree_progress_module
 from scripts.dev.monitor_worktree_progress import (
     check_story,
     describe_missing_worktree,
@@ -164,3 +167,17 @@ def test_format_snapshot_flags_no_new_commits_against_previous() -> None:
     assert "no new commits since last check" in same_head
     assert "no new commits" not in fresh
     assert "next pending: A-2" in fresh
+
+
+def test_main_calls_init_logging(monkeypatch: pytest.MonkeyPatch) -> None:
+    init_logging = Mock()
+    monkeypatch.setattr(monitor_worktree_progress_module, "init_logging", init_logging)
+    monkeypatch.setattr(monitor_worktree_progress_module, "validate_story_names", lambda stories, plan_root: [])
+    monkeypatch.setattr(monitor_worktree_progress_module, "check_story", lambda story, worktree_root, plan_root: None)
+    monkeypatch.setattr(monitor_worktree_progress_module, "describe_missing_worktree", lambda story, plan_root: "not started yet")
+    monkeypatch.setattr(sys, "argv", ["monitor_worktree_progress.py", "--story", "demo-story"])
+
+    result = monitor_worktree_progress_module.main()
+
+    assert result == 0
+    init_logging.assert_called_once_with("monitor-worktree-progress")

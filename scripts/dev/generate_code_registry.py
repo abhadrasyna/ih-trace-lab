@@ -18,7 +18,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 from scripts.dev.generate_scripts_registry import (
     EXCLUDED_DIR_NAMES,
@@ -97,8 +97,8 @@ def main() -> None:
     """Write `CODE_REGISTRY.md` for the chosen repo root."""
     init_logging("generate-code-registry")
     logger = logging.getLogger("scripts.dev.generate_code_registry")
+    logger.info("Run started")
     try:
-        logger.info("Run started")
         parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument(
             "--root",

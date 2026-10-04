@@ -1,141 +1,35 @@
-"""Smoke tests covering init_logging bootstrap on remaining script entry points."""
+"""Smoke tests for entry-point logging bootstrap coverage."""
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+import logging
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 from scripts.athena import discover_athena_tables, run_table_ddl_export
-from scripts.dev import (
-    archive_completed_story,
-    check_project_taxonomy,
-    generate_code_registry,
-    generate_scripts_registry,
-    harvest_athena_query_catalog,
-    harvest_lightstep_query_catalog,
-    monitor_worktree_progress,
-    promote_scratch_scripts,
-    reflow_md,
-    update_athena_table_ddl_knowledge,
-)
+from scripts.dev import reflow_md, update_athena_table_ddl_knowledge
 from scripts.reference_diagram import main as reference_diagram_main
 import scripts.resolve_tenant as resolve_tenant
 
 
-def test_archive_completed_story_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    monkeypatch.setattr(archive_completed_story, "init_logging", init_logging)
-    monkeypatch.setattr(archive_completed_story, "_repo_root", lambda: tmp_path)
-    monkeypatch.setattr(archive_completed_story, "archive", lambda root, slug: [root / "docs" / slug / "tasks.md"])
-    monkeypatch.setattr(archive_completed_story, "_dangling_references", lambda root, slug: [])
-
-    assert archive_completed_story.main(["demo-story"]) == 0
-    init_logging.assert_called_once_with("archive-completed-story")
+def test_discover_athena_tables_apply_log_level_accepts_lowercase() -> None:
+    original_level = logging.getLogger().level
+    try:
+        discover_athena_tables._apply_log_level("debug")
+        assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
+    finally:
+        logging.getLogger().setLevel(original_level)
 
 
-def test_check_project_taxonomy_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    monkeypatch.setattr(check_project_taxonomy, "init_logging", init_logging)
-    monkeypatch.setattr(sys, "argv", ["check_project_taxonomy.py", "--root", str(tmp_path)])
-
-    check_project_taxonomy.main()
-    init_logging.assert_called_once_with("check-project-taxonomy")
-
-
-def test_generate_code_registry_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    out_path = tmp_path / "CODE_REGISTRY.md"
-    monkeypatch.setattr(generate_code_registry, "init_logging", init_logging)
-    monkeypatch.setattr(sys, "argv", ["generate_code_registry.py", "--root", str(tmp_path), "--out", str(out_path)])
-
-    generate_code_registry.main()
-    init_logging.assert_called_once_with("generate-code-registry")
+def test_run_table_ddl_export_apply_log_level_accepts_lowercase() -> None:
+    original_level = logging.getLogger().level
+    try:
+        run_table_ddl_export._apply_log_level("warning")
+        assert logging.getLogger().getEffectiveLevel() == logging.WARNING
+    finally:
+        logging.getLogger().setLevel(original_level)
 
 
-def test_generate_scripts_registry_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    out_path = tmp_path / "SCRIPTS.md"
-    monkeypatch.setattr(generate_scripts_registry, "init_logging", init_logging)
-    monkeypatch.setattr(sys, "argv", ["generate_scripts_registry.py", "--root", str(tmp_path), "--out", str(out_path)])
-
-    generate_scripts_registry.main()
-    init_logging.assert_called_once_with("generate-scripts-registry")
-
-
-def test_harvest_athena_query_catalog_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    monkeypatch.setattr(harvest_athena_query_catalog, "init_logging", init_logging)
-    monkeypatch.setattr(harvest_athena_query_catalog, "build_catalog", lambda paths: [])
-    monkeypatch.setattr(harvest_athena_query_catalog, "write_catalog", lambda root, catalog: None)
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(harvest_athena_query_catalog.sys, "argv", ["harvest_athena_query_catalog.py"])
-
-    harvest_athena_query_catalog.main()
-    init_logging.assert_called_once_with("harvest-athena-query-catalog")
-
-
-def test_harvest_lightstep_query_catalog_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    source = tmp_path / "templates.md"
-    source.write_text("# T\n\n## Example\n\n```\nmetric requests\n```\n", encoding="utf-8")
-    monkeypatch.setattr(harvest_lightstep_query_catalog, "init_logging", init_logging)
-    monkeypatch.setattr(harvest_lightstep_query_catalog, "write_catalog", lambda root, catalog: None)
-    monkeypatch.setattr(
-        harvest_lightstep_query_catalog.sys,
-        "argv",
-        ["harvest_lightstep_query_catalog.py", "--source", str(source), "--root", str(tmp_path)],
-    )
-
-    harvest_lightstep_query_catalog.main()
-    init_logging.assert_called_once_with("harvest-lightstep-query-catalog", to_file=False)
-
-
-def test_monitor_worktree_progress_calls_init_logging(monkeypatch) -> None:
-    init_logging = Mock()
-    monkeypatch.setattr(monitor_worktree_progress, "init_logging", init_logging)
-    monkeypatch.setattr(monitor_worktree_progress, "validate_story_names", lambda stories, plan_root: [])
-    monkeypatch.setattr(monitor_worktree_progress, "check_story", lambda story, worktree_root, plan_root: None)
-    monkeypatch.setattr(monitor_worktree_progress, "describe_missing_worktree", lambda story, plan_root: "not started yet")
-    monkeypatch.setattr(sys, "argv", ["monitor_worktree_progress.py", "--story", "demo-story"])
-
-    assert monitor_worktree_progress.main() == 0
-    init_logging.assert_called_once_with("monitor-worktree-progress")
-
-
-def test_promote_scratch_scripts_calls_init_logging(monkeypatch) -> None:
-    init_logging = Mock()
-    monkeypatch.setattr(promote_scratch_scripts, "init_logging", init_logging)
-    monkeypatch.setattr(promote_scratch_scripts, "find_promotion_candidates", lambda scratch_dir, days: [])
-    monkeypatch.setattr(sys, "argv", ["promote_scratch_scripts.py", "--list"])
-
-    promote_scratch_scripts.main()
-    init_logging.assert_called_once_with("promote-scratch-scripts")
-
-
-def test_reflow_md_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    markdown = tmp_path / "README.md"
-    markdown.write_text("short line\n", encoding="utf-8")
-    monkeypatch.setattr(reflow_md, "init_logging", init_logging)
-
-    assert reflow_md.main([str(markdown)]) == 0
-    init_logging.assert_called_once_with("reflow-md")
-
-
-def test_update_athena_table_ddl_knowledge_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
-    init_logging = Mock()
-    csv_path = tmp_path / "ddl.csv"
-    markdown_path = tmp_path / "knowledge.md"
-    csv_path.write_text("table_name,ddl\nfoo,SELECT 1\n", encoding="utf-8")
-    markdown_path.write_text("# Knowledge\n", encoding="utf-8")
-    monkeypatch.setattr(update_athena_table_ddl_knowledge, "init_logging", init_logging)
-
-    assert update_athena_table_ddl_knowledge.main(["--csv", str(csv_path), "--markdown", str(markdown_path)]) == 0
-    init_logging.assert_called_once_with("update-athena-table-ddl-knowledge")
-
-
-def test_discover_athena_tables_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
+def test_discover_athena_tables_main_calls_init_logging(monkeypatch, tmp_path) -> None:
     init_logging = Mock()
     monkeypatch.setattr(discover_athena_tables, "init_logging", init_logging)
     monkeypatch.setattr(
@@ -163,11 +57,13 @@ def test_discover_athena_tables_calls_init_logging(monkeypatch, tmp_path: Path) 
     )
     monkeypatch.setattr(discover_athena_tables, "discover_tables", lambda executor, downloader, database: ["table_a"])
 
-    assert discover_athena_tables.main([]) == 0
+    result = discover_athena_tables.main([])
+
+    assert result == 0
     init_logging.assert_called_once_with("discover-athena-tables")
 
 
-def test_run_table_ddl_export_calls_init_logging(monkeypatch) -> None:
+def test_run_table_ddl_export_main_calls_init_logging(monkeypatch) -> None:
     init_logging = Mock()
     monkeypatch.setattr(run_table_ddl_export, "init_logging", init_logging)
     monkeypatch.setattr(
@@ -201,11 +97,39 @@ def test_run_table_ddl_export_calls_init_logging(monkeypatch) -> None:
         ),
     )
 
-    assert run_table_ddl_export.main([]) == 0
+    result = run_table_ddl_export.main([])
+
+    assert result == 0
     init_logging.assert_called_once_with("run-table-ddl-export")
 
 
-def test_reference_diagram_calls_init_logging(monkeypatch, tmp_path: Path) -> None:
+def test_reflow_md_main_calls_init_logging(monkeypatch, tmp_path) -> None:
+    init_logging = Mock()
+    markdown = tmp_path / "README.md"
+    markdown.write_text("short line\n", encoding="utf-8")
+    monkeypatch.setattr(reflow_md, "init_logging", init_logging)
+
+    result = reflow_md.main([str(markdown)])
+
+    assert result == 0
+    init_logging.assert_called_once_with("reflow-md")
+
+
+def test_update_athena_table_ddl_knowledge_main_calls_init_logging(monkeypatch, tmp_path) -> None:
+    init_logging = Mock()
+    csv_path = tmp_path / "ddl.csv"
+    markdown_path = tmp_path / "knowledge.md"
+    csv_path.write_text("table_name,ddl\nfoo,SELECT 1\n", encoding="utf-8")
+    markdown_path.write_text("# Knowledge\n", encoding="utf-8")
+    monkeypatch.setattr(update_athena_table_ddl_knowledge, "init_logging", init_logging)
+
+    result = update_athena_table_ddl_knowledge.main(["--csv", str(csv_path), "--markdown", str(markdown_path)])
+
+    assert result == 0
+    init_logging.assert_called_once_with("update-athena-table-ddl-knowledge")
+
+
+def test_reference_diagram_main_calls_init_logging(monkeypatch, tmp_path) -> None:
     init_logging = Mock()
     source = tmp_path / "source"
     out_path = tmp_path / "docs" / "reference.md"
@@ -214,13 +138,19 @@ def test_reference_diagram_calls_init_logging(monkeypatch, tmp_path: Path) -> No
     monkeypatch.setattr(reference_diagram_main, "discover_projects", lambda path: {})
     monkeypatch.setattr(reference_diagram_main, "link_cross_project_imports", lambda projects: None)
     monkeypatch.setattr(reference_diagram_main, "render_report", lambda projects, root: "# report\n")
-    monkeypatch.setattr(reference_diagram_main.sys, "argv", ["main.py", "--source", str(source), "--out", str(out_path)])
+    monkeypatch.setattr(
+        reference_diagram_main.sys,
+        "argv",
+        ["main.py", "--source", str(source), "--out", str(out_path)],
+    )
 
     reference_diagram_main.main()
+
+    assert out_path.read_text(encoding="utf-8") == "# report\n"
     init_logging.assert_called_once_with("reference-diagram")
 
 
-def test_resolve_tenant_calls_init_logging(monkeypatch) -> None:
+def test_resolve_tenant_main_calls_init_logging(monkeypatch) -> None:
     init_logging = Mock()
     monkeypatch.setattr(resolve_tenant, "init_logging", init_logging)
     monkeypatch.setattr(resolve_tenant, "TenantRegistry", lambda: SimpleNamespace(get=lambda tenant: {"tenant": tenant}))
@@ -232,5 +162,7 @@ def test_resolve_tenant_calls_init_logging(monkeypatch) -> None:
     monkeypatch.setattr(resolve_tenant, "MatisseQueryTarget", lambda: SimpleNamespace(build_context=lambda tenant: {}))
     monkeypatch.setattr(resolve_tenant, "AthenaQueryTarget", lambda: SimpleNamespace(build_context=lambda tenant: {}))
 
-    assert resolve_tenant.main(["--system", "lightstep_go", "--tenant", "GH"]) == 0
+    result = resolve_tenant.main(["--system", "lightstep_go", "--tenant", "GH"])
+
+    assert result == 0
     init_logging.assert_called_once_with("resolve-tenant")

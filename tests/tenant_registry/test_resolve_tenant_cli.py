@@ -20,7 +20,15 @@ def test_cli_success_prints_json_and_exits_zero() -> None:
     )
 
     assert result.returncode == 0
-    assert result.stderr == ""
+    # init_logging() now emits run-start/run-finish INFO lines to stderr (src/lib/logging/setup.py
+    # routes log output to stderr precisely so it never interleaves with this CLI's stdout contract).
+    # Assert only run-start/run-finish INFO lines are present, not a fragile "no literal [ERROR]"
+    # substring check that would pass even if the formatter changed or a WARNING/traceback leaked in.
+    stderr_lines = [line for line in result.stderr.splitlines() if line.strip()]
+    assert stderr_lines, "expected run-start/run-finish log lines on stderr"
+    assert all(" [INFO] " in line for line in stderr_lines)
+    assert any("Run started" in line for line in stderr_lines)
+    assert any("Run finished" in line for line in stderr_lines)
     assert json.loads(result.stdout) == {
         "filter": {"sessionInfo.busUnitId": "apbyfj9d"},
         "project": "mcs-go-prod-mtn-1-eu",

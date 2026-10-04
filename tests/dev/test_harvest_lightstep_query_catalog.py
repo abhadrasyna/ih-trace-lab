@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import Mock
 
+import pytest
+
+from scripts.dev import harvest_lightstep_query_catalog as harvest_lightstep_query_catalog_module
 from scripts.dev.harvest_lightstep_query_catalog import extract_templates, slugify
 
 
@@ -73,3 +77,41 @@ def test_slugify_produces_kebab_case() -> None:
 
 def test_slugify_handles_punctuation_and_repeated_dashes() -> None:
     assert slugify("HTTP 5xx × retries (daily) --  Device!!!") == "http-5xx-retries-daily-device"
+
+
+def test_main_calls_init_logging(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    init_logging = Mock()
+    source = _write(
+        tmp_path / "lightstep-query-templates.md",
+        """# Templates
+
+## Example
+
+```
+metric requests
+```
+""",
+    )
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(harvest_lightstep_query_catalog_module, "init_logging", init_logging)
+    monkeypatch.setattr(
+        harvest_lightstep_query_catalog_module,
+        "write_catalog",
+        lambda root, catalog: captured.update({"root": root, "catalog": list(catalog)}),
+    )
+    monkeypatch.setattr(
+        harvest_lightstep_query_catalog_module.sys,
+        "argv",
+        [
+            "harvest_lightstep_query_catalog.py",
+            "--source",
+            str(source),
+            "--root",
+            str(tmp_path),
+        ],
+    )
+
+    harvest_lightstep_query_catalog_module.main()
+
+    assert len(captured["catalog"]) == 1
+    init_logging.assert_called_once_with("harvest-lightstep-query-catalog", to_file=False)

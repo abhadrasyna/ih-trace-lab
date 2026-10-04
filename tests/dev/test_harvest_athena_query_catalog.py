@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import Mock
 
+import pytest
+
+from scripts.dev import harvest_athena_query_catalog as harvest_athena_query_catalog_module
 from scripts.dev.harvest_athena_query_catalog import (
     build_catalog,
     detect_status,
@@ -194,3 +198,22 @@ This file forgot the fenced SQL block.
     assert len(catalog) == 1
     assert catalog[0].raw_query_count == 1
     assert [origin.source_path for origin in catalog[0].origins] == [valid]
+
+
+def test_main_calls_init_logging(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    init_logging = Mock()
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(harvest_athena_query_catalog_module, "init_logging", init_logging)
+    monkeypatch.setattr(harvest_athena_query_catalog_module, "build_catalog", lambda paths: [])
+    monkeypatch.setattr(
+        harvest_athena_query_catalog_module,
+        "write_catalog",
+        lambda root, catalog: captured.update({"root": root, "catalog": list(catalog)}),
+    )
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(harvest_athena_query_catalog_module.sys, "argv", ["harvest_athena_query_catalog.py"])
+    harvest_athena_query_catalog_module.main()
+
+    assert captured["catalog"] == []
+    init_logging.assert_called_once_with("harvest-athena-query-catalog")

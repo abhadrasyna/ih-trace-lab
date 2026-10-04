@@ -18,7 +18,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 EXCLUDED_DIR_NAMES = frozenset({".git", ".venv", "__pycache__", "node_modules"})
 SCRIPT_EXTENSIONS = frozenset({".py", ".sh"})
@@ -90,26 +90,28 @@ def main() -> None:
     init_logging("generate-scripts-registry")
     logger = logging.getLogger("scripts.dev.generate_scripts_registry")
     logger.info("Run started")
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--root",
-        type=Path,
-        default=Path(__file__).resolve().parents[2],
-        help="Repository root to scan (default: this file's repo root).",
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        default=None,
-        help="Registry output path (default: <root>/SCRIPTS.md).",
-    )
-    args = parser.parse_args()
+    try:
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument(
+            "--root",
+            type=Path,
+            default=Path(__file__).resolve().parents[2],
+            help="Repository root to scan (default: this file's repo root).",
+        )
+        parser.add_argument(
+            "--out",
+            type=Path,
+            default=None,
+            help="Registry output path (default: <root>/SCRIPTS.md).",
+        )
+        args = parser.parse_args()
 
-    root = args.root.resolve()
-    out_path = args.out.resolve() if args.out is not None else root / "SCRIPTS.md"
-    out_path.write_text(build_registry(root), encoding="utf-8")
-    print(out_path)
-    logger.info("Run finished")
+        root = args.root.resolve()
+        out_path = args.out.resolve() if args.out is not None else root / "SCRIPTS.md"
+        out_path.write_text(build_registry(root), encoding="utf-8")
+        print(out_path)
+    finally:
+        logger.info("Run finished")
 
 
 def _build_script_rows(root: Path, paths: list[Path]) -> list[str]:

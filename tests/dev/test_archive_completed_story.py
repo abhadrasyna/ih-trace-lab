@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
+from scripts.dev import archive_completed_story as archive_completed_story_module
 from scripts.dev.archive_completed_story import (
     ArchiveFailed,
     StoryNotComplete,
@@ -135,3 +137,16 @@ def test_archive_rolls_back_on_failure(tmp_path: Path) -> None:
         ["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
     ).stdout.strip()
     assert before_head == after_head
+
+
+def test_main_calls_init_logging(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    init_logging = Mock()
+    monkeypatch.setattr(archive_completed_story_module, "init_logging", init_logging)
+    monkeypatch.setattr(archive_completed_story_module, "_repo_root", lambda: tmp_path)
+    monkeypatch.setattr(archive_completed_story_module, "archive", lambda root, slug: [root / "docs" / slug / "tasks.md"])
+    monkeypatch.setattr(archive_completed_story_module, "_dangling_references", lambda root, slug: [])
+
+    result = archive_completed_story_module.main(["demo-story"])
+
+    assert result == 0
+    init_logging.assert_called_once_with("archive-completed-story")

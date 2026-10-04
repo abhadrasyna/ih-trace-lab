@@ -21,7 +21,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 _SECTION_BEGIN = "<!-- DDL_SECTION:BEGIN -->"
 _SECTION_END = "<!-- DDL_SECTION:END -->"
@@ -85,8 +85,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     init_logging("update-athena-table-ddl-knowledge")
     logger = logging.getLogger("scripts.dev.update_athena_table_ddl_knowledge")
+    logger.info("Run started")
     try:
-        logger.info("Run started")
         args = _parse_args(argv)
         rows = parse_ddl_csv(args.csv)
         ddl_section = render_ddl_section(rows)

@@ -1,8 +1,13 @@
 """Tests for scripts/dev/generate_scripts_registry.py."""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+from unittest.mock import Mock
 
+import pytest
+
+from scripts.dev import generate_scripts_registry as generate_scripts_registry_module
 from scripts.dev.generate_scripts_registry import (
     build_registry,
     extract_purpose,
@@ -51,3 +56,19 @@ def test_build_registry_lists_scripts_and_scratch_sections_separately(tmp_path: 
     assert "| `scripts/foo.py` | Foo purpose. |" in registry
     assert "## Scratch (unpromoted — check here before writing a new one)" in registry
     assert "| `scratch/2020-01-01_bar_probe.py` | 2020-01-01 | Bar purpose. |" in registry
+
+
+def test_main_calls_init_logging(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    init_logging = Mock()
+    out_path = tmp_path / "SCRIPTS.md"
+    monkeypatch.setattr(generate_scripts_registry_module, "init_logging", init_logging)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["generate_scripts_registry.py", "--root", str(tmp_path), "--out", str(out_path)],
+    )
+
+    generate_scripts_registry_module.main()
+
+    assert out_path.exists()
+    init_logging.assert_called_once_with("generate-scripts-registry")

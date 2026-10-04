@@ -34,7 +34,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 MAX_LEN = 200
 
@@ -267,35 +267,36 @@ def main(argv: list[str]) -> int:
     init_logging("reflow-md")
     logger = logging.getLogger("scripts.dev.reflow_md")
     logger.info("Run started")
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("paths", nargs="+", help="Markdown files or directories")
-    parser.add_argument(
-        "--check", action="store_true", help="report only; exit 1 if any file would change"
-    )
-    parser.add_argument("--width", type=int, default=MAX_LEN, help=f"line cap (default {MAX_LEN})")
-    args = parser.parse_args(argv)
+    try:
+        parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+        parser.add_argument("paths", nargs="+", help="Markdown files or directories")
+        parser.add_argument(
+            "--check", action="store_true", help="report only; exit 1 if any file would change"
+        )
+        parser.add_argument("--width", type=int, default=MAX_LEN, help=f"line cap (default {MAX_LEN})")
+        args = parser.parse_args(argv)
 
-    changed: list[Path] = []
-    for path in _iter_md_files(args.paths):
-        original = path.read_text(encoding="utf-8")
-        reflowed = reflow_text(original, args.width)
-        if reflowed == original:
-            continue
-        changed.append(path)
-        if not args.check:
-            path.write_text(reflowed, encoding="utf-8")
+        changed: list[Path] = []
+        for path in _iter_md_files(args.paths):
+            original = path.read_text(encoding="utf-8")
+            reflowed = reflow_text(original, args.width)
+            if reflowed == original:
+                continue
+            changed.append(path)
+            if not args.check:
+                path.write_text(reflowed, encoding="utf-8")
 
-    verb = "would reflow" if args.check else "reflowed"
-    for path in changed:
-        print(f"{verb} {path}")
-    if args.check and changed:
-        print(f"\n{len(changed)} file(s) not in fill-to-≤{args.width} style.")
+        verb = "would reflow" if args.check else "reflowed"
+        for path in changed:
+            print(f"{verb} {path}")
+        if args.check and changed:
+            print(f"\n{len(changed)} file(s) not in fill-to-≤{args.width} style.")
+            return 1
+        if not changed:
+            print(f"all files already in fill-to-≤{args.width} style.")
+        return 0
+    finally:
         logger.info("Run finished")
-        return 1
-    if not changed:
-        print(f"all files already in fill-to-≤{args.width} style.")
-    logger.info("Run finished")
-    return 0
 
 
 if __name__ == "__main__":

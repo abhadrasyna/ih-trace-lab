@@ -27,53 +27,55 @@ from scripts.reference_diagram.lib import (
     render_project_report,
     render_report,
 )
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 
 def main() -> None:
     init_logging("reference-diagram")
     logger = logging.getLogger("scripts.reference_diagram.main")
     logger.info("Run started")
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--source",
-        type=Path,
-        required=True,
-        help="Root of the reference repo to scan (e.g. /Users/abhadra/github_copilot)",
-    )
-    parser.add_argument(
-        "--project",
-        help="Single top-level project folder to render as an internal-import flowchart",
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        required=True,
-        help="Markdown file to write the report + Mermaid diagram to",
-    )
-    args = parser.parse_args()
+    try:
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument(
+            "--source",
+            type=Path,
+            required=True,
+            help="Root of the reference repo to scan (e.g. /Users/abhadra/github_copilot)",
+        )
+        parser.add_argument(
+            "--project",
+            help="Single top-level project folder to render as an internal-import flowchart",
+        )
+        parser.add_argument(
+            "--out",
+            type=Path,
+            required=True,
+            help="Markdown file to write the report + Mermaid diagram to",
+        )
+        args = parser.parse_args()
 
-    source = args.source.resolve()
-    if not source.is_dir():
-        parser.error(f"--source {source} is not a directory")
+        source = args.source.resolve()
+        if not source.is_dir():
+            parser.error(f"--source {source} is not a directory")
 
-    projects = discover_projects(source)
-    if args.project:
-        project = projects.get(args.project)
-        if project is None:
-            parser.error(f"--project {args.project!r} was not found under {source}")
-        report = render_project_report(project, source, build_internal_import_graph(project))
-    else:
-        link_cross_project_imports(projects)
-        report = render_report(projects, source)
+        projects = discover_projects(source)
+        if args.project:
+            project = projects.get(args.project)
+            if project is None:
+                parser.error(f"--project {args.project!r} was not found under {source}")
+            report = render_project_report(project, source, build_internal_import_graph(project))
+        else:
+            link_cross_project_imports(projects)
+            report = render_report(projects, source)
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(report, encoding="utf-8")
-    if args.project:
-        print(f"Wrote {args.out} ({args.project})")
-    else:
-        print(f"Wrote {args.out} ({len(projects)} projects)")
-    logger.info("Run finished")
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(report, encoding="utf-8")
+        if args.project:
+            print(f"Wrote {args.out} ({args.project})")
+        else:
+            print(f"Wrote {args.out} ({len(projects)} projects)")
+    finally:
+        logger.info("Run finished")
 
 
 if __name__ == "__main__":

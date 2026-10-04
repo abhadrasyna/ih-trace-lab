@@ -28,7 +28,7 @@ if __package__ in {None, ""}:
 
 import logging
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 DONE_MARKER = re.compile(r"^\*\*Open:\s*none\b", re.MULTILINE)
 # A reference boundary: the match must not continue into a longer slug (e.g.
@@ -223,8 +223,8 @@ def main(argv: list[str]) -> int:
     """CLI entry point: ``archive_completed_story.py <slug>``."""
     init_logging("archive-completed-story")
     logger = logging.getLogger("scripts.dev.archive_completed_story")
+    logger.info("Run started")
     try:
-        logger.info("Run started")
         if len(argv) != 1:
             print("usage: archive_completed_story.py <slug-under-docs-plan>")
             return 2

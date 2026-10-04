@@ -25,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+from src.lib.logging.bootstrap import init_logging
 
 _DEFAULT_OUTPUT_DIR = REPO_ROOT / "output"
 _DEFAULT_POLL_INTERVAL_SECONDS = 2
@@ -98,14 +98,10 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def _apply_log_level(level: str) -> None:
-    """Apply ``level`` to the bootstrapped root logger.
+    """Apply ``level`` to the already-bootstrapped root logger."""
 
-    ``init_logging()`` already calls ``setup_logging()``, which uppercases/validates the CLI level
-    name and leaves handler levels unset. Mirroring that normalization here preserves the old
-    ``--log-level`` behavior without re-running the full bootstrap.
-    """
-
-    logging.getLogger().setLevel(level.upper())
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level.upper())
 
 
 def discover_tables(executor: Any, downloader: Any, database: str) -> list[str]:
@@ -135,7 +131,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         args = _parse_args(argv)
         _apply_log_level(args.log_level)
-        _LOGGER.info("Run started")
+        logger = _LOGGER
+        logger.info("Run started")
 
         try:
             dependencies = _load_athena_dependencies()
