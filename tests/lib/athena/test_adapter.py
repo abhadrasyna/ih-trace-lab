@@ -254,3 +254,30 @@ def test_fetch_results_before_start_query_raises(tmp_path: Path) -> None:
 
     with pytest.raises(AthenaQueryExecutionError):
         adapter.fetch_results("never-started")
+
+
+def test_adapter_does_not_leak_csv_into_output_dir(tmp_path: Path) -> None:
+    """Regression test: the raw downloaded CSV must never accumulate under `config.output_dir`.
+
+    Before this fix, `_download_and_translate` wrote `<query_execution_id>.csv` straight into
+    `config.output_dir` with no cleanup -- see the adapter's module docstring and
+    `docs/archive/src-lib-migration/athena-lib-integration/stories.md` ALI-2's 2026-10-04 follow-up.
+    """
+    recorded_paths: list[str] = []
+
+    class _RecordingDownloader(_FakeDownloader):
+        def download(self, output_location: str, destination_path: str) -> None:
+            recorded_paths.append(destination_path)
+            super().download(output_location, destination_path)
+
+    downloader = _RecordingDownloader()
+    adapter = AthenaAdapter(_FakeExecutor([_success_result("exec-1")]), downloader, _make_config(tmp_path), database="test_db")
+
+    adapter.start_query("SELECT 1", {})
+
+    assert len(recorded_paths) == 1
+    staged_path = Path(recorded_paths[0])
+    # Staged outside config.output_dir (tmp_path) entirely, and deleted by the time start_query returns.
+    assert tmp_path not in staged_path.parents
+    assert not staged_path.exists()
+    assert list(tmp_path.iterdir()) == []

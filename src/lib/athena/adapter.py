@@ -19,9 +19,13 @@ Design notes (see `docs/plan/src-lib-migration/athena-lib-integration/stories.md
   means a query is already running/billing; blindly retrying the whole call in that case would submit a second, duplicate query. Any
   other error -- including non-throttling `ClientError`, and throttling during polling -- propagates immediately, wrapped in this
   module's own exception hierarchy, never retried.
-- Downloaded CSV files accumulate under `config.output_dir` with no automatic cleanup -- this adapter is a thin execution/translation
-  layer, not a cache; a long-running caller is responsible for its own retention policy (a future consumer-side concern, not this
-  module's).
+- The downloaded CSV is purely an internal implementation detail of translating `athena_runner`'s S3 result into `QueryResult.rows`
+  -- the `AthenaClient` Protocol never exposes a file path to callers. It is therefore staged under a per-call `tempfile.TemporaryDirectory()`
+  (never `config.output_dir`, which is reserved for callers that want their own named, retained CSVs -- e.g. the `aws_access_cli`
+  pipeline scripts) and deleted as soon as `_download_and_translate` returns, whether it succeeds or raises. This replaced an earlier
+  design where the raw CSV was written straight into `config.output_dir` and never cleaned up, which silently accumulated one stray
+  `<query_execution_id>.csv` per query there (see `docs/archive/src-lib-migration/athena-lib-integration/stories.md` ALI-2 and the
+  2026-10-04 follow-up fixing it).
 """
 from __future__ import annotations
 
@@ -29,6 +33,7 @@ import csv
 import logging
 import random
 import string
+import tempfile
 import time
 from collections.abc import Callable, Mapping
 from pathlib import Path
@@ -172,9 +177,13 @@ class AthenaAdapter:
                 attempt += 1
 
     def _download_and_translate(self, runner_result: RunnerQueryResult) -> QueryResult:
-        csv_path = str(Path(self._config.output_dir) / f"{runner_result.query_execution_id}.csv")
-        self._download_with_retry(runner_result.output_location, csv_path)
-        rows = self._read_rows(csv_path)
+        # Staged under a throwaway temp dir, never `config.output_dir` -- the raw CSV is an
+        # implementation detail of building `QueryResult.rows`, not a retained artifact (see
+        # module docstring). The `with` block deletes it whether download/parse succeeds or raises.
+        with tempfile.TemporaryDirectory(prefix="athena-adapter-") as staging_dir:
+            csv_path = str(Path(staging_dir) / f"{runner_result.query_execution_id}.csv")
+            self._download_with_retry(runner_result.output_location, csv_path)
+            rows = self._read_rows(csv_path)
         return QueryResult(query_execution_id=runner_result.query_execution_id, rows=rows, state="SUCCEEDED")
 
     def _download_with_retry(self, output_location: str, csv_path: str) -> None:

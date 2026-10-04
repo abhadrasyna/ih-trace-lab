@@ -68,6 +68,12 @@ yet landed, this task cannot start (see `prompt.md`'s hard gate).
 6. **Config reuse (added 2026-10-01, extended design review):** `AthenaAdapter` does not invent its own config shape — it accepts (or is constructed from) an `athena_runner.config.RunConfig` (already
    defines `profile`, `workgroup`, `output_location`, `output_dir`, `region`, `poll_interval_seconds`, `timeout_seconds`, `max_concurrency`), consistent with this project's existing precedent of one
    typed config object per module (`src/lib/paths/config.py`'s `PathConfig`, loaded once, passed in — never ad hoc env-var reads scattered through the adapter).
+7. **Raw-CSV staging fixed to not leak into `config.output_dir` (follow-up, 2026-10-04):** the original implementation wrote the raw downloaded CSV straight into `config.output_dir` as
+   `<query_execution_id>.csv` with no cleanup, reasoning (wrongly) that retention was a future consumer-side concern. In practice this silently accumulated one stray CSV per query run forever, with no
+   caller ever actually implementing that retention policy — surfaced once the `aws_access_cli` v2 cron pipeline went live and started dumping dozens of these into `ih-trace-lab/output/` alongside the
+   pipeline's real, properly-named reports. Since the `AthenaClient` Protocol never exposes a file path to callers (`QueryResult.rows` is the only thing consumers see), the raw CSV is now purely an
+   internal translation detail: `_download_and_translate` stages it under a per-call `tempfile.TemporaryDirectory()` and the file is gone by the time `start_query` returns, success or failure.
+   `config.output_dir` is no longer read by the adapter at all — it remains reserved for callers (e.g. `aws_access_cli`'s own pipeline scripts) that want their own named, retained CSVs.
 
 **Class diagram:**
 
