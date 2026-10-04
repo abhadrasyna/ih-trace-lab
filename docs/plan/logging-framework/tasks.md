@@ -11,6 +11,11 @@ spec.
   473621c
 - [x] **LFR-4** — Add a binding "Logging" section to `code-review-checklist.md`; update `CONTEXT.md` | Owner: AI agent | Model: n/a | Review: none | SHA: 591c4b2
 - [x] **LFR-5** — Dated coordination notes in unretrofitted consumers (`investigations/ctap-smvod`, remaining dev scripts) | Owner: AI agent | Model: n/a | Review: none | SHA: 7d21bcf
+- [ ] **LFR-6a** — Retrofit `investigations/ctap-smvod/scripts/*.py` (24 entry points) to call `init_logging()` | Owner: AI agent | Model: n/a | Review: tests green | SHA:
+- [ ] **LFR-6b** — Retrofit `scripts/athena/*.py`, `scripts/dev/*.py` (excluding `scripts/dev/hooks/`), `scripts/reference_diagram/main.py`, `scripts/resolve_tenant.py` to call `init_logging()` |
+  Owner: AI agent | Model: n/a | Review: tests green | SHA:
+- [ ] **LFR-7** — Automated pre-commit hook flagging new `__main__` entry points that skip `init_logging()` | Owner: AI agent | Model: n/a | Review: none | SHA:
+- [ ] **LFR-8** — Remove now-stale coordination notes (LFR-5's); update `CONTEXT.md`/`README.md`/`knowledge/README.md` | Owner: AI agent | Model: n/a | Review: none | SHA:
 
 ## Story done when
 
@@ -25,6 +30,18 @@ spec.
   longer says "not yet owned by any `docs/plan/` task."
 - **LFR-5** — `investigations/ctap-smvod/` and any other unretrofitted entry point's own planning/README doc carries one dated line: "this story does not implement the logging bootstrap here; see
   `docs/plan/logging-framework/` — coordination record only."
+- **LFR-6a** — every script under `investigations/ctap-smvod/scripts/` with a `__main__` guard calls `init_logging()` as the first statement of its entry function; `pipeline.log` (produced by
+  `run_pipeline.py`) shows the same `%(asctime)s [%(levelname)s] [%(name)s] [fcid=%(fcid)s]` shape as `cron_daily_reports_v2.out`, verified by a `caplog`-based test per script group (not 24 individual
+  tests — group scripts sharing a common CLI helper and test the helper once, per this story's own CSM-7 testing precedent).
+- **LFR-6b** — every script under `scripts/athena/`, `scripts/dev/` (excluding `scripts/dev/hooks/` and `tooling/docs-plan/`, which keep `print()` as their documented pre-commit-hook output contract —
+  see `check_unarchived_stories.py`'s own docstring), `scripts/reference_diagram/main.py`, and `scripts/resolve_tenant.py` calls `init_logging()` as the first statement of its entry function; the two
+  `scripts/athena/*.py` CLIs' existing direct `setup_logging()` calls are replaced, not duplicated.
+- **LFR-7** — `scripts/dev/hooks/check_logging_contract.py` exists, is wired into `.pre-commit-config.yaml` as a non-blocking (always-exit-0, same convention as `story-archive-check`) hook scoped to
+  staged `.py` files, and flags any new/modified file with a `def main(` + `__main__` guard that lacks an `init_logging(` call — excluding `scripts/dev/hooks/`, `tooling/docs-plan/`, `tests/`, and
+  `scratch/` by path, matching LFR-6b's carve-out. Covered by a unit test with one flagged and one clean fixture file.
+- **LFR-8** — the three LFR-5 coordination notes (`docs/plan/pipeline-migration/ctap-smvod-investigation-migration/session-log.md`, root `README.md`, `knowledge/README.md`) are updated to state the
+  retrofit is done (dated line, not deleted — this project's convention is an append-only session-log/status trail); `CONTEXT.md`'s `logging-framework` bullet is updated to say the story is complete
+  through LFR-8 and names the new enforcement hook.
 
 ## After each task
 

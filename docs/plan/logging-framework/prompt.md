@@ -27,9 +27,14 @@ story implements the convention itself." No task ever picked it up. This story i
 concrete, evidenced-missing case this story was triggered by), separating report-preview `print()` output from the operational log stream for that same pipeline, and making the contract a binding
 review-checklist item for all future code project-wide.
 
-**Out of scope (flagged, not silently dropped):** retrofitting `investigations/ctap-smvod/`'s 23 scripts and the handful of `scripts/dev`/`scripts/athena` tools that don't yet call the new bootstrap —
-LFR-5 adds a dated coordination note pointing here rather than expanding this story to cover every consumer. Does not change any report's business logic or output *values*, only its logging/output
-plumbing. Does not add a structured/JSON log formatter (plain-text format stays; a JSON formatter is a clean future extension of the bootstrap, not required here).
+**2026-10-04 reopen (LFR-6..8):** the LFR-5 deferral above was revisited the same day, after a follow-up investigation of `logs/pipeline.log` vs `logs/cron_daily_reports_v2.out` confirmed the format
+gap was real and still undocumented-as-fixed. User explicitly approved expanding scope to retrofit every remaining consumer (`investigations/ctap-smvod/`'s 24 scripts, `scripts/athena/`,
+`scripts/dev/` excluding hook/tooling scripts, `scripts/reference_diagram/main.py`, `scripts/resolve_tenant.py`) and to add automated pre-commit enforcement so future entry points can't silently skip
+`init_logging()`. See `tasks.md`'s LFR-6a/6b/7/8 and `stories.md` for the full specs.
+
+**Out of scope (flagged, not silently dropped):** `scripts/dev/hooks/*.py` and `tooling/docs-plan/*.py` (pre-commit hook entry points — `print()` to pre-commit's console is their documented output
+contract, not a log line) and `scratch/*.py` (pre-production POC, not yet subject to any project-wide contract per `scratch/SCRATCH.md`). Does not change any report's business logic or output
+*values*, only its logging/output plumbing. Does not add a structured/JSON log formatter (plain-text format stays; a JSON formatter is a clean future extension of the bootstrap, not required here).
 
 ## Session-start load hints
 

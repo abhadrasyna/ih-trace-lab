@@ -144,3 +144,113 @@
 **Tests:** N/A — docs-only task.
 
 **Commit:** `docs(logging): add coordination notes to unretrofitted logging consumers`
+
+---
+
+## LFR-6a — Retrofit `investigations/ctap-smvod/scripts/*.py`
+
+> 2026-10-04 reopen: user asked for the LFR-5 gap itself closed (not just documented), after a follow-up investigation of `logs/pipeline.log` vs `logs/cron_daily_reports_v2.out` confirmed the plain
+> `print()`/`==> Step ...` output was still the only log this consumer produces. Scope approved by the user: retrofit every entry point, including the one-shot dev CLIs in LFR-6b (not just the
+> operational `run_*.py` ones LFR-5's own audit focused on).
+
+**Files to change:** all 24 `investigations/ctap-smvod/scripts/*.py` files with a `__main__` guard (see `tasks.md`'s file inventory — `run_pipeline.py`, `run_athena_debug_events.py`,
+`run_athena_playback_outcome.py`, and 21 `analyze_*`/`build_*`/`extract_*`/`merge_*`/etc. one-shot report scripts).
+
+**What to implement:**
+
+1. Each script's entry function (`main()` or the top-level `if __name__ == "__main__":` block if there's no `main()`) calls `init_logging("ctap-smvod-<script-slug>")` as its first statement, before
+   argument parsing — same placement LFR-3 used for `aws_access_cli`. `<script-slug>` is the file's stem (e.g. `run_pipeline`, `analyze_webview_devices`).
+2. Add one `logging.getLogger(__name__).info(...)` call at the start and end of each script's main body (run start / run end with a row-count or output-path summary), per the minimum contract LFR-2
+   defined — this is the same shape `src/pipelines/aws_access_cli/adoption.py` etc. already follow, applied here for the first time.
+3. Existing `print()` calls that produce the script's actual CSV/report output (not progress narration) are left alone — this story does not change any report's output values, only adds a parallel log
+   stream. `run_pipeline.py`'s own `==> Step N` bash-style progress banners may be converted to `logger.info()` calls since they are pure progress narration, not data output.
+4. Do not change business logic, CSV schemas, or CLI argument parsing in any of these 24 files.
+
+**Tests:** scripts sharing a common CLI/argument-parsing helper (check for one under `investigations/ctap-smvod/scripts/lib/` or similar first) get one shared `caplog`-based test asserting
+`init_logging` was called and a bound FCID appears in a captured record; scripts with no shared helper get a lightweight per-script smoke test only if one doesn't already exist (most already have
+tests per CSM-7 — extend those, don't duplicate).
+
+**Commit:** `feat(ctap-smvod): wire init_logging into all ctap-smvod entry points`
+
+---
+
+## LFR-6b — Retrofit `scripts/athena/`, `scripts/dev/`, `scripts/reference_diagram/`, `scripts/resolve_tenant.py`
+
+**Files to change:**
+- `scripts/athena/discover_athena_tables.py`, `scripts/athena/run_table_ddl_export.py` — replace their existing direct `setup_logging()` call with `init_logging()`.
+- `scripts/dev/archive_completed_story.py`, `check_project_taxonomy.py`, `generate_code_registry.py`, `generate_scripts_registry.py`, `harvest_athena_query_catalog.py`,
+  `harvest_lightstep_query_catalog.py`, `monitor_worktree_progress.py`, `promote_scratch_scripts.py`, `reflow_md.py`, `update_athena_table_ddl_knowledge.py`.
+- `scripts/reference_diagram/main.py`, `scripts/resolve_tenant.py`.
+
+**Explicitly excluded (do not touch):**
+- `scripts/dev/hooks/*.py` and `tooling/docs-plan/*.py` — these are pre-commit hook entry points whose documented output contract is `print()` to pre-commit's own console, not a log file (see
+  `check_unarchived_stories.py`'s docstring: "`print` is the pre-commit output contract, not a log line"). Forcing `init_logging()`'s `[fcid=...]` formatted lines onto hook stdout would break that
+  documented contract for no benefit — hooks aren't cron/scheduled, there's no log file to unify with.
+- `scratch/*.py` — scratch is pre-production/POC by this project's own convention (`scratch/SCRATCH.md`); it does not carry the logging contract until a script graduates out.
+
+**What to implement:**
+
+1. Each file's entry function calls `init_logging("<script-slug>")` as its first statement. For the two `scripts/athena/*.py` files this *replaces* their existing direct `setup_logging()` call (do not
+   call both).
+2. `harvest_athena_query_catalog.py`/`harvest_lightstep_query_catalog.py` already have a module-level `LOGGER` — keep it, just add the `init_logging()` bootstrap call so its records are no longer
+   silently dropped by `logging.lastResort`.
+3. User-facing CLI output (the `print()` calls that are each tool's actual product — e.g. `archive_completed_story.py`'s "Archived ... -> ..." confirmation, `generate_scripts_registry.py`'s output
+   path) is left as `print()`, unchanged — per the user's explicit approval to retrofit these tools' *logging*, this does not mean converting their interactive stdout contract to log lines. Add a
+   parallel `logger.info()` run-start/run-end pair alongside the existing `print()`s, it does not replace them.
+4. Do not change any tool's CLI argument parsing, business logic, or exit codes.
+
+**Tests:** extend each file's existing test module (all of these already have `tests/dev/test_*.py` per `scratch-script-registry`'s TDC story) with one assertion that `init_logging` is invoked; add a
+new minimal test module only for files that currently have none.
+
+**Commit:** `feat(dev-tools): wire init_logging into remaining scripts/dev and scripts/athena entry points`
+
+---
+
+## LFR-7 — Automated pre-commit enforcement for future entry points
+
+**Files to change / create:**
+- `scripts/dev/hooks/check_logging_contract.py` — new, same shape/docstring convention as `scripts/dev/hooks/check_unarchived_stories.py`.
+- `.pre-commit-config.yaml` — register the new hook.
+- `tests/dev/test_check_logging_contract.py` — new.
+
+**What to implement:**
+
+1. `find_entry_points_missing_init_logging(paths: list[Path]) -> list[Path]`: given a list of staged `.py` file paths, returns the subset that contain both an `if __name__ == "__main__":` guard and a
+   `def main(` definition, but no `init_logging(` call anywhere in the file. Skips any path under `scripts/dev/hooks/`, `tooling/docs-plan/`, `tests/`, or `scratch/` (same carve-out as LFR-6b, kept in
+   one place so it doesn't drift — import the path-prefix list from a small shared constant rather than re-typing it if `check_unarchived_stories.py`-style hooks end up sharing it).
+2. `main(argv)`: pre-commit passes staged filenames; print a `NOTE:` (not `ERROR:`) listing flagged files and exit `0` always — same deliberately-non-blocking convention as `story-archive-check`,
+   because a tool with no real entry point (a pure library module someone forgot to exclude) would otherwise false-positive-block unrelated commits.
+3. Hook registration:
+   ```yaml
+   - id: logging-contract-check
+     name: "warn on new entry points missing init_logging()"
+     language: system
+     entry: python scripts/dev/hooks/check_logging_contract.py
+     files: '\.py$'
+     pass_filenames: true
+     verbose: true
+   ```
+
+**Tests:** one fixture file with `__main__`/`main()` and no `init_logging(` call (expect flagged), one with `init_logging(` present (expect clean), one under an excluded path (expect skipped even
+though it would otherwise match).
+
+**Commit:** `feat(hooks): add logging-contract-check pre-commit hook`
+
+---
+
+## LFR-8 — Close out coordination notes + `CONTEXT.md`
+
+**Files to change:**
+- `docs/plan/pipeline-migration/ctap-smvod-investigation-migration/session-log.md` — append a dated line after the existing 2026-10-04 coordination-only line, stating the retrofit landed in LFR-6a
+  (commit SHA once known).
+- Root `README.md` — update the 2026-10-04 coordination note (same file/line LFR-5 added) to say the `scripts/dev/*.py` retrofit landed in LFR-6b, keeping the hooks/`tooling/docs-plan` carve-out note
+  since that part is still accurate.
+- `knowledge/README.md` — same update for the `scripts/athena/*.py` + `update_athena_table_ddl_knowledge.py` coordination note.
+- `CONTEXT.md` — update the `docs/plan/logging-framework/` bullet to say the story is complete through LFR-8, name `scripts/dev/hooks/check_logging_contract.py` as the new enforcement mechanism, and
+  drop the "LFR-1..5" range to "LFR-1..8".
+
+**What to implement:** append-only dated lines in each doc (this project's convention is a status trail, not rewriting prior entries) stating what landed and pointing at the task IDs/commit SHAs.
+
+**Tests:** N/A — docs-only task.
+
+**Commit:** `docs(logging): close out logging-framework coordination notes through LFR-8`
