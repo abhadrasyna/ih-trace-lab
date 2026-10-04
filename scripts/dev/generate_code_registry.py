@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import logging
 import os
 import re
 import sys
@@ -16,6 +17,8 @@ from pathlib import Path
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 from scripts.dev.generate_scripts_registry import (
     EXCLUDED_DIR_NAMES,
@@ -92,25 +95,31 @@ def build_registry(root: Path) -> str:
 
 def main() -> None:
     """Write `CODE_REGISTRY.md` for the chosen repo root."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--root",
-        type=Path,
-        default=Path(__file__).resolve().parents[2],
-        help="Repository root to scan (default: this file's repo root).",
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        default=None,
-        help="Registry output path (default: <root>/CODE_REGISTRY.md).",
-    )
-    args = parser.parse_args()
+    init_logging("generate-code-registry")
+    logger = logging.getLogger("scripts.dev.generate_code_registry")
+    try:
+        logger.info("Run started")
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument(
+            "--root",
+            type=Path,
+            default=Path(__file__).resolve().parents[2],
+            help="Repository root to scan (default: this file's repo root).",
+        )
+        parser.add_argument(
+            "--out",
+            type=Path,
+            default=None,
+            help="Registry output path (default: <root>/CODE_REGISTRY.md).",
+        )
+        args = parser.parse_args()
 
-    root = args.root.resolve()
-    out_path = args.out.resolve() if args.out is not None else root / "CODE_REGISTRY.md"
-    out_path.write_text(build_registry(root), encoding="utf-8")
-    print(out_path)
+        root = args.root.resolve()
+        out_path = args.out.resolve() if args.out is not None else root / "CODE_REGISTRY.md"
+        out_path.write_text(build_registry(root), encoding="utf-8")
+        print(out_path)
+    finally:
+        logger.info("Run finished")
 
 
 def _build_script_rows(root: Path, paths: list[Path]) -> list[str]:

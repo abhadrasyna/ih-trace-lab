@@ -9,9 +9,16 @@ from __future__ import annotations
 
 import argparse
 import ast
+import logging
 import os
 import re
+import sys
 from pathlib import Path
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 EXCLUDED_DIR_NAMES = frozenset({".git", ".venv", "__pycache__", "node_modules"})
 SCRIPT_EXTENSIONS = frozenset({".py", ".sh"})
@@ -80,6 +87,9 @@ def build_registry(root: Path) -> str:
 
 def main() -> None:
     """Write ``SCRIPTS.md`` for the chosen repo root."""
+    init_logging("generate-scripts-registry")
+    logger = logging.getLogger("scripts.dev.generate_scripts_registry")
+    logger.info("Run started")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--root",
@@ -99,6 +109,7 @@ def main() -> None:
     out_path = args.out.resolve() if args.out is not None else root / "SCRIPTS.md"
     out_path.write_text(build_registry(root), encoding="utf-8")
     print(out_path)
+    logger.info("Run finished")
 
 
 def _build_script_rows(root: Path, paths: list[Path]) -> list[str]:

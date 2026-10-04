@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import logging
+import sys
 from pathlib import Path
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 CATEGORY_MARKERS: dict[str, tuple[str, ...]] = {
     "investigation": ("docs", "scripts", "tests"),
@@ -63,6 +70,9 @@ def find_unclassified_dirs(root: Path, ignore: tuple[str, ...]) -> list[Path]:
 
 def main() -> None:
     """Run the advisory taxonomy audit."""
+    init_logging("check-project-taxonomy")
+    logger = logging.getLogger("scripts.dev.check_project_taxonomy")
+    logger.info("Run started")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--root",
@@ -82,7 +92,9 @@ def main() -> None:
     for path in unclassified:
         print(f"{path.relative_to(root)}: run PT-3's checklist before deciding this directory's category.")
     if args.strict and unclassified:
+        logger.info("Run finished")
         raise SystemExit(1)
+    logger.info("Run finished")
 
 
 def _has_markers(child_names: set[str], markers: tuple[str, ...]) -> bool:
