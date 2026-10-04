@@ -11,10 +11,10 @@ spec.
   473621c
 - [x] **LFR-4** — Add a binding "Logging" section to `code-review-checklist.md`; update `CONTEXT.md` | Owner: AI agent | Model: n/a | Review: none | SHA: 591c4b2
 - [x] **LFR-5** — Dated coordination notes in unretrofitted consumers (`investigations/ctap-smvod`, remaining dev scripts) | Owner: AI agent | Model: n/a | Review: none | SHA: 7d21bcf
-- [x] **LFR-6a** — Retrofit `investigations/ctap-smvod/scripts/*.py` (24 entry points) to call `init_logging()` | Owner: AI agent | Model: n/a | Review: tests green | SHA: ff67e66
+- [x] **LFR-6a** — Retrofit `investigations/ctap-smvod/scripts/*.py` (25 entry points) to call `init_logging()` | Owner: AI agent | Model: n/a | Review: tests green | SHA: ff67e66
 - [x] **LFR-6b** — Retrofit `scripts/athena/*.py`, `scripts/dev/*.py` (excluding `scripts/dev/hooks/`), `scripts/reference_diagram/main.py`, `scripts/resolve_tenant.py` to call `init_logging()` |
-  Owner: AI agent | Model: n/a | Review: tests green | SHA: 69f03ef
-- [ ] **LFR-7** — Automated pre-commit hook flagging new `__main__` entry points that skip `init_logging()` | Owner: AI agent | Model: n/a | Review: none | SHA:
+  Owner: AI agent | Model: n/a | Review: tests green | SHA: e2df8df
+- [x] **LFR-7** — Automated pre-commit hook flagging new `__main__` entry points that skip `init_logging()` | Owner: AI agent | Model: n/a | Review: none | SHA: 2959d01
 - [ ] **LFR-8** — Remove now-stale coordination notes (LFR-5's); update `CONTEXT.md`/`README.md`/`knowledge/README.md` | Owner: AI agent | Model: n/a | Review: none | SHA:
 
 ## Story done when

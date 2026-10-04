@@ -84,11 +84,14 @@
   prerequisite so FCID survives a `ThreadPoolExecutor` boundary. `docs/plan/logging-framework/` has now started implementing the rest of FCID-1's deferred runtime wiring around it:
   `src/lib/logging/bootstrap.py` mints/binds one FCID per entry point, `src/lib/logging/setup.py` injects `%(fcid)s` on every handler, and `src/lib/logging/redact.py` provides allow-list-based
   parameter masking.
-- `docs/plan/logging-framework/` — story in progress (LFR-1..6a complete): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README. It added
+- `docs/plan/logging-framework/` — story complete (LFR-1..8): closes the deferred FCID/runtime gap flagged by both `src/lib/logging/context.py` and `pipeline-migration`'s README. It added
   `src/lib/logging/bootstrap.py`'s `init_logging()`, handler-level FCID injection, and allow-list parameter masking; defined the minimum logging contract in
   `docs/refactor/logging-and-correlation-id.md`; applied that contract to `src/lib/athena/adapter.py` plus the `aws_access_cli` adoption/Shaka/position business-logic modules; wired `init_logging()`
   into every `src/pipelines/aws_access_cli/scripts/run_*.py` entry point before argument parsing; made report-preview table output opt-in via `--preview`; made the contract binding in
-  `docs/refactor/code-review-checklist.md`; and retrofitted every `investigations/ctap-smvod/scripts/*.py` entry point with `init_logging()` plus start/end run logs. Open tasks: LFR-6b..8.
+  `docs/refactor/code-review-checklist.md`; retrofitted every `investigations/ctap-smvod/scripts/*.py` entry point with `init_logging()` plus start/end run logs; retrofitted every root
+  `scripts/dev/*.py` and `scripts/athena/*.py` entry point (plus `scripts/reference_diagram/main.py` and `scripts/resolve_tenant.py`); routed `setup_logging()`'s stream handler to stderr so
+  retrofitted CLIs whose stdout is their actual product output aren't polluted by log lines; and added a non-blocking `logging-contract-check` pre-commit hook that flags any new entry point skipping
+  `init_logging()`, so this class of gap gets caught automatically going forward.
 - `src/lib/logging/setup.py` — the canonical `setup_logging()` entrypoint (moved here from `logs/setup_logging.py` so code and its own generated runtime artifact, `logs/app.log`, aren't colocated in
   one directory). Resolves its log directory from a new `logs_root` key in `config/data_paths.yaml` (default `logs`) instead of a hardcoded path relative to the module file, consistent with the
   project's single-config-loading-convention guidance; `logs/` itself still holds the generated `app.log` and its `.gitignore`. All 4 prior `logs.setup_logging` import sites were updated to
