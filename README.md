@@ -11,6 +11,10 @@ Early / active. First story (`docs/archive/tenant-registry/`) is not yet impleme
 `docs/archive/functional-code-taxonomy/` are complete; `docs/archive/query-catalog/` is still planned. Reusable project tooling now includes both registry generators under `scripts/dev/`, and
 production `src/lib/` code has started with shared Protocol/config layers for `athena`, `report_render`, `har`, and `paths`.
 
+2026-10-04 coordination note: root `scripts/dev/` entry points are not retrofitted to `src/lib/logging/bootstrap.py`'s `init_logging()` by `docs/plan/logging-framework/`; that story only wires the
+`aws_access_cli` pipeline. The existing `setup_logging()` callers (`scripts/dev/harvest_athena_query_catalog.py`, `scripts/dev/harvest_lightstep_query_catalog.py`) should migrate next time they are
+touched, and the remaining `scripts/dev/*.py` entry points need their own follow-up ownership before code changes.
+
 ## Setup
 
 Runtime dependencies: `pip install -r requirements.txt` (currently `PyYAML` for config-driven path resolution). Dev tooling: `pip install -r requirements-dev.txt`, then `pre-commit install`.

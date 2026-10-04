@@ -15,3 +15,6 @@
 
 - 2026-10-03 — CSM-7: added no-network happy-path/edge-case tests across the remaining CTAP/SM-VOD business-logic scripts, fixed the CSV-compat layer issues those tests exposed, added `RETENTION.md`,
   and pointed `CONTEXT.md` at this story folder.
+
+- 2026-10-04 — Coordination only: this consumer does not yet call `src/lib/logging/bootstrap.py`'s `init_logging()`; see `docs/plan/logging-framework/` for the deferred bootstrap rollout rather than
+  retrofitting `investigations/ctap-smvod/` in this story.

@@ -7,6 +7,10 @@ them from live systems each time.
 
 Use one file per Athena database, named `knowledge/<project>-athena-<database>-tables.md`.
 
+2026-10-04 coordination note: this workflow's local CLIs (`scripts/athena/discover_athena_tables.py`, `scripts/athena/run_table_ddl_export.py`, and the follow-on doc refresher
+`scripts/dev/update_athena_table_ddl_knowledge.py`) are not retrofitted to `src/lib/logging/bootstrap.py`'s `init_logging()` by `docs/plan/logging-framework/`; the two Athena CLIs still call
+`setup_logging()` directly and should migrate next time they are touched.
+
 Each file should combine two things:
 
 1. A generated `## DDL reference` section, refreshed from exported Athena metadata.
