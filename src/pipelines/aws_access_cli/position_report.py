@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from src.lib.athena.protocols import AthenaClient
 from src.pipelines.aws_access_cli.catalog import QueryCatalog, comma_join_quoted
 from src.pipelines.aws_access_cli.tenants import TenantConfig
+
+LOGGER = logging.getLogger(__name__)
 
 POSITION_NOT_MOVED_THRESHOLD_SECONDS = 1.0
 _SESSION_ID_BATCH_SIZE = 250
@@ -145,6 +149,7 @@ def run_position_report(
     *,
     table_override: str | None = None,
 ) -> list[dict[str, str]]:
+    LOGGER.info("Processing position report", extra={"tenant": tenant.code, "report": "position_report", "date": date_value})
     next_date = (datetime.strptime(date_value, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
     session_id_sql = catalog.render(
         "aws-access-cli_error_1xxx_session_ids",
@@ -156,9 +161,29 @@ def run_position_report(
             "next_date": next_date,
         },
     )
+    LOGGER.debug(
+        "Starting Athena position session-id query",
+        extra={"tenant": tenant.code, "report": "position_report", "call_name": "athena.start_query", "query_name": "session_ids"},
+    )
+    session_id_started_at = time.perf_counter()
     session_id_rows = athena.fetch_results(athena.start_query(session_id_sql, {})).rows
+    LOGGER.info(
+        "Finished Athena position session-id query",
+        extra={
+            "tenant": tenant.code,
+            "report": "position_report",
+            "call_name": "athena.start_query",
+            "query_name": "session_ids",
+            "duration_ms": int((time.perf_counter() - session_id_started_at) * 1000),
+            "row_count": len(session_id_rows),
+        },
+    )
     session_ids = sorted({row["session_id"] for row in session_id_rows if row.get("session_id")})
     if not session_ids:
+        LOGGER.info(
+            "Produced position report rows",
+            extra={"tenant": tenant.code, "report": "position_report", "row_count": 0},
+        )
         return []
     playback_rows: dict[str, dict[str, str]] = {}
     debug_rows: list[dict[str, str]] = []
@@ -168,7 +193,30 @@ def run_position_report(
             "aws-access-cli_playback_outcome",
             {"database_identifier": tenant.database, "date": date_value, "session_filter": f"AND parent_session_id IN ({id_list})"},
         )
-        for row in athena.fetch_results(athena.start_query(playback_sql, {})).rows:
+        LOGGER.debug(
+            "Starting Athena playback batch query",
+            extra={
+                "tenant": tenant.code,
+                "report": "position_report",
+                "call_name": "athena.start_query",
+                "query_name": "playback_outcome",
+                "session_batch_size": len(session_batch),
+            },
+        )
+        playback_started_at = time.perf_counter()
+        playback_batch_rows = athena.fetch_results(athena.start_query(playback_sql, {})).rows
+        LOGGER.info(
+            "Finished Athena playback batch query",
+            extra={
+                "tenant": tenant.code,
+                "report": "position_report",
+                "call_name": "athena.start_query",
+                "query_name": "playback_outcome",
+                "duration_ms": int((time.perf_counter() - playback_started_at) * 1000),
+                "row_count": len(playback_batch_rows),
+            },
+        )
+        for row in playback_batch_rows:
             session_id = row.get("sessionId", "")
             if session_id:
                 playback_rows[session_id] = row
@@ -182,7 +230,30 @@ def run_position_report(
                 "end_date_exclusive": next_date,
             },
         )
-        debug_rows.extend(athena.fetch_results(athena.start_query(debug_sql, {})).rows)
+        LOGGER.debug(
+            "Starting Athena debug-events batch query",
+            extra={
+                "tenant": tenant.code,
+                "report": "position_report",
+                "call_name": "athena.start_query",
+                "query_name": "session_debug_events",
+                "session_batch_size": len(session_batch),
+            },
+        )
+        debug_started_at = time.perf_counter()
+        debug_batch_rows = athena.fetch_results(athena.start_query(debug_sql, {})).rows
+        LOGGER.info(
+            "Finished Athena debug-events batch query",
+            extra={
+                "tenant": tenant.code,
+                "report": "position_report",
+                "call_name": "athena.start_query",
+                "query_name": "session_debug_events",
+                "duration_ms": int((time.perf_counter() - debug_started_at) * 1000),
+                "row_count": len(debug_batch_rows),
+            },
+        )
+        debug_rows.extend(debug_batch_rows)
     derived_rows = derive_session_rows(debug_rows)
     report_rows: list[dict[str, str]] = []
     for derived in derived_rows:
@@ -201,4 +272,5 @@ def run_position_report(
                 "position_not_moved": "" if derived.position_not_moved is None else str(derived.position_not_moved),
             }
         )
+    LOGGER.info("Produced position report rows", extra={"tenant": tenant.code, "report": "position_report", "row_count": len(report_rows)})
     return report_rows

@@ -115,3 +115,20 @@ State explicitly, in the design doc, what this convention does *not* yet solve, 
 Once the convention is designed, every consumer epic/story that will eventually adopt it gets a one-line, dated coordination note in its own planning doc ("this convention exists at `<path>`; this
 epic does not implement it itself; this is the coordination record for whoever next touches the adapter code"), rather than the design story reaching into and editing each consumer's own files. This
 keeps the design decision visible to every future implementer without creating edit conflicts across unrelated stories' plan docs.
+
+## Minimum logging contract
+
+Once `src/lib/logging/bootstrap.py` exists, every new entry point and every shared-lib adapter should follow the same minimum contract so "we have logging" means more than an occasional failure
+traceback:
+
+- **Run start (`INFO`)** — log once, immediately after `init_logging()`, with the entry-point slug plus the top-level, reproduction-relevant arguments for the run (for example date range, tenant,
+  period, report family).
+- **External-call start (`DEBUG`)** — log immediately before any Athena/network/subprocess call with a stable call name, a fingerprint instead of raw query/payload text, and only allow-listed
+  parameters via `redact_params()` (or a safe summary such as param-key names when no values are safe to log).
+- **External-call success (`INFO`)** — log immediately after that call with `duration_ms` and the result size that helps explain the next step (row count, record count, query execution id, etc.).
+- **External-call failure (`ERROR` via `logger.exception`)** — log exactly once, in the layer that first catches the exception. A layer that only re-raises does not also log, or the run regresses to
+  the duplicate bare-message-plus-traceback shape seen in the 2026-10-04 cron-log investigation.
+- **Run end (`INFO`)** — log once, at the entry point, with the overall outcome summary for that run (for example success/failure counts across tenants or reports).
+
+The contract is deliberately minimal: it does not require structured JSON logging yet, but it does require enough consistent structure that a plain-text log file is still diagnosable by FCID, call
+name, duration, row count, and the one layer responsible for each failure.

@@ -3,9 +3,9 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LFR-1, LFR-2, LFR-3, LFR-4, LFR-5.**
+**Open: LFR-2, LFR-3, LFR-4, LFR-5.**
 
-- [ ] **LFR-1** — Build the `init_logging()` bootstrap (setup + FCID bind + formatter wiring + redaction) | Owner: AI agent | Model: n/a | Review: tests green | SHA: —
+- [x] **LFR-1** — Build the `init_logging()` bootstrap (setup + FCID bind + formatter wiring + redaction) | Owner: AI agent | Model: n/a | Review: tests green | SHA: 6529c9c
 - [ ] **LFR-2** — Define the minimum logging contract; apply it to the Athena adapter + `aws_access_cli` business logic | Owner: AI agent | Model: n/a | Review: tests green | SHA: —
 - [ ] **LFR-3** — Wire the bootstrap into every `aws_access_cli` entry point; separate preview output from the log stream | Owner: AI agent | Model: n/a | Review: tests green + `py-code-review` | SHA:
   —

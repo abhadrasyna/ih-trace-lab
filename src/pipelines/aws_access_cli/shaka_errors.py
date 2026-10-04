@@ -1,6 +1,8 @@
 """Business logic for aws-access-cli Shaka error reports."""
 from __future__ import annotations
 
+import logging
+import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -11,6 +13,9 @@ from src.pipelines.aws_access_cli.catalog import QueryCatalog, quote_sql_literal
 from src.pipelines.aws_access_cli.tenants import TenantConfig
 
 _ERROR_CODES = [str(code) for code in range(1001, 1011)]
+LOGGER = logging.getLogger(__name__)
+
+
 def _iso_date(value: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()
 
@@ -45,6 +50,17 @@ def build_shaka_error_report(
     normalized_end_date = _iso_date(end_date).isoformat()
     if normalized_end_date < normalized_start_date:
         raise ValueError("end_date must be on or after start_date")
+    report_label = "shaka_error_hhid" if by == "hhid" else "shaka_error_session"
+    LOGGER.info(
+        "Processing Shaka error report",
+        extra={
+            "tenant": tenant.code,
+            "report": report_label,
+            "start_date": normalized_start_date,
+            "end_date": normalized_end_date,
+            "period": period,
+        },
+    )
     sql = catalog.render(
         "aws-access-cli_shaka_error_counts",
         {
@@ -56,17 +72,33 @@ def build_shaka_error_report(
             ),
         },
     )
+    LOGGER.debug(
+        "Starting Athena Shaka error query",
+        extra={"tenant": tenant.code, "report": report_label, "call_name": "athena.start_query"},
+    )
+    started_at = time.perf_counter()
     execution_id = athena.start_query(sql, {})
     rows = athena.fetch_results(execution_id).rows
-    label = "shaka_error_hhid" if by == "hhid" else "shaka_error_session"
-    return [
+    LOGGER.info(
+        "Finished Athena Shaka error query",
+        extra={
+            "tenant": tenant.code,
+            "report": report_label,
+            "call_name": "athena.start_query",
+            "duration_ms": int((time.perf_counter() - started_at) * 1000),
+            "row_count": len(rows),
+        },
+    )
+    report_rows = [
         dict(
             row,
             session_date=normalized_start_date if period != "day" else row.get("session_date", normalized_start_date),
-            report_name=row.get("report_name", label),
+            report_name=row.get("report_name", report_label),
         )
         for row in rows
     ]
+    LOGGER.info("Produced Shaka error report rows", extra={"tenant": tenant.code, "report": report_label, "row_count": len(report_rows)})
+    return report_rows
 
 
 def build_error_1xxx_session_ids(
@@ -77,6 +109,10 @@ def build_error_1xxx_session_ids(
     table_override: str | None = None,
 ) -> list[dict[str, str]]:
     normalized_date = _iso_date(date_value).isoformat()
+    LOGGER.info(
+        "Processing Shaka error session-id extraction",
+        extra={"tenant": tenant.code, "report": "shaka_error_session_ids", "date": normalized_date},
+    )
     sql = catalog.render(
         "aws-access-cli_error_1xxx_session_ids",
         {
@@ -87,8 +123,28 @@ def build_error_1xxx_session_ids(
             "next_date": _next_date(normalized_date),
         },
     )
+    LOGGER.debug(
+        "Starting Athena Shaka session-id query",
+        extra={"tenant": tenant.code, "report": "shaka_error_session_ids", "call_name": "athena.start_query"},
+    )
+    started_at = time.perf_counter()
     execution_id = athena.start_query(sql, {})
-    return athena.fetch_results(execution_id).rows
+    rows = athena.fetch_results(execution_id).rows
+    LOGGER.info(
+        "Finished Athena Shaka session-id query",
+        extra={
+            "tenant": tenant.code,
+            "report": "shaka_error_session_ids",
+            "call_name": "athena.start_query",
+            "duration_ms": int((time.perf_counter() - started_at) * 1000),
+            "row_count": len(rows),
+        },
+    )
+    LOGGER.info(
+        "Produced Shaka error session-id rows",
+        extra={"tenant": tenant.code, "report": "shaka_error_session_ids", "row_count": len(rows)},
+    )
+    return rows
 
 
 def resolve_filename(resolver: PathResolver, artifact: str, *, start_date: str, end_date: str, period: str) -> str:

@@ -1,6 +1,8 @@
 """Business logic for aws-access-cli adoption-family reports."""
 from __future__ import annotations
 
+import logging
+import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -11,6 +13,8 @@ from src.lib.csv_io.protocols import CsvWriterProtocol
 from src.lib.paths.protocols import PathResolver
 from src.pipelines.aws_access_cli.catalog import QueryCatalog, quote_sql_literal
 from src.pipelines.aws_access_cli.tenants import TenantConfig
+
+LOGGER = logging.getLogger(__name__)
 
 _PERIOD_EXPR = {
     "day": "date(timestamp_formatted)",
@@ -78,9 +82,26 @@ def _render_metric_sql(
     return catalog.render(metric.query_key, params)
 
 
-def _run_sql(athena: AthenaClient, sql: str) -> list[dict[str, str]]:
+def _run_sql(athena: AthenaClient, sql: str, *, tenant: str, report: str, metric: str) -> list[dict[str, str]]:
+    LOGGER.debug(
+        "Starting Athena metric query",
+        extra={"tenant": tenant, "report": report, "metric": metric, "call_name": "athena.start_query"},
+    )
+    started_at = time.perf_counter()
     execution_id = athena.start_query(sql, {})
-    return athena.fetch_results(execution_id).rows
+    rows = athena.fetch_results(execution_id).rows
+    LOGGER.info(
+        "Finished Athena metric query",
+        extra={
+            "tenant": tenant,
+            "report": report,
+            "metric": metric,
+            "call_name": "athena.start_query",
+            "duration_ms": int((time.perf_counter() - started_at) * 1000),
+            "row_count": len(rows),
+        },
+    )
+    return rows
 
 
 HOUSEHOLD_METRICS = (
@@ -126,12 +147,21 @@ def build_adoption_report(
     metrics: tuple[MetricSpec, ...] = HOUSEHOLD_METRICS,
     table_override: str | None = None,
 ) -> list[dict[str, str]]:
+    LOGGER.info(
+        "Processing adoption report",
+        extra={"tenant": tenant.code, "report": "adoption", "start_date": start_date, "end_date": end_date, "period": period},
+    )
     merged: dict[str, dict[str, str]] = {}
     for metric in metrics:
         sql = _render_metric_sql(catalog, tenant, metric, start_date, end_date, period, table_override=table_override)
-        rows = _run_sql(athena, sql)
+        rows = _run_sql(athena, sql, tenant=tenant.code, report="adoption", metric=metric.name)
         _merge_rows(rows, metric.column_header, merged)
-    return [merged[session_date] for session_date in sorted(merged)]
+    report_rows = [merged[session_date] for session_date in sorted(merged)]
+    LOGGER.info(
+        "Produced adoption report rows",
+        extra={"tenant": tenant.code, "report": "adoption", "row_count": len(report_rows)},
+    )
+    return report_rows
 
 
 def resolve_filename(resolver: PathResolver, artifact: str, *, start_date: str, end_date: str, period: str) -> str:

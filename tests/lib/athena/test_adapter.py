@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import logging
 from pathlib import Path
 
 import pytest
@@ -95,6 +96,28 @@ def test_adapter_delegates_start_query(tmp_path: Path) -> None:
     assert result.state == "SUCCEEDED"
     assert result.rows == [{"col": "value"}]
     assert adapter.poll_status(execution_id) == "SUCCEEDED"
+
+
+def test_adapter_logs_query_success_with_duration(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    adapter = AthenaAdapter(_FakeExecutor([_success_result("exec-1")]), _FakeDownloader(), _make_config(tmp_path), database="test_db")
+
+    with caplog.at_level(logging.INFO, logger="src.lib.athena.adapter"):
+        adapter.start_query("SELECT * FROM t WHERE day = $day", {"day": "2026-10-02"})
+
+    success_records = [record for record in caplog.records if record.levelno == logging.INFO and record.getMessage() == "Athena query finished"]
+    assert len(success_records) == 1
+    assert success_records[0].duration_ms >= 0  # type: ignore[attr-defined]  # LogRecord extra attrs are set dynamically at runtime.
+
+
+def test_adapter_logs_query_failure_once(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    adapter = AthenaAdapter(_FakeExecutor([_non_throttling_error()]), _FakeDownloader(), _make_config(tmp_path), database="test_db")
+
+    with caplog.at_level(logging.ERROR, logger="src.lib.athena.adapter"):
+        with pytest.raises(AthenaQueryExecutionError):
+            adapter.start_query("SELECT 1", {})
+
+    error_records = [record for record in caplog.records if record.levelno == logging.ERROR and record.getMessage() == "Athena query failed"]
+    assert len(error_records) == 1
 
 
 def test_adapter_quotes_and_escapes_param_values(tmp_path: Path) -> None:

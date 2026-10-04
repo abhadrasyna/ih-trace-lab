@@ -30,6 +30,7 @@ Design notes (see `docs/plan/src-lib-migration/athena-lib-integration/stories.md
 from __future__ import annotations
 
 import csv
+import hashlib
 import logging
 import random
 import string
@@ -49,6 +50,7 @@ from src.lib.athena.exceptions import (
     AthenaQueryTimeoutError,
     AthenaResultDownloadError,
 )
+from src.lib.logging.redact import redact_params
 from src.lib.athena.protocols import QueryResult
 
 if TYPE_CHECKING:
@@ -80,6 +82,10 @@ def _is_retryable_start_throttling(exc: BaseException) -> bool:
 def _quote_sql_literal(value: str) -> str:
     """Quotes `value` as a single SQL string literal, doubling any embedded single quotes."""
     return "'" + value.replace("'", "''") + "'"
+
+
+def _sql_fingerprint(sql: str) -> str:
+    return hashlib.sha256(sql.encode("utf-8")).hexdigest()[:8]
 
 
 class AthenaAdapter:
@@ -119,9 +125,35 @@ class AthenaAdapter:
         Blocking, because `athena_runner`'s own `run()` is blocking -- see module docstring.
         """
         bound_sql = self._bind_params(sql, params)
-        runner_result = self._run_with_retry(bound_sql)
-        self._results[runner_result.query_execution_id] = self._download_and_translate(runner_result)
-        return runner_result.query_execution_id
+        fingerprint = _sql_fingerprint(bound_sql)
+        redacted_params = redact_params(
+            {"database": self._database, "param_keys": ",".join(sorted(params)) if params else "none"},
+            {"database", "param_keys"},
+        )
+        _logger.debug(
+            "Athena query start",
+            extra={"call_name": "athena.run", "sql_fingerprint": fingerprint, "params": redacted_params},
+        )
+        started_at = time.perf_counter()
+        try:
+            runner_result = self._run_with_retry(bound_sql)
+            _logger.info(
+                "Athena query finished",
+                extra={
+                    "call_name": "athena.run",
+                    "sql_fingerprint": fingerprint,
+                    "query_execution_id": runner_result.query_execution_id,
+                    "duration_ms": int((time.perf_counter() - started_at) * 1000),
+                },
+            )
+            self._results[runner_result.query_execution_id] = self._download_and_translate(runner_result, fingerprint)
+            return runner_result.query_execution_id
+        except (AthenaAuthError, AthenaQueryExecutionError, AthenaQueryTimeoutError, AthenaResultDownloadError):
+            _logger.exception(
+                "Athena query failed",
+                extra={"call_name": "athena.run", "sql_fingerprint": fingerprint},
+            )
+            raise
 
     def poll_status(self, execution_id: str) -> str:
         """Returns the cached terminal state for `execution_id` (always `SUCCEEDED` -- `start_query` raises on any other outcome)."""
@@ -176,14 +208,33 @@ class AthenaAdapter:
                 self._sleep_backoff(attempt)
                 attempt += 1
 
-    def _download_and_translate(self, runner_result: RunnerQueryResult) -> QueryResult:
+    def _download_and_translate(self, runner_result: RunnerQueryResult, sql_fingerprint: str) -> QueryResult:
         # Staged under a throwaway temp dir, never `config.output_dir` -- the raw CSV is an
         # implementation detail of building `QueryResult.rows`, not a retained artifact (see
         # module docstring). The `with` block deletes it whether download/parse succeeds or raises.
         with tempfile.TemporaryDirectory(prefix="athena-adapter-") as staging_dir:
             csv_path = str(Path(staging_dir) / f"{runner_result.query_execution_id}.csv")
+            download_started_at = time.perf_counter()
+            _logger.debug(
+                "Athena result download start",
+                extra={
+                    "call_name": "athena.download",
+                    "sql_fingerprint": sql_fingerprint,
+                    "query_execution_id": runner_result.query_execution_id,
+                },
+            )
             self._download_with_retry(runner_result.output_location, csv_path)
             rows = self._read_rows(csv_path)
+        _logger.info(
+            "Athena result download finished",
+            extra={
+                "call_name": "athena.download",
+                "sql_fingerprint": sql_fingerprint,
+                "query_execution_id": runner_result.query_execution_id,
+                "duration_ms": int((time.perf_counter() - download_started_at) * 1000),
+                "row_count": len(rows),
+            },
+        )
         return QueryResult(query_execution_id=runner_result.query_execution_id, rows=rows, state="SUCCEEDED")
 
     def _download_with_retry(self, output_location: str, csv_path: str) -> None:
