@@ -10,7 +10,7 @@ spec.
 - [x] **LFR-3** — Wire the bootstrap into every `aws_access_cli` entry point; separate preview output from the log stream | Owner: AI agent | Model: n/a | Review: tests green + `py-code-review` | SHA:
   473621c
 - [x] **LFR-4** — Add a binding "Logging" section to `code-review-checklist.md`; update `CONTEXT.md` | Owner: AI agent | Model: n/a | Review: none | SHA: 591c4b2
-- [x] **LFR-5** — Dated coordination notes in unretrofitted consumers (`investigations/ctap-smvod`, remaining dev scripts) | Owner: AI agent | Model: n/a | Review: none | SHA: —
+- [x] **LFR-5** — Dated coordination notes in unretrofitted consumers (`investigations/ctap-smvod`, remaining dev scripts) | Owner: AI agent | Model: n/a | Review: none | SHA: 7d21bcf
 
 ## Story done when
 
