@@ -137,10 +137,22 @@ class AthenaAdapter:
     @staticmethod
     def _bind_params(sql: str, params: Mapping[str, str]) -> str:
         quoted = {key: _quote_sql_literal(value) for key, value in params.items()}
-        try:
-            return string.Template(sql).substitute(quoted)
-        except KeyError as exc:
-            raise ValueError(f"SQL template references a parameter not present in params={sorted(params)}: {exc}") from exc
+        template = string.Template(sql)
+        # Only enforce/substitute genuine $name / ${name} placeholders; a bare
+        # literal "$" followed by anything else (e.g. Presto/Athena JSON-path
+        # syntax like '$.sessionid') is not a placeholder and must pass
+        # through untouched instead of raising (string.Template.substitute
+        # raises ValueError for *any* ill-formed "$" sequence, not just ones
+        # meant as placeholders).
+        referenced = {
+            match.group("named") or match.group("braced")
+            for match in template.pattern.finditer(sql)
+            if match.group("named") or match.group("braced")
+        }
+        missing = referenced - quoted.keys()
+        if missing:
+            raise ValueError(f"SQL template references a parameter not present in params={sorted(params)}: {sorted(missing)}")
+        return template.safe_substitute(quoted)
 
     def _run_with_retry(self, sql: str) -> RunnerQueryResult:
         attempt = 0

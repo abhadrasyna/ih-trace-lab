@@ -107,6 +107,27 @@ def test_adapter_quotes_and_escapes_param_values(tmp_path: Path) -> None:
     assert executor.calls == [("SELECT * FROM t WHERE name = 'O''Brien'", "test_db")]
 
 
+def test_adapter_tolerates_literal_dollar_sign_in_sql(tmp_path: Path) -> None:
+    """Presto/Athena JSON-path syntax like '$.sessionid' is literal text, not a placeholder.
+
+    Regression test: string.Template.substitute() previously raised
+    `ValueError: Invalid placeholder in string` for this (a real
+    aws-access-cli query shape), even with no params at all.
+    """
+    executor = _FakeExecutor([_success_result("exec-1")])
+    adapter = AthenaAdapter(executor, _FakeDownloader(), _make_config(tmp_path), database="test_db")
+
+    execution_id = adapter.start_query(
+        "SELECT json_extract_scalar(eventdata, '$.sessionid') FROM t WHERE day = $day",
+        {"day": "2026-10-02"},
+    )
+
+    assert execution_id == "exec-1"
+    assert executor.calls == [
+        ("SELECT json_extract_scalar(eventdata, '$.sessionid') FROM t WHERE day = '2026-10-02'", "test_db"),
+    ]
+
+
 def test_adapter_raises_on_missing_template_param(tmp_path: Path) -> None:
     executor = _FakeExecutor([])
     adapter = AthenaAdapter(executor, _FakeDownloader(), _make_config(tmp_path), database="test_db")

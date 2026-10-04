@@ -58,6 +58,7 @@ def make_athena_client(runtime: RuntimeConfig, database: str) -> Any:
 
     factory = aws_clients.AwsClientFactory(runtime.profile, runtime.region)
     run_config = config_lib.RunConfig(
+        profile=runtime.profile,
         workgroup=runtime.workgroup,
         output_location=runtime.output_location,
         output_dir=runtime.output_dir,
@@ -65,8 +66,8 @@ def make_athena_client(runtime: RuntimeConfig, database: str) -> Any:
         timeout_seconds=runtime.timeout,
     )
     return AthenaAdapter(
-        executor=query_executor.AthenaQueryExecutor(factory.athena_client(), run_config),
-        downloader=result_downloader.ResultDownloader(factory.s3_client()),
+        executor=query_executor.BotoAthenaQueryExecutor(factory.athena_client(), run_config),
+        downloader=result_downloader.S3ResultDownloader(factory.s3_client()),
         config=run_config,
         database=database,
     )
