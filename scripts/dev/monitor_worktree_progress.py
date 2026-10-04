@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import logging
 import re
 import subprocess
 import sys
@@ -29,6 +30,11 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 CHECKBOX_RE = re.compile(r"^-\s*\[( |x|X)\]\s*\*\*([A-Za-z0-9_-]+)\*\*")
 TASKS_FILE_NAME = "tasks.md"
@@ -182,6 +188,9 @@ def format_snapshot(snap: Snapshot, previous: Snapshot | None) -> str:
 
 
 def main() -> int:
+    init_logging("monitor-worktree-progress")
+    logger = logging.getLogger("scripts.dev.monitor_worktree_progress")
+    logger.info("Run started")
     doc_summary = (__doc__ or "").splitlines()
     parser = argparse.ArgumentParser(description=doc_summary[0] if doc_summary else None)
     parser.add_argument(
@@ -206,11 +215,13 @@ def main() -> int:
 
     if args.interval < 1:
         print(f"error: --interval must be >= 1 (got {args.interval})", file=sys.stderr)
+        logger.info("Run finished")
         return 1
 
     bad_names = validate_story_names(args.stories, args.plan_root)
     if bad_names:
         print(f"error: no {args.plan_root}/<story>/tasks.md found for: {', '.join(bad_names)}", file=sys.stderr)
+        logger.info("Run finished")
         return 1
 
     previous: dict[str, Snapshot] = {}
@@ -229,6 +240,7 @@ def main() -> int:
             time.sleep(args.interval)
     except KeyboardInterrupt:
         print("\nstopped.")
+    logger.info("Run finished")
     return 0
 
 

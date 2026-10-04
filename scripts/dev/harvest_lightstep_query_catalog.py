@@ -14,14 +14,14 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.setup import setup_logging
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 DEFAULT_SOURCE = Path("/Users/abhadra/github_copilot/applauseInvestigation/knowledge/lightstep-query-templates.md")
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 HEADING_RE = re.compile(r"(?m)^(##|###)\s+(.+)$")
 PLACEHOLDER_RE = re.compile(r"<([^<>]+)>")
 SERVICE_RE = re.compile(r'service(?:\.name)?\s*==\s*"([^"]+)"')
-LOGGER = logging.getLogger("scripts.dev.harvest_lightstep_query_catalog")
+LOGGER = logging.getLogger("scripts.dev.harvest_lightstep_query_catalog")  # kept for harvest-step info/debug logs
 
 
 @dataclass(frozen=True)
@@ -111,6 +111,8 @@ def write_catalog(root: Path, catalog: list[CatalogEntry]) -> None:
 
 def main() -> None:
     """Parse the source markdown, write the catalog, and print the count."""
+    init_logging("harvest-lightstep-query-catalog", to_file=False)
+    LOGGER.info("Run started")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source",
@@ -126,12 +128,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    setup_logging(to_file=False)
     source = args.source.resolve()
     root = args.root.resolve()
     catalog = build_catalog(source)
     write_catalog(root, catalog)
     print(f"Wrote {len(catalog)} Lightstep templates to {root / 'queries' / 'lightstep'}")
+    LOGGER.info("Run finished")
 
 
 def _split_sections(text: str) -> list[tuple[str, str]]:

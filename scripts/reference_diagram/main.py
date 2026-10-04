@@ -12,20 +12,28 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from reference_diagram.lib import (
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.reference_diagram.lib import (
     build_internal_import_graph,
     discover_projects,
     link_cross_project_imports,
     render_project_report,
     render_report,
 )
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 
 def main() -> None:
+    init_logging("reference-diagram")
+    logger = logging.getLogger("scripts.reference_diagram.main")
+    logger.info("Run started")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source",
@@ -65,6 +73,7 @@ def main() -> None:
         print(f"Wrote {args.out} ({args.project})")
     else:
         print(f"Wrote {args.out} ({len(projects)} projects)")
+    logger.info("Run finished")
 
 
 if __name__ == "__main__":

@@ -26,9 +26,15 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import logging
 import re
 import sys
 from pathlib import Path
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 MAX_LEN = 200
 
@@ -258,6 +264,9 @@ def _iter_md_files(paths: list[str]) -> list[Path]:
 
 def main(argv: list[str]) -> int:
     """Reflow (or, with ``--check``, report) every ``.md`` under the given paths."""
+    init_logging("reflow-md")
+    logger = logging.getLogger("scripts.dev.reflow_md")
+    logger.info("Run started")
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="+", help="Markdown files or directories")
     parser.add_argument(
@@ -281,9 +290,11 @@ def main(argv: list[str]) -> int:
         print(f"{verb} {path}")
     if args.check and changed:
         print(f"\n{len(changed)} file(s) not in fill-to-≤{args.width} style.")
+        logger.info("Run finished")
         return 1
     if not changed:
         print(f"all files already in fill-to-≤{args.width} style.")
+    logger.info("Run finished")
     return 0
 
 

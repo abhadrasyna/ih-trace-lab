@@ -14,7 +14,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.setup import setup_logging
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 LOGGER = logging.getLogger("scripts.dev.harvest_athena_query_catalog")
 
@@ -324,6 +324,8 @@ def write_catalog(root: str | Path, catalog: Iterable[CatalogEntry]) -> None:
 
 def main() -> None:
     """Run the harvest pipeline from markdown sources to ``queries/athena/``."""
+    init_logging("harvest-athena-query-catalog")
+    LOGGER.info("Run started")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--sources",
@@ -340,7 +342,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    setup_logging()
     catalog = build_catalog(args.sources)
     write_catalog(args.root, catalog)
 
@@ -348,6 +349,7 @@ def main() -> None:
     print(f"Wrote {len(catalog)} Athena query shapes from {total_raw_queries} raw SQL blocks.")
     for entry in sorted(catalog, key=lambda item: item.slug):
         print(f"  {entry.slug}: {entry.raw_query_count} raw quer{'y' if entry.raw_query_count == 1 else 'ies'}")
+    LOGGER.info("Run finished")
 
 
 def _canonical_rank(item: dict[str, object]) -> tuple[int, int, int]:

@@ -8,9 +8,16 @@ registry grows stale with effectively-production scripts still listed as scratch
 from __future__ import annotations
 
 import argparse
+import logging
 import subprocess
+import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 if __package__ in (None, ""):
     from generate_scripts_registry import (
@@ -103,6 +110,9 @@ def promote(script_path: Path, dest_dir: Path) -> Path:
 
 def main() -> None:
     """List promotion candidates or promote exactly one scratch script."""
+    init_logging("promote-scratch-scripts")
+    logger = logging.getLogger("scripts.dev.promote_scratch_scripts")
+    logger.info("Run started")
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument(
@@ -133,10 +143,12 @@ def main() -> None:
             date_text = extract_scratch_date(relative_path) or "—"
             purpose = extract_purpose(candidate) or "—"
             print(f"{date_text}\t{relative_path}\t{purpose}")
+        logger.info("Run finished")
         return
 
     destination = promote(args.script, dest_dir)
     print(f"Promoted {args.script} -> {destination.relative_to(root)}")
+    logger.info("Run finished")
 
 
 if __name__ == "__main__":
