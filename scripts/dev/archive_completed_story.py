@@ -23,6 +23,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+import logging
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+
 DONE_MARKER = re.compile(r"^\*\*Open:\s*none\b", re.MULTILINE)
 # A reference boundary: the match must not continue into a longer slug (e.g.
 # archiving "foo" must not touch "docs/plan/foo-bar/..."). Treat anything
@@ -214,26 +221,32 @@ def _repo_root() -> Path:
 
 def main(argv: list[str]) -> int:
     """CLI entry point: ``archive_completed_story.py <slug>``."""
-    if len(argv) != 1:
-        print("usage: archive_completed_story.py <slug-under-docs-plan>")
-        return 2
-    slug = argv[0]
-    root = _repo_root()
+    init_logging("archive-completed-story")
+    logger = logging.getLogger("scripts.dev.archive_completed_story")
     try:
-        staged = archive(root, slug)
-    except (ValueError, FileNotFoundError, StoryNotComplete, FileExistsError, ArchiveFailed) as exc:
-        print(f"ERROR: {exc}")
-        return 1
+        logger.info("Run started")
+        if len(argv) != 1:
+            print("usage: archive_completed_story.py <slug-under-docs-plan>")
+            return 2
+        slug = argv[0]
+        root = _repo_root()
+        try:
+            staged = archive(root, slug)
+        except (ValueError, FileNotFoundError, StoryNotComplete, FileExistsError, ArchiveFailed) as exc:
+            print(f"ERROR: {exc}")
+            return 1
 
-    dangling = _dangling_references(root, slug)
-    print(f"Archived docs/plan/{slug} -> docs/archive/{slug}")
-    print(f"Staged {len(staged)} path(s); review with 'git status' then commit.")
-    if dangling:
-        print(f"WARNING: {len(dangling)} file(s) still reference docs/plan/{slug}:")
-        for path in dangling:
-            print(f"  {path}")
-        return 1
-    return 0
+        dangling = _dangling_references(root, slug)
+        print(f"Archived docs/plan/{slug} -> docs/archive/{slug}")
+        print(f"Staged {len(staged)} path(s); review with 'git status' then commit.")
+        if dangling:
+            print(f"WARNING: {len(dangling)} file(s) still reference docs/plan/{slug}:")
+            for path in dangling:
+                print(f"  {path}")
+            return 1
+        return 0
+    finally:
+        logger.info("Run finished")
 
 
 if __name__ == "__main__":

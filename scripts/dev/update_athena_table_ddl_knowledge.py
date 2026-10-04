@@ -13,8 +13,15 @@ from __future__ import annotations
 
 import argparse
 import csv
+import logging
+import sys
 from collections.abc import Sequence
 from pathlib import Path
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
 
 _SECTION_BEGIN = "<!-- DDL_SECTION:BEGIN -->"
 _SECTION_END = "<!-- DDL_SECTION:END -->"
@@ -76,12 +83,18 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     """Read the DDL CSV and update the knowledge markdown's DDL section."""
 
-    args = _parse_args(argv)
-    rows = parse_ddl_csv(args.csv)
-    ddl_section = render_ddl_section(rows)
-    update_markdown(args.markdown, ddl_section)
-    print(f"Updated {args.markdown} with DDL for {len(rows)} table(s)")
-    return 0
+    init_logging("update-athena-table-ddl-knowledge")
+    logger = logging.getLogger("scripts.dev.update_athena_table_ddl_knowledge")
+    try:
+        logger.info("Run started")
+        args = _parse_args(argv)
+        rows = parse_ddl_csv(args.csv)
+        ddl_section = render_ddl_section(rows)
+        update_markdown(args.markdown, ddl_section)
+        print(f"Updated {args.markdown} with DDL for {len(rows)} table(s)")
+        return 0
+    finally:
+        logger.info("Run finished")
 
 
 if __name__ == "__main__":

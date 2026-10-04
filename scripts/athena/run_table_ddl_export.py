@@ -21,6 +21,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.lib.logging.bootstrap import init_logging  # wraps src.lib.logging.setup.setup_logging
+
 _DEFAULT_OUTPUT_DIR = REPO_ROOT / "output"
 _DEFAULT_BATCH_SIZE = 10
 
@@ -58,14 +60,6 @@ def _load_athena_dependencies() -> AthenaDependencies:
         config_lib=config_lib,
         exceptions=exceptions,
     )
-
-
-def _load_setup_logging() -> Any:
-    """Import the repo's shared logging setup only after the repo root is on ``sys.path``."""
-
-    from src.lib.logging.setup import setup_logging
-
-    return setup_logging
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -136,6 +130,17 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Standard logging level name for this repo's shared logger (default: INFO).",
     )
     return parser.parse_args(argv)
+
+
+def _apply_log_level(level: str) -> None:
+    """Apply ``level`` to the bootstrapped root logger.
+
+    ``init_logging()`` already calls ``setup_logging()``, which uppercases/validates the CLI level
+    name and leaves handler levels unset. Mirroring that normalization here preserves the old
+    ``--log-level`` behavior without re-running the full bootstrap.
+    """
+
+    logging.getLogger().setLevel(level.upper())
 
 
 def _read_tables_csv(csv_path: str) -> list[str]:
@@ -233,66 +238,71 @@ def _export_batch(context: ExportContext, batch: list[str], writer: csv.writer, 
 def main(argv: Sequence[str] | None = None) -> int:
     """Export every requested table's DDL as a CSV."""
 
-    args = _parse_args(argv)
-    _load_setup_logging()(level=args.log_level)
-
+    init_logging("run-table-ddl-export")
     try:
-        dependencies = _load_athena_dependencies()
-    except AthenaDependencyError as exc:
-        print(exc, file=sys.stderr)
-        return 1
+        args = _parse_args(argv)
+        _apply_log_level(args.log_level)
+        _LOGGER.info("Run started")
 
-    run_config = dependencies.config_lib.RunConfig(
-        profile=args.profile,
-        workgroup=args.workgroup,
-        output_location=args.output_location,
-        output_dir=args.output_dir,
-        region=args.region,
-        poll_interval_seconds=args.poll_interval,
-        timeout_seconds=args.timeout,
-    )
+        try:
+            dependencies = _load_athena_dependencies()
+        except AthenaDependencyError as exc:
+            print(exc, file=sys.stderr)
+            return 1
 
-    if args.tables_csv:
-        requested_tables = _read_tables_csv(args.tables_csv)
-    elif args.tables:
-        requested_tables = [name.strip() for name in args.tables.split(",") if name.strip()]
-    else:
-        requested_tables = None
+        run_config = dependencies.config_lib.RunConfig(
+            profile=args.profile,
+            workgroup=args.workgroup,
+            output_location=args.output_location,
+            output_dir=args.output_dir,
+            region=args.region,
+            poll_interval_seconds=args.poll_interval,
+            timeout_seconds=args.timeout,
+        )
 
-    if args.dry_run and requested_tables is not None:
-        for table in requested_tables:
-            print(table)
+        if args.tables_csv:
+            requested_tables = _read_tables_csv(args.tables_csv)
+        elif args.tables:
+            requested_tables = [name.strip() for name in args.tables.split(",") if name.strip()]
+        else:
+            requested_tables = None
+
+        if args.dry_run and requested_tables is not None:
+            for table in requested_tables:
+                print(table)
+            return 0
+
+        if not args.skip_auth_check and not dependencies.athena_cli_common.ensure_sso_or_log_failure(run_config, _LOGGER):
+            return 1
+
+        executor, downloader = dependencies.athena_cli_common.build_executor(run_config)
+
+        tables = requested_tables
+        if tables is None:
+            tables = discover_tables(executor, downloader, args.database)
+            _LOGGER.info("Discovered %d tables in %s", len(tables), args.database)
+
+        if args.dry_run:
+            for table in tables:
+                print(table)
+            return 0
+
+        output_path = args.output or str(Path(args.output_dir) / f"{args.database}_table_ddl.csv")
+        context = ExportContext(
+            executor=executor,
+            downloader=downloader,
+            run_config=run_config,
+            database=args.database,
+        )
+        try:
+            export_table_ddl(context, tables, output_path, args.batch_size, args.skip_auth_check)
+        except dependencies.exceptions.SsoLoginError as exc:
+            _LOGGER.exception("Export aborted: %s", exc)
+            return 1
+        _LOGGER.info("Wrote %d table(s) DDL to %s", len(tables), output_path)
         return 0
-
-    if not args.skip_auth_check and not dependencies.athena_cli_common.ensure_sso_or_log_failure(run_config, _LOGGER):
-        return 1
-
-    executor, downloader = dependencies.athena_cli_common.build_executor(run_config)
-
-    tables = requested_tables
-    if tables is None:
-        tables = discover_tables(executor, downloader, args.database)
-        _LOGGER.info("Discovered %d tables in %s", len(tables), args.database)
-
-    if args.dry_run:
-        for table in tables:
-            print(table)
-        return 0
-
-    output_path = args.output or str(Path(args.output_dir) / f"{args.database}_table_ddl.csv")
-    context = ExportContext(
-        executor=executor,
-        downloader=downloader,
-        run_config=run_config,
-        database=args.database,
-    )
-    try:
-        export_table_ddl(context, tables, output_path, args.batch_size, args.skip_auth_check)
-    except dependencies.exceptions.SsoLoginError as exc:
-        _LOGGER.exception("Export aborted: %s", exc)
-        return 1
-    _LOGGER.info("Wrote %d table(s) DDL to %s", len(tables), output_path)
-    return 0
+    finally:
+        _LOGGER.info("Run finished")
 
 
 if __name__ == "__main__":
