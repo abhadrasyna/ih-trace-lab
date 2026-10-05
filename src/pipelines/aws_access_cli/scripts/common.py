@@ -36,6 +36,7 @@ from src.pipelines.aws_access_cli.runtime import (
 )
 from src.pipelines.aws_access_cli.shaka_errors import (
     build_shaka_error_report,
+    pivot_error_counts,
 )
 from src.pipelines.aws_access_cli.shaka_errors import (
     resolve_filename as resolve_shaka_filename,
@@ -160,13 +161,22 @@ def _batched(values: list[str], batch_size: int = _SESSION_ID_BATCH_SIZE) -> lis
     return [values[index : index + batch_size] for index in range(0, len(values), batch_size)]
 
 
-def _is_monthly_append(artifact: str, *, period: str, start_date: str, end_date: str) -> bool:
-    """Whether `artifact`'s `--period day` run should append into its month file.
+def _uses_append_store(artifact: str, *, period: str, start_date: str, end_date: str) -> bool:
+    """Whether `artifact`'s run should upsert its one date-keyed row-set via `MonthlyCsvStore`
+    instead of writing a fresh per-run snapshot/range file.
 
-    Only a single-date `day` run can be merged into one date-keyed row-set; week/month runs
-    already aggregate the whole range into one fixed-name file, unchanged.
+    `day` runs append into a month-scoped file (one row per date, reset every calendar month);
+    `week`/`month` runs append into a single perpetual file per tenant/cadence that accrues one
+    row per run forever -- matching the pre-migration repo's weekly/monthly accumulation
+    convention (see `docs/archive/src-lib-migration/`). Either way, each run still produces
+    exactly one date's row-set, so the same upsert-by-date primitive applies to all three
+    periods; only the target filename differs (see `_resolve_output_path`).
     """
-    return period == "day" and start_date == end_date and artifact in _MONTHLY_APPEND_ARTIFACTS
+    if artifact not in _MONTHLY_APPEND_ARTIFACTS:
+        return False
+    if period == "day":
+        return start_date == end_date
+    return period in ("week", "month")
 
 
 def _resolve_output_path(
@@ -179,11 +189,42 @@ def _resolve_output_path(
     period: str,
     snapshot_filename: str,
 ) -> Path:
-    if _is_monthly_append(artifact, period=period, start_date=start_date, end_date=end_date):
-        filename = resolver.format_month_filename(datetime.strptime(start_date, "%Y-%m-%d").date(), artifact)
+    if _uses_append_store(artifact, period=period, start_date=start_date, end_date=end_date):
+        if period == "day":
+            filename = resolver.format_month_filename(datetime.strptime(start_date, "%Y-%m-%d").date(), artifact)
+        else:
+            filename = resolver.format_perpetual_filename(artifact)
     else:
         filename = snapshot_filename
     return _base_output_dir(args, period) / filename
+
+
+def _existing_header_columns(reader: Any, path: Path, *, date_field: str = "session_date") -> list[str]:
+    """Reads `path`'s current data-row keys (if it exists), minus `date_field`, to seed a pivot's
+    "columns this file has already discovered" set -- so a later run preserves their established
+    position instead of only relying on `known_error_codes`.
+    """
+    if not path.is_file():
+        return []
+    first_row = next(iter(reader.read_rows(str(path))), None)
+    return [key for key in (first_row or {}) if key != date_field]
+
+
+# Columns the old (pre-pivot) long-format Shaka append files used -- if a target file's header
+# still has these, it predates the wide-pivot fix and must not be fed into `pivot_error_counts`
+# as if they were error-code columns, or every subsequent row would get a spurious "0" "errorcode"
+# /"metric_value"/"report_name" column and silently corrupt the file.
+_LEGACY_SHAKA_LONG_FORMAT_COLUMNS = frozenset({"errorcode", "metric_value", "report_name"})
+
+
+def _existing_shaka_pivot_columns(reader: Any, path: Path) -> list[str]:
+    columns = _existing_header_columns(reader, path)
+    if _LEGACY_SHAKA_LONG_FORMAT_COLUMNS.intersection(columns):
+        raise ValueError(
+            f"{path} still has the old long-format Shaka columns {sorted(_LEGACY_SHAKA_LONG_FORMAT_COLUMNS.intersection(columns))!r}; "
+            "delete or migrate this file before appending pivoted (wide-format) rows into it."
+        )
+    return columns
 
 
 def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[MetricSpec, ...]) -> int:
@@ -204,7 +245,7 @@ def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[Me
     catalog = QueryCatalog()
     athena = make_athena_client(_runtime_from_args(args), tenant.database)
     rows = build_adoption_report(athena, catalog, tenant, start_date, end_date, period=period, metrics=metrics, table_override=args.table)
-    if _is_monthly_append(artifact, period=period, start_date=start_date, end_date=end_date):
+    if _uses_append_store(artifact, period=period, start_date=start_date, end_date=end_date):
         fieldnames = ["session_date", *[metric.column_header for metric in metrics]]
         MonthlyCsvStore(make_csv_reader(), make_csv_writer()).replace_date(output_path, start_date, rows, field_order=fieldnames)
     else:
@@ -239,10 +280,11 @@ def run_shaka_cli(argv: list[str] | None, *, artifact: str, by: str) -> int:
         by=by,
         table_override=args.table,
     )
-    if _is_monthly_append(artifact, period=period, start_date=start_date, end_date=end_date):
-        MonthlyCsvStore(make_csv_reader(), make_csv_writer()).replace_date(
-            output_path, start_date, rows, field_order=["session_date", "errorcode", "metric_value", "report_name"]
-        )
+    if _uses_append_store(artifact, period=period, start_date=start_date, end_date=end_date):
+        reader = make_csv_reader()
+        existing_columns = _existing_shaka_pivot_columns(reader, output_path)
+        pivoted_row = pivot_error_counts(rows, start_date, existing_columns=existing_columns)
+        MonthlyCsvStore(reader, make_csv_writer()).replace_date(output_path, start_date, [pivoted_row])
     else:
         write_shaka_report(output_path, make_csv_writer(), rows)
     _maybe_print_preview(rows, enabled=args.preview)

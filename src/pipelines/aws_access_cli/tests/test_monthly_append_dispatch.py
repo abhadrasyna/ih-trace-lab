@@ -103,3 +103,97 @@ def test_position_report_artifact_keeps_per_day_snapshot(tmp_path: Path, monkeyp
 
     assert (tmp_path / "ZA" / "daily" / "2026-08-01_shaka-1xxx-position-report.csv").is_file()
     assert not (tmp_path / "ZA" / "daily" / "2026-08_shaka-1xxx-position-report.csv").is_file()
+
+
+def test_adoption_report_week_run_appends_into_perpetual_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [{"session_date": "2026-08-03", "Home": "7"}]
+    _patch_common_collaborators(monkeypatch, rows=rows)
+    monkeypatch.setattr(common, "build_adoption_report", lambda *_args, **_kwargs: rows)
+
+    common.run_adoption_cli(
+        ["--week", "2026-08-03", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)],
+        artifact="adoption-report",
+        metrics=adoption.HOUSEHOLD_METRICS,
+    )
+
+    perpetual_file = tmp_path / "ZA" / "weekly" / "adoption-report.csv"
+    range_file = tmp_path / "ZA" / "weekly" / "2026-08-03_2026-08-09_adoption-report.csv"
+    assert perpetual_file.is_file()
+    assert not range_file.is_file()
+
+
+def test_adoption_report_month_rerun_does_not_duplicate_rows_in_perpetual_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [{"session_date": "2026-08-01", "Home": "7"}]
+    _patch_common_collaborators(monkeypatch, rows=rows)
+    monkeypatch.setattr(common, "build_adoption_report", lambda *_args, **_kwargs: rows)
+    argv = ["--month", "2026-08", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)]
+
+    common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+    common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+
+    perpetual_file = tmp_path / "ZA" / "monthly" / "adoption-report.csv"
+    assert perpetual_file.read_text(encoding="utf-8").count("2026-08-01") == 1
+
+
+def test_shaka_error_session_week_run_pivots_into_wide_perpetual_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [{"session_date": "2026-08-03", "errorcode": "1003", "metric_value": "4", "report_name": "shaka_error_session"}]
+    _patch_common_collaborators(monkeypatch, rows=rows)
+    monkeypatch.setattr(common, "build_shaka_error_report", lambda *_args, **_kwargs: rows)
+
+    common.run_shaka_cli(
+        ["--week", "2026-08-03", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)],
+        artifact="shaka-error-session",
+        by="session",
+    )
+
+    perpetual_file = tmp_path / "ZA" / "weekly" / "shaka-error-session.csv"
+    content = perpetual_file.read_text(encoding="utf-8")
+    assert "errorcode" not in content  # pivoted wide, not the long raw-row shape
+    assert "1001,1002,1003" in content.splitlines()[0]
+    assert content.splitlines()[1].split(",")[0] == "2026-08-03"
+
+
+def test_shaka_error_session_second_month_preserves_newly_discovered_column(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_common_collaborators(monkeypatch, rows=[])
+    argv = ["--month", "2026-08", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)]
+
+    monkeypatch.setattr(
+        common,
+        "build_shaka_error_report",
+        lambda *_args, **_kwargs: [{"session_date": "2026-08-01", "errorcode": "9999", "metric_value": "2", "report_name": "shaka_error_session"}],
+    )
+    common.run_shaka_cli(argv, artifact="shaka-error-session", by="session")
+
+    monkeypatch.setattr(
+        common,
+        "build_shaka_error_report",
+        lambda *_args, **_kwargs: [{"session_date": "2026-09-01", "errorcode": "1001", "metric_value": "1", "report_name": "shaka_error_session"}],
+    )
+    common.run_shaka_cli(
+        ["--month", "2026-09", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)],
+        artifact="shaka-error-session",
+        by="session",
+    )
+
+    perpetual_file = tmp_path / "ZA" / "monthly" / "shaka-error-session.csv"
+    lines = perpetual_file.read_text(encoding="utf-8").splitlines()
+    header = lines[0]
+    assert header.endswith("9999")
+    second_row = next(line for line in lines[1:] if line.startswith("2026-09-01"))
+    assert second_row.endswith(",0")  # 9999 not seen this month -> zero-filled, column still kept
+
+
+def test_shaka_error_cli_refuses_to_append_onto_a_stale_long_format_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    stale_file = tmp_path / "ZA" / "daily" / "2026-08_shaka-error-session.csv"
+    stale_file.parent.mkdir(parents=True)
+    stale_file.write_text("session_date,errorcode,metric_value,report_name\n2026-08-01,1003,4,shaka_error_session\n", encoding="utf-8")
+    rows = [{"session_date": "2026-08-02", "errorcode": "1003", "metric_value": "4", "report_name": "shaka_error_session"}]
+    _patch_common_collaborators(monkeypatch, rows=rows)
+    monkeypatch.setattr(common, "build_shaka_error_report", lambda *_args, **_kwargs: rows)
+
+    with pytest.raises(ValueError, match="long-format"):
+        common.run_shaka_cli(
+            ["--date", "2026-08-02", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)],
+            artifact="shaka-error-session",
+            by="session",
+        )

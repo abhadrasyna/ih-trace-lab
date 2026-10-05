@@ -131,6 +131,14 @@ class YamlPathResolver(PathResolver):
     def format_month_filename(self, as_of: date, artifact: str, *, extension: str = "csv") -> str:
         return f"{as_of:%Y-%m}_{artifact}.{self._normalize_extension(extension)}"
 
+    def format_perpetual_filename(self, artifact: str, *, extension: str = "csv") -> str:
+        """Undated `<artifact>.<ext>` name for week/month reports that accrue one row per run,
+        forever, in a single file per tenant/cadence -- matching the pre-migration repo's
+        weekly/monthly accumulation convention (see `docs/archive/src-lib-migration/`), just
+        with this repo's established kebab-case artifact names rather than the old snake_case.
+        """
+        return f"{artifact}.{self._normalize_extension(extension)}"
+
     def _format_path(self, template: str, *, root_name: str, **values: Any) -> Path:
         sanitized = self._sanitize_path_values(values)
         formatted = template.format(

@@ -15,6 +15,27 @@ from src.pipelines.aws_access_cli.tenants import TenantConfig
 _ERROR_CODES = [str(code) for code in range(1001, 1011)]
 LOGGER = logging.getLogger(__name__)
 
+# Fixed, default report-column order for Shaka error-code reports, ported verbatim from the
+# pre-migration `scripts/athena_runner/shaka_errors/constants.py::KNOWN_ERROR_CODES` (see
+# `docs/archive/src-lib-migration/`). Any error code encountered that isn't in this list is still
+# reported -- `pivot_error_counts` appends it as a new column instead of dropping it.
+KNOWN_ERROR_CODES: tuple[str, ...] = (
+    "1001",
+    "1002",
+    "1003",
+    "3014",
+    "3015",
+    "3016",
+    "4032",
+    "6001",
+    "6002",
+    "6006",
+    "6007",
+    "6012",
+    "7000",
+    "E31012",
+)
+
 
 def _iso_date(value: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()
@@ -145,6 +166,44 @@ def build_error_1xxx_session_ids(
         extra={"tenant": tenant.code, "report": "shaka_error_session_ids", "row_count": len(rows)},
     )
     return rows
+
+
+def pivot_error_counts(
+    rows: list[dict[str, str]],
+    date_value: str,
+    *,
+    known_error_codes: tuple[str, ...] = KNOWN_ERROR_CODES,
+    existing_columns: list[str] = (),
+) -> dict[str, str]:
+    """Pivots one period's long-format `{errorcode, metric_value}` rows into one wide report row.
+
+    Ports the pre-migration `shaka_errors/column_merge.py::merge_counts_into_report`'s column
+    order and zero-fill rules exactly: `known_error_codes` always come first, in that fixed
+    order; any column this file has already discovered (`existing_columns`, read from its
+    current header) keeps its established position; any brand-new code in `rows` that isn't in
+    either set is appended, sorted, at the end. Every resulting column gets an explicit value for
+    `date_value` -- "0" if that code didn't occur this period -- since `MonthlyCsvStore` only
+    zero-fills column gaps for *other* dates' rows already in the file, not the one being written
+    here.
+
+    `rows` is expected to already carry one entry per distinct `errorcode` (the Athena query
+    `GROUP BY`s on it), but any row with a missing/blank `errorcode` is dropped rather than
+    turned into a malformed column, and duplicate `errorcode`s (if the caller ever passes
+    unaggregated rows) are summed rather than silently overwriting one another.
+    """
+    counts: dict[str, int] = {}
+    for row in rows:
+        errorcode = row.get("errorcode")
+        if not errorcode:
+            continue
+        counts[errorcode] = counts.get(errorcode, 0) + int(row.get("metric_value") or 0)
+    ordered_columns = list(known_error_codes)
+    for column in existing_columns:
+        if column not in ordered_columns:
+            ordered_columns.append(column)
+    new_codes = sorted(code for code in counts if code not in ordered_columns)
+    ordered_columns.extend(new_codes)
+    return {"session_date": date_value, **{column: str(counts.get(column, 0)) for column in ordered_columns}}
 
 
 def resolve_filename(resolver: PathResolver, artifact: str, *, start_date: str, end_date: str, period: str) -> str:

@@ -104,10 +104,17 @@
 - `src/lib/csv_io/monthly_store.py` (`MonthlyCsvStore`) — restores the pre-migration `AdoptionReportStore`'s "append one day's row(s) into a running month file" behavior that
   `aws-access-cli-pipeline-migration` had dropped in favor of a brand-new per-day snapshot CSV for every artifact. `replace_date(path, date, rows)` drops any existing rows for that date before
   appending the new ones (so reruns never duplicate), and works for both the wide one-row-per-date shape (adoption reports) and the long multi-row-per-date shape (Shaka error reports) since it just
-  unions fieldnames rather than assuming a schema. `PathResolver.format_month_filename` (new) names these `<yyyy-mm>_<artifact>.csv`, keeping the new kebab-case artifact-naming convention rather than
-  reverting to the old `<yyyymm>_<artifact_with_underscores>` style. Wired into `scripts/common.py`'s `run_adoption_cli`/`run_shaka_cli` for exactly 5 artifacts (`adoption-report`,
-  `adoption-session-report`, `guest-session-report`, `shaka-error-hhid`, `shaka-error-session`) when `--period day` resolves to a single date — matching the 5 old
-  `aws-access-cli/output/ZA/daily/202608_*.csv` month files the user pointed to; gap-analysis artifacts and the position report are unaffected and keep one file per day.
+  unions fieldnames rather than assuming a schema. `PathResolver.format_month_filename` names these `<yyyy-mm>_<artifact>.csv` for `--period day` runs; `PathResolver.format_perpetual_filename` (new)
+  names an undated `<artifact>.csv` for `--period week`/`month` runs -- one file per tenant/cadence that accrues one row per run forever, matching the pre-migration repo's weekly/monthly accumulation
+  convention, again keeping the new kebab-case artifact-naming convention rather than the old underscored style. `scripts/common.py`'s `_uses_append_store` (renamed from `_is_monthly_append`,
+  broadened from day-only) now routes all three periods for the same 5 artifacts (`adoption-report`, `adoption-session-report`, `guest-session-report`, `shaka-error-hhid`, `shaka-error-session`)
+  through `MonthlyCsvStore`, pointed at the month-file (day) or perpetual-file (week/month); gap-analysis artifacts and the position report are unaffected and keep one file per run.
+- `src/pipelines/aws_access_cli/shaka_errors.py` (`KNOWN_ERROR_CODES`, `pivot_error_counts`) — ports the pre-migration `shaka_errors/column_merge.py`'s pivot: Shaka error reports are produced
+  long-format (one row per errorcode) by `build_shaka_error_report`, but the on-disk file must be wide (one row per date, one column per errorcode), matching old `aws-access-cli` output exactly.
+  `pivot_error_counts` orders columns as the 14 fixed `KNOWN_ERROR_CODES` first, then any column the target file has already discovered (read from its current header via
+  `scripts/common.py::_existing_header_columns` before pivoting, so a previously-added code keeps its position), then brand-new codes this run (sorted) appended last; every column gets an explicit
+  value for the date being written ("0" if that code didn't occur), while older rows missing a newly-discovered column stay blank via `MonthlyCsvStore`'s own union/`DictWriter` defaults -- reproducing
+  the old repo's column_merge output byte-for-byte. Wired into `run_shaka_cli` for all three periods.
 - `docs/plan/reference-code-gap-migration/` — **epic** (promoted from a single story by its own GAP-1 task, 2026-09-30): ports the 10 `github_copilot` projects (~166 Python files) that neither
   `pipeline-migration` nor `src-lib-migration` cover, into 10 sub-stories tiered by effort/blocking (`README.md`'s decision log) — Tier 1 cheap (`applause-investigation-migration`,
   `astro-events-household-investigation-migration`, `shaka-6001-sa-investigation-migration`, `root-scripts-tool-migration`), Tier 2 medium (`vod-asset-ingestion-investigation-migration`,
