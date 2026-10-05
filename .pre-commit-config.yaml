@@ -21,6 +21,7 @@ repos:
         entry: python scripts/dev/hooks/review_py_with_copilot.py
         files: '\.py$'
         pass_filenames: true
+        require_serial: true
         verbose: true
 
       - id: story-archive-check

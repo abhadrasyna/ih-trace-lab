@@ -101,6 +101,13 @@
   duplicated executor/auth/SQL/output logic with `src/lib/*`, `query-catalog`, and `project-taxonomy` PT-7's ISO-prefix path convention respectively. Both stories ran in parallel in isolated git
   worktrees (2026-10-03). `ctap-smvod-investigation-migration` is **done** (CSM-1..7, 57 tests passing); `aws-access-cli-pipeline-migration` is implemented through AAM-4 and AAM-6 (25 tests passing),
   with AAM-5 (PT-6 cron-cutover for the 3 live crontab entries) left open — `Owner: human (crontab access required)`, operator runbook in that story's own `session-log.md`.
+- `src/lib/csv_io/monthly_store.py` (`MonthlyCsvStore`) — restores the pre-migration `AdoptionReportStore`'s "append one day's row(s) into a running month file" behavior that
+  `aws-access-cli-pipeline-migration` had dropped in favor of a brand-new per-day snapshot CSV for every artifact. `replace_date(path, date, rows)` drops any existing rows for that date before
+  appending the new ones (so reruns never duplicate), and works for both the wide one-row-per-date shape (adoption reports) and the long multi-row-per-date shape (Shaka error reports) since it just
+  unions fieldnames rather than assuming a schema. `PathResolver.format_month_filename` (new) names these `<yyyy-mm>_<artifact>.csv`, keeping the new kebab-case artifact-naming convention rather than
+  reverting to the old `<yyyymm>_<artifact_with_underscores>` style. Wired into `scripts/common.py`'s `run_adoption_cli`/`run_shaka_cli` for exactly 5 artifacts (`adoption-report`,
+  `adoption-session-report`, `guest-session-report`, `shaka-error-hhid`, `shaka-error-session`) when `--period day` resolves to a single date — matching the 5 old
+  `aws-access-cli/output/ZA/daily/202608_*.csv` month files the user pointed to; gap-analysis artifacts and the position report are unaffected and keep one file per day.
 - `docs/plan/reference-code-gap-migration/` — **epic** (promoted from a single story by its own GAP-1 task, 2026-09-30): ports the 10 `github_copilot` projects (~166 Python files) that neither
   `pipeline-migration` nor `src-lib-migration` cover, into 10 sub-stories tiered by effort/blocking (`README.md`'s decision log) — Tier 1 cheap (`applause-investigation-migration`,
   `astro-events-household-investigation-migration`, `shaka-6001-sa-investigation-migration`, `root-scripts-tool-migration`), Tier 2 medium (`vod-asset-ingestion-investigation-migration`,

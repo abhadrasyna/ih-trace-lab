@@ -128,6 +128,9 @@ class YamlPathResolver(PathResolver):
     def format_rollup_filename(self, artifact: str, *, extension: str = "csv") -> str:
         return f"{artifact}_rollup.{self._normalize_extension(extension)}"
 
+    def format_month_filename(self, as_of: date, artifact: str, *, extension: str = "csv") -> str:
+        return f"{as_of:%Y-%m}_{artifact}.{self._normalize_extension(extension)}"
+
     def _format_path(self, template: str, *, root_name: str, **values: Any) -> Path:
         sanitized = self._sanitize_path_values(values)
         formatted = template.format(

@@ -11,7 +11,14 @@ large, the hook skips (exit 0) rather than blocking — this is an advisory safe
 on top of human review, not a hard gate that should ever wedge a commit shut. The
 ``py-code-review`` hook entry sets ``verbose: true`` so these skip messages (and an
 "inconclusive, allowing through" warning) are visible even when the hook exits 0,
-not only on failure.
+not only on failure. The hook entry also sets ``require_serial: true``: pre-commit's
+default parallel ``xargs``-style batching splits the staged file list into
+``target_concurrency`` partitions even when none of them are close to the OS
+argument-length limit (one partition per available CPU core), which would hand each
+reviewer call only a *subset* of the staged ``.py`` files' diff -- e.g. a new module
+in one partition and the test file that imports it in another -- producing
+false-positive "this import/caller isn't in the diff" findings. ``require_serial``
+forces a single invocation so every reviewer call sees the complete staged diff.
 
 The diff is wrapped in a per-run random-token delimiter so staged content can't
 forge a fake "end of diff" plus injected instructions, and only tools with no

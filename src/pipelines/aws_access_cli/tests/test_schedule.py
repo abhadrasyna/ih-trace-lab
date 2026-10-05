@@ -59,6 +59,10 @@ def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch
         def write_rows(self, *_args, **_kwargs) -> None:
             return None
 
+    class FakeReader:
+        def read_rows(self, *_args, **_kwargs):
+            return iter(())
+
     class FakeResolver:
         def format_snapshot_filename(self, *_args, **_kwargs) -> str:
             return "2026-10-03_adoption-report.csv"
@@ -66,11 +70,15 @@ def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch
         def format_range_filename(self, *_args, **_kwargs) -> str:
             return "2026-10-03_2026-10-03_adoption-report.csv"
 
+        def format_month_filename(self, *_args, **_kwargs) -> str:
+            return "2026-10_adoption-report.csv"
+
     monkeypatch.setattr(common, "make_auth", lambda: type("Auth", (), {"ensure_session": staticmethod(lambda _profile: None)})())
     monkeypatch.setattr(common, "make_athena_client", lambda *_args, **_kwargs: object())
     monkeypatch.setattr(common, "build_adoption_report", lambda *_args, **_kwargs: rows)
     monkeypatch.setattr(common, "make_path_resolver", lambda: FakeResolver())
     monkeypatch.setattr(common, "make_csv_writer", lambda: FakeWriter())
+    monkeypatch.setattr(common, "make_csv_reader", lambda: FakeReader())
     monkeypatch.setattr(common, "render_summary", lambda _rows: "summary")
     monkeypatch.setattr("builtins.print", lambda *args, **_kwargs: prints.append(args))
 

@@ -41,3 +41,6 @@ class PathResolver(Protocol):
 
     def format_rollup_filename(self, artifact: str, *, extension: str = "csv") -> str:
         ...
+
+    def format_month_filename(self, as_of: date, artifact: str, *, extension: str = "csv") -> str:
+        ...

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from src.lib.auth.sso import SsoAuth
-from src.lib.csv_io.csv_file import CsvFileWriter
+from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter
 from src.lib.paths.config import YamlPathResolver
 
 
@@ -32,6 +32,10 @@ def make_path_resolver() -> YamlPathResolver:
 
 def make_csv_writer() -> CsvFileWriter:
     return CsvFileWriter()
+
+
+def make_csv_reader() -> CsvFileReader:
+    return CsvFileReader()
 
 
 def make_auth() -> SsoAuth:

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from src.lib.csv_io.monthly_store import MonthlyCsvStore
 from src.lib.report_render.factory import make_report_writer
 from src.pipelines.aws_access_cli.adoption import (
     GAP_HOUSEHOLD_METRICS,
@@ -28,6 +29,7 @@ from src.pipelines.aws_access_cli.runtime import (
     RuntimeConfig,
     make_athena_client,
     make_auth,
+    make_csv_reader,
     make_csv_writer,
     make_path_resolver,
     repo_root,
@@ -45,6 +47,20 @@ from src.pipelines.aws_access_cli.tenants import TENANTS_BY_CODE, get_tenant
 
 DEFAULT_RUNTIME = RuntimeConfig()
 _SESSION_ID_BATCH_SIZE = 250
+# Artifacts whose `--period day` runs append into a single `<yyyy-mm>_<artifact>.csv` month
+# file (one row-set per date, upserted) instead of each day getting its own snapshot file --
+# matching the pre-migration `aws-access-cli`'s month-file behavior for these 5 reports (see
+# `docs/archive/src-lib-migration/`). Gap-analysis variants and the position report keep the
+# per-day snapshot file, unchanged.
+_MONTHLY_APPEND_ARTIFACTS = frozenset(
+    {
+        "adoption-report",
+        "adoption-session-report",
+        "guest-session-report",
+        "shaka-error-hhid",
+        "shaka-error-session",
+    }
+)
 
 
 def base_parser(description: str) -> argparse.ArgumentParser:
@@ -144,13 +160,39 @@ def _batched(values: list[str], batch_size: int = _SESSION_ID_BATCH_SIZE) -> lis
     return [values[index : index + batch_size] for index in range(0, len(values), batch_size)]
 
 
+def _is_monthly_append(artifact: str, *, period: str, start_date: str, end_date: str) -> bool:
+    """Whether `artifact`'s `--period day` run should append into its month file.
+
+    Only a single-date `day` run can be merged into one date-keyed row-set; week/month runs
+    already aggregate the whole range into one fixed-name file, unchanged.
+    """
+    return period == "day" and start_date == end_date and artifact in _MONTHLY_APPEND_ARTIFACTS
+
+
+def _resolve_output_path(
+    resolver: Any,
+    args: argparse.Namespace,
+    artifact: str,
+    *,
+    start_date: str,
+    end_date: str,
+    period: str,
+    snapshot_filename: str,
+) -> Path:
+    if _is_monthly_append(artifact, period=period, start_date=start_date, end_date=end_date):
+        filename = resolver.format_month_filename(datetime.strptime(start_date, "%Y-%m-%d").date(), artifact)
+    else:
+        filename = snapshot_filename
+    return _base_output_dir(args, period) / filename
+
+
 def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[MetricSpec, ...]) -> int:
     args = base_parser(f"Run {artifact}").parse_args(argv)
     start_date, end_date, period = resolve_range(args)
     tenant = get_tenant(args.tenant)
     resolver = make_path_resolver()
     filename = resolve_adoption_filename(resolver, artifact, start_date=start_date, end_date=end_date, period=period)
-    output_path = _base_output_dir(args, period) / filename
+    output_path = _resolve_output_path(resolver, args, artifact, start_date=start_date, end_date=end_date, period=period, snapshot_filename=filename)
     if args.dry_run:
         return _print_dry_run(
             artifact,
@@ -162,7 +204,11 @@ def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[Me
     catalog = QueryCatalog()
     athena = make_athena_client(_runtime_from_args(args), tenant.database)
     rows = build_adoption_report(athena, catalog, tenant, start_date, end_date, period=period, metrics=metrics, table_override=args.table)
-    write_adoption_report(output_path, make_csv_writer(), rows, metrics)
+    if _is_monthly_append(artifact, period=period, start_date=start_date, end_date=end_date):
+        fieldnames = ["session_date", *[metric.column_header for metric in metrics]]
+        MonthlyCsvStore(make_csv_reader(), make_csv_writer()).replace_date(output_path, start_date, rows, field_order=fieldnames)
+    else:
+        write_adoption_report(output_path, make_csv_writer(), rows, metrics)
     _maybe_print_preview(rows, enabled=args.preview)
     return 0
 
@@ -173,7 +219,7 @@ def run_shaka_cli(argv: list[str] | None, *, artifact: str, by: str) -> int:
     tenant = get_tenant(args.tenant)
     resolver = make_path_resolver()
     filename = resolve_shaka_filename(resolver, artifact, start_date=start_date, end_date=end_date, period=period)
-    output_path = _base_output_dir(args, period) / filename
+    output_path = _resolve_output_path(resolver, args, artifact, start_date=start_date, end_date=end_date, period=period, snapshot_filename=filename)
     if args.dry_run:
         return _print_dry_run(
             artifact,
@@ -193,7 +239,12 @@ def run_shaka_cli(argv: list[str] | None, *, artifact: str, by: str) -> int:
         by=by,
         table_override=args.table,
     )
-    write_shaka_report(output_path, make_csv_writer(), rows)
+    if _is_monthly_append(artifact, period=period, start_date=start_date, end_date=end_date):
+        MonthlyCsvStore(make_csv_reader(), make_csv_writer()).replace_date(
+            output_path, start_date, rows, field_order=["session_date", "errorcode", "metric_value", "report_name"]
+        )
+    else:
+        write_shaka_report(output_path, make_csv_writer(), rows)
     _maybe_print_preview(rows, enabled=args.preview)
     return 0
 

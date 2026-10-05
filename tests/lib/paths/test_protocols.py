@@ -74,6 +74,9 @@ class _ConformingPathResolver:
     def format_rollup_filename(self, artifact: str, *, extension: str = "csv") -> str:
         return f"{artifact}_rollup.{extension}"
 
+    def format_month_filename(self, as_of: date, artifact: str, *, extension: str = "csv") -> str:
+        return f"{as_of:%Y-%m}_{artifact}.{extension}"
+
 
 class _MissingRollupFormatter:
     def resolve_input_dir(self, tool: str, case_id: str, campaign: str | None = None) -> Path | None:
@@ -183,6 +186,12 @@ def test_format_rollup_filename_has_no_date(tmp_path: Path) -> None:
     resolver = _build_resolver(tmp_path)
 
     assert resolver.format_rollup_filename("position_report") == "position_report_rollup.csv"
+
+
+def test_format_month_filename_uses_year_month_prefix(tmp_path: Path) -> None:
+    resolver = _build_resolver(tmp_path)
+
+    assert resolver.format_month_filename(date(2026, 8, 15), "adoption-report") == "2026-08_adoption-report.csv"
 
 
 def test_conforming_stub_satisfies_path_resolver_protocol() -> None:

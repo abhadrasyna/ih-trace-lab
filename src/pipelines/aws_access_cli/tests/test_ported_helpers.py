@@ -61,6 +61,9 @@ class FakeResolver:
     def format_rollup_filename(self, artifact: str) -> str:
         return f"{artifact}_rollup.csv"
 
+    def format_month_filename(self, *_args, **_kwargs) -> str:
+        return "2026-10_adoption-report.csv"
+
 
 def test_resolve_range_expands_week_and_month() -> None:
     week_args = argparse.Namespace(
