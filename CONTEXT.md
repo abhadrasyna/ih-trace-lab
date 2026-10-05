@@ -114,7 +114,12 @@
   `pivot_error_counts` orders columns as the 14 fixed `KNOWN_ERROR_CODES` first, then any column the target file has already discovered (read from its current header via
   `scripts/common.py::_existing_header_columns` before pivoting, so a previously-added code keeps its position), then brand-new codes this run (sorted) appended last; every column gets an explicit
   value for the date being written ("0" if that code didn't occur), while older rows missing a newly-discovered column stay blank via `MonthlyCsvStore`'s own union/`DictWriter` defaults -- reproducing
-  the old repo's column_merge output byte-for-byte. Wired into `run_shaka_cli` for all three periods.
+  the old repo's column_merge output byte-for-byte. Wired into `run_shaka_cli` for all three periods. Because the legacy weekly/monthly Shaka files had already accumulated months of history before
+  this migration, any code they discovered only once keeps whatever column position it was first assigned back then -- an order this repo's brand-new, empty perpetual files can't rederive by sorting
+  alone (two codes "new" to *this* repo's file in the same run sort alphabetically, which only matches the legacy order by coincidence). `scripts/seed_shaka_perpetual_headers.py` is a one-time,
+  idempotent migration script that copies just the legacy file's header (no data rows) into this repo's perpetual file the first time it's created, so `_existing_shaka_pivot_columns` picks up the
+  legacy-established order from this repo's very first write; it never touches a perpetual file this repo has already started writing to. Already run once (2026-10-05) for all 4 tenants' weekly and
+  monthly `shaka-error-hhid`/`shaka-error-session` files.
 - `docs/plan/reference-code-gap-migration/` — **epic** (promoted from a single story by its own GAP-1 task, 2026-09-30): ports the 10 `github_copilot` projects (~166 Python files) that neither
   `pipeline-migration` nor `src-lib-migration` cover, into 10 sub-stories tiered by effort/blocking (`README.md`'s decision log) — Tier 1 cheap (`applause-investigation-migration`,
   `astro-events-household-investigation-migration`, `shaka-6001-sa-investigation-migration`, `root-scripts-tool-migration`), Tier 2 medium (`vod-asset-ingestion-investigation-migration`,
