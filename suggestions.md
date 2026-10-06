@@ -18,6 +18,7 @@
 | 5 | confirm-commit-sha-after-commit | After each commit, surface the resulting SHA in the user-facing summary instead of relying on git log output alone. | commit-hygiene | 2026-09-29 | 2026-10-02 |
 | 3 | context-md-not-read-on-query-sessions | Read and acknowledge CONTEXT.md at session start even for pure Q&A sessions with no code touched. | protocol-compliance | 2026-09-30 | 2026-10-04 |
 | 2 | avoid-repeated-read-agent-polling | After launching a sub-agent, wait for completion instead of polling `read_agent` for status-only updates. | token-efficiency | 2026-10-04 | 2026-10-04 |
+| 1 | avoid-tmp-for-commit-message-workaround | Never use `/tmp` to work around heredoc quoting for commit messages; fix quoting or use a repo path. | protocol-compliance | 2026-10-06 | 2026-10-06 |
 | 1 | amend-local-only-commits-for-sha-backfill | For an unpushed commit followed by a SHA-backfill doc edit, use `git commit --amend` to fold it in. | commit-hygiene | 2026-10-02 | 2026-10-02 |
 | 1 | minimize-context-in-subagent-delegation-prompts | When delegating to a self-extracting subagent, give a terse pointer, not a full summary. | token-efficiency | 2026-10-02 | 2026-10-02 |
 | 1 | avoid-git-reset-hard-for-revert | Use `git revert` (new commit) not `git reset --hard`, which discards uncommitted changes too. | commit-hygiene | 2026-09-29 | 2026-09-29 |
