@@ -61,6 +61,18 @@ Steps 2 and 3 are delegated for the same reason documented in `docs/archive/scra
 named, auditable step instead of an easy-to-skip intention. Once a match or near-match is found, apply `docs/archive/functional-code-taxonomy/`'s shared-vs-specific test: domain-mechanism code belongs
 in `src/lib/`, not as another copied local script.
 
+### Scaffolding a new investigation
+
+For a standalone case with no known campaign (step 5 above), run `scripts/dev/scaffold_investigation.py` instead of creating the folder by hand:
+
+```
+python scripts/dev/scaffold_investigation.py <case-id> [--title "Human-readable title"]
+```
+
+This creates `investigations/<case-id>/{docs,scripts,tests}` per Rule A, with a stub `docs/<case-id>-notes.md` pre-populated with the mandatory **Inputs used** block, and stages (`git add`) every
+created path — it does not commit. It never creates a `data/` folder; raw inputs still live under root `data/<case-id>/{har,lightstep,athena}/` only once a tool pull actually saves something. It
+refuses to run if `investigations/<case-id>/` already exists.
+
 ## Pipeline cron-cutover procedure
 
 `github_copilot/aws-access-cli` currently has three live system-crontab entries for daily, weekly, and monthly report jobs, each hardcoding that repo's path and `.venv`. Crontab is not git-tracked, so
