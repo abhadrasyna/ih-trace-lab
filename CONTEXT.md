@@ -5,6 +5,10 @@
 
 ## What Exists
 
+- `investigations/mtn-sa-span-attribute-audit/` — ad hoc audit of MTN SA Lightstep span attributes, driven live via the Lightstep MCP tools (tenant resolved through
+  `scripts/resolve_tenant.py`/`config/tenants.yaml` to Lightstep project `mcs-go-prod-iye9omdf-eu`, EU region). `docs/sample-span-ctap-server.md` and `docs/sample-span-households-core-server.md` each
+  capture one full span's attributes (identity, timing, tags, reporter/process info) pulled via `get_stored_trace`/`query_spans`; the second file also tallies a key-by-key diff against the first (48
+  common keys, 37 differing properties total). `docs/mtn-sa-span-attribute-audit-notes.md` is the investigation's still-TBD running-notes file.
 - `docs/refactor/` — a generic (Python-scoped) refactor playbook (`README.md` index + `design-principles.md`, `code-deduplication-and-taxonomy.md`, `planning-protocol.md`,
   `logging-and-correlation-id.md`, `process-discipline.md`, `python-hygiene-and-automation.md`, `architecture-diagrams.md`, `code-review-checklist.md`) distilling this repo's own `docs/archive/`,
   `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable method for refactoring a different ad hoc Python legacy tree later. No project-specific names (entities, tenants, repos) appear in it by
