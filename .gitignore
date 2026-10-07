@@ -13,3 +13,6 @@ __pycache__/
 htmlcov/
 logs/*.log
 data/
+
+# MonthlyCsvStore flock sidecar files
+output/**/*.lock

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -92,7 +93,7 @@ def test_run_daily_reports_force_only_on_target_date(monkeypatch: pytest.MonkeyP
     assert ["--force" in argv for argv in seen] == [False] * 7 + [True]
 
 
-def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     prints: list[tuple[object, ...]] = []
     rows = [{"session_date": "2026-10-03", "Home": "7"}]
 
@@ -123,12 +124,12 @@ def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(common, "render_summary", lambda _rows: "summary")
     monkeypatch.setattr("builtins.print", lambda *args, **_kwargs: prints.append(args))
 
-    assert common.run_adoption_cli(["--date", "2026-10-03", "--tenant", "ZA"], artifact="adoption-report", metrics=()) == 0
+    assert common.run_adoption_cli(["--date", "2026-10-03", "--tenant", "ZA", "--output-dir", str(tmp_path)], artifact="adoption-report", metrics=()) == 0
     assert prints == []
 
     assert (
         common.run_adoption_cli(
-            ["--date", "2026-10-03", "--tenant", "ZA", "--preview"],
+            ["--date", "2026-10-03", "--tenant", "ZA", "--preview", "--output-dir", str(tmp_path)],
             artifact="adoption-report",
             metrics=(),
         )
@@ -166,3 +167,8 @@ def test_run_daily_reports_force_survives_unpadded_date(monkeypatch: pytest.Monk
 
     run_daily_reports.main(["--date", "2026-10-7", "--force", "--lookback-days", "1"])
     assert ["--force" in argv for argv in seen] == [False, True]
+
+
+def test_adoption_cli_writes_under_given_output_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    test_run_adoption_cli_preview_off_by_default(monkeypatch, tmp_path)
+    assert (tmp_path / "ZA" / "daily" / "2026-10_adoption-report.csv").is_file()
