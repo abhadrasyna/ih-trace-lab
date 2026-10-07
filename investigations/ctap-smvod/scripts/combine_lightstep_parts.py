@@ -25,6 +25,25 @@ Days that were exported the old way (no _NN_ in the filename) are left
 completely untouched -- this script only ever acts on days that actually
 have numbered parts; it never replaces or re-derives an already-whole file.
 
+Combining parts is cheap (a few small CSVs), so once a date's canonical
+file has been produced by this script, every later run always (re)combines
+its numbered parts into it rather than trying to guess from file
+timestamps whether it's still up to date -- that avoids a whole class of
+staleness bugs a timestamp check can't reliably catch (a part deleted
+after combining, a part re-copied/unzipped with its original timestamp
+preserved so it looks *older* than the combined file, or a filesystem with
+only whole-second mtime resolution). A caller like run_pipeline.py's Step
+1b can therefore invoke this unconditionally, every run, and always get a
+combined file that reflects the parts currently on disk.
+
+"Produced by this script" is tracked with a sidecar manifest
+(YYYY-MM-DD_<artifact>.csv.combined-from.json) written next to each
+canonical file it creates. If a canonical file already exists WITHOUT that
+sidecar -- e.g. a manually exported whole-day file that happens to share a
+date with some numbered parts -- this script refuses to touch it and
+raises UnmanagedCombinedFileError instead, so a hand-exported file can
+never be silently overwritten/re-derived.
+
 Rows are merged by column NAME (csv.DictReader/DictWriter), not by raw line
 concatenation/position. This matters because real exports have been seen
 where one part's column order differs from another's (same column set,
@@ -37,12 +56,12 @@ Usage:
     python3 combine_lightstep_parts.py
     python3 combine_lightstep_parts.py --date 2026-10-03
     python3 combine_lightstep_parts.py --dry-run
-    python3 combine_lightstep_parts.py --force       # overwrite existing combined files
     python3 combine_lightstep_parts.py --remove-parts # delete part files after a successful combine
 """
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import re
@@ -59,12 +78,46 @@ ARTIFACTS = ("ctap", "smvod-ts", "smvod")  # smvod-ts before smvod: longer alter
 PART_FILE_RE = re.compile(
     r"^(?P<date>\d{4}-\d{2}-\d{2})_(?P<part>\d+)_(?P<artifact>" + "|".join(ARTIFACTS) + r")\.csv$"
 )
+SIDECAR_SUFFIX = ".combined-from.json"
 
 DEFAULT_INPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "lightstep")
 
 
 class ColumnMismatchError(ValueError):
     """Raised when two parts of the same (date, artifact) group have different column sets."""
+
+
+class UnmanagedCombinedFileError(RuntimeError):
+    """Raised when a canonical YYYY-MM-DD_<artifact>.csv already exists but wasn't produced by
+    this script (no sidecar manifest next to it) -- so it may be a manually exported whole-day
+    file that just happens to share a date with some numbered parts, and must never be silently
+    overwritten/re-derived.
+    """
+
+
+def _sidecar_path(out_path):
+    return out_path + SIDECAR_SUFFIX
+
+
+def _read_sidecar_parts(sidecar_path):
+    """Returns the sorted list of part basenames recorded in sidecar_path, or None if it
+    doesn't exist/isn't readable as the expected format.
+    """
+    if not os.path.exists(sidecar_path):
+        return None
+    try:
+        with open(sidecar_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return sorted(data["parts"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _write_sidecar(sidecar_path, part_basenames):
+    tmp_path = sidecar_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump({"parts": sorted(part_basenames)}, f)
+    os.replace(tmp_path, sidecar_path)
 
 
 def find_part_groups(input_dir, only_date=None):
@@ -116,8 +169,7 @@ def combine_parts(part_paths):
 def write_combined(out_path, fieldnames, rows):
     # Write to a same-directory temp file, then atomically rename into place. If this process is
     # interrupted (Ctrl-C, disk full, bad row) partway through, out_path either doesn't exist yet or
-    # still holds its previous complete contents -- never a truncated file that a later run's
-    # "already exists, skip" check would mistake for a finished combine.
+    # still holds its previous complete contents -- never a truncated/partial file.
     tmp_path = out_path + ".tmp"
     with open(tmp_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -132,7 +184,6 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input-dir", default=DEFAULT_INPUT_DIR, help="Directory holding the Lightstep CSV exports")
     ap.add_argument("--date", default=None, help="Only process this date (YYYY-MM-DD); default: all dates found")
-    ap.add_argument("--force", action="store_true", help="Overwrite an existing combined file if one is already present")
     ap.add_argument("--remove-parts", action="store_true", help="Delete the _NN_ part files after a successful combine")
     ap.add_argument("--dry-run", action="store_true", help="Print what would be combined without writing/deleting anything")
     args = ap.parse_args()
@@ -147,24 +198,32 @@ def main():
         return
 
     combined_count = 0
-    skipped_count = 0
     for (date, artifact), parts in sorted(groups.items()):
         out_path = os.path.join(input_dir, f"{date}_{artifact}.csv")
+        sidecar_path = _sidecar_path(out_path)
         part_paths = [p for _, p in parts]
         part_labels = [f"{num:02d}" for num, _ in parts]
 
-        if os.path.exists(out_path) and not args.force:
-            print(f"SKIP {date}_{artifact}: {out_path} already exists (parts: {part_labels}); use --force to overwrite")
-            skipped_count += 1
-            continue
+        if os.path.exists(out_path) and _read_sidecar_parts(sidecar_path) is None:
+            # out_path exists but has no (valid) sidecar -- it wasn't produced by this script,
+            # so it may be a manually exported whole-day file that happens to share a date with
+            # some numbered parts. Never silently overwrite/re-derive it.
+            raise UnmanagedCombinedFileError(
+                f"{out_path} already exists but wasn't produced by this script (no "
+                f"{os.path.basename(sidecar_path)} sidecar found) -- leaving it untouched. "
+                f"If it's safe to replace with the combined parts ({part_labels}), move/rename "
+                "it out of the way first, or remove it so this script can recreate it."
+            )
 
         fieldnames, rows = combine_parts(part_paths)
 
         if args.dry_run:
-            print(f"DRY-RUN would combine {date}_{artifact} parts {part_labels} ({len(rows)} rows) -> {out_path}")
+            verb = "re-combine" if os.path.exists(out_path) else "combine"
+            print(f"DRY-RUN would {verb} {date}_{artifact} parts {part_labels} ({len(rows)} rows) -> {out_path}")
             continue
 
         write_combined(out_path, fieldnames, rows)
+        _write_sidecar(sidecar_path, [os.path.basename(p) for p in part_paths])
         print(f"Combined {date}_{artifact} parts {part_labels} ({len(rows)} rows) -> {out_path}")
         LOGGER.info("Combined date=%s artifact=%s parts=%s rows=%d out=%s", date, artifact, part_labels, len(rows), out_path)
         combined_count += 1
@@ -174,12 +233,12 @@ def main():
                 os.remove(part_path)
             print(f"  removed {len(part_paths)} part file(s)")
 
-    LOGGER.info("Completed combine_lightstep_parts combined=%d skipped=%d", combined_count, skipped_count)
+    LOGGER.info("Completed combine_lightstep_parts combined=%d", combined_count)
 
 
 if __name__ == "__main__":
     try:
         main()
-    except ColumnMismatchError as exc:
+    except (ColumnMismatchError, UnmanagedCombinedFileError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)

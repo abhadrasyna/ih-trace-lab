@@ -83,13 +83,25 @@ def test_raises_on_mismatched_column_sets(tmp_path: Path) -> None:
     assert "extra_col" in str(exc_info.value)
 
 
-def test_skips_existing_combined_file_without_force(
+def test_rebuilds_a_combined_file_this_script_previously_produced(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    _write_csv(tmp_path / "2026-10-03_01_ctap.csv", ["lightstep.trace_id"], [["t1"]])
-    _write_csv(tmp_path / "2026-10-03_02_ctap.csv", ["lightstep.trace_id"], [["t2"]])
+    # run_pipeline.py's Step 1b re-invokes this script on every pipeline run,
+    # unconditionally. A combined file *this script produced* (tracked via its
+    # sidecar manifest) must always reflect the parts currently on disk -- not
+    # whatever was combined on a previous run -- so this never relies on
+    # mtimes (which can't reliably detect a deleted part, a re-copied part
+    # with its original timestamp preserved, or a same-second filesystem
+    # mtime collision).
+    part1 = tmp_path / "2026-10-03_01_ctap.csv"
+    part2 = tmp_path / "2026-10-03_02_ctap.csv"
+    _write_csv(part1, ["lightstep.trace_id"], [["t1"]])
+    _write_csv(part2, ["lightstep.trace_id"], [["t2"]])
     existing = tmp_path / "2026-10-03_ctap.csv"
-    _write_csv(existing, ["lightstep.trace_id"], [["stale"]])
+    _write_csv(existing, ["lightstep.trace_id"], [["stale"]])  # written last -> newest mtime
+    (tmp_path / "2026-10-03_ctap.csv.combined-from.json").write_text(
+        '{"parts": ["2026-10-03_01_ctap.csv", "2026-10-03_02_ctap.csv"]}'
+    )
 
     monkeypatch.setattr(
         sys, "argv", ["combine_lightstep_parts.py", "--input-dir", str(tmp_path)]
@@ -99,5 +111,34 @@ def test_skips_existing_combined_file_without_force(
     combine_lightstep_parts.main()
 
     with existing.open(newline="") as f:
-        assert list(csv.DictReader(f)) == [{"lightstep.trace_id": "stale"}]
-    assert "SKIP 2026-10-03_ctap" in capsys.readouterr().out
+        rows = list(csv.DictReader(f))
+    assert rows == [{"lightstep.trace_id": "t1"}, {"lightstep.trace_id": "t2"}]
+    assert "Combined 2026-10-03_ctap" in capsys.readouterr().out
+
+
+def test_refuses_to_overwrite_a_combined_file_without_a_sidecar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A YYYY-MM-DD_<artifact>.csv that exists but has no sidecar manifest wasn't
+    # produced by this script -- e.g. a manually exported whole-day file that
+    # happens to share a date with some stray numbered parts. It must never be
+    # silently overwritten.
+    part1 = tmp_path / "2026-10-03_01_ctap.csv"
+    part2 = tmp_path / "2026-10-03_02_ctap.csv"
+    _write_csv(part1, ["lightstep.trace_id"], [["t1"]])
+    _write_csv(part2, ["lightstep.trace_id"], [["t2"]])
+    existing = tmp_path / "2026-10-03_ctap.csv"
+    _write_csv(existing, ["lightstep.trace_id"], [["manually-exported-whole-day"]])
+
+    monkeypatch.setattr(
+        sys, "argv", ["combine_lightstep_parts.py", "--input-dir", str(tmp_path)]
+    )
+    monkeypatch.setattr(combine_lightstep_parts, "init_logging", Mock())
+
+    with pytest.raises(combine_lightstep_parts.UnmanagedCombinedFileError):
+        combine_lightstep_parts.main()
+
+    with existing.open(newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert rows == [{"lightstep.trace_id": "manually-exported-whole-day"}]
+

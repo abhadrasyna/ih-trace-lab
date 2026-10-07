@@ -4,6 +4,7 @@ Orchestrator for the CTAP/SM-VOD pipeline (BLUEPRINT.md Steps 2-6b), one
 command per date instead of copy-pasting the "Quick reference" block by
 hand. Runs, in order:
 
+    Step 1b combine_lightstep_parts.py     -- combine split _01/_02... Lightstep CSV parts, if any
     Step 2  merge_ctap_smvod_csv.py       -- base 3-way merge
     Step 3  run_athena_playback_outcome.py -- Athena playback outcome (optional, --skip-step3)
     Step 4  run_athena_debug_events.py     -- Athena error/lifecycle    (optional, --skip-step4)
@@ -16,10 +17,20 @@ Note: extract_position_report.py's --only-not-moved now defaults to on
 here if Step 6b's output needs to cover every session (e.g. before running
 Step 6c/7 by hand afterward).
 
-Step 1 (manually exporting the 3 Lightstep CSVs into data/lightstep/ as
-`YYYY-MM-DD_ctap.csv`, `YYYY-MM-DD_smvod.csv`, and
-`YYYY-MM-DD_smvod-ts.csv`) is NOT automated here -- it has no live API (see
-README.md §6) and must already be done before running this script.
+Step 1 (manually exporting the Lightstep CSVs into data/lightstep/) is NOT
+automated here -- it has no live API (see README.md §6) and must already be
+done before running this script. A high-volume day's export may come as
+numbered parts (`YYYY-MM-DD_01_ctap.csv`, `YYYY-MM-DD_02_ctap.csv`, ...,
+same for smvod/smvod-ts) instead of one whole-day file, if the Lightstep
+span-sample cap (~1000 rows) was hit. Step 1b (combine_lightstep_parts.py)
+runs automatically, every time, before Step 2's input check -- there is no
+separate manual recombination command to remember. It is a safe no-op for
+a date that has no numbered parts (nothing to combine). For a date that
+does have numbered parts, it always (re)combines them into the canonical
+file, even if one from a previous run is already there, so a part added,
+re-exported, or removed since the last run is always reflected rather than
+silently serving a stale combined file (see combine_lightstep_parts.py's
+module docstring for why this doesn't rely on file timestamps).
 
 Fails fast: stops at the first step whose exit code is non-zero, printing
 which step failed and its exit code, instead of silently continuing with
@@ -145,6 +156,12 @@ def _build_steps(args, date_iso: str):
 
     steps = [
         (
+            "Step 1b - combine split Lightstep CSV parts (combine_lightstep_parts.py)",
+            [py, os.path.join(SCRIPT_DIR, "combine_lightstep_parts.py"),
+             "--date", date_iso, "--input-dir", LIGHTSTEP_DIR],
+            False,
+        ),
+        (
             "Step 2 - base merge (merge_ctap_smvod_csv.py)",
             [py, os.path.join(SCRIPT_DIR, "merge_ctap_smvod_csv.py"), "--date", args.date],
             False,
@@ -218,13 +235,6 @@ def main():
         print(f"ERROR: --date must be DDMMYYYY, got '{args.date}'", file=sys.stderr)
         sys.exit(1)
 
-    if not args.dry_run:
-        try:
-            _ensure_step2_inputs_exist(args.date)
-        except FileNotFoundError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
-            sys.exit(1)
-
     steps = _build_steps(args, date_iso)
 
     if args.dry_run:
@@ -235,7 +245,7 @@ def main():
         LOGGER.info("Completed run_pipeline dry_run date=%s", args.date)
         return
 
-    for label, command, skip in steps:
+    for step_index, (label, command, skip) in enumerate(steps):
         if skip:
             print(f"==> {label}: SKIPPED", file=sys.stderr)
             continue
@@ -250,6 +260,18 @@ def main():
                 "past already-completed steps).",
                 file=sys.stderr)
             sys.exit(result.returncode)
+        if step_index == 0:
+            # Step 1b (always _build_steps' first entry) may have just created
+            # the canonical _ctap.csv/_smvod.csv files from numbered parts --
+            # validate *after* it runs, not before, so a date that only has
+            # parts (no whole-day file yet) isn't rejected before Step 1b gets
+            # a chance to produce them. Keyed on position, not the label text,
+            # so renaming Step 1b's label can't silently drop this check.
+            try:
+                _ensure_step2_inputs_exist(args.date)
+            except FileNotFoundError as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                sys.exit(1)
 
     print(f"\nPipeline complete for {args.date}.", file=sys.stderr)
     LOGGER.info("Completed run_pipeline date=%s", args.date)

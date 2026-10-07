@@ -79,8 +79,66 @@ def test_build_steps_passes_athena_output_dir(tmp_path: Path, monkeypatch: pytes
 
     steps = run_pipeline._build_steps(Args(), "2026-09-30")
 
-    assert ["--output-dir", str(athena_dir)] == steps[1][1][-2:]
+    assert steps[0][0].startswith("Step 1b")
     assert ["--output-dir", str(athena_dir)] == steps[2][1][-2:]
+    assert ["--output-dir", str(athena_dir)] == steps[3][1][-2:]
+
+
+def test_build_steps_step1b_combines_lightstep_parts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    lightstep_dir = tmp_path / "data" / "lightstep"
+    monkeypatch.setattr(run_pipeline, "LIGHTSTEP_DIR", str(lightstep_dir))
+
+    class Args:
+        date = "30092026"
+        profile = None
+        skip_auth_check = False
+        skip_if_exists = False
+        skip_step3 = True
+        skip_step4 = True
+        skip_step6b = True
+        skip_step6d = True
+        full_position_report = False
+
+    steps = run_pipeline._build_steps(Args(), "2026-09-30")
+
+    label, command, skip = steps[0]
+    assert label.startswith("Step 1b")
+    assert skip is False
+    assert command[1].endswith("combine_lightstep_parts.py")
+    assert command[-4:] == ["--date", "2026-09-30", "--input-dir", str(lightstep_dir)]
+
+
+def test_main_validates_inputs_after_step1b_not_before(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Edge case: a date that only has numbered parts (no whole-day _ctap.csv/
+    # _smvod.csv yet) must not be rejected before Step 1b runs -- Step 1b is
+    # what's expected to produce the whole-day files from the parts.
+    lightstep_dir = tmp_path / "data" / "lightstep"
+    lightstep_dir.mkdir(parents=True)
+    (lightstep_dir / "2026-09-30_01_ctap.csv").write_text("header\n", encoding="utf-8")
+    (lightstep_dir / "2026-09-30_01_smvod.csv").write_text("header\n", encoding="utf-8")
+    monkeypatch.setattr(run_pipeline, "LIGHTSTEP_DIR", str(lightstep_dir))
+    monkeypatch.setattr(sys, "argv", [
+        "run_pipeline.py", "--date", "30092026",
+        "--skip-step3", "--skip-step4", "--skip-step6b", "--skip-step6d",
+    ])
+    monkeypatch.setattr(run_pipeline, "init_logging", Mock())
+
+    def fake_subprocess_run(command, *args, **kwargs):
+        if command[1].endswith("combine_lightstep_parts.py"):
+            # Simulate what combine_lightstep_parts.py actually does: produce
+            # the whole-day files the numbered parts were split from.
+            (lightstep_dir / "2026-09-30_ctap.csv").write_text("header\n", encoding="utf-8")
+            (lightstep_dir / "2026-09-30_smvod.csv").write_text("header\n", encoding="utf-8")
+        return Mock(returncode=0)
+
+    monkeypatch.setattr(run_pipeline.subprocess, "run", fake_subprocess_run)
+
+    run_pipeline.main()
+
+    out = capsys.readouterr().err
+    assert "Pipeline complete for 30092026." in out
 
 
 def test_main_dry_run_calls_init_logging(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
@@ -91,4 +149,6 @@ def test_main_dry_run_calls_init_logging(monkeypatch: pytest.MonkeyPatch, capsys
     run_pipeline.main()
 
     init_logging.assert_called_once_with("ctap-smvod-run_pipeline")
-    assert "# Step 2 - base merge (merge_ctap_smvod_csv.py)" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "# Step 1b - combine split Lightstep CSV parts (combine_lightstep_parts.py)" in out
+    assert "# Step 2 - base merge (merge_ctap_smvod_csv.py)" in out
