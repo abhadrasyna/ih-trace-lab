@@ -6,6 +6,7 @@ from pathlib import Path
 from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter
 
 _FIXTURE_PATH = Path(__file__).parent / "fixtures" / "sample.csv"
+_BOM_QUOTED_HEADER_FIXTURE_PATH = Path(__file__).parent / "fixtures" / "bom_quoted_header.csv"
 
 
 def test_reader_reads_expected_rows() -> None:
@@ -37,6 +38,18 @@ def test_round_trip_write_then_read(tmp_path: Path) -> None:
     CsvFileWriter().write_rows(str(out_path), rows, fieldnames=["name", "count"])
 
     assert list(CsvFileReader().read_rows(str(out_path))) == rows
+
+
+def test_reader_strips_bom_and_parses_quoted_first_column() -> None:
+    # Regression test: a BOM immediately followed by a quote (`\ufeff"error_flag"`) must not leave
+    # the quote characters embedded in the parsed field name/value -- real Lightstep smvod-ts
+    # exports have exactly this shape for their first column.
+    rows = list(CsvFileReader().read_rows(str(_BOM_QUOTED_HEADER_FIXTURE_PATH)))
+
+    assert rows == [
+        {"error_flag": "false", "count": "3"},
+        {"error_flag": "true", "count": "5"},
+    ]
 
 
 def test_reader_raises_on_missing_file() -> None:

@@ -18,7 +18,14 @@ class CsvFileReader:
     def read_rows(self, path: str) -> Iterator[dict[str, str]]:
         # newline="" per the csv module's own documented recommendation, so it can handle
         # embedded newlines/line terminators itself rather than the platform's text-mode translation.
-        with open(path, newline="", encoding="utf-8") as handle:
+        # utf-8-sig (not plain utf-8): a leading BOM must be stripped *before* csv parsing sees the
+        # line, otherwise a BOM immediately followed by a quote (`\ufeffx"col"`) isn't recognized as
+        # the start of a quoted field -- the quote marks end up as literal characters in the first
+        # field's name/value instead of being parsed away. Seen in real Lightstep CSV exports whose
+        # first column is both BOM-prefixed and quoted (e.g. `"error_flag"` as the first header),
+        # which silently produced a mangled `'"error_flag"'` key and made every downstream lookup of
+        # that field return the fallback default.
+        with open(path, newline="", encoding="utf-8-sig") as handle:
             yield from csv.DictReader(handle)
 
 
