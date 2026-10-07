@@ -1,0 +1,116 @@
+# CTAP/SM-VOD script usage
+
+All commands run from `investigations/ctap-smvod/scripts/`. Dates are `DDMMYYYY` unless noted. Outputs go to `../output/` (per-date files are prefixed `YYYY-MM-DD_`), Athena pulls to
+`../data/athena/`.
+
+## 1. Full pipeline (one date)
+
+```bash
+python3 run_pipeline.py --date 06102026
+```
+
+Prerequisite: the Lightstep exports for the date already sit in `data/lightstep/` (`YYYY-MM-DD_ctap.csv`, `YYYY-MM-DD_smvod.csv`, optional `YYYY-MM-DD_smvod-ts.csv`). Step 1 is manual.
+
+| Step | Script | Writes |
+|---|---|---|
+| 1b | `combine_lightstep_parts.py` | `data/lightstep/YYYY-MM-DD_{ctap,smvod,smvod-ts}.csv` (only if numbered `_01_` parts exist) |
+| 2 | `merge_ctap_smvod_csv.py` | `output/YYYY-MM-DD_setupsession.csv` |
+| 3 | `run_athena_playback_outcome.py` | `data/athena/YYYY-MM-DD_session.csv` |
+| 4 | `run_athena_debug_events.py` | `data/athena/YYYY-MM-DD_debug_states.csv` |
+| 5 | `merge_session_outcome.py` | `output/YYYY-MM-DD_setupsession_with_outcome.csv` (the full report; source for everything below) |
+| 6b | `extract_position_report.py` | `output/YYYY-MM-DD_position_report.csv` |
+| 6e | `extract_error_report_1xxx_6xxx.py` | `output/YYYY-MM-DD_error_report_1xxx_6xxx.csv` |
+| 6d | `analyze_webview_devices.py` | `output/YYYY-MM-DD_webview_device_report.csv` |
+
+Variations:
+
+```bash
+python3 run_pipeline.py --date 06102026 --dry-run                    # print commands only, touch nothing
+python3 run_pipeline.py --date 06102026 --skip-step3 --skip-step4    # reuse existing Athena CSVs
+python3 run_pipeline.py --date 06102026 --skip-if-exists             # skip Athena per step only if its CSV exists
+python3 run_pipeline.py --date 06102026 --skip-step6b                # no position_report.csv
+python3 run_pipeline.py --date 06102026 --skip-step6e                # no 1xxx/6xxx error report
+python3 run_pipeline.py --date 06102026 --skip-step6d                # no webview device report
+python3 run_pipeline.py --date 06102026 --full-position-report       # position_report.csv with ALL sessions (needed for Steps 6c/7)
+python3 run_pipeline.py --date 06102026 --profile <aws-sso-profile> --skip-auth-check   # Athena auth passthrough (Steps 3/4)
+```
+
+The pipeline is per-date only; for a range, loop over dates or use the range-capable scripts below.
+
+## 2. Position report (`extract_position_report.py`)
+
+```bash
+python3 extract_position_report.py --date 06102026                       # only position_not_moved == true (default)
+python3 extract_position_report.py --date 06102026 --no-only-not-moved   # every session
+python3 extract_position_report.py --date 06102026 --error-code 1003     # only sessions containing code 1001-1010
+python3 extract_position_report.py --date 06102026 --columns sessionId,error_codes --out /tmp/x.csv
+```
+
+Writes `output/YYYY-MM-DD_position_report.csv` (or `--out`). Columns: householdId, deviceId, session.clientIp, sessionId, content_uuid, start_time, error_codes, error_descriptions, state_sequence,
+min_position, max_position, position_not_moved. Other options: `--input`.
+
+## 3. 1xxx/6xxx error report (`extract_error_report_1xxx_6xxx.py`)
+
+Same columns as the position report, but from the full `setupsession_with_outcome.csv` and filtered to sessions with an exact 4-digit `error_codes` token starting with 1 or 6 (e.g. 1003, 6001; not
+3016 or E31012). Not limited to position_not_moved. Reads existing files only (never calls Athena) and aborts listing any missing dates.
+
+```bash
+python3 extract_error_report_1xxx_6xxx.py --date 06102026                          # one CSV
+python3 extract_error_report_1xxx_6xxx.py --from 01102026 --to 06102026           # one XLSX, one sheet per date
+python3 extract_error_report_1xxx_6xxx.py --date 06102026 --out /tmp/e.csv --columns sessionId,error_codes
+```
+
+| Mode | Output |
+|---|---|
+| `--date D` | `output/YYYY-MM-DD_error_report_1xxx_6xxx.csv` |
+| `--from A --to B` | `output/A_B_error_report_1xxx_6xxx.xlsx` (ISO dates; sheets named `YYYY-MM-DD`) |
+
+Other options: `--output-dir`.
+
+## 4. Per-date and range analysis
+
+| Command | Writes |
+|---|---|
+| `python3 analyze_webview_devices.py --date 18092026` | `output/YYYY-MM-DD_webview_device_report.csv` |
+| `python3 analyze_webview_devices.py --start-date 2026-09-01 --end-date 2026-09-10` | one `YYYY-MM-DD_webview_device_report.csv` per date (range uses ISO dates) |
+| `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
+| `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |
+| `python3 build_webview_device_summary.py` | `output/webview_device_summary_report_rollup.csv` (from all `*_webview_device_report.csv`) |
+| `python3 analyze_outcome_report.py --date 18092026 [--out report.md]` | markdown to stdout, or `--out` file |
+
+## 5. Error-code filtering and CDN correlation (need the FULL position report)
+
+Run `run_pipeline.py ... --full-position-report` (or `extract_position_report.py --no-only-not-moved`) first.
+
+```bash
+# several dates -> one CSV of one error code (default 1003)
+python3 filter_error_code_report.py --dates 02082026,03082026 --error-code 1003
+
+# join with the CDN team export
+python3 correlate_cdn_ips.py --date 06102026 [--cdn-file F] [--position-report P] [--out O] [--escalation-out E]
+
+# roll up all escalation files
+python3 build_mtn_summary.py
+```
+
+| Script | Writes |
+|---|---|
+| `filter_error_code_report.py` | `output/A_B_position_report_<code>.csv` (A/B = first/last date, ISO) or `--out` |
+| `correlate_cdn_ips.py` | `output/YYYY-MM-DD_cdn_correlation.csv`, `output/YYYY-MM-DD_mtn_escalation_ips.csv` |
+| `build_mtn_summary.py` | `output/mtn_escalation_all_dates_rollup.csv`, `output/mtn_escalation_by_ip_summary_rollup.csv` |
+
+## 6. Individual pipeline steps (run by hand)
+
+```bash
+python3 combine_lightstep_parts.py [--date 2026-10-06] [--input-dir D] [--remove-parts] [--dry-run]   # date is ISO here
+python3 merge_ctap_smvod_csv.py --date 06102026 [--input-dir D] [--out O]
+python3 run_athena_playback_outcome.py --date 2026-10-06 [--profile P] [--dry-run] [--skip-auth-check]  # ISO date
+python3 run_athena_debug_events.py --date 2026-10-06 [--input F] [--profile P] [--dry-run] [--skip-auth-check]
+python3 merge_session_outcome.py --date 06102026 [--input-dir D] [--report R] [--out O]
+python3 lightstep_ctap_smvod_join.py --date 06102026 --org Synamedia-EU --project <project-id>   # live-API alternative to Step 2
+```
+
+## 7. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
+
+`extract_session_ids.py`, `extract_session_timeline.py`, `flatten_debug_events.py`, `build_debug_completeness_query.py`, `parse_debug_user_agents.py`, `analyze_debug_sample.py`,
+`analyze_errorcode_correlation.py`, `analyze_api_timing.py` (subcommands), `analyze_session_guard_net_latency.py` (subcommands), `process_traces.py`. Run any with `--help` for its arguments.
