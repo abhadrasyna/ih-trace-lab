@@ -17,6 +17,9 @@
   `logging-and-correlation-id.md`, `process-discipline.md`, `python-hygiene-and-automation.md`, `architecture-diagrams.md`, `code-review-checklist.md`) distilling this repo's own `docs/archive/`,
   `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable method for refactoring a different ad hoc Python legacy tree later. No project-specific names (entities, tenants, repos) appear in it by
   design — it is meant to be read by a future, unrelated Python project.
+- `docs/usage.md` — command reference for every `src/pipelines/aws_access_cli/scripts/` variant (daily/weekly/monthly orchestrators, historical backfills, single reports, catalog query, header
+  seeding). The daily/weekly/monthly orchestrators catch up missed periods by default (lookback 7 days / 4 weeks / 3 months; `--no-catch-up` and `--force` documented there); existing outputs are
+  skipped before Athena runs.
 - `.github/hooks/session-context.json` — a native Copilot CLI `sessionStart` hook (not a git hook) that auto-injects a short reminder into every new/resumed session: read `CONTEXT.md`, state
   `CONTEXT.md ✓`, confirm scope when files aren't named, and state a plan + wait for go-ahead before non-trivial changes. Added to cut the highest-recurrence rows in `suggestions.md`
   (`wait-for-explicit-go-ahead-before-editing`, `state-context-md-checkmark-explicitly`, etc.) at the source instead of only catching them after the fact in `session-close`. Injects a short pointer,
