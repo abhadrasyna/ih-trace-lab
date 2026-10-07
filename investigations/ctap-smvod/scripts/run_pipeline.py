@@ -10,6 +10,7 @@ hand. Runs, in order:
     Step 4  run_athena_debug_events.py     -- Athena error/lifecycle    (optional, --skip-step4)
     Step 5  merge_session_outcome.py       -- final merge
     Step 6b extract_position_report.py     -- position-check view       (optional, --skip-step6b)
+    Step 6e extract_error_report_1xxx_6xxx.py -- 1xxx/6xxx-only CSV   (optional, --skip-step6e)
     Step 6d analyze_webview_devices.py     -- WebView device reliability report (optional, --skip-step6d)
 
 Note: extract_position_report.py's --only-not-moved now defaults to on
@@ -188,6 +189,11 @@ def _build_steps(args, date_iso: str):
             args.skip_step6b,
         ),
         (
+            "Step 6e - 1xxx/6xxx error report (extract_error_report_1xxx_6xxx.py)",
+            [py, os.path.join(SCRIPT_DIR, "extract_error_report_1xxx_6xxx.py"), "--date", args.date],
+            args.skip_step6e,
+        ),
+        (
             "Step 6d - WebView device reliability report (analyze_webview_devices.py)",
             [py, os.path.join(SCRIPT_DIR, "analyze_webview_devices.py"), "--date", args.date],
             args.skip_step6d,
@@ -212,6 +218,8 @@ def main():
              "always re-firing Athena (the default). A date still missing "
              "either file fires Athena for that step as normal.")
     ap.add_argument("--skip-step6b", action="store_true", help="Skip Step 6b (position-check view)")
+    ap.add_argument("--skip-step6e", action="store_true",
+                     help="Skip Step 6e (1xxx/6xxx error report CSV)")
     ap.add_argument("--skip-step6d", action="store_true",
                      help="Skip Step 6d (WebView device reliability report)")
     ap.add_argument(

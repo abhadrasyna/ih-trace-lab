@@ -75,6 +75,7 @@ def test_build_steps_passes_athena_output_dir(tmp_path: Path, monkeypatch: pytes
         skip_step4 = False
         skip_step6b = False
         skip_step6d = False
+        skip_step6e = False
         full_position_report = False
 
     steps = run_pipeline._build_steps(Args(), "2026-09-30")
@@ -97,6 +98,7 @@ def test_build_steps_step1b_combines_lightstep_parts(tmp_path: Path, monkeypatch
         skip_step4 = True
         skip_step6b = True
         skip_step6d = True
+        skip_step6e = True
         full_position_report = False
 
     steps = run_pipeline._build_steps(Args(), "2026-09-30")
@@ -121,7 +123,7 @@ def test_main_validates_inputs_after_step1b_not_before(
     monkeypatch.setattr(run_pipeline, "LIGHTSTEP_DIR", str(lightstep_dir))
     monkeypatch.setattr(sys, "argv", [
         "run_pipeline.py", "--date", "30092026",
-        "--skip-step3", "--skip-step4", "--skip-step6b", "--skip-step6d",
+        "--skip-step3", "--skip-step4", "--skip-step6b", "--skip-step6d", "--skip-step6e",
     ])
     monkeypatch.setattr(run_pipeline, "init_logging", Mock())
 
