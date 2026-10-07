@@ -111,7 +111,8 @@
   with AAM-5 (PT-6 cron-cutover for the 3 live crontab entries) left open — `Owner: human (crontab access required)`, operator runbook in that story's own `session-log.md`.
 - `src/lib/csv_io/existing_output.py` (`csv_has_data`) — pre-flight "does this CSV already hold the data?" check (file exists with a data row, optionally for a given `session_date`). Every
   `aws_access_cli` runner in `scripts/common.py` and the `scripts/athena/*` exporters call it before firing Athena and skip unless `--force` is passed (also forwarded by the
-  daily/weekly/monthly/backfill wrappers).
+  daily/weekly/monthly/backfill wrappers). `investigations/ctap-smvod/scripts/run_athena_playback_outcome.py`/`run_athena_debug_events.py` do the same via `lib.runtime.should_skip_athena`, and
+  `run_pipeline.py --force` forwards the override.
 - `src/lib/csv_io/monthly_store.py` (`MonthlyCsvStore`) — restores the pre-migration `AdoptionReportStore`'s "append one day's row(s) into a running month file" behavior that
   `aws-access-cli-pipeline-migration` had dropped in favor of a brand-new per-day snapshot CSV for every artifact. `replace_date(path, date, rows)` drops any existing rows for that date before
   appending the new ones (so reruns never duplicate), and works for both the wide one-row-per-date shape (adoption reports) and the long multi-row-per-date shape (Shaka error reports) since it just
