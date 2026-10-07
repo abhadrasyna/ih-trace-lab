@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 from src.pipelines.aws_access_cli.tenants import TenantConfig, all_tenants
 
@@ -41,4 +42,45 @@ def run_for_all_tenants(
                 LOGGER.exception("Scheduled sub-report failed", extra={"tenant": tenant.code, "report": report.name})
                 result = 1
             exit_code = max(exit_code, result)
+    return exit_code
+
+
+def catch_up_days(anchor: str, lookback: int) -> list[str]:
+    """Dates from `anchor - lookback` through `anchor`, oldest first."""
+    end = datetime.strptime(anchor, "%Y-%m-%d").date()
+    return [(end - timedelta(days=n)).isoformat() for n in range(max(lookback, 0), -1, -1)]
+
+
+def catch_up_weeks(anchor: str, lookback: int) -> list[str]:
+    """Week-start dates from `anchor - lookback weeks` through `anchor`, oldest first."""
+    end = datetime.strptime(anchor, "%Y-%m-%d").date()
+    return [(end - timedelta(weeks=n)).isoformat() for n in range(max(lookback, 0), -1, -1)]
+
+
+def catch_up_months(anchor: str, lookback: int) -> list[str]:
+    """`YYYY-MM` values from `anchor - lookback months` through `anchor`, oldest first."""
+    end = datetime.strptime(f"{anchor}-01", "%Y-%m-%d").date()
+    index = end.year * 12 + end.month - 1
+    return [f"{(index - n) // 12:04d}-{(index - n) % 12 + 1:02d}" for n in range(max(lookback, 0), -1, -1)]
+
+
+def run_catch_up(
+    values: list[str],
+    build_argv: Callable[[str, TenantConfig], list[str]],
+    sub_reports: list[SubReport],
+    *,
+    preflight: Callable[[], None] | None = None,
+) -> int:
+    """Run every period in `values`; sub-reports skip periods whose output already has data."""
+    exit_code = 0
+    for position, value in enumerate(values):
+        LOGGER.info("Processing period", extra={"period_value": value})
+        exit_code = max(
+            exit_code,
+            run_for_all_tenants(
+                lambda tenant, value=value: build_argv(value, tenant),
+                sub_reports,
+                preflight=preflight if position == 0 else None,
+            ),
+        )
     return exit_code

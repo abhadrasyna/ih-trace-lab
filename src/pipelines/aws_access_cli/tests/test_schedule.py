@@ -43,12 +43,53 @@ def test_run_daily_reports_calls_init_logging(monkeypatch: pytest.MonkeyPatch) -
         return 0
 
     monkeypatch.setattr(run_daily_reports, "init_logging", fake_init_logging)
-    monkeypatch.setattr(run_daily_reports, "run_for_all_tenants", fake_run_for_all_tenants)
+    monkeypatch.setattr(schedule, "run_for_all_tenants", fake_run_for_all_tenants)
 
     result = run_daily_reports.main(["--date", "2026-10-03"])
 
     assert result == 0
-    assert events == ["init:aws-access-cli-daily-reports", "run"]
+    assert events == ["init:aws-access-cli-daily-reports"] + ["run"] * 8
+
+
+def test_catch_up_days_covers_gap_oldest_first() -> None:
+    days = schedule.catch_up_days("2026-10-07", 7)
+    assert days[0] == "2026-09-30"
+    assert days[-1] == "2026-10-07"
+    assert "2026-10-03" in days and len(days) == 8
+
+
+def test_catch_up_zero_lookback_is_single_period() -> None:
+    assert schedule.catch_up_days("2026-10-07", 0) == ["2026-10-07"]
+    assert schedule.catch_up_weeks("2026-10-05", 0) == ["2026-10-05"]
+    assert schedule.catch_up_months("2026-10", 0) == ["2026-10"]
+
+
+def test_catch_up_weeks_and_months_cross_year() -> None:
+    assert schedule.catch_up_weeks("2026-01-05", 2) == ["2025-12-22", "2025-12-29", "2026-01-05"]
+    assert schedule.catch_up_months("2026-01", 2) == ["2025-11", "2025-12", "2026-01"]
+
+
+def test_run_daily_reports_no_catch_up_runs_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+    monkeypatch.setattr(run_daily_reports, "init_logging", lambda _slug: "fcid")
+    monkeypatch.setattr(schedule, "run_for_all_tenants", lambda *_a, **_k: calls.append(1) or 0)
+
+    assert run_daily_reports.main(["--date", "2026-10-07", "--no-catch-up"]) == 0
+    assert len(calls) == 1
+
+
+def test_run_daily_reports_force_only_on_target_date(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[list[str]] = []
+
+    def fake(build_argv, *_a, **_k) -> int:
+        seen.append(build_argv(DEFAULT_TENANT))
+        return 0
+
+    monkeypatch.setattr(run_daily_reports, "init_logging", lambda _slug: "fcid")
+    monkeypatch.setattr(schedule, "run_for_all_tenants", fake)
+
+    run_daily_reports.main(["--date", "2026-10-07", "--force"])
+    assert ["--force" in argv for argv in seen] == [False] * 7 + [True]
 
 
 def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -116,3 +157,12 @@ def test_schedule_failure_logs_once_with_fcid(caplog: pytest.LogCaptureFixture, 
     assert len(error_records) == 1
     assert error_records[0].getMessage() == "Scheduled sub-report failed"
     assert error_records[0].fcid == fcid  # type: ignore[attr-defined]  # LogRecord extra attrs are set dynamically at runtime.
+
+
+def test_run_daily_reports_force_survives_unpadded_date(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[list[str]] = []
+    monkeypatch.setattr(run_daily_reports, "init_logging", lambda _slug: "fcid")
+    monkeypatch.setattr(schedule, "run_for_all_tenants", lambda build, *_a, **_k: seen.append(build(DEFAULT_TENANT)) or 0)
+
+    run_daily_reports.main(["--date", "2026-10-7", "--force", "--lookback-days", "1"])
+    assert ["--force" in argv for argv in seen] == [False, True]
