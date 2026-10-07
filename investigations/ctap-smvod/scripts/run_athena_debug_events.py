@@ -45,7 +45,7 @@ import extract_session_ids
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.query_catalog import render_query
-from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, investigation_output_dir, run_athena_query, snapshot_output_path
+from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, investigation_output_dir, run_athena_query, should_skip_athena, snapshot_output_path
 from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_athena_debug_events")
@@ -119,6 +119,7 @@ def main():
     ap.add_argument("--timeout", type=int, default=300, help="Max seconds to wait for query completion (default: 300)")
     ap.add_argument("--dry-run", action="store_true", help="Print the filled-in query and exit, without touching Athena")
     ap.add_argument("--skip-auth-check", action="store_true", help="Skip the SSO credential check/auto-refresh pre-flight")
+    ap.add_argument("--force", action="store_true", help="Re-run Athena even if the output CSV already has data")
     args = ap.parse_args()
 
     try:
@@ -143,6 +144,9 @@ def main():
     if args.dry_run:
         sys.stdout.write(query)
         LOGGER.info("Completed run_athena_debug_events dry_run date=%s", date_iso)
+        return
+
+    if should_skip_athena(_default_output_path(date_iso, args.output_dir), force=args.force):
         return
 
     if not args.skip_auth_check:

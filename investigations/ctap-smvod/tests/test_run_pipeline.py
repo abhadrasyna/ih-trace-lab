@@ -71,6 +71,7 @@ def test_build_steps_passes_athena_output_dir(tmp_path: Path, monkeypatch: pytes
         profile = "demo"
         skip_auth_check = True
         skip_if_exists = False
+        force = False
         skip_step3 = False
         skip_step4 = False
         skip_step6b = False
@@ -94,6 +95,7 @@ def test_build_steps_step1b_combines_lightstep_parts(tmp_path: Path, monkeypatch
         profile = None
         skip_auth_check = False
         skip_if_exists = False
+        force = False
         skip_step3 = True
         skip_step4 = True
         skip_step6b = True
@@ -154,3 +156,25 @@ def test_main_dry_run_calls_init_logging(monkeypatch: pytest.MonkeyPatch, capsys
     out = capsys.readouterr().out
     assert "# Step 1b - combine split Lightstep CSV parts (combine_lightstep_parts.py)" in out
     assert "# Step 2 - base merge (merge_ctap_smvod_csv.py)" in out
+
+
+def test_build_steps_forwards_force_to_athena_steps(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(run_pipeline, "ATHENA_DIR", str(tmp_path))
+
+    class Args:
+        date = "30092026"
+        profile = None
+        skip_auth_check = True
+        skip_if_exists = False
+        force = True
+        skip_step3 = False
+        skip_step4 = False
+        skip_step6b = False
+        skip_step6d = False
+        skip_step6e = False
+        full_position_report = False
+
+    steps = run_pipeline._build_steps(Args(), "2026-09-30")
+
+    assert "--force" in steps[2][1]
+    assert "--force" in steps[3][1]

@@ -1,6 +1,7 @@
 """Shared runtime helpers for the migrated CTAP/SM-VOD scripts."""
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -8,7 +9,8 @@ from typing import Any
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 
-from src.lib.csv_io.csv_file import CsvFileWriter
+from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter
+from src.lib.csv_io.existing_output import csv_has_data
 from src.lib.paths import YamlPathResolver
 
 DEFAULT_PROFILE = "clarissa-insights-product"
@@ -123,6 +125,14 @@ def make_athena_adapter(
         run_config,
         database=database,
     )
+
+
+def should_skip_athena(output_path: str, *, force: bool) -> bool:
+    """True (after printing why) when `output_path` already has data and --force wasn't given."""
+    if force or not csv_has_data(CsvFileReader(), Path(output_path)):
+        return False
+    print(f"SKIP: {output_path} already has data; use --force to re-run Athena.", file=sys.stderr)
+    return True
 
 
 def run_athena_query(

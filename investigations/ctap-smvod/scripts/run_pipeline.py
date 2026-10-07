@@ -136,6 +136,8 @@ def _build_steps(args, date_iso: str):
         athena_common += ["--profile", args.profile]
     if args.skip_auth_check:
         athena_common += ["--skip-auth-check"]
+    if args.force:
+        athena_common += ["--force"]
     athena_common += ["--output-dir", ATHENA_DIR]
 
     # --skip-if-exists is opt-in and per-date: unlike --skip-step3/--skip-step4
@@ -217,6 +219,10 @@ def main():
              "if data/athena/YYYY-MM-DD_debug_states.csv already exists, instead of "
              "always re-firing Athena (the default). A date still missing "
              "either file fires Athena for that step as normal.")
+    ap.add_argument(
+        "--force", action="store_true",
+        help="Passed through to Steps 3/4: re-run Athena even if the output CSV already has data "
+             "(by default each Athena step skips itself when its CSV exists)")
     ap.add_argument("--skip-step6b", action="store_true", help="Skip Step 6b (position-check view)")
     ap.add_argument("--skip-step6e", action="store_true",
                      help="Skip Step 6e (1xxx/6xxx error report CSV)")

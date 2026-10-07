@@ -108,3 +108,29 @@ def test_athena_pull_rejects_non_iso_date(monkeypatch, capsys) -> None:
 
     assert exc_info.value.code == 1
     assert "ERROR: --date must be YYYY-MM-DD" in capsys.readouterr().err
+
+
+def test_athena_pull_skips_when_csv_already_has_data(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "2026-09-30_session.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    argv = ["run_athena_playback_outcome.py", "--date", "2026-09-30", "--output-dir", str(tmp_path), "--skip-auth-check"]
+    calls: list[dict[str, object]] = []
+
+    _run_cli(playback, argv, monkeypatch, lambda **kwargs: calls.append(kwargs) or SimpleNamespace(row_count=1))
+    assert calls == []
+
+    _run_cli(playback, [*argv, "--force"], monkeypatch, lambda **kwargs: calls.append(kwargs) or SimpleNamespace(row_count=1))
+    assert len(calls) == 1
+
+
+def test_athena_pull_fires_when_existing_csv_is_header_only(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "2026-09-30_session.csv").write_text("a,b\n", encoding="utf-8")
+    calls: list[dict[str, object]] = []
+
+    _run_cli(
+        playback,
+        ["run_athena_playback_outcome.py", "--date", "2026-09-30", "--output-dir", str(tmp_path), "--skip-auth-check"],
+        monkeypatch,
+        lambda **kwargs: calls.append(kwargs) or SimpleNamespace(row_count=1),
+    )
+
+    assert len(calls) == 1
