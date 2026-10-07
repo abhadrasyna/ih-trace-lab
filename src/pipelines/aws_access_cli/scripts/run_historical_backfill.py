@@ -31,10 +31,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--start-date', required=True)
     parser.add_argument('--end-date', required=True)
+    parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 
     def build_argv(tenant: TenantConfig) -> list[str]:
-        return ['--start-date', args.start_date, '--end-date', args.end_date, '--tenant', tenant.code, '--skip-auth-check']
+        return ['--start-date', args.start_date, '--end-date', args.end_date, '--tenant', tenant.code, '--skip-auth-check'] + (['--force'] if args.force else [])
 
     return run_for_all_tenants(build_argv, _SUB_REPORTS, preflight=lambda: make_auth().ensure_session(DEFAULT_RUNTIME.profile))
 

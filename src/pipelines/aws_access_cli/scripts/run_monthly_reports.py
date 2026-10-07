@@ -28,10 +28,11 @@ def main(argv: list[str] | None = None) -> int:
     init_logging("aws-access-cli-monthly-reports")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--month', required=True)
+    parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 
     def build_argv(tenant: TenantConfig) -> list[str]:
-        return ['--month', args.month, '--tenant', tenant.code, '--period', 'month', '--skip-auth-check']
+        return ['--month', args.month, '--tenant', tenant.code, '--period', 'month', '--skip-auth-check'] + (['--force'] if args.force else [])
 
     return run_for_all_tenants(build_argv, _SUB_REPORTS, preflight=lambda: make_auth().ensure_session(DEFAULT_RUNTIME.profile))
 

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from src.lib.csv_io.existing_output import csv_has_data
 from src.lib.csv_io.monthly_store import MonthlyCsvStore
 from src.lib.report_render.factory import make_report_writer
 from src.pipelines.aws_access_cli.adoption import (
@@ -85,7 +86,16 @@ def base_parser(description: str) -> argparse.ArgumentParser:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--preview", action="store_true")
     parser.add_argument("--skip-auth-check", action="store_true")
+    parser.add_argument("--force", action="store_true", help="Re-run Athena even if the output CSV already has this date's data.")
     return parser
+
+
+def _skip_if_output_exists(args: argparse.Namespace, output_path: Path, *, date_value: str | None = None) -> bool:
+    """True (after printing why) when Athena should not be fired because the CSV already has the data."""
+    if args.force or not csv_has_data(make_csv_reader(), output_path, date_value=date_value):
+        return False
+    print(f"SKIP: {output_path} already has data{f' for {date_value}' if date_value else ''}; use --force to re-run Athena.")
+    return True
 
 
 def resolve_range(args: argparse.Namespace) -> tuple[str, str, str]:
@@ -240,6 +250,9 @@ def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[Me
             output_path,
             {"tenant": tenant.code, "start_date": start_date, "end_date": end_date, "period": period},
         )
+    append_date = start_date if _uses_append_store(artifact, period=period, start_date=start_date, end_date=end_date) else None
+    if _skip_if_output_exists(args, output_path, date_value=append_date):
+        return 0
     if not args.skip_auth_check:
         make_auth().ensure_session(args.profile)
     catalog = QueryCatalog()
@@ -267,6 +280,9 @@ def run_shaka_cli(argv: list[str] | None, *, artifact: str, by: str) -> int:
             output_path,
             {"tenant": tenant.code, "start_date": start_date, "end_date": end_date, "period": period, "group_by": by},
         )
+    append_date = start_date if _uses_append_store(artifact, period=period, start_date=start_date, end_date=end_date) else None
+    if _skip_if_output_exists(args, output_path, date_value=append_date):
+        return 0
     if not args.skip_auth_check:
         make_auth().ensure_session(args.profile)
     rows = build_shaka_error_report(
@@ -302,6 +318,8 @@ def run_position_cli(argv: list[str] | None) -> int:
     output_path = _base_output_dir(args, period) / filename
     if args.dry_run:
         return _print_dry_run("shaka-1xxx-position-report", output_path, {"tenant": tenant.code, "date": start_date})
+    if _skip_if_output_exists(args, output_path):
+        return 0
     if not args.skip_auth_check:
         make_auth().ensure_session(args.profile)
     rows = run_position_report(make_athena_client(_runtime_from_args(args), tenant.database), QueryCatalog(), tenant, start_date, table_override=args.table)
@@ -340,6 +358,8 @@ def run_incomplete_investigation_cli(argv: list[str] | None) -> int:
             output_dir / session_filename,
             {"tenant": tenant.code, "start_date": start_date, "end_date": end_date, "period": period},
         )
+    if (output_dir / debug_filename).is_file() and _skip_if_output_exists(args, output_dir / session_filename):
+        return 0
     if not args.skip_auth_check:
         make_auth().ensure_session(args.profile)
     athena = make_athena_client(_runtime_from_args(args), tenant.database)
@@ -406,9 +426,6 @@ def run_query_cli(argv: list[str] | None) -> int:
     if args.dry_run:
         print(sql)
         return 0
-    if not args.skip_auth_check:
-        make_auth().ensure_session(args.profile)
-    athena = make_athena_client(_runtime_from_args(args), tenant.database)
     resolver = make_path_resolver()
     if resolved_range is not None:
         start_date, end_date, period = resolved_range
@@ -425,6 +442,12 @@ def run_query_cli(argv: list[str] | None) -> int:
         output_dir = _base_output_dir(args, args.period)
         filename = resolver.format_rollup_filename(args.query_name)
     output_path = output_dir / filename
+    # An undated rollup is refreshed in place on every run, so only dated outputs are skippable.
+    if resolved_range is not None and _skip_if_output_exists(args, output_path):
+        return 0
+    if not args.skip_auth_check:
+        make_auth().ensure_session(args.profile)
+    athena = make_athena_client(_runtime_from_args(args), tenant.database)
     rows = athena.fetch_results(athena.start_query(sql, {})).rows
     write_shaka_report(output_path, make_csv_writer(), rows)
     _maybe_print_preview(rows, enabled=args.preview)

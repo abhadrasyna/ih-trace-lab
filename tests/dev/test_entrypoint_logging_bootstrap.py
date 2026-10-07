@@ -44,6 +44,7 @@ def test_discover_athena_tables_main_calls_init_logging(monkeypatch, tmp_path) -
             region=None,
             output=None,
             skip_auth_check=True,
+            force=False,
             log_level="INFO",
         ),
     )
@@ -84,6 +85,7 @@ def test_run_table_ddl_export_main_calls_init_logging(monkeypatch) -> None:
             output=None,
             dry_run=True,
             skip_auth_check=True,
+            force=False,
             log_level="INFO",
         ),
     )

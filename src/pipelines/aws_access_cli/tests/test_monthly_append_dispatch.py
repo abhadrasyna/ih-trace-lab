@@ -58,10 +58,38 @@ def test_adoption_report_rerun_of_same_day_does_not_duplicate_rows(tmp_path: Pat
     argv = ["--date", "2026-08-01", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)]
 
     common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
-    common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+    common.run_adoption_cli([*argv, "--force"], artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
 
     month_file = tmp_path / "ZA" / "daily" / "2026-08_adoption-report.csv"
     assert month_file.read_text(encoding="utf-8").count("2026-08-01") == 1
+
+
+def test_adoption_report_skips_athena_when_date_already_in_csv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [{"session_date": "2026-08-01", "Home": "7"}]
+    _patch_common_collaborators(monkeypatch, rows=rows)
+    calls: list[int] = []
+    monkeypatch.setattr(common, "build_adoption_report", lambda *_args, **_kwargs: calls.append(1) or rows)
+    argv = ["--date", "2026-08-01", "--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)]
+
+    common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+    common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+    assert calls == [1]
+
+    common.run_adoption_cli([*argv, "--force"], artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+    assert calls == [1, 1]
+
+
+def test_adoption_report_fires_athena_for_a_new_date_in_an_existing_month_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = [{"session_date": "2026-08-01", "Home": "7"}]
+    _patch_common_collaborators(monkeypatch, rows=rows)
+    calls: list[int] = []
+    monkeypatch.setattr(common, "build_adoption_report", lambda *_args, **_kwargs: calls.append(1) or [{"session_date": _args[3], "Home": "7"}])
+    base = ["--tenant", "ZA", "--skip-auth-check", "--output-dir", str(tmp_path)]
+
+    common.run_adoption_cli(["--date", "2026-08-01", *base], artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+    common.run_adoption_cli(["--date", "2026-08-02", *base], artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+
+    assert calls == [1, 1]
 
 
 def test_gap_analysis_report_still_gets_a_per_day_snapshot_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

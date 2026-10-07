@@ -21,6 +21,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.lib.csv_io.csv_file import CsvFileReader
+from src.lib.csv_io.existing_output import csv_has_data
 from src.lib.logging.bootstrap import init_logging
 
 _DEFAULT_OUTPUT_DIR = REPO_ROOT / "output"
@@ -128,6 +130,11 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--log-level",
         default="INFO",
         help="Standard logging level name for this repo's shared logger (default: INFO).",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-run Athena even if the output CSV already exists with data.",
     )
     return parser.parse_args(argv)
 
@@ -269,6 +276,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(table)
             return 0
 
+        output_path = args.output or str(Path(args.output_dir) / f"{args.database}_table_ddl.csv")
+        if not args.force and csv_has_data(CsvFileReader(), Path(output_path)):
+            _LOGGER.info("Skipping Athena: %s already has data (use --force to re-run)", output_path)
+            return 0
+
         if not args.skip_auth_check and not dependencies.athena_cli_common.ensure_sso_or_log_failure(run_config, _LOGGER):
             return 1
 
@@ -284,7 +296,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(table)
             return 0
 
-        output_path = args.output or str(Path(args.output_dir) / f"{args.database}_table_ddl.csv")
         context = ExportContext(
             executor=executor,
             downloader=downloader,
