@@ -124,7 +124,7 @@ Registry values (`scripts/resolve_tenant.py`): SA Athena `unified_e6auj7k7`, Lig
 
 | File:line | Hardcode | Fixed by |
 |---|---|---|
-| `queries/athena/ctap-smvod-debug-states.sql:2,19` | table `e6auj7k7_ccl_debug_events`; prefix is the SA tenant id, so `{{database}}` alone is not enough | MT-3 (add a table param from registry) |
+| `queries/athena/ctap-smvod-debug-states.sql:2,19` | table `e6auj7k7_ccl_debug_events` (SA tenant id prefix), so `{{database}}` alone is not enough | MT-3 (table from `aws_access_cli/tenants.py`) |
 | `queries/athena/ctap-smvod-debug-completeness.sql:2,16` | literal `unified_e6auj7k7` and `e6auj7k7_ccl_debug_events` | MT-3 (parameterise or confirm unused by the pipeline) |
 | `scripts/run_athena_debug_events.py:104` | `--database` default `unified_e6auj7k7` | MT-3 |
 | `scripts/run_athena_playback_outcome.py:65` | `--database` default `unified_e6auj7k7` | MT-3 |
@@ -152,4 +152,6 @@ and `unified_sessions`.
 | GH | `unified_is1aldzq` | `is1aldzq_ccl_debug_events` | yes |
 | NG | `unified_jsxgloje` | `jsxgloje_ccl_debug_events` | yes |
 
-MT-3 decision: derive the table as `{athena_tenant_id}_ccl_debug_events` from the registry rather than hardcoding it.
+MT-3 decision: reuse `src/pipelines/aws_access_cli/tenants.py` (`TenantConfig`, `get_tenant`, `all_tenants`) for `database` and `debug_events_table` (`<tenant_id>_ccl_debug_events`) instead of
+deriving them again in ctap-smvod. Two gaps to resolve in MT-3: (1) that module keys South Africa as `ZA` while `config/tenants.yaml` and this story use `SA`, so MT-3 must pick one code (prefer the
+registry's `SA` and map or align `ZA`); (2) it has no Athena profile/region or Lightstep project/`busUnitId` filter, which still come from `src/tenant_registry`.
