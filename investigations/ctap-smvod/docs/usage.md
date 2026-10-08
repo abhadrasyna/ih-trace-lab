@@ -1,7 +1,40 @@
 # CTAP/SM-VOD script usage
 
-All commands run from `investigations/ctap-smvod/scripts/`. Dates are `DDMMYYYY` unless noted. Outputs go to `../output/` (per-date files are prefixed `YYYY-MM-DD_`), Athena pulls to
-`../data/athena/`.
+All commands run from `investigations/ctap-smvod/scripts/`. Dates are `DDMMYYYY` unless noted. Inputs and outputs are namespaced per tenant: outputs go to `../output/<TENANT>/` (per-date files are
+prefixed `YYYY-MM-DD_`), Lightstep exports are read from `../data/lightstep/<TENANT>/`, Athena pulls go to `../data/athena/<TENANT>/`. Tenant codes come from `config/tenants.yaml` (`SA`, `NG`, `ZM`,
+`GH`); paths below that omit `<TENANT>/` for brevity are always under the tenant folder.
+
+## 0. Multi-tenant model
+
+```bash
+python3 run_pipeline.py --date 06102026                # every tenant that has Lightstep input for the date
+python3 run_pipeline.py --date 06102026 --tenant ZM    # one tenant only
+python3 summarize_pipeline_run.py --date 06102026 --tenant ZM   # reconcile export row counts vs the merged report
+```
+
+- With no `--tenant`, tenants with no `data/lightstep/<TENANT>/` input for the date are skipped. Within a tenant the pipeline stops at the first failing step; other tenants still run, a per-tenant
+  summary prints, and the exit code is non-zero if any tenant failed.
+- An unknown tenant, or a missing input folder, fails with a message naming the expected path.
+- Standalone scripts (Steps 6b/6e/6d, ranges, rollups) take `--output-dir` / `--input-dir`; pass `../output/<TENANT>` explicitly, e.g. `python3 extract_error_report_1xxx_6xxx.py --from 01102026 --to
+  06102026 --output-dir ../output/SA`.
+
+### Per-tenant Lightstep export rule
+
+Export the ctap, smvod and smvod-ts files for the date into `data/lightstep/<TENANT>/`. For a tenant on a **shared** Lightstep project (`shared_project: true` in `config/tenants.yaml`, currently ZM
+and GH on `mcs-go-prod-mtn-1-eu`), the Lightstep query must filter on the tenant's `busUnitId` (its `go_id`) and group by it, so the merge can verify no other tenant's rows are present:
+
+| Export | Filter / group-by attribute |
+|---|---|
+| ctap | `sessionInfo.busUnitId` |
+| smvod (sm-vod service) | `busUnitId` (no `sessionInfo.` prefix) |
+
+Step 2 (`merge_ctap_smvod_csv.py`) fails loudly if any row is blank, mismatched, or the column is missing. Dedicated-project tenants (SA, NG) need no `busUnitId` filter.
+
+### Adding a tenant
+
+1. Add the opco to `config/tenants.yaml` (resolve identifiers via `scripts/resolve_tenant.py`; see `docs/guides/tenant-resolution.md`).
+2. Create `data/lightstep/<TENANT>/` and drop the exports in (with the `busUnitId` filter above if the project is shared).
+3. Run `run_pipeline.py --date <d> --tenant <TENANT>` (Athena steps use the registry's tenant id, profile and region), then `summarize_pipeline_run.py` to reconcile counts.
 
 ## 1. Full pipeline (one date)
 
@@ -51,8 +84,9 @@ min_position, max_position, position_not_moved. Other options: `--input`.
 
 ## 3. 1xxx/6xxx error report (`extract_error_report_1xxx_6xxx.py`)
 
-Same columns as the position report, but from the full `setupsession_with_outcome.csv` and filtered to sessions with an exact 4-digit `error_codes` token starting with 1 or 6 (e.g. 1003, 6001; not
-3016 or E31012). Not limited to position_not_moved. Reads existing files only (never calls Athena) and aborts listing any missing dates.
+Same columns as the position report plus `is_wv` (`true` when the user agent has the `; wv` token, `false` when a UA is present without it, blank when none), but from the full
+`setupsession_with_outcome.csv` and filtered to sessions with an exact 4-digit `error_codes` token starting with 1 or 6 (e.g. 1003, 6001; not 3016 or E31012). Not limited to position_not_moved. Reads
+existing files only (never calls Athena) and aborts listing any missing dates.
 
 ```bash
 python3 extract_error_report_1xxx_6xxx.py --date 06102026                          # one CSV

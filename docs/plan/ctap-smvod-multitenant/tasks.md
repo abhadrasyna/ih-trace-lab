@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MT-10.**
+**Open: none.**
 
 - [x] **MT-1** — audit tenant-specific hardcoding in ctap-smvod scripts/SQL; record findings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: 8d871b2
 - [x] **MT-2** — tenant-namespaced input/output paths in `runtime.py` + `data_paths.yaml` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: 222de48
@@ -15,7 +15,7 @@ spec.
 - [x] **MT-8** — add `is_wv` column to the 1xxx/6xxx error report (CSV + xlsx); move `_is_wv` to `scripts/lib/` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA:
   93f3540
 - [x] **MT-9** — rerun empty-`raw_user_agent` dates (e.g. 2026-10-02) per tenant; regenerate error-report CSVs/xlsx | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: —
-- [ ] **MT-10** — update `usage.md`, `CONTEXT.md`; final review | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
+- [x] **MT-10** — update `usage.md`, `CONTEXT.md`; final review | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 
 ## Story done when
 

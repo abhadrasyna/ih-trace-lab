@@ -5,9 +5,10 @@
 
 ## What Exists
 
-- `docs/plan/ctap-smvod-multitenant/` — planned story (MT-1..MT-10, none started): multi-tenant `investigations/ctap-smvod/` (pilot Zambia). `run_pipeline.py` will run every tenant with input for the
-  date by default, `--tenant` restricts to one; inputs/outputs move under `<TENANT>/` folders (existing SA files `git mv`'d); `busUnitId` guard for the shared Zambia/Ghana Lightstep project; also adds
-  an `is_wv` column to the 1xxx/6xxx error report (CSV + xlsx) with `_is_wv` moved to `scripts/lib/`. Constrained by `docs/refactor/`.
+- `investigations/ctap-smvod/` is multi-tenant (story `docs/plan/ctap-smvod-multitenant/`, MT-1..MT-10 done; pilot Zambia, results in `docs/2026-10-08-zambia-pilot-results.md`): `run_pipeline.py` runs
+  every tenant with Lightstep input for the date by default, `--tenant` restricts to one; inputs/outputs live under `<TENANT>/` folders (SA history `git mv`'d); the merge's `busUnitId` guard protects
+  the shared Zambia/Ghana Lightstep project; the 1xxx/6xxx error report (CSV + xlsx) has an `is_wv` column via `scripts/lib/webview.py`. `docs/usage.md` documents the layout, per-tenant export rule
+  and how to add a tenant. Constrained by `docs/refactor/`.
 - `investigations/mtn-sa-span-attribute-audit/` — ad hoc audit of MTN SA Lightstep span attributes, driven live via the Lightstep MCP tools (tenant resolved through
   `scripts/resolve_tenant.py`/`config/tenants.yaml` to Lightstep project `mcs-go-prod-iye9omdf-eu`, EU region). `docs/sample-span-ctap-server.md` and `docs/sample-span-households-core-server.md` each
   capture one full span's attributes (identity, timing, tags, reporter/process info) pulled via `get_stored_trace`/`query_spans`; the second file also tallies a key-by-key diff against the first (48
