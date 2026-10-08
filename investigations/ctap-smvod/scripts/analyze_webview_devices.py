@@ -46,6 +46,7 @@ from src.lib.logging.bootstrap import init_logging
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_webview_devices")
 
 from lib.runtime import investigation_output_dir, snapshot_output_path
+from lib.webview import is_wv
 
 # Matches the Android WebView UA's build segment, e.g.
 # "Android 15; SM-A055F Build/AP3A.240905.015.A2; wv" -> model=SM-A055F,
@@ -66,10 +67,8 @@ OUTPUT_COLUMNS = [
 
 
 def _is_wv(row):
-    """True if this row's parsed User-Agent Platform column carries the
-    Android WebView token (always the last "; wv" segment before the
-    closing paren in a WebView UA string)."""
-    return (row.get("Platform") or "").strip().lower().endswith("; wv")
+    """True if the row's user agent carries the Android WebView token."""
+    return bool(is_wv(row))
 
 
 def _is_success(row):

@@ -19,6 +19,16 @@ analyze_wv_failure_then_success_devices = load_script("analyze_wv_failure_then_s
 parse_debug_user_agents = load_script("parse_debug_user_agents.py")
 
 
+def test_webview_helper_prefers_raw_user_agent_then_platform() -> None:
+    from lib.webview import is_wv, is_wv_cell
+
+    assert is_wv({"raw_user_agent": "X (Android 15; M Build/B; wv)"}) is True
+    assert is_wv({"Platform": "Android 15; M Build/B; wv"}) is True
+    assert is_wv({"raw_user_agent": "X (Android 15; M Build/B)"}) is False
+    assert is_wv({}) is None
+    assert is_wv_cell({"Platform": "  "}) == ""
+
+
 def test_analyze_api_timing_phase_breakdown_computes_segments() -> None:
     row = {
         "dns_resolved_seconds": 0.1,

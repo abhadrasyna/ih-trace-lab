@@ -33,13 +33,14 @@ from lib.runtime import (
     range_output_path,
     snapshot_output_path,
 )
+from lib.webview import is_wv_cell
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.extract_error_report_1xxx_6xxx")
 
 DEFAULT_COLUMNS = [
     "householdId", "deviceId", "session.clientIp", "sessionId", "content_uuid",
     "start_time", "error_codes", "error_descriptions", "state_sequence",
-    "min_position", "max_position", "position_not_moved",
+    "min_position", "max_position", "position_not_moved", "is_wv",
 ]
 ERROR_CODE_RE = re.compile(r"^[16]\d{3}$")
 ARTIFACT = "error_report_1xxx_6xxx"
@@ -54,7 +55,10 @@ def row_has_1xxx_6xxx(row: dict) -> bool:
 
 
 def filter_rows(source_rows: list[dict], columns: list[str]) -> list[dict]:
-    return [{c: r.get(c, "") for c in columns} for r in source_rows if row_has_1xxx_6xxx(r)]
+    return [
+        {c: r.get(c, "") for c in columns} | ({"is_wv": is_wv_cell(r)} if "is_wv" in columns else {})
+        for r in source_rows if row_has_1xxx_6xxx(r)
+    ]
 
 
 def dates_in_range(start_ddmmyyyy: str, end_ddmmyyyy: str) -> list[str]:

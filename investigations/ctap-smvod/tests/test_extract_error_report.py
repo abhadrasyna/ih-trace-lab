@@ -17,7 +17,9 @@ assert _SPEC and _SPEC.loader
 mod = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(mod)
 
-SOURCE_COLS = mod.DEFAULT_COLUMNS + ["extra"]
+SOURCE_COLS = [c for c in mod.DEFAULT_COLUMNS if c != "is_wv"] + ["raw_user_agent", "extra"]
+WV_UA = "Mozilla/5.0 (Linux; Android 15; SM-A055F Build/AP3A; wv) AppleWebKit/537.36"
+PLAIN_UA = "Mozilla/5.0 (Linux; Android 15; SM-A055F Build/AP3A) AppleWebKit/537.36"
 
 
 def _write_source(out_dir: Path, iso: str, codes: list[str]) -> None:
@@ -65,6 +67,33 @@ def test_range_missing_date_aborts_without_output(tmp_path, monkeypatch, capsys)
         _run(monkeypatch, "--from", "05102026", "--to", "06102026", "--output-dir", str(tmp_path))
     assert "06102026" in capsys.readouterr().err
     assert not list(tmp_path.glob("*.xlsx"))
+
+
+def test_wv_user_agent_marked_true() -> None:
+    rows = mod.filter_rows([{"error_codes": "6001", "raw_user_agent": WV_UA}], mod.DEFAULT_COLUMNS)
+    assert rows[0]["is_wv"] == "true"
+
+
+def test_non_wv_user_agent_marked_false() -> None:
+    rows = mod.filter_rows([{"error_codes": "6001", "raw_user_agent": PLAIN_UA}], mod.DEFAULT_COLUMNS)
+    assert rows[0]["is_wv"] == "false"
+
+
+def test_missing_user_agent_is_blank_not_false() -> None:
+    rows = mod.filter_rows([{"error_codes": "6001", "raw_user_agent": ""}], mod.DEFAULT_COLUMNS)
+    assert rows[0]["is_wv"] == ""
+
+
+def test_is_wv_column_in_xlsx(tmp_path, monkeypatch) -> None:
+    src = tmp_path / "2026-10-05_setupsession_with_outcome.csv"
+    with open(src, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=SOURCE_COLS)
+        w.writeheader()
+        w.writerow({"sessionId": "s0", "error_codes": "6002", "raw_user_agent": WV_UA})
+    _run(monkeypatch, "--from", "05102026", "--to", "05102026", "--output-dir", str(tmp_path))
+    ws = load_workbook(next(tmp_path.glob("*error_report_1xxx_6xxx.xlsx")))["2026-10-05"]
+    header = [c.value for c in ws[1]]
+    assert ws.cell(row=2, column=header.index("is_wv") + 1).value == "true"
 
 
 def test_xlsx_keeps_equals_prefixed_text_as_string(tmp_path) -> None:
