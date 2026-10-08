@@ -114,3 +114,32 @@ refresh error reports with is_wv`
 **Files to change / create:** `investigations/ctap-smvod/docs/usage.md` (new layout, `--tenant`, per-tenant export rule incl. `busUnitId` filter, how to add a tenant), `CONTEXT.md` "What Exists".
 
 **What to implement:** document; run the full ctap-smvod test suite and `code-review-checklist.md`. **Commit:** `docs(ctap-smvod): document multi-tenant usage`
+
+---
+
+## MT-1 findings (audit, 2026-10-08)
+
+Registry values (`scripts/resolve_tenant.py`): SA Athena `unified_e6auj7k7`, Lightstep `mcs-go-prod-iye9omdf-eu` (no filter); ZM Athena `unified_a7vli5h8`, Lightstep `mcs-go-prod-mtn-1-eu` with
+`sessionInfo.busUnitId = dtunf6yo`. Both share profile `clarissa-insights-product` and region `eu-central-1`. No existing tenant-aware helper in `src/lib`; `src/tenant_registry` is the one to consume.
+
+| File:line | Hardcode | Fixed by |
+|---|---|---|
+| `queries/athena/ctap-smvod-debug-states.sql:2,19` | table `e6auj7k7_ccl_debug_events`; prefix is the SA tenant id, so `{{database}}` alone is not enough | MT-3 (add a table param from registry) |
+| `queries/athena/ctap-smvod-debug-completeness.sql:2,16` | literal `unified_e6auj7k7` and `e6auj7k7_ccl_debug_events` | MT-3 (parameterise or confirm unused by the pipeline) |
+| `scripts/run_athena_debug_events.py:104` | `--database` default `unified_e6auj7k7` | MT-3 |
+| `scripts/run_athena_playback_outcome.py:65` | `--database` default `unified_e6auj7k7` | MT-3 |
+| `scripts/lib/runtime.py:16,20` | `DEFAULT_PROFILE`, `_DEFAULT_REGION` (same for ZM/SA; keep as fallback, prefer registry) | MT-3 |
+| `scripts/run_athena_debug_events.py:54,90`, `run_athena_playback_outcome.py:46` | `data/athena` and `output` roots built by hand | MT-2 |
+| `scripts/run_pipeline.py:82-83,100-102,122,126,141,164` | `LIGHTSTEP_DIR`/`ATHENA_DIR` and input filenames, no tenant | MT-2, MT-3, MT-4 |
+| `scripts/merge_ctap_smvod_csv.py:259` | `--input-dir` default `data/lightstep`; no `busUnitId` check | MT-2, MT-5 |
+| `scripts/merge_session_outcome.py:368` | default input dir `data/athena` | MT-2 |
+| `scripts/lib/runtime.py:48-76` | `investigation_output_dir`/`snapshot_/range_/rollup_output_path` take no tenant | MT-2 |
+| `config/data_paths.yaml:15-16` | `investigation_data`/`investigation_output` templates have no tenant segment | MT-2 |
+| `analyze_*`, `build_*`, `extract_*`, `filter_error_code_report.py`, `correlate_cdn_ips.py` | `output/` defaults and rollup globs (`build_mtn_summary.py:46`) | MT-2 (rollups per tenant) |
+| `scripts/lightstep_ctap_smvod_join.py:30,286` | `--project` required, example is SA project (docs only, not hardcoded) | none |
+| `scripts/analyze_webview_devices.py:68` | `_is_wv` defined locally | MT-8 |
+
+Not tenant-specific: `mtn_escalation*` names in `correlate_cdn_ips.py`/`build_mtn_summary.py` refer to the MTN operator group (both tenants), not SA.
+
+**Risk to flag for MT-3:** the table-name prefix finding means `ctap-smvod-debug-states.sql` would silently query the SA table for ZM if only `--database` changed. Confirm the ZM table is
+`a7vli5h8_ccl_debug_events` (e.g. via the registry/`knowledge/` DDL or `SHOW TABLES`) before MT-3.
