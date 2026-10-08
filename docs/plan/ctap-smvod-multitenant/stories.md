@@ -141,5 +141,15 @@ Registry values (`scripts/resolve_tenant.py`): SA Athena `unified_e6auj7k7`, Lig
 
 Not tenant-specific: `mtn_escalation*` names in `correlate_cdn_ips.py`/`build_mtn_summary.py` refer to the MTN operator group (both tenants), not SA.
 
-**Risk to flag for MT-3:** the table-name prefix finding means `ctap-smvod-debug-states.sql` would silently query the SA table for ZM if only `--database` changed. Confirm the ZM table is
-`a7vli5h8_ccl_debug_events` (e.g. via the registry/`knowledge/` DDL or `SHOW TABLES`) before MT-3.
+**Risk for MT-3 (resolved 2026-10-08):** `ctap-smvod-debug-states.sql` would silently query the SA table for ZM if only `--database` changed. Verified with `SHOW TABLES` in each database (profile
+`clarissa-insights-product`, `eu-central-1`): every tenant has base table `<athena_tenant_id>_ccl_debug_events` (plus month-suffixed variants such as `_aug26`, `_sept26`, which MT-3 must not pick up)
+and `unified_sessions`.
+
+| Tenant | Database | Debug-events table | `unified_sessions` |
+|---|---|---|---|
+| SA | `unified_e6auj7k7` | `e6auj7k7_ccl_debug_events` | yes |
+| ZM | `unified_a7vli5h8` | `a7vli5h8_ccl_debug_events` | yes |
+| GH | `unified_is1aldzq` | `is1aldzq_ccl_debug_events` | yes |
+| NG | `unified_jsxgloje` | `jsxgloje_ccl_debug_events` | yes |
+
+MT-3 decision: derive the table as `{athena_tenant_id}_ccl_debug_events` from the registry rather than hardcoding it.
