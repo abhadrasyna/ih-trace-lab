@@ -25,3 +25,22 @@ def test_rollup_output_has_marker(tmp_path: Path) -> None:
     output_path = runtime.rollup_output_path("mtn_escalation_all_dates", output_dir=tmp_path)
 
     assert output_path == str(tmp_path / "mtn_escalation_all_dates_rollup.csv")
+
+
+def test_paths_are_tenant_scoped() -> None:
+    root = runtime.repo_root() / "investigations" / "ctap-smvod"
+
+    assert runtime.snapshot_output_path("30092026", "setupsession", tenant="ZM") == str(root / "output" / "ZM" / "2026-09-30_setupsession.csv")
+    assert runtime.range_output_path("29092026", "30092026", "err", tenant="SA") == str(root / "output" / "SA" / "2026-09-29_2026-09-30_err.csv")
+    assert runtime.rollup_output_path("x", tenant="ZM") == str(root / "output" / "ZM" / "x_rollup.csv")
+    assert runtime.investigation_data_dir("lightstep", tenant="ZM") == root / "data" / "lightstep" / "ZM"
+    assert runtime.investigation_data_dir("athena", tenant="SA") == root / "data" / "athena" / "SA"
+
+
+def test_missing_tenant_raises() -> None:
+    import pytest
+
+    with pytest.raises(ValueError):
+        runtime.snapshot_output_path("30092026", "setupsession", tenant="")
+    with pytest.raises(ValueError):
+        runtime.investigation_data_dir("lightstep", tenant="../ZM")

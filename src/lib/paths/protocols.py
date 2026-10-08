@@ -19,10 +19,10 @@ class PathResolver(Protocol):
     def resolve_investigation_dir(self, case_id: str, campaign: str | None = None) -> Path:
         ...
 
-    def resolve_investigation_data_dir(self, slug: str, tool: str) -> Path:
+    def resolve_investigation_data_dir(self, slug: str, tool: str, *, tenant: str | None = None) -> Path:
         ...
 
-    def resolve_investigation_output_dir(self, slug: str) -> Path:
+    def resolve_investigation_output_dir(self, slug: str, *, tenant: str | None = None) -> Path:
         ...
 
     def format_snapshot_filename(self, as_of: date, artifact: str, *, extension: str = "csv") -> str:

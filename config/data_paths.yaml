@@ -14,4 +14,6 @@ templates:
   investigation_without_campaign: "{investigations_root}/{case_id}"
   investigation_data: "{investigations_root}/{campaign}/data/{tool}"
   investigation_output: "{investigations_root}/{campaign}/output"
+  investigation_data_tenant: "{investigations_root}/{campaign}/data/{tool}/{tenant}"
+  investigation_output_tenant: "{investigations_root}/{campaign}/output/{tenant}"
 filename_date_format: "%Y-%m-%d"

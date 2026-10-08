@@ -45,15 +45,30 @@ def ddmmyyyy_to_iso(raw_date: str) -> str:
     return ddmmyyyy_to_date(raw_date).isoformat()
 
 
-def investigation_output_dir(output_dir: str | Path | None = None) -> Path:
+def investigation_output_dir(output_dir: str | Path | None = None, *, tenant: str | None = None) -> Path:
+    """Output folder; `<TENANT>`-scoped when `tenant` is given (None = legacy flat folder until MT-6)."""
     if output_dir is not None:
         return Path(output_dir)
-    return make_path_resolver().resolve_investigation_output_dir(INVESTIGATION_SLUG)
+    return make_path_resolver().resolve_investigation_output_dir(INVESTIGATION_SLUG, tenant=tenant)
 
 
-def snapshot_output_path(date_ddmmyyyy: str, artifact: str, *, output_dir: str | Path | None = None) -> str:
+def investigation_data_dir(tool: str, *, tenant: str | None = None, data_dir: str | Path | None = None) -> Path:
+    """Input folder for `tool` ('lightstep'/'athena'); `<TENANT>`-scoped when `tenant` is given."""
+    if data_dir is not None:
+        return Path(data_dir)
+    return make_path_resolver().resolve_investigation_data_dir(INVESTIGATION_SLUG, tool, tenant=tenant)
+
+
+def snapshot_output_path(
+    date_ddmmyyyy: str,
+    artifact: str,
+    *,
+    output_dir: str | Path | None = None,
+    tenant: str | None = None,
+) -> str:
     resolver = make_path_resolver()
-    return str(investigation_output_dir(output_dir) / resolver.format_snapshot_filename(ddmmyyyy_to_date(date_ddmmyyyy), artifact))
+    filename = resolver.format_snapshot_filename(ddmmyyyy_to_date(date_ddmmyyyy), artifact)
+    return str(investigation_output_dir(output_dir, tenant=tenant) / filename)
 
 
 def range_output_path(
@@ -63,17 +78,16 @@ def range_output_path(
     *,
     tag: str | None = None,
     output_dir: str | Path | None = None,
+    tenant: str | None = None,
 ) -> str:
     resolver = make_path_resolver()
-    return str(
-        investigation_output_dir(output_dir)
-        / resolver.format_range_filename(ddmmyyyy_to_date(start_ddmmyyyy), ddmmyyyy_to_date(end_ddmmyyyy), artifact, tag=tag)
-    )
+    filename = resolver.format_range_filename(ddmmyyyy_to_date(start_ddmmyyyy), ddmmyyyy_to_date(end_ddmmyyyy), artifact, tag=tag)
+    return str(investigation_output_dir(output_dir, tenant=tenant) / filename)
 
 
-def rollup_output_path(artifact: str, *, output_dir: str | Path | None = None) -> str:
+def rollup_output_path(artifact: str, *, output_dir: str | Path | None = None, tenant: str | None = None) -> str:
     resolver = make_path_resolver()
-    return str(investigation_output_dir(output_dir) / resolver.format_rollup_filename(artifact))
+    return str(investigation_output_dir(output_dir, tenant=tenant) / resolver.format_rollup_filename(artifact))
 
 
 def ensure_valid_credentials(profile_name: str) -> bool:

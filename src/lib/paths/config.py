@@ -18,6 +18,8 @@ _TEMPLATE_NAMES = (
     "investigation_without_campaign",
     "investigation_data",
     "investigation_output",
+    "investigation_data_tenant",
+    "investigation_output_tenant",
 )
 
 
@@ -37,6 +39,8 @@ class PathConfig:
     investigation_without_campaign: str
     investigation_data: str
     investigation_output: str
+    investigation_data_tenant: str
+    investigation_output_tenant: str
 
     @classmethod
     def load(cls, path: Path) -> PathConfig:
@@ -71,6 +75,8 @@ class PathConfig:
             investigation_without_campaign=str(templates["investigation_without_campaign"]),
             investigation_data=str(templates["investigation_data"]),
             investigation_output=str(templates["investigation_output"]),
+            investigation_data_tenant=str(templates["investigation_data_tenant"]),
+            investigation_output_tenant=str(templates["investigation_output_tenant"]),
         )
 
 
@@ -102,11 +108,13 @@ class YamlPathResolver(PathResolver):
         template = self._config.investigation_with_campaign if campaign is not None else self._config.investigation_without_campaign
         return self._format_path(template, root_name=self._config.investigations_root, case_id=case_id, campaign=campaign)
 
-    def resolve_investigation_data_dir(self, slug: str, tool: str) -> Path:
-        return self._format_path(self._config.investigation_data, root_name=self._config.investigations_root, campaign=slug, tool=tool)
+    def resolve_investigation_data_dir(self, slug: str, tool: str, *, tenant: str | None = None) -> Path:
+        template = self._config.investigation_data if tenant is None else self._config.investigation_data_tenant
+        return self._format_path(template, root_name=self._config.investigations_root, campaign=slug, tool=tool, tenant=tenant)
 
-    def resolve_investigation_output_dir(self, slug: str) -> Path:
-        return self._format_path(self._config.investigation_output, root_name=self._config.investigations_root, campaign=slug)
+    def resolve_investigation_output_dir(self, slug: str, *, tenant: str | None = None) -> Path:
+        template = self._config.investigation_output if tenant is None else self._config.investigation_output_tenant
+        return self._format_path(template, root_name=self._config.investigations_root, campaign=slug, tenant=tenant)
 
     def format_snapshot_filename(self, as_of: date, artifact: str, *, extension: str = "csv") -> str:
         return f"{self._format_date(as_of)}_{artifact}.{self._normalize_extension(extension)}"
@@ -159,7 +167,7 @@ class YamlPathResolver(PathResolver):
             if key == "tool":
                 sanitized[key] = self._validate_tool(value)
                 continue
-            if key in {"case_id", "campaign"}:
+            if key in {"case_id", "campaign", "tenant"}:
                 sanitized[key] = self._validate_path_segment(key, value)
                 continue
             sanitized[key] = value

@@ -34,6 +34,8 @@ templates:
   investigation_without_campaign: \"{investigations_root}/{case_id}\"
   investigation_data: \"{investigations_root}/{campaign}/data/{tool}\"
   investigation_output: \"{investigations_root}/{campaign}/output\"
+  investigation_data_tenant: \"{investigations_root}/{campaign}/data/{tool}/{tenant}\"
+  investigation_output_tenant: \"{investigations_root}/{campaign}/output/{tenant}\"
 filename_date_format: \"%Y-%m-%d\"
 """,
     )
@@ -209,3 +211,19 @@ def test_conforming_stub_satisfies_path_resolver_protocol() -> None:
 
 def test_non_conforming_stub_does_not_satisfy_protocol() -> None:
     assert not isinstance(_MissingRollupFormatter(), PathResolver)
+
+
+def test_resolve_investigation_dirs_with_tenant_add_tenant_segment(tmp_path: Path) -> None:
+    resolver = _build_resolver(tmp_path)
+    base = tmp_path / "investigations" / "ctap-smvod"
+
+    assert resolver.resolve_investigation_data_dir("ctap-smvod", "lightstep", tenant="ZM") == base / "data" / "lightstep" / "ZM"
+    assert resolver.resolve_investigation_output_dir("ctap-smvod", tenant="ZM") == base / "output" / "ZM"
+
+
+@pytest.mark.parametrize("tenant", ["", "..", "a/b"])
+def test_resolve_investigation_output_dir_rejects_bad_tenant(tmp_path: Path, tenant: str) -> None:
+    resolver = _build_resolver(tmp_path)
+
+    with pytest.raises(ValueError):
+        resolver.resolve_investigation_output_dir("ctap-smvod", tenant=tenant)
