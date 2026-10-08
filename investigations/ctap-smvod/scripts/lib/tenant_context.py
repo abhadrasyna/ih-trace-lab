@@ -82,22 +82,28 @@ def discover_tenants(
     return found
 
 
-def enforce_disambiguation(rows: list[dict[str, str]], context: TenantContext, source: str) -> None:
+def enforce_disambiguation(
+    rows: list[dict[str, str]], context: TenantContext, source: str, aliases: tuple[str, ...] = ()
+) -> None:
     """Fail loudly unless every row of a shared-project export belongs to `context`'s tenant.
 
-    No-op for dedicated-project tenants. Rows with a blank or different value, or a missing column, raise ValueError.
+    No-op for dedicated-project tenants. `aliases` are alternative column names for the same attribute
+    (e.g. sm-vod spans tag it `busUnitId`). Rows with a blank or different value, or a missing column, raise ValueError.
     """
     attribute = context.disambiguation_attribute
     if not attribute:
         return
-    if rows and attribute not in rows[0]:
-        raise ValueError(
-            f"[{context.code}] {source} has no '{attribute}' column; the shared Lightstep project "
-            f"{context.lightstep_project} requires it to separate tenants"
-        )
-    foreign = {row.get(attribute, "") for row in rows} - {context.disambiguation_value}
+    column = attribute
+    if rows:
+        column = next((c for c in (attribute, *aliases) if c in rows[0]), None)
+        if column is None:
+            raise ValueError(
+                f"[{context.code}] {source} has no '{attribute}' column; the shared Lightstep project "
+                f"{context.lightstep_project} requires it to separate tenants"
+            )
+    foreign = {row.get(column, "") for row in rows} - {context.disambiguation_value}
     if foreign:
         raise ValueError(
-            f"[{context.code}] {source} contains {attribute} values {sorted(foreign)} "
+            f"[{context.code}] {source} contains {column} values {sorted(foreign)} "
             f"but expected only '{context.disambiguation_value}'"
         )

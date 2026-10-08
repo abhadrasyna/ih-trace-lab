@@ -281,7 +281,7 @@ def main():
         try:
             context = resolve_tenant_context(args.tenant)
             enforce_disambiguation(ctap_rows, context, "CTAP export")
-            enforce_disambiguation(smvod_rows, context, "SM-VOD export")
+            enforce_disambiguation(smvod_rows, context, "SM-VOD export", aliases=("busUnitId",))
         except ValueError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             sys.exit(1)

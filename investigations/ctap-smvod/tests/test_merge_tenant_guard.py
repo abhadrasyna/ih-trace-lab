@@ -65,3 +65,23 @@ def test_dedicated_project_tenant_skips_guard(tmp_path, monkeypatch):
     _write(tmp_path / "2026-10-01_smvod.csv", ["lightstep.trace_id", "sessionId"], [["t1", "s1"]])
     _run(tmp_path, "SA", monkeypatch)
     assert (tmp_path / "out.csv").exists()
+
+
+def _inputs_smvod_alias(folder: Path, smvod_bus: list[str]) -> None:
+    _write(folder / "2026-10-01_ctap.csv", ["lightstep.trace_id", "http.user_agent", BUS],
+           [[f"t{i}", "ua", ZM_ID] for i in range(len(smvod_bus))])
+    _write(folder / "2026-10-01_smvod.csv", ["lightstep.trace_id", "sessionId", "busUnitId"],
+           [[f"t{i}", f"s{i}", b] for i, b in enumerate(smvod_bus)])
+
+
+def test_smvod_busunitid_alias_merges(tmp_path, monkeypatch):
+    _inputs_smvod_alias(tmp_path, [ZM_ID, ZM_ID])
+    _run(tmp_path, "ZM", monkeypatch)
+    assert (tmp_path / "out.csv").exists()
+
+
+def test_smvod_alias_foreign_value_fails_merge(tmp_path, monkeypatch, capsys):
+    _inputs_smvod_alias(tmp_path, [ZM_ID, GH_ID])
+    with pytest.raises(SystemExit):
+        _run(tmp_path, "ZM", monkeypatch)
+    assert GH_ID in capsys.readouterr().err
