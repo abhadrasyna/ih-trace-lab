@@ -3,9 +3,9 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MT-1, MT-2, MT-3, MT-4, MT-5, MT-6, MT-7, MT-8, MT-9, MT-10.**
+**Open: MT-2, MT-3, MT-4, MT-5, MT-6, MT-7, MT-8, MT-9, MT-10.**
 
-- [ ] **MT-1** — audit tenant-specific hardcoding in ctap-smvod scripts/SQL; record findings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
+- [x] **MT-1** — audit tenant-specific hardcoding in ctap-smvod scripts/SQL; record findings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: 8d871b2
 - [ ] **MT-2** — tenant-namespaced input/output paths in `runtime.py` + `data_paths.yaml` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 - [ ] **MT-3** — tenant context resolution + input discovery; Athena steps use registry values | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 - [ ] **MT-4** — `run_pipeline.py` all-tenants default, `--tenant`, continue-on-failure | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
