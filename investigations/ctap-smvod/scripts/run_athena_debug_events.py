@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Live boto3/Athena runner for BLUEPRINT.md Step 4 ("error detail + lifecycle"
-enrichment against `e6auj7k7_ccl_debug_events`) using query-catalog slug
+enrichment against the tenant's `<id>_ccl_debug_events` table) using query-catalog slug
 `ctap-smvod-debug-states`. Companion to
 `run_athena_playback_outcome.py` (Step 3) -- same pattern (optional automated
 alternative to the documented manual copy-paste-into-Athena-console workflow,
@@ -11,7 +11,7 @@ step: this script extracts the sessionId `IN (...)` filter itself (via
 of requiring `extract_session_ids.py` to be run by hand and its output pasted
 into the query text.
 
-Requires an AWS SSO profile with read access to unified_e6auj7k7 (see
+Requires an AWS SSO profile with read access to the tenant's unified_<id> database (see
 scripts/lib/aws_sso.py / aws-access-cli/docs/aws-sso-setup.md); defaults to
 `clarissa-insights-product`. Credentials are auto-refreshed via the `aws-sso`
 CLI if stale/missing (skip with --skip-auth-check).
@@ -30,7 +30,7 @@ Usage:
     # Override profile/database/workgroup/output dir if needed:
     python3 run_athena_debug_events.py --date 2026-07-08 \
         --profile clarissa-insights-product \
-        --database unified_e6auj7k7 \
+        --tenant ZM \
         --workgroup primary \
         --output-location s3://clarissaprod-apps-athena-query-results/ \
         --output-dir ../data/athena
@@ -45,14 +45,13 @@ import extract_session_ids
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.query_catalog import render_query
-from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, investigation_output_dir, run_athena_query, should_skip_athena, snapshot_output_path
+from lib.tenant_context import resolve_tenant_context
+from lib.runtime import ensure_valid_credentials, investigation_data_dir, run_athena_query, should_skip_athena, snapshot_output_path
 from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_athena_debug_events")
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "data", "athena")
-DEFAULT_OUTPUT_ROOT_DIR = str(investigation_output_dir())
+LEGACY_TENANT = "SA"
 
 # See BLUEPRINT.md Step 4 / queries/QUERY_CATALOG.md §11/§11a/§11b for why
 # APP_KEEPALIVE must stay in this list (it's sometimes the only signal a
@@ -69,7 +68,7 @@ def _validated_date_iso(raw_date: str) -> str:
     return datetime.strptime(raw_date, "%Y-%m-%d").strftime("%Y-%m-%d")
 
 
-def _build_query(database, date, session_ids):
+def _build_query(ctx, database, date, session_ids):
     start = f"{date}T00:00:00.000Z"
     next_day = (datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
     end = f"{next_day}T00:00:00.000Z"
@@ -78,6 +77,7 @@ def _build_query(database, date, session_ids):
         QUERY_SLUG,
         {
             "database": database,
+            "debug_events_table": ctx.debug_events_table,
             "datetime_start": start,
             "datetime_end": end,
             "session_ids_block": session_ids_block,
@@ -85,9 +85,9 @@ def _build_query(database, date, session_ids):
     )
 
 
-def _default_input_path(date):
+def _default_input_path(date, tenant=None):
     ddmmyyyy = datetime.strptime(date, "%Y-%m-%d").strftime("%d%m%Y")
-    return snapshot_output_path(ddmmyyyy, "setupsession", output_dir=DEFAULT_OUTPUT_ROOT_DIR)
+    return snapshot_output_path(ddmmyyyy, "setupsession", tenant=tenant)
 
 
 def main():
@@ -100,8 +100,9 @@ def main():
         help="Step 2 merged report CSV to pull sessionIds from "
              "(default: ../output/YYYY-MM-DD_setupsession.csv, derived from --date)")
     ap.add_argument("--column", default="sessionId", help="sessionId column name (default: sessionId)")
-    ap.add_argument("--profile", default=DEFAULT_PROFILE, help=f"AWS SSO profile (default: {DEFAULT_PROFILE})")
-    ap.add_argument("--database", default="unified_e6auj7k7", help="Athena database (default: unified_e6auj7k7)")
+    ap.add_argument("--tenant", default=None, help="Tenant code from config/tenants.yaml (default: SA with the legacy flat data/ and output/ folders)")
+    ap.add_argument("--profile", default=None, help="AWS SSO profile (default: from the tenant registry)")
+    ap.add_argument("--database", default=None, help="Athena database (default: from the tenant registry)")
     ap.add_argument("--workgroup", default="primary", help="Athena workgroup (default: primary)")
     ap.add_argument(
         "--output-location",
@@ -109,12 +110,12 @@ def main():
         help="S3 URI for Athena query results (default: s3://clarissaprod-apps-athena-query-results/)",
     )
     ap.add_argument(
-        "--region", default="eu-central-1",
-        help="AWS region override (default: eu-central-1 -- the "
+        "--region", default=None,
+        help="AWS region override (default: from the tenant registry, eu-central-1 -- the "
              "--output-location results bucket only exists there, which "
              "differs from this profile's own configured region, "
              "us-east-1)")
-    ap.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Directory to write the CSV to (default: <repo>/data/athena)")
+    ap.add_argument("--output-dir", default=None, help="Directory to write the CSV to (default: <repo>/data/athena[/<TENANT>])")
     ap.add_argument("--poll-interval", type=int, default=2, help="Seconds between status polls (default: 2)")
     ap.add_argument("--timeout", type=int, default=300, help="Max seconds to wait for query completion (default: 300)")
     ap.add_argument("--dry-run", action="store_true", help="Print the filled-in query and exit, without touching Athena")
@@ -123,12 +124,22 @@ def main():
     args = ap.parse_args()
 
     try:
+        ctx = resolve_tenant_context(args.tenant or LEGACY_TENANT)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
+    args.profile = args.profile or ctx.profile
+    args.database = args.database or ctx.database
+    args.region = args.region or ctx.region
+    args.output_dir = args.output_dir or str(investigation_data_dir("athena", tenant=args.tenant))
+
+    try:
         date_iso = _validated_date_iso(args.date)
     except ValueError:
         print(f"ERROR: --date must be YYYY-MM-DD, got '{args.date}'", file=sys.stderr)
         sys.exit(1)
 
-    input_path = args.input or _default_input_path(date_iso)
+    input_path = args.input or _default_input_path(date_iso, args.tenant)
     try:
         session_ids = extract_session_ids.extract_ids(input_path, args.column)
     except (FileNotFoundError, ValueError) as exc:
@@ -139,7 +150,7 @@ def main():
         sys.exit(1)
     print(f"Extracted {len(session_ids)} distinct sessionIds from {input_path}", file=sys.stderr)
 
-    query = _build_query(args.database, date_iso, session_ids)
+    query = _build_query(ctx, args.database, date_iso, session_ids)
 
     if args.dry_run:
         sys.stdout.write(query)
@@ -162,7 +173,7 @@ def main():
     out_path = _default_output_path(date_iso, args.output_dir)
 
     print(
-        f"Starting Athena query on {args.database}.e6auj7k7_ccl_debug_events for "
+        f"Starting Athena query [{ctx.code}] on {args.database}.{ctx.debug_events_table} for "
         f"{date_iso} ({len(session_ids)} sessionIds, profile={args.profile}, "
         f"workgroup={args.workgroup})...", file=sys.stderr)
     try:

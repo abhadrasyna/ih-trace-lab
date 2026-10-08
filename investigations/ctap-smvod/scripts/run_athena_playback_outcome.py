@@ -10,7 +10,7 @@ attempt. The query catalog remains the source of truth for the SQL text
 itself (`queries/athena/ctap-smvod-playback-outcome.sql`) -- this script
 only automates *running* that exact query and downloading the result.
 
-Requires an AWS SSO profile with read access to unified_e6auj7k7 (see
+Requires an AWS SSO profile with read access to the tenant's unified_<id> database (see
 scripts/lib/aws_sso.py / aws-access-cli/docs/aws-sso-setup.md); defaults to
 `clarissa-insights-product`. Credentials are auto-refreshed via the `aws-sso`
 CLI if stale/missing (skip with --skip-auth-check).
@@ -24,7 +24,7 @@ Usage:
     # Override profile/database/workgroup/output dir if needed:
     python3 run_athena_playback_outcome.py --date 2026-07-08 \
         --profile clarissa-insights-product \
-        --database unified_e6auj7k7 \
+        --tenant ZM \
         --workgroup primary \
         --output-location s3://clarissaprod-apps-athena-query-results/ \
         --output-dir ../data/athena
@@ -37,13 +37,13 @@ from datetime import datetime
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.query_catalog import render_query
-from lib.runtime import DEFAULT_PROFILE, ensure_valid_credentials, run_athena_query, should_skip_athena
+from lib.tenant_context import resolve_tenant_context
+from lib.runtime import ensure_valid_credentials, investigation_data_dir, run_athena_query, should_skip_athena
 from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_athena_playback_outcome")
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "data", "athena")
+LEGACY_TENANT = "SA"
 
 QUERY_SLUG = "ctap-smvod-playback-outcome"
 
@@ -61,8 +61,9 @@ def main():
     LOGGER.info("Starting run_athena_playback_outcome")
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Partition date, YYYY-MM-DD (e.g. 2026-07-08)")
-    ap.add_argument("--profile", default=DEFAULT_PROFILE, help=f"AWS SSO profile (default: {DEFAULT_PROFILE})")
-    ap.add_argument("--database", default="unified_e6auj7k7", help="Athena database (default: unified_e6auj7k7)")
+    ap.add_argument("--tenant", default=None, help="Tenant code from config/tenants.yaml (default: SA with the legacy flat data/ and output/ folders)")
+    ap.add_argument("--profile", default=None, help="AWS SSO profile (default: from the tenant registry)")
+    ap.add_argument("--database", default=None, help="Athena database (default: from the tenant registry)")
     ap.add_argument("--workgroup", default="primary", help="Athena workgroup (default: primary)")
     ap.add_argument(
         "--output-location",
@@ -70,18 +71,28 @@ def main():
         help="S3 URI for Athena query results (default: s3://clarissaprod-apps-athena-query-results/)",
     )
     ap.add_argument(
-        "--region", default="eu-central-1",
-        help="AWS region override (default: eu-central-1 -- the "
+        "--region", default=None,
+        help="AWS region override (default: from the tenant registry, eu-central-1 -- the "
              "--output-location results bucket only exists there, which "
              "differs from this profile's own configured region, "
              "us-east-1)")
-    ap.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Directory to write the CSV to (default: <repo>/data/athena)")
+    ap.add_argument("--output-dir", default=None, help="Directory to write the CSV to (default: <repo>/data/athena[/<TENANT>])")
     ap.add_argument("--poll-interval", type=int, default=2, help="Seconds between status polls (default: 2)")
     ap.add_argument("--timeout", type=int, default=300, help="Max seconds to wait for query completion (default: 300)")
     ap.add_argument("--dry-run", action="store_true", help="Print the filled-in query and exit, without touching Athena")
     ap.add_argument("--skip-auth-check", action="store_true", help="Skip the SSO credential check/auto-refresh pre-flight")
     ap.add_argument("--force", action="store_true", help="Re-run Athena even if the output CSV already has data")
     args = ap.parse_args()
+
+    try:
+        ctx = resolve_tenant_context(args.tenant or LEGACY_TENANT)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
+    args.profile = args.profile or ctx.profile
+    args.database = args.database or ctx.database
+    args.region = args.region or ctx.region
+    args.output_dir = args.output_dir or str(investigation_data_dir("athena", tenant=args.tenant))
 
     try:
         date_iso = _validated_date_iso(args.date)
@@ -111,7 +122,7 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     out_path = _default_output_path(date_iso, args.output_dir)
 
-    print(f"Starting Athena query on {args.database}.unified_sessions for {date_iso} "
+    print(f"Starting Athena query [{ctx.code}] on {args.database}.unified_sessions for {date_iso} "
           f"(profile={args.profile}, workgroup={args.workgroup})...", file=sys.stderr)
     try:
         result = run_athena_query(

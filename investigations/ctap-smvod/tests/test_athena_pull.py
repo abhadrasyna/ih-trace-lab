@@ -96,7 +96,7 @@ def test_athena_pull_uses_lib_adapter(tmp_path: Path, monkeypatch) -> None:
 
     assert len(calls) == 1
     assert captured["database"] == "unified_e6auj7k7"
-    assert captured["profile"] == playback.DEFAULT_PROFILE
+    assert captured["profile"] == "clarissa-insights-product"
 
 
 def test_athena_pull_rejects_non_iso_date(monkeypatch, capsys) -> None:
@@ -134,3 +134,42 @@ def test_athena_pull_fires_when_existing_csv_is_header_only(tmp_path: Path, monk
     )
 
     assert len(calls) == 1
+
+
+def test_athena_pull_uses_tenant_registry_values(tmp_path: Path, monkeypatch) -> None:
+    captured = _run_cli(
+        playback,
+        ["run_athena_playback_outcome.py", "--date", "2026-09-30", "--tenant", "ZM", "--output-dir", str(tmp_path), "--skip-auth-check"],
+        monkeypatch,
+        lambda **kwargs: SimpleNamespace(row_count=1),
+    )
+
+    assert captured["database"] == "unified_a7vli5h8"
+    assert 'unified_a7vli5h8' in captured["sql"]
+
+
+def test_debug_events_query_uses_tenant_table(tmp_path: Path, monkeypatch) -> None:
+    report_path = tmp_path / "setupsession.csv"
+    report_path.write_text("sessionId\nabc\n", encoding="utf-8")
+
+    captured = _run_cli(
+        debug,
+        ["run_athena_debug_events.py", "--date", "2026-09-30", "--tenant", "ZM", "--input", str(report_path),
+         "--output-dir", str(tmp_path), "--skip-auth-check"],
+        monkeypatch,
+        lambda **kwargs: SimpleNamespace(row_count=1),
+        fake_extract_ids=lambda path, column: ["abc"],
+    )
+
+    assert 'FROM "unified_a7vli5h8"."a7vli5h8_ccl_debug_events"' in captured["sql"]
+    assert "e6auj7k7" not in captured["sql"]
+
+
+def test_athena_pull_unknown_tenant_exits(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(sys, "argv", ["run_athena_playback_outcome.py", "--date", "2026-09-30", "--tenant", "XX", "--skip-auth-check"])
+
+    with pytest.raises(SystemExit) as exc_info:
+        playback.main()
+
+    assert exc_info.value.code == 1
+    assert "Unknown tenant 'XX'" in capsys.readouterr().err
