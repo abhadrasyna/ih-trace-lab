@@ -47,7 +47,9 @@ task per session, design review before code), `logging-and-correlation-id.md` (l
 - **MT-5** — shared-project `busUnitId` guard at merge.
 - **MT-6** — migrate existing SA files under a tenant folder.
 - **MT-7** — Zambia pilot run for one date and sanity checks.
-- **MT-8** — docs (`usage.md`, `CONTEXT.md`) and final review.
+- **MT-8** — `is_wv` column in the 1xxx/6xxx error report; shared wv helper in `scripts/lib/`.
+- **MT-9** — rerun dates with empty `raw_user_agent` after the tenant layout lands.
+- **MT-10** — docs (`usage.md`, `CONTEXT.md`) and final review.
 
 ## Definition of done
 

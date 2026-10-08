@@ -85,7 +85,31 @@ and compare error-code distribution sanity vs Ghana. Record results in a dated d
 
 ---
 
-## MT-8 — Docs and close
+## MT-8 — `is_wv` column in the error report
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/lib/webview.py` — move `_is_wv` here as a public helper (keyed on `raw_user_agent`, falling back to the parsed `Platform` column, `; wv` token).
+- `investigations/ctap-smvod/scripts/analyze_webview_devices.py`, `analyze_wv_device_cross_date_success.py` — import the shared helper; no behaviour change.
+- `investigations/ctap-smvod/scripts/extract_error_report_1xxx_6xxx.py` — add `is_wv` to `DEFAULT_COLUMNS` and each row; flows into the per-date CSV and the range `.xlsx`.
+- `investigations/ctap-smvod/tests/test_extract_error_report.py`, `tests/test_analysis_helpers.py` — coverage.
+
+**What to implement:** the source is `<date>_setupsession_with_outcome.csv`, whose `raw_user_agent` already comes from `<date>_ctap.csv` (`http.user_agent`), so the ctap files are not re-read. `is_wv`
+is `true` when the UA contains the `; wv` token, `false` when a UA is present without it, and blank when no UA is available, so a missing UA is never reported as non-wv.
+
+**Tests:** `test_wv_user_agent_marked_true`; `test_non_wv_user_agent_marked_false`; `test_missing_user_agent_is_blank_not_false`; `test_is_wv_column_in_xlsx`. **Commit:** `feat(ctap-smvod): add is_wv
+to 1xxx/6xxx error report`
+
+---
+
+## MT-9 — Rerun dates with empty user agent
+
+**What to implement:** 2026-10-02's `setupsession_with_outcome.csv` has an empty `raw_user_agent` for all 40 error rows (output predates the column). After MT-6, rerun the merge for each affected date
+and tenant (`--skip-step3 --skip-step4` if the Athena files are cached), regenerate the error-report CSVs and the 01–06 Oct xlsx, and confirm no blank `is_wv` remains. **Commit:** `data(ctap-smvod):
+refresh error reports with is_wv`
+
+---
+
+## MT-10 — Docs and close
 
 **Files to change / create:** `investigations/ctap-smvod/docs/usage.md` (new layout, `--tenant`, per-tenant export rule incl. `busUnitId` filter, how to add a tenant), `CONTEXT.md` "What Exists".
 

@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MT-1, MT-2, MT-3, MT-4, MT-5, MT-6, MT-7, MT-8.**
+**Open: MT-1, MT-2, MT-3, MT-4, MT-5, MT-6, MT-7, MT-8, MT-9, MT-10.**
 
 - [ ] **MT-1** — audit tenant-specific hardcoding in ctap-smvod scripts/SQL; record findings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 - [ ] **MT-2** — tenant-namespaced input/output paths in `runtime.py` + `data_paths.yaml` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
@@ -12,7 +12,9 @@ spec.
 - [ ] **MT-5** — `busUnitId` guard for shared Lightstep projects at merge | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 - [ ] **MT-6** — `git mv` existing SA data/output under the SA tenant folder | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 - [ ] **MT-7** — Zambia pilot run for one date + sanity checks vs Ghana | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: —
-- [ ] **MT-8** — update `usage.md`, `CONTEXT.md`; final review | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
+- [ ] **MT-8** — add `is_wv` column to the 1xxx/6xxx error report (CSV + xlsx); move `_is_wv` to `scripts/lib/` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
+- [ ] **MT-9** — rerun empty-`raw_user_agent` dates (e.g. 2026-10-02) per tenant; regenerate error-report CSVs/xlsx | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: —
+- [ ] **MT-10** — update `usage.md`, `CONTEXT.md`; final review | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 
 ## Story done when
 
@@ -23,7 +25,9 @@ spec.
 - **MT-5** — a Zambia file containing another tenant's `busUnitId` fails the merge loudly.
 - **MT-6** — SA history preserved via `git mv`; SA reruns reproduce prior outputs.
 - **MT-7** — Zambia produces the full output set for one date; row counts reconcile with the export.
-- **MT-8** — docs and `CONTEXT.md` reflect the new layout; tests green.
+- **MT-8** — every error-report row has `is_wv` (true/false, blank when no user agent); the xlsx carries it; `_is_wv` lives in `scripts/lib/` and `analyze_webview_devices.py` imports it.
+- **MT-9** — no error-report row is left with a blank user agent because of stale outputs.
+- **MT-10** — docs and `CONTEXT.md` reflect the new layout; tests green.
 
 ## After each task
 
