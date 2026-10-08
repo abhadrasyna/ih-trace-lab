@@ -80,3 +80,24 @@ def discover_tenants(
         if any(folder.glob(f"{date_iso}_*.csv")):
             found.append(code)
     return found
+
+
+def enforce_disambiguation(rows: list[dict[str, str]], context: TenantContext, source: str) -> None:
+    """Fail loudly unless every row of a shared-project export belongs to `context`'s tenant.
+
+    No-op for dedicated-project tenants. Rows with a blank or different value, or a missing column, raise ValueError.
+    """
+    attribute = context.disambiguation_attribute
+    if not attribute:
+        return
+    if rows and attribute not in rows[0]:
+        raise ValueError(
+            f"[{context.code}] {source} has no '{attribute}' column; the shared Lightstep project "
+            f"{context.lightstep_project} requires it to separate tenants"
+        )
+    foreign = {row.get(attribute, "") for row in rows} - {context.disambiguation_value}
+    if foreign:
+        raise ValueError(
+            f"[{context.code}] {source} contains {attribute} values {sorted(foreign)} "
+            f"but expected only '{context.disambiguation_value}'"
+        )

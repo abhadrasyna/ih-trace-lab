@@ -186,7 +186,7 @@ def _build_steps(args, date_iso: str, tenant: str):
         (
             "Step 2 - base merge (merge_ctap_smvod_csv.py)",
             [py, os.path.join(SCRIPT_DIR, "merge_ctap_smvod_csv.py"), "--date", args.date,
-             "--input-dir", lightstep_dir, "--out", snap("setupsession")],
+             "--input-dir", lightstep_dir, "--out", snap("setupsession"), "--tenant", tenant],
             False,
         ),
         (

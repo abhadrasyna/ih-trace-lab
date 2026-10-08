@@ -111,7 +111,8 @@ def test_build_steps_scopes_every_step_to_tenant_folders(tenant_root: Path) -> N
     assert label.startswith("Step 1b") and skip is False
     assert command[1].endswith("combine_lightstep_parts.py")
     assert command[-4:] == ["--date", "2026-09-30", "--input-dir", lightstep]
-    assert ["--input-dir", lightstep] == steps[1][1][-4:-2]
+    assert ["--input-dir", lightstep] == steps[1][1][-6:-4]
+    assert ["--tenant", "ZM"] == steps[1][1][-2:]
     assert all(str(out) in " ".join(c) for _, c, _ in steps[1:2] + steps[4:])
 
 

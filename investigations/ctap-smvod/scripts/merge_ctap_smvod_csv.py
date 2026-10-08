@@ -55,6 +55,7 @@ from src.lib.logging.bootstrap import init_logging
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.merge_ctap_smvod_csv")
 
 from lib.runtime import snapshot_output_path
+from lib.tenant_context import enforce_disambiguation, resolve_tenant_context
 
 TRACE_KEY = "lightstep.trace_id"
 SESSION_KEY = "sessionId"
@@ -258,6 +259,8 @@ def main():
     ap.add_argument("--date", required=True, help="Date in DDMMYYYY format, e.g. 08072026")
     ap.add_argument("--input-dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "lightstep"))
     ap.add_argument("--out", default=None, help="Output CSV path (default: ../output/YYYY-MM-DD_setupsession.csv)")
+    ap.add_argument("--tenant", default=None,
+                    help="Tenant code; for shared Lightstep projects, rejects rows from other tenants (busUnitId guard)")
     args = ap.parse_args()
 
     ctap_files = find_input_file(args.input_dir, "ctap", args.date)
@@ -273,6 +276,15 @@ def main():
     smvod_ts_rows = []
     for f in smvod_ts_files:
         smvod_ts_rows.extend(load_csv(f, extra_ignore_cols=TS_IGNORE_COLS))
+
+    if args.tenant:
+        try:
+            context = resolve_tenant_context(args.tenant)
+            enforce_disambiguation(ctap_rows, context, "CTAP export")
+            enforce_disambiguation(smvod_rows, context, "SM-VOD export")
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(1)
 
     ctap_by_trace = {r[TRACE_KEY]: r for r in ctap_rows if r.get(TRACE_KEY)}
     smvod_by_trace = {r[TRACE_KEY]: r for r in smvod_rows if r.get(TRACE_KEY)}
