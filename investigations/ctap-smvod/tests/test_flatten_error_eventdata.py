@@ -1,7 +1,10 @@
 """Tests for flatten_error_eventdata.py."""
 from __future__ import annotations
 
+import csv
 import json
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -114,3 +117,22 @@ def test_invalid_json_raises():
 def test_missing_columns_raises():
     with pytest.raises(ValueError):
         mod.flatten_rows([{"messageid": "a"}])
+
+
+def test_output_file_names_by_date_and_label():
+    assert mod.output_file("d", "2026-10-04", "3016") == str(Path("d") / "2026-10-04_3016.csv")
+
+
+def test_main_writes_all_and_per_code_into_folder(monkeypatch, tmp_path):
+    src = tmp_path / "in.csv"
+    rows = [_row("a", 3016, SHAKA_3016), _row("b", 6007, SHAKA_6007)]
+    with open(src, "w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    out = tmp_path / "error_eventdata_flat"
+    monkeypatch.setattr(sys, "argv", ["f.py", "--input", str(src), "--date", "2026-10-04",
+                                      "--out-dir", str(out), "--split-by-errorcode"])
+    monkeypatch.setattr(mod, "init_logging", lambda slug: None)
+    mod.main()
+    assert sorted(p.name for p in out.iterdir()) == ["2026-10-04_3016.csv", "2026-10-04_6007.csv", "2026-10-04_all.csv"]

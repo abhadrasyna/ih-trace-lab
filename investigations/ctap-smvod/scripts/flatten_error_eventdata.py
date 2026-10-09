@@ -9,11 +9,14 @@ DRM/HTTP error, player state, network details, user agent, is_wv) plus the untou
 
 Usage:
     python3 flatten_error_eventdata.py --input ../data/athena/ZM/errors_3016.csv ../data/athena/ZM/errors_1003.csv \
-        --out ../output/ZM/2026-10-04_error_eventdata_flat.csv
+        --date 2026-10-04 --out-dir ../output/ZM/error_eventdata_flat --split-by-errorcode
+
+Writes `<out-dir>/<date>_all.csv`, plus `<date>_<errorcode>.csv` per code with --split-by-errorcode.
 """
 import argparse
 import json
 import logging
+import os
 import re
 from urllib.parse import urlparse
 
@@ -211,6 +214,11 @@ def split_by_errorcode(flat: list[dict]) -> dict[str, tuple[list[str], list[dict
     return out
 
 
+def output_file(out_dir: str, date_iso: str, label: str) -> str:
+    """Pure: `<out_dir>/<date>_<label>.csv`, label being an error code or `all`."""
+    return os.path.join(out_dir, f"{date_iso}_{label}.csv")
+
+
 def write_csv(path: str, fields: list[str], rows: list[dict]) -> None:
     with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fields)
@@ -227,19 +235,21 @@ def main() -> None:
     init_logging("ctap-smvod-flatten_error_eventdata")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input", nargs="+", required=True, help="PLAYER_ERROR debug-event CSV export(s)")
-    ap.add_argument("--out", required=True, help="Flattened output CSV path")
+    ap.add_argument("--date", required=True, help="Date label for output filenames, YYYY-MM-DD")
+    ap.add_argument("--out-dir", required=True, help="Output folder (e.g. ../output/ZM/error_eventdata_flat), created if missing")
     ap.add_argument("--split-by-errorcode", action="store_true",
-                    help="Also write <out stem>_<errorcode>.csv per code, with columns blank for that code dropped")
+                    help="Also write <date>_<errorcode>.csv per code, with columns blank for that code dropped")
     args = ap.parse_args()
 
     rows = [r for path in args.input for r in read_rows(path)]
     flat = flatten_rows(rows)
-    write_csv(args.out, FIELDS, flat)
-    LOGGER.info("Wrote %d unique error rows (from %d input rows) to %s", len(flat), len(rows), args.out)
+    os.makedirs(args.out_dir, exist_ok=True)
+    combined = output_file(args.out_dir, args.date, "all")
+    write_csv(combined, FIELDS, flat)
+    LOGGER.info("Wrote %d unique error rows (from %d input rows) to %s", len(flat), len(rows), combined)
     if args.split_by_errorcode:
-        stem = args.out[:-4] if args.out.endswith(".csv") else args.out
         for code, (cols, code_rows) in split_by_errorcode(flat).items():
-            path = f"{stem}_{code}.csv"
+            path = output_file(args.out_dir, args.date, code)
             write_csv(path, cols, code_rows)
             LOGGER.info("Wrote %d rows x %d columns for errorcode %s to %s", len(code_rows), len(cols), code, path)
 

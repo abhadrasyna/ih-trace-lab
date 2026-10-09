@@ -4,7 +4,7 @@
 Read-only; prints to stdout. One table per `--by` group; `--by errorcode,net_effectivetype` is a crosstab.
 
 Usage:
-    python3 summarize_error_eventdata.py --flat ../output/ZM/2026-10-04_error_eventdata_flat.csv \
+    python3 summarize_error_eventdata.py --flat ../output/ZM/error_eventdata_flat/2026-10-04_all.csv \
         --by errorcode --by errorcode,shaka_message --by errorcode,is_wv --by errorcode,shaka_url_host
 """
 import argparse
@@ -37,7 +37,7 @@ def render(columns: list[str], counts: Counter, total: int) -> str:
 def main() -> None:
     init_logging("ctap-smvod-summarize_error_eventdata")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--flat", required=True, help="Flattened *_error_eventdata_flat.csv")
+    ap.add_argument("--flat", required=True, help="Flattened <date>_all.csv or <date>_<code>.csv from flatten_error_eventdata.py")
     ap.add_argument("--by", action="append", required=True, help="Comma-separated columns to group by (repeatable)")
     args = ap.parse_args()
 

@@ -240,7 +240,8 @@ def _build_steps(args, date_iso: str, tenant: str):
         (
             "Step 6g - flatten error eventdata (flatten_error_eventdata.py)",
             [py, os.path.join(SCRIPT_DIR, "flatten_error_eventdata.py"), "--input", step6f_path,
-             "--out", os.path.join(output_dir, f"{date_iso}_error_eventdata_flat.csv"), "--split-by-errorcode"],
+             "--date", date_iso, "--out-dir", os.path.join(output_dir, "error_eventdata_flat"),
+             "--split-by-errorcode"],
             args.skip_error_eventdata,
         ),
     ]

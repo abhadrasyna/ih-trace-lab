@@ -127,7 +127,8 @@ def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -
     assert ["--tenant", "ZM", "--output-dir", athena_dir] == fetch[1][-4:]
     assert flatten[0].startswith("Step 6g") and flatten[1][1].endswith("flatten_error_eventdata.py")
     assert flatten[1][flatten[1].index("--input") + 1] == str(Path(athena_dir) / "2026-09-30_error_eventdata.csv")
-    assert flatten[1][flatten[1].index("--out") + 1] == str(out / "2026-09-30_error_eventdata_flat.csv")
+    assert flatten[1][flatten[1].index("--out-dir") + 1] == str(out / "error_eventdata_flat")
+    assert flatten[1][flatten[1].index("--date") + 1] == "2026-09-30"
     assert "--split-by-errorcode" in flatten[1] and fetch[2] is False and flatten[2] is False
 
 

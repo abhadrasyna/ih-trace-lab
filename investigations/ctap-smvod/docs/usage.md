@@ -55,7 +55,7 @@ Prerequisite: the Lightstep exports for the date already sit in `data/lightstep/
 | 6e | `extract_error_report_1xxx_6xxx.py` | `output/YYYY-MM-DD_error_report_1xxx_6xxx.csv` |
 | 6d | `analyze_webview_devices.py` | `output/YYYY-MM-DD_webview_device_report.csv` |
 | 6f | `run_athena_error_eventdata.py` | `data/athena/YYYY-MM-DD_error_eventdata.csv` (raw `PLAYER_ERROR` eventdata) |
-| 6g | `flatten_error_eventdata.py` | `output/YYYY-MM-DD_error_eventdata_flat.csv` + `_<errorcode>.csv` per code |
+| 6g | `flatten_error_eventdata.py` | `output/<T>/error_eventdata_flat/<date>_all.csv` + `<date>_<errorcode>.csv` per code |
 
 Variations:
 
@@ -112,8 +112,8 @@ Other options: `--output-dir`.
 | `python3 analyze_webview_devices.py --start-date 2026-09-01 --end-date 2026-09-10` | one `YYYY-MM-DD_webview_device_report.csv` per date (range uses ISO dates) |
 | `python3 analyze_error_report_breakdown.py --error-report ../output/SA/2026-10-09_error_report_1xxx_6xxx.csv [--outcome-report ...]` | stdout only (error code / `is_wv` / device / hour breakdown) |
 | `python3 analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv` | same breakdown over every error code (incl. 3016) |
-| `python3 flatten_error_eventdata.py --input <export>.csv ... --out ../output/ZM/<date>_error_eventdata_flat.csv` | `eventdata` split into columns + `raw_eventdata`, one row per messageid |
-| `python3 flatten_error_eventdata.py ... --split-by-errorcode` | also `<out stem>_<errorcode>.csv` per code, columns blank for that code dropped |
+| `python3 flatten_error_eventdata.py --input <export>.csv --date <date> --out-dir ../output/ZM/error_eventdata_flat` | `<date>_all.csv`: `eventdata` split into columns + `raw_eventdata` |
+| `python3 flatten_error_eventdata.py ... --split-by-errorcode` | also `<date>_<errorcode>.csv` per code, columns blank for that code dropped |
 | `python3 summarize_error_eventdata.py --flat <flat>.csv --by errorcode,net_effectivetype` | stdout only (counts/crosstab over flat columns; `--by` repeatable) |
 | `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
 | `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |
@@ -163,7 +163,7 @@ Part of `run_pipeline.py` (Steps 6f/6g; skip with `--skip-error-eventdata`) and 
 2. Step 6f, `run_athena_error_eventdata.py --date 2026-10-04 --tenant ZM [--codes 3016,6007]`, exports every `PLAYER_ERROR` of the day to `data/athena/ZM/2026-10-04_error_eventdata.csv` (columns
    `datetime, messageid, clibversion, clientid, eventclass, eventid, eventdata`). It covers all tenant traffic for the day, not just Lightstep-matched sessions, so counts can exceed the pipeline error
    report. `--dry-run` prints the query; `--force` re-runs Athena over an existing CSV. The query is catalog slug `ctap-smvod-error-eventdata`.
-3. Step 6g, `flatten_error_eventdata.py --split-by-errorcode`, writes `output/ZM/2026-10-04_error_eventdata_flat.csv` plus one `_<errorcode>.csv` per code.
+3. Step 6g, `flatten_error_eventdata.py --split-by-errorcode`, writes `output/ZM/error_eventdata_flat/2026-10-04_all.csv` plus one `2026-10-04_<errorcode>.csv` per code.
 4. Analyse with `summarize_error_eventdata.py` (see Run).
 5. To find which sessions have errors first: `analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv`.
 
@@ -173,9 +173,9 @@ Part of `run_pipeline.py` (Steps 6f/6g; skip with `--skip-error-eventdata`) and 
 cd investigations/ctap-smvod/scripts
 python3 run_athena_error_eventdata.py --date 2026-10-04 --tenant ZM
 python3 flatten_error_eventdata.py --input ../data/athena/ZM/2026-10-04_error_eventdata.csv \
-    --out ../output/ZM/2026-10-04_error_eventdata_flat.csv --split-by-errorcode
-python3 summarize_error_eventdata.py --flat ../output/ZM/2026-10-04_error_eventdata_flat.csv --by errorcode,shaka_error_name
-python3 summarize_error_eventdata.py --flat ../output/ZM/2026-10-04_error_eventdata_flat_3016.csv --by pipeline_status,net_effectivetype
+    --date 2026-10-04 --out-dir ../output/ZM/error_eventdata_flat --split-by-errorcode
+python3 summarize_error_eventdata.py --flat ../output/ZM/error_eventdata_flat/2026-10-04_all.csv --by errorcode,shaka_error_name
+python3 summarize_error_eventdata.py --flat ../output/ZM/error_eventdata_flat/2026-10-04_3016.csv --by pipeline_status,net_effectivetype
 ```
 
 **Output.** `<out>.csv` has one row per unique `messageid` (duplicates dropped, sorted by `datetime`) with every column plus the untouched `raw_eventdata`. `--split-by-errorcode` also writes `<out
