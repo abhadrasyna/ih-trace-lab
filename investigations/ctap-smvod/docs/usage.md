@@ -10,6 +10,7 @@ prefixed `YYYY-MM-DD_`), Lightstep exports are read from `../data/lightstep/<TEN
 python3 run_pipeline.py --date 06102026                # every tenant that has Lightstep input for the date
 python3 run_pipeline.py --date 06102026 --tenant ZM    # one tenant only
 python3 summarize_pipeline_run.py --date 06102026 --tenant ZM   # reconcile export row counts vs the merged report
+python3 summarize_tenant_status.py --date 06102026              # SA,GH,ZM status table (UTC day) -> docs/2026-10-06-tenant-status-summary.md (--tenants, --out, --force)
 ```
 
 - With no `--tenant`, tenants with no `data/lightstep/<TENANT>/` input for the date are skipped. Within a tenant the pipeline stops at the first failing step; other tenants still run, a per-tenant

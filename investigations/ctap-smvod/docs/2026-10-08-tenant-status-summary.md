@@ -1,6 +1,7 @@
 # Tenant playback status summary — 2026-10-08 (SA, GH, ZM)
 
-One-day status across three tenants, built from `output/<TENANT>/2026-10-08_setupsession_with_outcome.csv` (rows deduplicated by `sessionId`; a session can span several ctap traces). Day is UTC.
+One-day status across three tenants, built from `output/<TENANT>/2026-10-08_setupsession_with_outcome.csv` (rows with a blank `sessionId`, i.e. ctap-only traces with no SM-VOD session, are dropped).
+Day is UTC.
 
 ## Headline
 
@@ -37,7 +38,7 @@ with no Athena outcome are omitted too, so columns do not sum to 100%.
 | Code | SA | GH | ZM |
 |---|---|---|---|
 | 6001 | 612 (30%) | 1 (<1%) | 0 |
-| 1003 | 61 (3%) | 63 (7%) | 43 (23%) |
+| 1003 | 59 (3%) | 63 (7%) | 43 (23%) |
 | 3016 | 28 (1%) | 26 (3%) | 4 (2%) |
 | E31012 | 17 (<1%) | 3 (<1%) | 6 (3%) |
 | 6007 | 2 | 1 | 5 (3%) |
