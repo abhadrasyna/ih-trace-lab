@@ -149,7 +149,48 @@ python3 merge_session_outcome.py --date 06102026 [--input-dir D] [--report R] [-
 python3 lightstep_ctap_smvod_join.py --date 06102026 --org Synamedia-EU --project <project-id>   # live-API alternative to Step 2
 ```
 
-## 7. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
+## 7. Error eventdata analysis (`flatten_error_eventdata.py`, `summarize_error_eventdata.py`)
+
+Not wired into `run_pipeline.py`: run by hand after the pipeline. They turn the raw `PLAYER_ERROR` debug-event `eventdata` JSON into analysis-ready columns.
+
+**Input.** One Athena export per error code (or one combined export) of `"unified_<athena_tenant_id>"."<athena_tenant_id>_ccl_debug_events"`. Columns: `datetime, messageid, clibversion, clientid,
+eventclass, eventid, eventdata`. The pipeline does not produce it. Pull it via the Athena MCP (`resolve_tenant.py --system athena --tenant ZM` first), filtering on the event class and the code:
+
+```sql
+WHERE eventid = 'PLAYER_ERROR' AND json_extract_scalar(eventdata, '$.errorcode') = '3016' AND <date filter on datetime>
+```
+
+**Run.**
+
+```bash
+cd investigations/ctap-smvod/scripts
+python3 flatten_error_eventdata.py --input ../data/athena/ZM/err_3016.csv ../data/athena/ZM/err_6007.csv \
+    --out ../output/ZM/2026-10-04_error_eventdata_flat.csv --split-by-errorcode
+python3 summarize_error_eventdata.py --flat ../output/ZM/2026-10-04_error_eventdata_flat.csv --by errorcode,shaka_error_name
+python3 summarize_error_eventdata.py --flat ../output/ZM/2026-10-04_error_eventdata_flat_3016.csv --by pipeline_status,net_effectivetype
+```
+
+**Output.** `<out>.csv` has one row per unique `messageid` (duplicates dropped, sorted by `datetime`) with every column plus the untouched `raw_eventdata`. `--split-by-errorcode` also writes `<out
+stem>_<errorcode>.csv` per code, keeping only columns that have a value for that code. A row with invalid eventdata JSON aborts the run.
+
+**Columns.** Each file has a common block for every code, plus a block that depends on the code.
+
+| Group | Columns |
+|---|---|
+| Common | `datetime, messageid, deviceId, householdId, sessionId, errorcode, error_text, position, user_agent, is_wv, app_version` |
+| Shaka error | `shaka_code, shaka_category, shaka_severity, shaka_handled, shaka_error_name, shaka_message` (first line only) |
+| Shaka URL | `shaka_url, shaka_url_host, shaka_http_status, shaka_version` |
+| 3xxx media (3016) | `media_error_type, pipeline_status` |
+| 6007 DRM licence | `nested_error_name, nested_shaka_code, nested_http_status, nested_problem_type, nested_title, nested_detail` |
+| 6007 MDRM | `nested_mdrm_http_status, nested_mdrm_code, nested_mdrm_message, flow_context` |
+| Player state | `player_phase, player_readystate, player_isbuffering, player_ispaused, player_isseeking, player_networkstate` |
+| Network | `net_type, net_effectivetype, net_downlink, net_rtt, net_savedata, drm_present` |
+| Bandwidth and timing | `est_bandwidth_bps, est_bandwidth_mbps, stream_bandwidth_bps, stream_mbps, bytes_downloaded, load_latency_s, buffering_time_s` |
+| Last ABR switch | `lastswitch_timestamp, lastswitch_id, lastswitch_type, lastswitch_bandwidth` |
+
+`summarize_error_eventdata.py --by` takes comma-separated column names and can be repeated for several crosstabs. It only prints to stdout.
+
+## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
 
 `extract_session_ids.py`, `extract_session_timeline.py`, `flatten_debug_events.py`, `build_debug_completeness_query.py`, `parse_debug_user_agents.py`, `analyze_debug_sample.py`,
 `analyze_errorcode_correlation.py`, `analyze_api_timing.py` (subcommands), `analyze_session_guard_net_latency.py` (subcommands), `process_traces.py`. Run any with `--help` for its arguments.
