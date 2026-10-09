@@ -53,6 +53,7 @@ def breakdown(rows: list[dict[str, str]]) -> dict:
     codes, codes_wv, codes_non_wv = Counter(), Counter(), Counter()
     hours, devices, households, states = Counter(), Counter(), Counter(), Counter()
     code_households: dict[str, set[str]] = {}
+    code_sessions: dict[str, set[str]] = {}
     wv_rows = not_moved = 0
     for row in rows:
         wv = is_true(row["is_wv"])
@@ -62,6 +63,7 @@ def breakdown(rows: list[dict[str, str]]) -> dict:
             codes[code] += 1
             (codes_wv if wv else codes_non_wv)[code] += 1
             code_households.setdefault(code, set()).add(row.get("householdId", ""))
+            code_sessions.setdefault(code, set()).add(row["sessionId"])
         hours[hour_of(row.get("start_time", ""))] += 1
         devices[row.get("deviceId", "")] += 1
         households[row.get("householdId", "")] += 1
@@ -70,6 +72,7 @@ def breakdown(rows: list[dict[str, str]]) -> dict:
         "total": len(rows), "wv": wv_rows, "not_moved": not_moved,
         "codes": codes, "codes_wv": codes_wv, "codes_non_wv": codes_non_wv,
         "code_households": {c: len(h) for c, h in code_households.items()},
+        "code_sessions": {c: len(s) for c, s in code_sessions.items()},
         "unique_households": len(households),
         "hours": hours, "devices": devices, "households": households, "states": states,
         "unique_sessions": len({r["sessionId"] for r in rows}),
@@ -98,6 +101,16 @@ def read_rows(path: str) -> list[dict[str, str]]:
         return list(csv.DictReader(fh))
 
 
+def print_spread(stats: dict, rate: dict | None, top: int) -> None:
+    """Error code spread: share of failures and, when the outcome report is given, share of all sessions."""
+    total = stats["unique_sessions"]
+    print("\n== Error code spread (unique sessions; a session may hold several codes) ==")
+    print(f"{'code':>8}  {'sessions':>8}  {'% of failures':>13}  {'% of all sessions':>17}")
+    for code, sessions in Counter(stats["code_sessions"]).most_common(top):
+        all_pct = pct(sessions, rate["total"]) if rate else "n/a"
+        print(f"{code:>8}  {sessions:8d}  {pct(sessions, total):>13}  {all_pct:>17}")
+
+
 def print_report(stats: dict, rate: dict | None, top: int) -> None:
     total = stats["total"]
     print(f"Error rows: {total} (unique sessions: {stats['unique_sessions']})")
@@ -107,7 +120,7 @@ def print_report(stats: dict, rate: dict | None, top: int) -> None:
         print(f"Error sessions / all sessions: {rate['errors']}/{rate['total']} ({pct(rate['errors'], rate['total'])})")
         print(f"WV error sessions / all WV sessions: {rate['wv_errors']}/{rate['wv_total']} "
               f"({pct(rate['wv_errors'], rate['wv_total'])})")
-    _top("Error code frequency (share of rows; a row may hold several codes)", stats["codes"], total, top)
+    print_spread(stats, rate, top)
     print("\n== Error code x is_wv ==")
     for code, count in stats["codes"].most_common(top):
         wv, non = stats["codes_wv"][code], stats["codes_non_wv"][code]

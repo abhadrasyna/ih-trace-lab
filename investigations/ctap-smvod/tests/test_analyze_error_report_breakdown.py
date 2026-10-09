@@ -32,6 +32,26 @@ def test_unique_households_per_code():
     assert stats["unique_households"] == 2
 
 
+def test_print_spread_with_and_without_rate(capsys):
+    stats = mod.breakdown([_row("a", "6001", "true"), _row("b", "1003", "false")])
+    mod.print_spread(stats, {"total": 10}, 5)
+    out = capsys.readouterr().out
+    assert "50.0%" in out and "10.0%" in out
+    mod.print_spread(stats, None, 5)
+    assert "n/a" in capsys.readouterr().out
+
+
+def test_spread_counts_unique_sessions(capsys):
+    stats = mod.breakdown([_row("a", "6001", "true"), _row("a", "6001", "true"), _row("b", "1003", "false"),
+                           _row("c", "1003", "false"), _row("d", "1003", "false")])
+    mod.print_spread(stats, {"total": 10}, 5)
+    lines = {ln.split()[0]: ln for ln in capsys.readouterr().out.splitlines() if ln.split()[:1] in (["6001"], ["1003"])}
+    assert stats["code_sessions"]["6001"] == 1
+    assert "75.0%" in lines["1003"] and "30.0%" in lines["1003"]
+    assert "25.0%" in lines["6001"] and "10.0%" in lines["6001"]
+    assert list(lines) == ["1003", "6001"]
+
+
 def test_breakdown_missing_column_raises():
     with pytest.raises(ValueError):
         mod.breakdown([{"sessionId": "a", "error_codes": "6001"}])
