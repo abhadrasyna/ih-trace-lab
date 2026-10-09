@@ -11,10 +11,15 @@ mod = load_script("flatten_error_eventdata.py")
 
 SHAKA_3016 = {"severity": 2, "category": 3, "code": 3016, "data": [3, None, "PipelineStatus::PIPELINE_ERROR_DECODE"],
               "message": "Shaka Error MEDIA.VIDEO_ERROR"}
-INNER_BODY = json.dumps({"title": "Not Authorized", "status": 403,
-                         "detail": 'MDRM server returned 400, body: "{\\"code\\":\\"6211\\",\\"message\\":\\"x\\"}"'})
-SHAKA_6007 = {"code": 6007, "category": 6, "message": "m", "data": [
-    {"code": 1001, "data": ["https://lic.example/widevine/x", 403, INNER_BODY, {}, 2, "https://lic.example/widevine/x"]}]}
+INNER_BODY = json.dumps({"type": "https://dashif.org/drm-problems/device-insufficient-security-level",
+                         "title": "Not Authorized", "status": 403,
+                         "detail": 'MDRM server returned 400, body: "{\\"code\\":\\"6211\\",\\"message\\":\\"Test device not allowed\\"}"'})
+SHAKA_6007 = {"code": 6007, "category": 6,
+              "message": "Shaka Error DRM.LICENSE_REQUEST_FAILED (shaka.util.Error {\n  \"code\": 1001\n})", "data": [
+    {"code": 1001, "message": "Shaka Error NETWORK.BAD_HTTP_STATUS (https://lic.example/widevine/x,403)",
+     "stack": "Error\n at https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:1:1",
+     "data": ["https://lic.example/widevine/x", 403, INNER_BODY, {"flow_context": "FC123"}, 2,
+              "https://lic.example/widevine/x"]}]}
 
 
 def _row(mid: str, errorcode, shaka: dict, ua: str = "Mozilla/5.0 (Linux; Android 10; K) Chrome/150") -> dict[str, str]:
@@ -41,6 +46,28 @@ def test_flatten_6007_nested_drm_error():
     assert flat["nested_shaka_code"] == 1001 and flat["nested_http_status"] == 403
     assert flat["nested_title"] == "Not Authorized" and flat["nested_mdrm_code"] == "6211"
     assert flat["shaka_url"] == "https://lic.example/widevine/x" and flat["shaka_url_host"] == "lic.example"
+    assert flat["shaka_error_name"] == "DRM.LICENSE_REQUEST_FAILED"
+    assert flat["shaka_message"] == "Shaka Error DRM.LICENSE_REQUEST_FAILED" and "\n" not in flat["shaka_message"]
+    assert flat["nested_error_name"] == "NETWORK.BAD_HTTP_STATUS"
+    assert flat["nested_problem_type"] == "device-insufficient-security-level"
+    assert flat["nested_mdrm_http_status"] == "400" and flat["nested_mdrm_message"] == "Test device not allowed"
+    assert flat["flow_context"] == "FC123" and flat["shaka_version"] == "4.12.6"
+
+
+def test_flatten_null_nested_fields_do_not_crash():
+    body = json.dumps({"type": None, "title": None, "detail": None})
+    shaka = {"code": 6007, "message": None, "data": [{"code": 1001, "message": None, "stack": None,
+                                                       "data": ["https://x.example/a", 403, body, {"flow_context": None}]}]}
+    flat = mod.flatten_row(_row("n", 6007, shaka))
+    assert flat["nested_problem_type"] == "" and flat["flow_context"] == "" and flat["shaka_message"] == ""
+
+
+def test_flatten_1003_timeout_has_blank_nested_and_name():
+    timeout = {"code": 1003, "category": 1, "data": ["https://cdn.example/seg.m4f", 1],
+               "message": "Shaka Error NETWORK.TIMEOUT (https://cdn.example/seg.m4f,1)"}
+    flat = mod.flatten_row(_row("t", 1003, timeout))
+    assert flat["shaka_error_name"] == "NETWORK.TIMEOUT" and flat["shaka_url_host"] == "cdn.example"
+    assert flat["nested_error_name"] == "" and flat["flow_context"] == "" and flat["shaka_version"] == ""
 
 
 def test_flatten_rows_dedupes_on_messageid():
