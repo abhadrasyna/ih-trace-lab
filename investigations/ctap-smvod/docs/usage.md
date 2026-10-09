@@ -153,8 +153,17 @@ python3 lightstep_ctap_smvod_join.py --date 06102026 --org Synamedia-EU --projec
 
 Not wired into `run_pipeline.py`: run by hand after the pipeline. They turn the raw `PLAYER_ERROR` debug-event `eventdata` JSON into analysis-ready columns.
 
-**Input.** One Athena export per error code (or one combined export) of `"unified_<athena_tenant_id>"."<athena_tenant_id>_ccl_debug_events"`. Columns: `datetime, messageid, clibversion, clientid,
-eventclass, eventid, eventdata`. The pipeline does not produce it. Pull it via the Athena MCP (`resolve_tenant.py --system athena --tenant ZM` first), filtering on the event class and the code:
+**Flow (ZM, 4 Oct example).**
+
+1. Run the pipeline: `python3 run_pipeline.py --date 04102026 --tenant ZM`. Step 4 (`run_athena_debug_events.py`) writes `data/athena/ZM/2026-10-04_debug_states.csv`. That file only has extracted
+   columns (`sessionId, eventid, state, position, errorcode, errordescription, datetime`). It has no `eventdata`, `messageid` or `clientid`, so the flattener cannot read it.
+2. Find the error sessions: `analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv`.
+3. Fetch the raw eventdata (below) into `data/athena/ZM/`, one export per error code.
+4. Flatten and summarize (see Run).
+
+**Input (step 3).** One Athena export per error code (or one combined export) of `"unified_<athena_tenant_id>"."<athena_tenant_id>_ccl_debug_events"`. Columns: `datetime, messageid, clibversion,
+clientid, eventclass, eventid, eventdata`. No script fetches this yet. Pull it via the Athena MCP, running `resolve_tenant.py --system athena --tenant ZM` first. Filter on the event id, the code and
+the date:
 
 ```sql
 WHERE eventid = 'PLAYER_ERROR' AND json_extract_scalar(eventdata, '$.errorcode') = '3016' AND <date filter on datetime>
