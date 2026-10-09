@@ -96,6 +96,7 @@ existing files only (never calls Athena) and aborts listing any missing dates.
 python3 extract_error_report_1xxx_6xxx.py --date 06102026                          # one CSV
 python3 extract_error_report_1xxx_6xxx.py --from 01102026 --to 06102026           # one XLSX, one sheet per date
 python3 extract_error_report_1xxx_6xxx.py --date 06102026 --out /tmp/e.csv --columns sessionId,error_codes
+python3 extract_error_report_1xxx.py --from 01102026 --to 06102026                 # 1xxx only, SA,GH,ZM at once: one XLSX per tenant in output/<TENANT>/ (--tenants, --output-dir ROOT)
 ```
 
 | Mode | Output |
