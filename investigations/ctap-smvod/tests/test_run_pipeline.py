@@ -30,6 +30,7 @@ class _Args:
     skip_step6b = False
     skip_step6d = False
     skip_step6e = False
+    skip_error_eventdata = False
     full_position_report = False
     dry_run = False
 
@@ -113,7 +114,26 @@ def test_build_steps_scopes_every_step_to_tenant_folders(tenant_root: Path) -> N
     assert command[-4:] == ["--date", "2026-09-30", "--input-dir", lightstep]
     assert ["--input-dir", lightstep] == steps[1][1][-6:-4]
     assert ["--tenant", "ZM"] == steps[1][1][-2:]
-    assert all(str(out) in " ".join(c) for _, c, _ in steps[1:2] + steps[4:])
+    assert all(str(out) in " ".join(c) for _, c, _ in steps[1:2] + steps[4:8])
+
+
+def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -> None:
+    steps = run_pipeline._build_steps(_args(skip_auth_check=True), "2026-09-30", "ZM")
+    athena_dir = str(tenant_root / "data" / "athena" / "ZM")
+    out = tenant_root / "output" / "ZM"
+
+    fetch, flatten = steps[-2], steps[-1]
+    assert fetch[0].startswith("Step 6f") and fetch[1][1].endswith("run_athena_error_eventdata.py")
+    assert ["--tenant", "ZM", "--output-dir", athena_dir] == fetch[1][-4:]
+    assert flatten[0].startswith("Step 6g") and flatten[1][1].endswith("flatten_error_eventdata.py")
+    assert flatten[1][flatten[1].index("--input") + 1] == str(Path(athena_dir) / "2026-09-30_error_eventdata.csv")
+    assert flatten[1][flatten[1].index("--out") + 1] == str(out / "2026-09-30_error_eventdata_flat.csv")
+    assert "--split-by-errorcode" in flatten[1] and fetch[2] is False and flatten[2] is False
+
+
+def test_build_steps_skip_error_eventdata_skips_both(tenant_root: Path) -> None:
+    steps = run_pipeline._build_steps(_args(skip_error_eventdata=True), "2026-09-30", "ZM")
+    assert steps[-2][2] is True and steps[-1][2] is True
 
 
 def test_build_steps_forwards_force_to_athena_steps(tenant_root: Path) -> None:
@@ -128,7 +148,7 @@ def _run_main(monkeypatch: pytest.MonkeyPatch, *argv: str) -> None:
     run_pipeline.main()
 
 
-_SKIPS = ("--skip-step3", "--skip-step4", "--skip-step6b", "--skip-step6d", "--skip-step6e")
+_SKIPS = ("--skip-step3", "--skip-step4", "--skip-step6b", "--skip-step6d", "--skip-step6e", "--skip-error-eventdata")
 
 
 def test_main_validates_inputs_after_step1b_not_before(

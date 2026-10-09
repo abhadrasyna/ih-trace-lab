@@ -54,6 +54,8 @@ Prerequisite: the Lightstep exports for the date already sit in `data/lightstep/
 | 6b | `extract_position_report.py` | `output/YYYY-MM-DD_position_report.csv` |
 | 6e | `extract_error_report_1xxx_6xxx.py` | `output/YYYY-MM-DD_error_report_1xxx_6xxx.csv` |
 | 6d | `analyze_webview_devices.py` | `output/YYYY-MM-DD_webview_device_report.csv` |
+| 6f | `run_athena_error_eventdata.py` | `data/athena/YYYY-MM-DD_error_eventdata.csv` (raw `PLAYER_ERROR` eventdata) |
+| 6g | `flatten_error_eventdata.py` | `output/YYYY-MM-DD_error_eventdata_flat.csv` + `_<errorcode>.csv` per code |
 
 Variations:
 
@@ -64,6 +66,7 @@ python3 run_pipeline.py --date 06102026 --skip-if-exists             # skip Athe
 python3 run_pipeline.py --date 06102026 --skip-step6b                # no position_report.csv
 python3 run_pipeline.py --date 06102026 --skip-step6e                # no 1xxx/6xxx error report
 python3 run_pipeline.py --date 06102026 --skip-step6d                # no webview device report
+python3 run_pipeline.py --date 06102026 --skip-error-eventdata       # no raw error eventdata export + flatten (Steps 6f/6g)
 python3 run_pipeline.py --date 06102026 --full-position-report       # position_report.csv with ALL sessions (needed for Steps 6c/7)
 python3 run_pipeline.py --date 06102026 --profile <aws-sso-profile> --skip-auth-check   # Athena auth passthrough (Steps 3/4)
 ```
@@ -151,29 +154,25 @@ python3 lightstep_ctap_smvod_join.py --date 06102026 --org Synamedia-EU --projec
 
 ## 7. Error eventdata analysis (`flatten_error_eventdata.py`, `summarize_error_eventdata.py`)
 
-Not wired into `run_pipeline.py`: run by hand after the pipeline. They turn the raw `PLAYER_ERROR` debug-event `eventdata` JSON into analysis-ready columns.
+Part of `run_pipeline.py` (Steps 6f/6g; skip with `--skip-error-eventdata`) and also runnable by hand. They turn the raw `PLAYER_ERROR` debug-event `eventdata` JSON into analysis-ready columns.
 
 **Flow (ZM, 4 Oct example).**
 
-1. Run the pipeline: `python3 run_pipeline.py --date 04102026 --tenant ZM`. Step 4 (`run_athena_debug_events.py`) writes `data/athena/ZM/2026-10-04_debug_states.csv`. That file only has extracted
-   columns (`sessionId, eventid, state, position, errorcode, errordescription, datetime`). It has no `eventdata`, `messageid` or `clientid`, so the flattener cannot read it.
-2. Find the error sessions: `analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv`.
-3. Fetch the raw eventdata (below) into `data/athena/ZM/`, one export per error code.
-4. Flatten and summarize (see Run).
+1. `python3 run_pipeline.py --date 04102026 --tenant ZM` runs everything below as Steps 6f and 6g, after the reports. Step 4 (`run_athena_debug_events.py`) is a different export: its
+   `debug_states.csv` only has extracted columns (`sessionId, eventid, state, position, errorcode, errordescription, datetime`), with no `eventdata`, `messageid` or `clientid`.
+2. Step 6f, `run_athena_error_eventdata.py --date 2026-10-04 --tenant ZM [--codes 3016,6007]`, exports every `PLAYER_ERROR` of the day to `data/athena/ZM/2026-10-04_error_eventdata.csv` (columns
+   `datetime, messageid, clibversion, clientid, eventclass, eventid, eventdata`). It covers all tenant traffic for the day, not just Lightstep-matched sessions, so counts can exceed the pipeline error
+   report. `--dry-run` prints the query; `--force` re-runs Athena over an existing CSV. The query is catalog slug `ctap-smvod-error-eventdata`.
+3. Step 6g, `flatten_error_eventdata.py --split-by-errorcode`, writes `output/ZM/2026-10-04_error_eventdata_flat.csv` plus one `_<errorcode>.csv` per code.
+4. Analyse with `summarize_error_eventdata.py` (see Run).
+5. To find which sessions have errors first: `analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv`.
 
-**Input (step 3).** One Athena export per error code (or one combined export) of `"unified_<athena_tenant_id>"."<athena_tenant_id>_ccl_debug_events"`. Columns: `datetime, messageid, clibversion,
-clientid, eventclass, eventid, eventdata`. No script fetches this yet. Pull it via the Athena MCP, running `resolve_tenant.py --system athena --tenant ZM` first. Filter on the event id, the code and
-the date:
-
-```sql
-WHERE eventid = 'PLAYER_ERROR' AND json_extract_scalar(eventdata, '$.errorcode') = '3016' AND <date filter on datetime>
-```
-
-**Run.**
+**Run by hand** (after step 2 or an Athena MCP export of the same columns):
 
 ```bash
 cd investigations/ctap-smvod/scripts
-python3 flatten_error_eventdata.py --input ../data/athena/ZM/err_3016.csv ../data/athena/ZM/err_6007.csv \
+python3 run_athena_error_eventdata.py --date 2026-10-04 --tenant ZM
+python3 flatten_error_eventdata.py --input ../data/athena/ZM/2026-10-04_error_eventdata.csv \
     --out ../output/ZM/2026-10-04_error_eventdata_flat.csv --split-by-errorcode
 python3 summarize_error_eventdata.py --flat ../output/ZM/2026-10-04_error_eventdata_flat.csv --by errorcode,shaka_error_name
 python3 summarize_error_eventdata.py --flat ../output/ZM/2026-10-04_error_eventdata_flat_3016.csv --by pipeline_status,net_effectivetype

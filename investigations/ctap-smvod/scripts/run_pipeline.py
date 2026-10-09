@@ -12,6 +12,8 @@ hand. Runs, in order:
     Step 6b extract_position_report.py     -- position-check view       (optional, --skip-step6b)
     Step 6e extract_error_report_1xxx_6xxx.py -- 1xxx/6xxx-only CSV   (optional, --skip-step6e)
     Step 6d analyze_webview_devices.py     -- WebView device reliability report (optional, --skip-step6d)
+    Step 6f run_athena_error_eventdata.py  -- raw PLAYER_ERROR eventdata export (optional, --skip-error-eventdata)
+    Step 6g flatten_error_eventdata.py     -- flat + per-error-code CSVs        (optional, --skip-error-eventdata)
 
 Note: extract_position_report.py's --only-not-moved now defaults to on
 (see its own docstring / BLUEPRINT.md Step 6b) -- pass --full-position-report
@@ -142,6 +144,10 @@ def _step4_output_path(date_ddmmyyyy: str, tenant: str) -> str:
     return os.path.join(_tenant_dirs(tenant)["athena"], f"{_ddmmyyyy_to_iso(date_ddmmyyyy)}_debug_states.csv")
 
 
+def _step6f_output_path(date_ddmmyyyy: str, tenant: str) -> str:
+    return os.path.join(_tenant_dirs(tenant)["athena"], f"{_ddmmyyyy_to_iso(date_ddmmyyyy)}_error_eventdata.csv")
+
+
 def _build_steps(args, date_iso: str, tenant: str):
     """Returns the ordered list of (step_label, command_list, skip) tuples
     for one tenant's pipeline run, given parsed CLI `args`."""
@@ -166,6 +172,7 @@ def _build_steps(args, date_iso: str, tenant: str):
     # plain run never silently serves stale enrichment data.
     step3_path = _step3_output_path(args.date, tenant)
     step4_path = _step4_output_path(args.date, tenant)
+    step6f_path = _step6f_output_path(args.date, tenant)
     skip3_existing = args.skip_if_exists and os.path.exists(step3_path)
     skip4_existing = args.skip_if_exists and os.path.exists(step4_path)
 
@@ -224,6 +231,17 @@ def _build_steps(args, date_iso: str, tenant: str):
             [py, os.path.join(SCRIPT_DIR, "analyze_webview_devices.py"), "--date", args.date,
              "--input-dir", output_dir, "--output-dir", output_dir],
             args.skip_step6d,
+        ),
+        (
+            "Step 6f - raw PLAYER_ERROR eventdata export (run_athena_error_eventdata.py)",
+            [py, os.path.join(SCRIPT_DIR, "run_athena_error_eventdata.py"), "--date", date_iso] + athena_common,
+            args.skip_error_eventdata,
+        ),
+        (
+            "Step 6g - flatten error eventdata (flatten_error_eventdata.py)",
+            [py, os.path.join(SCRIPT_DIR, "flatten_error_eventdata.py"), "--input", step6f_path,
+             "--out", os.path.join(output_dir, f"{date_iso}_error_eventdata_flat.csv"), "--split-by-errorcode"],
+            args.skip_error_eventdata,
         ),
     ]
     return steps
@@ -297,6 +315,8 @@ def main():
                      help="Skip Step 6e (1xxx/6xxx error report CSV)")
     ap.add_argument("--skip-step6d", action="store_true",
                      help="Skip Step 6d (WebView device reliability report)")
+    ap.add_argument("--skip-error-eventdata", action="store_true",
+                     help="Skip Steps 6f/6g (raw PLAYER_ERROR eventdata export + flatten)")
     ap.add_argument(
         "--full-position-report", action="store_true",
         help="Pass --no-only-not-moved to Step 6b, so output/YYYY-MM-DD_position_report.csv "
