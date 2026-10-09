@@ -52,6 +52,7 @@ def breakdown(rows: list[dict[str, str]]) -> dict:
         raise ValueError(f"error report is missing required columns: {missing}")
     codes, codes_wv, codes_non_wv = Counter(), Counter(), Counter()
     hours, devices, households, states = Counter(), Counter(), Counter(), Counter()
+    code_households: dict[str, set[str]] = {}
     wv_rows = not_moved = 0
     for row in rows:
         wv = is_true(row["is_wv"])
@@ -60,6 +61,7 @@ def breakdown(rows: list[dict[str, str]]) -> dict:
         for code in split_codes(row["error_codes"]) or ["(none)"]:
             codes[code] += 1
             (codes_wv if wv else codes_non_wv)[code] += 1
+            code_households.setdefault(code, set()).add(row.get("householdId", ""))
         hours[hour_of(row.get("start_time", ""))] += 1
         devices[row.get("deviceId", "")] += 1
         households[row.get("householdId", "")] += 1
@@ -67,6 +69,8 @@ def breakdown(rows: list[dict[str, str]]) -> dict:
     return {
         "total": len(rows), "wv": wv_rows, "not_moved": not_moved,
         "codes": codes, "codes_wv": codes_wv, "codes_non_wv": codes_non_wv,
+        "code_households": {c: len(h) for c, h in code_households.items()},
+        "unique_households": len(households),
         "hours": hours, "devices": devices, "households": households, "states": states,
         "unique_sessions": len({r["sessionId"] for r in rows}),
     }
@@ -108,6 +112,9 @@ def print_report(stats: dict, rate: dict | None, top: int) -> None:
     for code, count in stats["codes"].most_common(top):
         wv, non = stats["codes_wv"][code], stats["codes_non_wv"][code]
         print(f"{code:>8}  total={count:5d}  wv={wv:5d} ({pct(wv, count)})  non_wv={non:5d}")
+    print(f"\n== Unique households per error code (all codes: {stats['unique_households']}) ==")
+    for code, count in stats["codes"].most_common(top):
+        print(f"{code:>8}  rows={count:5d}  unique_households={stats['code_households'][code]}")
     _top("Top state sequences", stats["states"], total, top)
     _top("Top devices (deviceId)", stats["devices"], total, top)
     _top("Top households", stats["households"], total, top)

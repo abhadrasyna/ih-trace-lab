@@ -24,6 +24,14 @@ def test_breakdown_counts_codes_and_wv():
     assert stats["hours"]["05"] == 3
 
 
+def test_unique_households_per_code():
+    rows = [_row("a", "6001", "true"), _row("b", "6001", "true"), _row("c", "6001", "true")]
+    rows[2]["householdId"] = "h2"
+    stats = mod.breakdown(rows)
+    assert stats["code_households"]["6001"] == 2
+    assert stats["unique_households"] == 2
+
+
 def test_breakdown_missing_column_raises():
     with pytest.raises(ValueError):
         mod.breakdown([{"sessionId": "a", "error_codes": "6001"}])
