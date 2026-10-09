@@ -63,6 +63,19 @@ def test_error_rate():
     assert rate == {"total": 2, "errors": 1, "wv_total": 1, "wv_errors": 1}
 
 
+def test_rows_with_any_error_keeps_3016_and_adds_is_wv():
+    rows = [{"sessionId": "a", "error_codes": "3016", "raw_user_agent": "Linux; Android 13; X Build/1; wv"},
+            {"sessionId": "b", "error_codes": "", "raw_user_agent": "Linux"}]
+    out = mod.rows_with_any_error(rows)
+    assert [r["sessionId"] for r in out] == ["a"]
+    assert out[0]["is_wv"] == "true"
+
+
+def test_rows_with_any_error_missing_column_raises():
+    with pytest.raises(ValueError):
+        mod.rows_with_any_error([{"sessionId": "a"}])
+
+
 def test_pct_zero_total():
     assert mod.pct(1, 0) == "n/a"
 

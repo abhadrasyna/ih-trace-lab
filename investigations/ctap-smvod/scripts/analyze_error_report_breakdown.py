@@ -136,15 +136,26 @@ def print_report(stats: dict, rate: dict | None, top: int) -> None:
         print(f"{hour}  {stats['hours'][hour]:5d}")
 
 
+def rows_with_any_error(outcome_rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Sessions of a *_setupsession_with_outcome.csv carrying any error code (3016, E31012, ...), with is_wv added."""
+    if outcome_rows and "error_codes" not in outcome_rows[0]:
+        raise ValueError("outcome report must have an error_codes column")
+    return [{**r, "is_wv": "true" if is_wv(r) else "false"} for r in outcome_rows if split_codes(r.get("error_codes", ""))]
+
+
 def main() -> None:
     init_logging("ctap-smvod-analyze_error_report_breakdown")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--error-report", required=True, help="Path to *_error_report_1xxx_6xxx.csv")
     ap.add_argument("--outcome-report", default=None, help="Optional *_setupsession_with_outcome.csv for rates")
+    ap.add_argument("--all-codes", action="store_true",
+                    help="Treat --error-report as a *_setupsession_with_outcome.csv and include every error code (e.g. 3016)")
     ap.add_argument("--top", type=int, default=10, help="Rows per breakdown")
     args = ap.parse_args()
 
     error_rows = read_rows(args.error_report)
+    if args.all_codes:
+        error_rows = rows_with_any_error(error_rows)
     stats = breakdown(error_rows)
     rate = None
     if args.outcome_report:
