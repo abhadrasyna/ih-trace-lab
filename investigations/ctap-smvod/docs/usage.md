@@ -110,6 +110,7 @@ Other options: `--output-dir`.
 | `python3 analyze_error_report_breakdown.py --error-report ../output/SA/2026-10-09_error_report_1xxx_6xxx.csv [--outcome-report ...]` | stdout only (error code / `is_wv` / device / hour breakdown) |
 | `python3 analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv` | same breakdown over every error code (incl. 3016) |
 | `python3 flatten_error_eventdata.py --input <export>.csv ... --out ../output/ZM/<date>_error_eventdata_flat.csv` | `eventdata` split into columns + `raw_eventdata`, one row per messageid |
+| `python3 flatten_error_eventdata.py ... --split-by-errorcode` | also `<out stem>_<errorcode>.csv` per code, columns blank for that code dropped |
 | `python3 summarize_error_eventdata.py --flat <flat>.csv --by errorcode,net_effectivetype` | stdout only (counts/crosstab over flat columns; `--by` repeatable) |
 | `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
 | `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |

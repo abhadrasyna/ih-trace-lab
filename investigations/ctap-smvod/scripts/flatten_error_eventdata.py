@@ -33,8 +33,10 @@ FIELDS = [
     "nested_shaka_code", "nested_error_name", "nested_http_status", "nested_problem_type", "nested_title",
     "nested_detail", "nested_mdrm_http_status", "nested_mdrm_code", "nested_mdrm_message", "flow_context",
     "player_phase", "player_readystate", "player_isbuffering", "player_ispaused", "player_isseeking",
-    "net_type", "net_effectivetype", "net_downlink", "net_rtt",
-    "stream_mbps", "est_bandwidth_mbps", "bytes_downloaded", "load_latency_s", "buffering_time_s", "drm_present",
+    "shaka_severity", "shaka_handled", "media_error_type", "pipeline_status", "player_networkstate",
+    "net_type", "net_effectivetype", "net_downlink", "net_rtt", "net_savedata",
+    "est_bandwidth_bps", "stream_bandwidth_bps", "lastswitch_timestamp", "lastswitch_id", "lastswitch_type",
+    "lastswitch_bandwidth", "stream_mbps", "est_bandwidth_mbps", "bytes_downloaded", "load_latency_s", "buffering_time_s", "drm_present",
     "raw_eventdata",
 ]
 INPUT_COLUMNS = ("datetime", "messageid", "clientid", "eventdata")
@@ -121,6 +123,16 @@ def _nested(shaka: dict) -> dict:
     }
 
 
+def _media_error(shaka: dict) -> dict:
+    """MEDIA.* errors (3xxx) carry `data` = [media error type, null, pipeline status string]."""
+    data = shaka.get("data") or []
+    if not (isinstance(shaka.get("code"), int) and 3000 <= shaka["code"] < 4000):
+        return {"media_error_type": "", "pipeline_status": ""}
+    kind = data[0] if data and isinstance(data[0], int) else ""
+    status = next((d for d in data if isinstance(d, str)), "")
+    return {"media_error_type": kind, "pipeline_status": status}
+
+
 def flatten_row(row: dict[str, str]) -> dict:
     """Pure: one export row -> one flat row. Raises ValueError on unparseable eventdata."""
     try:
@@ -138,6 +150,7 @@ def flatten_row(row: dict[str, str]) -> dict:
     device_id, household_id = split_clientid(row.get("clientid", ""))
     ua = desc.get("user_agent", "")
     shaka_stats = _get(desc, "networkdetails", "shakastats")
+    last_switch = _get(shaka_stats, "lastswitch")
     return {
         "datetime": row["datetime"], "messageid": row["messageid"], "clibversion": row.get("clibversion", ""),
         "deviceId": device_id, "householdId": household_id, "sessionId": payload.get("sessionid"),
@@ -149,6 +162,13 @@ def flatten_row(row: dict[str, str]) -> dict:
         "shaka_url": url, "shaka_url_host": urlparse(url).netloc,
         "shaka_http_status": _http_status(shaka.get("data") or []),
         "shaka_version": version.group(1) if version else "", **nested,
+        "shaka_severity": shaka.get("severity"), "shaka_handled": shaka.get("handled"), **_media_error(shaka),
+        "player_networkstate": _get(desc, "playerstatesnapshot", "networkstate"),
+        "net_savedata": _get(desc, "networkdetails", "navigatorconnection", "savedata"),
+        "est_bandwidth_bps": _get(shaka_stats, "estimatedbandwidth"),
+        "stream_bandwidth_bps": _get(shaka_stats, "streambandwidth"),
+        "lastswitch_timestamp": _get(last_switch, "timestamp"), "lastswitch_id": _get(last_switch, "id"),
+        "lastswitch_type": _get(last_switch, "type"), "lastswitch_bandwidth": _get(last_switch, "bandwidth"),
         "player_phase": _get(desc, "playerstatesnapshot", "phase"),
         "player_readystate": _get(desc, "playerstatesnapshot", "readystate"),
         "player_isbuffering": _get(desc, "playerstatesnapshot", "isbuffering"),
@@ -179,6 +199,25 @@ def flatten_rows(rows: list[dict[str, str]]) -> list[dict]:
     return sorted(seen.values(), key=lambda r: r["datetime"])
 
 
+def split_by_errorcode(flat: list[dict]) -> dict[str, tuple[list[str], list[dict]]]:
+    """Pure: group flat rows by errorcode; per group keep FIELDS order minus columns blank in every row."""
+    groups: dict[str, list[dict]] = {}
+    for row in flat:
+        groups.setdefault(str(row["errorcode"]), []).append(row)
+    out = {}
+    for code, rows in groups.items():
+        cols = [c for c in FIELDS if any(r.get(c) not in (None, "") for r in rows)]
+        out[code] = (cols, [{c: r.get(c) for c in cols} for r in rows])
+    return out
+
+
+def write_csv(path: str, fields: list[str], rows: list[dict]) -> None:
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def read_rows(path: str) -> list[dict[str, str]]:
     with open(path, newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
@@ -189,15 +228,20 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input", nargs="+", required=True, help="PLAYER_ERROR debug-event CSV export(s)")
     ap.add_argument("--out", required=True, help="Flattened output CSV path")
+    ap.add_argument("--split-by-errorcode", action="store_true",
+                    help="Also write <out stem>_<errorcode>.csv per code, with columns blank for that code dropped")
     args = ap.parse_args()
 
     rows = [r for path in args.input for r in read_rows(path)]
     flat = flatten_rows(rows)
-    with open(args.out, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=FIELDS)
-        writer.writeheader()
-        writer.writerows(flat)
+    write_csv(args.out, FIELDS, flat)
     LOGGER.info("Wrote %d unique error rows (from %d input rows) to %s", len(flat), len(rows), args.out)
+    if args.split_by_errorcode:
+        stem = args.out[:-4] if args.out.endswith(".csv") else args.out
+        for code, (cols, code_rows) in split_by_errorcode(flat).items():
+            path = f"{stem}_{code}.csv"
+            write_csv(path, cols, code_rows)
+            LOGGER.info("Wrote %d rows x %d columns for errorcode %s to %s", len(code_rows), len(cols), code, path)
 
 
 if __name__ == "__main__":

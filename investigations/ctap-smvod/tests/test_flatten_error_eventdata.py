@@ -62,6 +62,27 @@ def test_flatten_null_nested_fields_do_not_crash():
     assert flat["nested_problem_type"] == "" and flat["flow_context"] == "" and flat["shaka_message"] == ""
 
 
+def test_split_by_errorcode_drops_blank_columns_per_code():
+    shaka_stats = {"estimatedbandwidth": 100.5, "lastswitch": {"id": 2, "type": "variant", "bandwidth": 345614}}
+    row3016 = _row("a", 3016, SHAKA_3016)
+    payload = json.loads(row3016["eventdata"])
+    payload["errordescription"]["networkdetails"]["shakastats"].update(shaka_stats)
+    row3016["eventdata"] = json.dumps(payload)
+    flat = mod.flatten_rows([row3016, _row("b", 6007, SHAKA_6007)])
+    split = mod.split_by_errorcode(flat)
+    cols3016, rows3016 = split["3016"]
+    cols6007, _ = split["6007"]
+    assert rows3016[0]["pipeline_status"] == "PipelineStatus::PIPELINE_ERROR_DECODE"
+    assert rows3016[0]["media_error_type"] == 3 and rows3016[0]["lastswitch_type"] == "variant"
+    assert "nested_mdrm_code" not in cols3016 and "pipeline_status" not in cols6007
+    assert "nested_mdrm_code" in cols6007 and "raw_eventdata" in cols3016
+
+
+def test_split_keeps_false_booleans():
+    split = mod.split_by_errorcode(mod.flatten_rows([_row("a", 3016, SHAKA_3016)]))
+    assert "player_isbuffering" in split["3016"][0]
+
+
 def test_flatten_1003_timeout_has_blank_nested_and_name():
     timeout = {"code": 1003, "category": 1, "data": ["https://cdn.example/seg.m4f", 1],
                "message": "Shaka Error NETWORK.TIMEOUT (https://cdn.example/seg.m4f,1)"}
