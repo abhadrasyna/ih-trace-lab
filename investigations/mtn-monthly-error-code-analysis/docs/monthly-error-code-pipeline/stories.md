@@ -283,3 +283,38 @@ vsf-unique-hhid`.
 - `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
 
 **Commit:** `feat(mec): add VSF-aware playback-outcome template and gap wrapper`
+
+---
+
+## MEC-9 — September guest-session-report CSV for all OpCos
+
+**Why:** the reference is `aws-access-cli/output/ZA/daily/202609_guest_session_report.csv` (in `~/github_copilot/`): one row per day with `session_date`, `unique_guest_session`,
+`guest_login_prompt_hhid`, `guest_login_start_hhid`, `guest_login_cancel_hhid`. It shows how many guest sessions start and how many guests reach, start or cancel the login prompt. The reference only
+shows which fields exist; this task regenerates it in this investigation for all four OpCos.
+
+**Files to change / create:**
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_reports.py` — add `--artifact guest-session-report`.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_month_adoption_reports.py` — cover the new option.
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` — document it.
+
+**What to implement:**
+
+1. Reuse `src/pipelines/aws_access_cli/scripts/run_guest_session_report.py` (`main(argv)` → `common.run_adoption_cli`, metrics `GUEST_METRICS`, artifact `guest-session-report`); do not copy its SQL.
+2. Same per-date x per-OpCo append loop as MEC-0/MEC-1 (`--date D --tenant T --output-dir investigations/mtn-monthly-error-code-analysis/output --skip-auth-check`), producing
+   `output/<OPCO>/daily/2026-09_guest-session-report.csv`. Confirm the real filename on a `--dry-run`.
+3. Table choice (the one difference from MEC-0/MEC-1): of the four metrics, only `unique_guest_session` reads a debug-events table (`queries/athena/aws-access-cli_unique_guest_session.sql`: distinct
+   `clientid` where `split_part(clientid, ':', 2) LIKE 'GUEST.%'`, filtered on `datetime`). The pipeline's default is `<id>_ccl_debug_events` (`tenants.py`), not the September table, so the
+   orchestrator must pass `--table <id>_ccl_debug_events_sept26` per OpCo (`prompt.md` "Data sources"). The other three metrics read `fact_navigation_interactions` in `unified_<id>` and ignore
+   `--table`. The table name for other months is not assumed from the `sept26` suffix.
+4. Count grain: distinct `clientid`, so duplicate `messageid` rows in the debug table do not inflate it (unlike MEC-3's raw event counts). The `sept26` table also holds rows from before September; the
+   query's `datetime` filter bounds each day.
+5. Open checks to report, not assume: (a) whether `unique_guest_session` from the `_sept26` table matches the reference CSV for ZA (reference 2026-09-01: 203, so a mismatch would mean the reference
+   used the default table or a different guest rule); (b) the guest columns for NG, ZM and GH are unverified; (c) the `HHID` columns count distinct `user_id`, so they cannot be summed across days.
+6. The first live Athena run is a separate go-ahead from the user; resolve each tenant with `scripts/resolve_tenant.py --system athena --tenant <athena_id>` first.
+
+**Tests (no network, no real external services):**
+- `test_guest_artifact_selects_guest_runner` — `--artifact guest-session-report` calls the guest runner with the expected `--date`/`--tenant`/`--output-dir` argv.
+- `test_guest_artifact_passes_sept26_table_per_opco` — each OpCo's argv carries `--table <id>_ccl_debug_events_sept26` with that OpCo's Athena id.
+- `test_guest_artifact_covers_every_date_and_opco` — a 30-day month x 4 OpCos yields 120 calls.
+
+**Commit:** `feat(mec): add September guest-session-report to month orchestrator`

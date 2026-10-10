@@ -55,6 +55,7 @@ reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HA
 - **MEC-4** — finalize runbook, `usage.md`, `SCRIPTS.md`.
 - **MEC-5 to MEC-7** — playback-outcome uniqueness check, household concentration ratios, top failure households (see `tasks.md`).
 - **MEC-8** — VSF-aware playback-outcome template and gap wrapper for this investigation (shared SQL untouched).
+- **MEC-9** — September `guest-session-report` CSV for all OpCos, via the same orchestrator; the one metric that reads the `_sept26` debug table.
 
 Settled definitions (verified on ZA 2026-09-15; full detail in `stories.md` MEC-2 and MEC-8): `PLAY` is an `event_type`, never an `endreason`. `REQUEST_VIEWING`/`PLAYER_ERROR` is VSF.
 `REQUEST_VIEWING`/`DESTROY` is EBVS, using the broader shared rule (no `PLAY` row and a `DESTROY` on any row). `REQUEST_VIEWING`/`PLAYING` with no closing `PLAY` row is `playing_no_end_sessions`. The
