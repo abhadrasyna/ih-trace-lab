@@ -126,3 +126,36 @@ so find the script that generates it and reuse it for the month under analysis.
 **Tests:** none (docs only); verify the documented commands run.
 
 **Commit:** `docs(mec): finalize monthly error-code runbook`
+
+---
+
+## MEC-5 — Verify one playback outcome per session
+
+**Why:** `queries/athena/aws-access-cli_adoption_playback_outcome.sql` groups by `parent_session_id` plus `timestamp_formatted` (and `user_id` for households). If `timestamp_formatted` ever differs
+between rows of one session, a session lands in several outcome buckets and the buckets no longer sum to attempts. A manual check (ZA, 2026-09-15, Athena execution
+`21c7b5b1-241b-4037-8e71-af35ac75df9f`) found 309 attempts = 309 sessions = 309 bucket total, 0 multi-outcome sessions, 1 group per session, so the risk did not materialise that day. This task makes
+the check repeatable for the whole month and all four OpCos. Run order: before MEC-2 is signed off. It does not change the shared query.
+
+**Files to change / create:**
+- `queries/athena/mtn-monthly_playback_outcome_uniqueness.sql` — per-day `attempts`, `sessions_total`, `sessions_multi_outcome`, `sum_of_bucket_counts` using the same outcome logic as the shared
+  query; register per `docs/guides/query-catalog.md`.
+- `investigations/mtn-monthly-error-code-analysis/scripts/verify_playback_outcome_uniqueness.py` — thin orchestrator: `--month YYYY-MM` (required), `--opco` (repeatable, default all four),
+  `--dry-run`; resolves tenants with the existing tenant helpers, renders via `QueryCatalog`, runs via the shared `src/lib/athena` client, writes
+  `output/<OPCO>/daily/<YYYY-MM>_playback-outcome-uniqueness-check.csv`.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_verify_playback_outcome_uniqueness.py`
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` and `SCRIPTS.md` — document and register the script.
+
+**What to implement:**
+
+1. A pure `evaluate_uniqueness(rows)` that raises a clear error when any day has `sessions_multi_outcome > 0` or `sum_of_bucket_counts != attempts`; `main()` exits non-zero on failure and never writes
+   a silently wrong result.
+2. Reuse existing code; do not copy the shared playback-outcome SQL beyond the CTE needed for the check.
+3. The first live Athena run is a separate go-ahead from the user; resolve each tenant with `scripts/resolve_tenant.py` first.
+
+**Tests (no network, no real external services):**
+- `test_clean_rows_pass` — all days with zero multi-outcome sessions and matching sums pass.
+- `test_multi_outcome_day_fails` — a day with `sessions_multi_outcome > 0` raises.
+- `test_bucket_sum_mismatch_fails` — a day where the bucket sum differs from attempts raises.
+- `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
+
+**Commit:** `feat(mec): add playback-outcome uniqueness check`
