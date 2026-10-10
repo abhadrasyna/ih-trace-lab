@@ -553,7 +553,11 @@ pipeline status]`). Missing paths come out as blank cells, not errors, so a code
    (reuse `src/lib/csv_io/monthly_store.py` column-gap handling where it fits; it keys on a date column, not `messageid`); (b) idempotence: dedupe on `messageid` across days (the flattener already
    dedupes within a run), so a re-run or an overlapping day range does not double-append; (c) growth and scope: one file per code forever vs one per month (`2026-09_3016.csv`), given `raw_eventdata`
    makes rows large; (d) the `<date>_all.csv` file: keep, replace with an appended `all.csv`, or drop; (e) the existing dated files: leave in place or migrate, without changing their content; (f)
-   these files hold household and device ids, so they are not committed without the user's approval.
+   these files hold household and device ids, so they are not committed without the user's approval. Evidence from the GH 3016 files (read-only look at row counts and headers, cell contents not
+   parsed): `2026-10-06_3016.csv` has 1 row and 27 columns, `2026-10-08_3016.csv` 36 rows and the same 27, and `2026-10-09_3016.csv` 7 rows and 28 (adds `pipeline_status`), so the header does drift;
+   the 44 rows (about 55 KB) are small enough for one file per code; 10-04, 10-05 and 10-07 have no 3016 file, which today cannot be told apart from a day that was not run. Recommendation, to confirm
+   at MEC-15 start: one file per code per month (for example `2026-10_3016.csv`, matching the `2026-09_*.csv` naming), a fixed union header with blanks where a column is absent, `messageid` dedupe,
+   and a small per-day manifest (date, tenant, rows per code) so an absent day is distinguishable from a day with no rows.
 
 **Tests (no network, no real external services):**
 - `test_key_path_walker_lists_nested_paths` — a fixed sample payload yields the expected paths and counts.
