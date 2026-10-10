@@ -56,7 +56,7 @@ All comparisons are within a single day. Units: a session is a `parent_session_i
   few households.
 - **Trust (anticipate the counterargument):** this is the central chart, because the gap CSV exists to explain the unknown drop-off (attempts not equal to success + VSF + EBVS). Show attempts against
   the stacked buckets per OpCo, keep `incomplete_no_destroy` visually distinct from the other failure buckets, and show the leftover (`attempts_sum_check`) explicitly. VSF sits inside
-  `incomplete_no_destroy`, so do not stack them as if they were disjoint.
+  `incomplete_no_destroy`; the decided definition makes VSF its own bucket and excludes it from incomplete, so the buckets stack as disjoint parts of attempts.
 - **Close (Minto, three acts):** beginning is the funnel and stakes; middle ("But") is the bad days and whether they are broad or concentrated; end is a recommendation per pattern, handing off to the
   error-code breakdown.
 
@@ -65,8 +65,9 @@ Definition notes carried from the analysis of the existing reports:
 - The VSF household set is a subset of the attempting household set; the household CSV is a cross-check of the session CSV, not an independent funnel.
 - A manual check (ZA, 2026-09-15, 309 attempts) found one playback outcome per session and buckets summing to attempts; MEC-5 repeats that check for all OpCos.
 - Do not sum the daily household columns to quote a single September household figure.
-- `incomplete_no_destroy_sessions` is a session with no `PLAY` end reason and no `DESTROY`. Intended reading (user's understanding): playback began and the viewer killed the app without a `DESTROY`.
-  Observed on ZA 2026-09-15: all 55 had no `PLAY` row, and 27 were also VSF, so the bucket mixes failures and silent exits. Do not label it as a pure reporting gap or as an upper bound of played
-  sessions without a further check.
-- Verified on ZA 2026-09-15 (one day, one OpCo): VSF overlaps `incomplete_no_destroy`; the six-column sum (336) exceeds attempts (309) by exactly the 27 VSF sessions. The `attempts_sum_check` formula
-  is therefore decided: emit both the original sum and an overlap-adjusted sum (MEC-2).
+- `REQUEST_VIEWING` end reasons: `PLAYING` = handed to play, `PLAYER_ERROR` = VSF, `DESTROY` = EBVS, `OTHER` = unclassified. `PLAY` is an `event_type`, never an `endreason`.
+- EBVS uses the broader shared-SQL definition (no `PLAY` row and a `DESTROY` on any row), which also catches `BUFFERING`/`DESTROY`-only sessions; the extra volume is unmeasured.
+- `incomplete_no_destroy_sessions` is a session with no `PLAY` row, no `DESTROY` and no VSF: `REQUEST_VIEWING`/`PLAYING` (optionally with `BUFFERING`/`PLAYING`) and no closing `PLAY` row. Intended
+  reading (user's understanding): the viewer killed the app. Verified on ZA 2026-09-15: 28 sessions, all `REQUEST_VIEWING`/`PLAYING`, 26 mobile and 2 desktop; consistent with app-kill, not proof.
+- Verified on ZA 2026-09-15 (one day, one OpCo): the current SQL puts the 27 VSF sessions inside `INCOMPLETE_NO_DESTROY` (55 = 27 VSF + 28), so the raw six-column sum (336) exceeds attempts (309) by
+  exactly 27. Decided: VSF is its own bucket, incomplete excludes VSF, and a single exact `attempts_sum_check` is emitted (MEC-2).

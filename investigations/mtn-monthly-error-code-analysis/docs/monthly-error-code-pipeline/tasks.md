@@ -23,8 +23,8 @@ spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the
 
 - **MEC-0** — `output/<OPCO>/daily/2026-09_adoption-session-report.csv` exists in this investigation for all four OpCos, one row per day 2026-09-01..30 with the four session columns.
 - **MEC-1** — `output/<OPCO>/daily/2026-09_adoption-report.csv` exists for all four OpCos, one row per day with the six household columns.
-- **MEC-2** — a September `adoption-gap-analysis-session` CSV exists under `output/<OPCO>/daily/` for all four OpCos, with the three gap columns, `attempts_sum_check` and
-  `attempts_sum_check_adjusted`.
+- **MEC-2** — a September `adoption-gap-analysis-session` CSV exists under `output/<OPCO>/daily/` for all four OpCos, with the three gap columns, a single exact `attempts_sum_check` (VSF its own
+  bucket, incomplete excludes VSF).
 - **MEC-3** — the table, error field and count grain are documented, and a catalog query renders for any OpCo and month.
 - **MEC-4** — `usage.md` documents every script and the run order, and `SCRIPTS.md` registers them.
 - **MEC-5** — `output/<OPCO>/daily/2026-09_playback-outcome-uniqueness-check.csv` exists for all four OpCos with one row per day; the script exits non-zero if any day has a session in more than one

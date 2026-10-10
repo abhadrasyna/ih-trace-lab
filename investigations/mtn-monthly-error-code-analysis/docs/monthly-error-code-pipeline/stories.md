@@ -65,15 +65,23 @@ so find the script that generates it and reuse it for the month under analysis.
 **Why this CSV exists:** in the session report, `VOD-Playback-Attempt-Sessions` does not equal Successful + VSF + EBVS, so there is an unknown drop-off. The gap CSV attributes those sessions with
 three extra columns so the leftover (`attempts_sum_check`) can be explained. Column meanings (from `queries/athena/aws-access-cli_adoption_playback_outcome.sql` and `adoption.py`, plus one verified
 data check):
-- `incomplete_no_destroy_sessions` — a session with no `PLAY` end reason and no `DESTROY` anywhere in it. Intended reading (user's operational understanding, not confirmed by data): playback began but
-  the viewer killed the app or session (for example on mobile) so no `DESTROY` was reported. Observed on ZA 2026-09-15 (Athena execution `e52b4239-7cda-49c5-a1e3-aaba08decd98`): all 55 such sessions
-  had no `PLAY` row at all, and 27 of them were VSF sessions, so the bucket mixes failures (VSF) with silent exits; it is not a clean "no end event reported" bucket.
+- Session lifecycle (user's definition): `REQUEST_VIEWING`/`PLAYING`, optionally `BUFFERING`/`PLAYING`, then `PLAY` with `DESTROY` (success), `PLAYER_ERROR` (play-stage error) or `TIMEOUT`. The
+  `REQUEST_VIEWING` end reason says how the request phase ended: `PLAYING` = handed over to play, `PLAYER_ERROR` = VSF, `DESTROY` = EBVS, `OTHER` = unclassified (2 sessions in ZA September). `PLAY` is
+  an `event_type`, never an `endreason`.
+- VSF — `REQUEST_VIEWING` with `PLAYER_ERROR`. It has a known end reason, so it is its own bucket and is not incomplete.
+- EBVS — decided: the broader definition used by the shared SQL, i.e. a session with no `PLAY` row and a `DESTROY` on any row. This includes `REQUEST_VIEWING`/`DESTROY` and also sessions whose only
+  `DESTROY` is on a `BUFFERING` row. How many sessions the broader rule adds beyond `REQUEST_VIEWING`/`DESTROY` is unmeasured.
+- `incomplete_no_destroy_sessions` — a session with no `PLAY` row, no `DESTROY` and no VSF, i.e. `REQUEST_VIEWING`/`PLAYING` (optionally with `BUFFERING`/`PLAYING`) and no closing `PLAY` row. Intended
+  reading (user's understanding): playback began and the viewer killed the app, so no end event was reported. Verified on ZA 2026-09-15 (Athena execution `90f7deed-c31a-4500-89d6-3163afce46b9`): 28
+  such sessions, all `REQUEST_VIEWING`/`PLAYING` (17 with that row only, 11 also with `BUFFERING`/`PLAYING`), 26 mobile and 2 desktop. This supports the app-kill reading but does not prove it. One
+  day, one OpCo.
 - `play_stage_error_sessions` — a `PLAY` event with `endreason = PLAYER_ERROR`.
 - `play_timeout_sessions` — a `PLAY` event with `endreason = TIMEOUT`.
-- Outcome rule: a session's outcome is the `endreason` of its `PLAY` row when present; otherwise EBVS if a `DESTROY` appears anywhere in the session, else `INCOMPLETE_NO_DESTROY`.
-- Verified overlap: VSF sessions (`REQUEST_VIEWING` with `PLAYER_ERROR`) are counted in both the VSF column and `incomplete_no_destroy`. On ZA 2026-09-15: attempts 309, success 230, VSF 27, EBVS 16,
-  incomplete 55, play-stage error 8, timeout 0; the six-column sum is 336 = 309 + 27, and it equals attempts once VSF is excluded. One day, one OpCo; both sums are emitted (see MEC-2 implementation
-  step 3).
+- Decided: VSF is its own bucket and `incomplete_no_destroy` excludes VSF, so the six buckets are disjoint and sum exactly to attempts.
+- Current shared SQL (`queries/athena/aws-access-cli_adoption_playback_outcome.sql`) has no VSF branch: a session's outcome is the `endreason` of its `PLAY` row when present; otherwise EBVS if a
+  `DESTROY` appears anywhere in the session, else `INCOMPLETE_NO_DESTROY`. VSF sessions therefore land in `INCOMPLETE_NO_DESTROY` today. Verified on ZA 2026-09-15 (execution
+  `e52b4239-7cda-49c5-a1e3-aaba08decd98`): attempts 309, success 230, VSF 27, EBVS 16, incomplete 55 (27 VSF + 28 truly incomplete), play-stage error 8, timeout 0; the six-column sum is 336 = 309
+  + 27. How the exclusion is implemented (a VSF branch in the query or a subtraction in this investigation) is not yet decided.
 
 **Files to change / create:**
 - `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_reports.py` — add `--artifact adoption-gap-analysis-session`.
@@ -88,14 +96,14 @@ data check):
    covers a whole month. This reads `unified_<id>` tables, not the `_sept26` tables.
 2. This artifact is not an append artifact, so run one range call per OpCo (`--start-date 2026-09-01 --end-date 2026-09-30 --period day --tenant T --output-dir ...`), not a per-date loop. Confirm
    where the range file is written (`format_range_filename`) on a `--dry-run`/first run, and document the real path in `usage.md`.
-3. The ported pipeline has no `attempts_sum_check` column (the original adds it: Successful + VSF + EBVS + the three gap columns, compared with VOD-Playback-Attempt-Sessions). Decided: emit both sums.
-   `attempts_sum_check` keeps the original six-column sum; `attempts_sum_check_adjusted` excludes VSF (Successful + EBVS + incomplete_no_destroy + play-stage error + play-timeout) because VSF sessions
-   also sit in `incomplete_no_destroy` (ZA 2026-09-15: original 336 vs attempts 309, adjusted 309). Add both with `add_attempts_sum_check.py` in this investigation instead of editing the shared
-   pipeline; treat blank cells as 0. The adjusted column name is a proposal; confirm it before implementing.
+3. The ported pipeline has no `attempts_sum_check` column (the original adds it: Successful + VSF + EBVS + the three gap columns, compared with VOD-Playback-Attempt-Sessions). Decided: emit a single
+   exact `attempts_sum_check` = Successful + VSF + EBVS + incomplete_no_destroy (excluding VSF) + play-stage error + play-timeout, compared with VOD-Playback-Attempt-Sessions. Because VSF is its own
+   bucket and incomplete excludes it, the sum should equal attempts (ZA 2026-09-15: raw incomplete 55 minus 27 VSF = 28; 230 + 27 + 16 + 28 + 8 + 0 = 309). There is no second adjusted column. Add the
+   column with `add_attempts_sum_check.py` in this investigation instead of editing the shared pipeline; treat blank cells as 0. Where the VSF exclusion happens is an open implementation point.
 
 **Tests (no network, no real external services):**
 - `test_gap_artifact_runs_one_range_call_per_opco` — 4 calls, each with the month's start/end dates.
-- `test_sum_check_adds_column_and_treats_blank_as_zero` — `attempts_sum_check` equals the sum of the six component columns and `attempts_sum_check_adjusted` the sum without VSF.
+- `test_sum_check_adds_column_and_treats_blank_as_zero` — `attempts_sum_check` equals the sum of the six disjoint component columns (VSF not double-counted in incomplete).
 - `test_sum_check_missing_column_fails` — a CSV without a required component column raises a clear error.
 
 **Commit:** `feat(mec): add September adoption-gap-analysis-session report`
