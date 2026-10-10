@@ -36,6 +36,30 @@ script, check `SCRIPTS.md` and the FCT-6 registry for an existing equivalent.
 
 ---
 
+## MEC-0b — September adoption-report (household) CSV per OpCo
+
+**Files to change / create:**
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_session_report.py` — add an `--artifact` choice (`adoption-session-report` default, `adoption-report`) that selects which
+  existing runner `main` to call; rename the script to `run_month_adoption_reports.py` if the name no longer fits (update MEC-0 references).
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_month_adoption_session_report.py` — cover the new option.
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` — document it.
+
+**What to implement:**
+
+1. Reuse `src/pipelines/aws_access_cli/scripts/run_adoption_report.py` (`HOUSEHOLD_METRICS`: Home-Screen-UnqHHID, attempts-unique-hhid, unique-hh-no-vsf, successful_vod_playback_hhid, vsf_unique_hhid,
+   ebvs_unique_hhid). This is the counterpart of `aws-access-cli/output/ZA/daily/<yyyymm>_athena_adoption.csv`; here the file is `2026-09_adoption-report.csv`. It reads `unified_<id>` tables
+   (`fact_navigation_interactions`, `unified_sessions`), not the `_ccl_debug_events_sept26` tables.
+2. Same loop as MEC-0: every September date x ZA/NG/ZM/GH through single-date runs with `--output-dir investigations/mtn-monthly-error-code-analysis/output`.
+3. Depends on MEC-0 (the orchestrator); implement after it.
+
+**Tests (no network, no real external services):**
+- `test_artifact_selects_household_runner` — `--artifact adoption-report` calls the household runner with the expected argv.
+- `test_unknown_artifact_fails` — an unsupported artifact exits with a clear message.
+
+**Commit:** `feat(mec): add September adoption-report via month orchestrator`
+
+---
+
 ## MEC-1 — Define error-code source and count grain; add catalog query
 
 **Files to change / create:**
