@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the month being analysed (September 2026 first).
 
-**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9.** Exception to top-down: MEC-2 depends on MEC-8, so do MEC-8 before MEC-2.
+**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11.** Exception to top-down: MEC-2 depends on MEC-8, so do MEC-8 before MEC-2.
 
 - [ ] **MEC-0** — September adoption-session-report CSV for all OpCos, via a month orchestrator over the existing aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer hook | SHA: —
@@ -23,6 +23,10 @@ spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the
   claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
 - [ ] **MEC-9** — September guest-session-report CSV for all OpCos, via the month orchestrator with the `_sept26` debug table | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer
   hook | SHA: —
+- [ ] **MEC-10** — daily guest-login funnel rates and day-level co-movement with playback attempts, from the MEC-0, MEC-1 and MEC-9 CSVs (no Athena; depends on those three) | Owner: Copilot CLI |
+  Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
+- [ ] **MEC-11** — gated: validate on 1-2 households via the Athena MCP whether a guest-login household later attempts playback (24h), and only if fruitful add the user-level attribution query |
+  Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
 
 ## Story done when
 
@@ -41,6 +45,10 @@ spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the
   play-stage error, play-timeout or `playing_no_end` (first match wins), and the shared SQL is unchanged.
 - **MEC-9** — `output/<OPCO>/daily/2026-09_guest-session-report.csv` exists for all four OpCos, one row per day 2026-09-01..30 with `unique_guest_session`, `guest_login_prompt_hhid`,
   `guest_login_start_hhid` and `guest_login_cancel_hhid`, and `unique_guest_session` was read from `<id>_ccl_debug_events_sept26`, not the default `<id>_ccl_debug_events` table.
+- **MEC-10** — `output/<OPCO>/daily/2026-09_guest-funnel.csv` exists for all four OpCos with one row per day: `guest_start_rate`, `guest_cancel_rate`, the attempt columns and their day-over-day
+  changes, plus one monthly correlation row per OpCo; the script fails loudly if an input CSV or day set is missing.
+- **MEC-11** — the MCP validation result (go or no-go, with the sampled households' evidence) is recorded in `docs/`; only on a go, `output/<OPCO>/daily/2026-09_guest-login-attribution.csv` exists for
+  all four OpCos with the 24h attribution columns.
 
 ## After each task
 

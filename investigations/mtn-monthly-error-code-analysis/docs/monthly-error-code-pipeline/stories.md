@@ -318,3 +318,74 @@ shows which fields exist; this task regenerates it in this investigation for all
 - `test_guest_artifact_covers_every_date_and_opco` — a 30-day month x 4 OpCos yields 120 calls.
 
 **Commit:** `feat(mec): add September guest-session-report to month orchestrator`
+
+---
+
+## MEC-10 — Guest-login funnel rates and co-movement with playback attempts
+
+**Why:** the goal is to tell whether guest sessions are working: do guests who see the login prompt go on to start login, or cancel? A guest cannot start playback; they must log in first, so guest
+activity can only raise playback attempts through logged-in sessions afterwards. This task answers the daily-aggregate part of that; MEC-11 tests the household-level link.
+
+**Units (state first):** `unique_guest_session` counts distinct `clientid` (debug table); the three `*_hhid` columns count distinct `user_id` (navigation table). They are different units, so
+`unique_guest_session` is never divided by or summed with the household columns as if comparable. The three household columns are not disjoint: on ZA 2026-09-01 prompt 83, start 66, cancel 34, so
+start + cancel (100) exceeds prompt (83) because a household can start and then cancel. Report the rates separately; never present them as shares summing to 100%.
+
+**Files to change / create:**
+- `investigations/mtn-monthly-error-code-analysis/scripts/build_guest_funnel.py` — thin script: `--month YYYY-MM` (required), `--opco` (repeatable, default all four), `--dry-run`.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_build_guest_funnel.py`
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` and `SCRIPTS.md` — document and register.
+
+**What to implement:**
+
+1. Depends on MEC-0, MEC-1 and MEC-9 outputs. Read `<YYYY-MM>_guest-session-report.csv`, `<YYYY-MM>_adoption-session-report.csv` and `<YYYY-MM>_adoption-report.csv` with the `src/lib/csv_io` helpers
+   and join on `session_date`. Fail loudly if a file or required column is missing or the three day sets differ.
+2. Per day: `guest_start_rate` = `guest_login_start_hhid` / `guest_login_prompt_hhid`, `guest_cancel_rate` = `guest_login_cancel_hhid` / `guest_login_prompt_hhid`, `guest_prompt_to_start_gap` = prompt
+   − start (households that saw the prompt but did not start login), plus `guest_start_dod_pct` and the day-over-day change of `VOD-Playback-Attempt-Sessions` and `attempts-unique-hhid`. A blank or
+   zero denominator gives a blank cell, not a crash or a fake zero.
+3. Per OpCo, one monthly summary row: Pearson correlation of daily `guest_login_start_hhid` with `attempts-unique-hhid` and with `VOD-Playback-Attempt-Sessions`, plus the day count. Label it as
+   co-movement of 30 daily points, not attribution: it cannot separate guests who log in from returning logged-in users, and guests cannot play without logging in.
+4. Write `output/<OPCO>/daily/<YYYY-MM>_guest-funnel.csv`. No Athena calls.
+
+**Tests (no network, no real external services):**
+- `test_rates_computed_per_day` — known inputs give the expected start and cancel rates, and start + cancel may exceed 100% of prompt without error.
+- `test_zero_denominator_gives_blank` — a zero prompt count yields a blank cell.
+- `test_missing_file_column_or_day_mismatch_fails` — a missing input, column or differing day set raises a clear error.
+- `test_correlation_is_reported_with_day_count` — a known series gives the expected correlation and the day count.
+
+**Commit:** `feat(mec): add guest-login funnel and co-movement report`
+
+---
+
+## MEC-11 — Guest-login to playback attribution (gated on an MCP check)
+
+**Why:** MEC-10 can only show co-movement. The attribution question is household-level: of the households that started guest login (or cancelled it), how many attempted or completed playback within 24
+hours afterwards? It is not necessary to complete this task. Validate on one or two households first through the Athena MCP, and continue only if that is fruitful.
+
+**Step 0 — gate (no files, a separate go-ahead from the user):**
+1. Resolve the tenant with `python scripts/resolve_tenant.py --system athena --tenant e6auj7k7`, then use the Athena MCP (restart the CLI first; the server was repinned to `mcp` 1.30.0) for one OpCo
+   and one day. Read-only.
+2. In `unified_<id>.fact_navigation_interactions`, find 1-2 `user_id`s with `event_source = 'guestLoginStart'` and, separately, one with `guestLoginCancel` (columns: `user_id`, `device_id`, `uid`,
+   `nav_event_time`; confirm them in `knowledge/mtn-athena-unified_e6auj7k7-tables.md`).
+3. For each, look in `unified_sessions` for `REQUEST_VIEWING` rows (and `PLAY`/`DESTROY` success) with the same `user_id` within 24h after `nav_event_time`. Also check whether the guest event's
+   `user_id` is the id used after login; if not, try `device_id`.
+4. Record the evidence and a go or no-go in `docs/guest-login-attribution-check.md`. Go only if at least one sampled household shows start followed by an attempt under a matchable id. On no-go, stop:
+   MEC-11 closes with the finding and no further files.
+
+**Files to change / create (only on a go):**
+- `queries/athena/mtn-monthly_guest_login_attribution.sql` — per day, using the id proven in step 0: `guest_start_hhid`, of which `attempted_24h` and `succeeded_24h`; the same for cancel. Register in
+  `queries/athena/index.md` per `docs/guides/query-catalog.md`.
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_guest_login_attribution.py` — thin orchestrator: `--month YYYY-MM`, `--opco` (repeatable, default all four), `--dry-run`; renders via
+  `QueryCatalog`, runs via `src/lib/athena`, writes `output/<OPCO>/daily/<YYYY-MM>_guest-login-attribution.csv`.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_guest_login_attribution.py`, plus `docs/usage.md` and `SCRIPTS.md`.
+
+**What to implement (only on a go):**
+
+1. Window is 24 hours after the household's first `guestLoginStart` (or `guestLoginCancel`) event that day. Attempt = a `REQUEST_VIEWING` session; success = a `PLAY` row with `endreason = 'DESTROY'`.
+2. Report attribution as association, not cause: a household that starts login and then plays was already a viewer who needed to log in; the comparison that matters is the start group against the
+   cancel group. No baseline of non-guest households is claimed.
+3. Household ids are customer identifiers: do not commit raw `user_id` outputs without the user's go-ahead. The CSV holds counts only.
+4. The first live full-month run is a separate go-ahead from the user.
+
+**Tests (no network, no real external services):** `test_query_renders_for_month` (all placeholders resolve), `test_bad_month_fails`, `test_dry_run_makes_no_athena_calls`.
+
+**Commit:** `docs(mec): record guest-login attribution check` for the gate; `feat(mec): add guest-login attribution report` only on a go.
