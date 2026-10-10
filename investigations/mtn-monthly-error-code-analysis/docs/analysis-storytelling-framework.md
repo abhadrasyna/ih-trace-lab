@@ -55,8 +55,8 @@ All comparisons are within a single day. Units: a session is a `parent_session_i
 - **Broad or concentrated (issue tree, Pareto):** per day, affected-household share against sessions per affected household. High share with a ratio near 1 is broad; low share with a high ratio is a
   few households.
 - **Trust (anticipate the counterargument):** this is the central chart, because the gap CSV exists to explain the unknown drop-off (attempts not equal to success + VSF + EBVS). Show attempts against
-  the stacked buckets per OpCo, put `incomplete_no_destroy` in a different colour from the failure buckets and label it "playback started, no end event reported", and show the leftover
-  (`attempts_sum_check`) explicitly.
+  the stacked buckets per OpCo, keep `incomplete_no_destroy` visually distinct from the other failure buckets, and show the leftover (`attempts_sum_check`) explicitly. VSF sits inside
+  `incomplete_no_destroy`, so do not stack them as if they were disjoint.
 - **Close (Minto, three acts):** beginning is the funnel and stakes; middle ("But") is the bad days and whether they are broad or concentrated; end is a recommendation per pattern, handing off to the
   error-code breakdown.
 
@@ -65,6 +65,8 @@ Definition notes carried from the analysis of the existing reports:
 - The VSF household set is a subset of the attempting household set; the household CSV is a cross-check of the session CSV, not an independent funnel.
 - A manual check (ZA, 2026-09-15, 309 attempts) found one playback outcome per session and buckets summing to attempts; MEC-5 repeats that check for all OpCos.
 - Do not sum the daily household columns to quote a single September household figure.
-- `incomplete_no_destroy_sessions` means playback started but no `DESTROY` was reported (for example a viewer killing the app on mobile), not "no `PLAY`". Treat it as a reporting gap or silent exit,
-  not as a failure, and use `Successful-VOD-Playback-Sessions` plus this bucket only as an upper bound of sessions that actually played (a hypothesis until confirmed on data).
-- Open question: VSF may overlap `incomplete_no_destroy`, in which case the six-column sum can exceed attempts; confirm against the reference gap CSV's `attempts_sum_check`.
+- `incomplete_no_destroy_sessions` is a session with no `PLAY` end reason and no `DESTROY`. Intended reading (user's understanding): playback began and the viewer killed the app without a `DESTROY`.
+  Observed on ZA 2026-09-15: all 55 had no `PLAY` row, and 27 were also VSF, so the bucket mixes failures and silent exits. Do not label it as a pure reporting gap or as an upper bound of played
+  sessions without a further check.
+- Verified on ZA 2026-09-15 (one day, one OpCo): VSF overlaps `incomplete_no_destroy`; the six-column sum (336) exceeds attempts (309) by exactly the 27 VSF sessions. The `attempts_sum_check` formula
+  is therefore undecided; see MEC-2.

@@ -63,15 +63,17 @@ so find the script that generates it and reuse it for the month under analysis.
 ## MEC-2 — September adoption-gap-analysis-session CSV for all OpCos
 
 **Why this CSV exists:** in the session report, `VOD-Playback-Attempt-Sessions` does not equal Successful + VSF + EBVS, so there is an unknown drop-off. The gap CSV attributes those sessions with
-three extra columns so the leftover (`attempts_sum_check`) can be explained. Column meanings (from `queries/athena/aws-access-cli_adoption_playback_outcome.sql` and `adoption.py`; the first is the
-user's operational understanding, the rest are read from the SQL):
-- `incomplete_no_destroy_sessions` — playback started (a `PLAY` event was received) but no closing `DESTROY` was reported, typically a viewer who kills the app or session after a few minutes. It is
-  mostly a missing end event, not a playback failure; present it separately from the failure buckets.
+three extra columns so the leftover (`attempts_sum_check`) can be explained. Column meanings (from `queries/athena/aws-access-cli_adoption_playback_outcome.sql` and `adoption.py`, plus one verified
+data check):
+- `incomplete_no_destroy_sessions` — a session with no `PLAY` end reason and no `DESTROY` anywhere in it. Intended reading (user's operational understanding, not confirmed by data): playback began but
+  the viewer killed the app or session (for example on mobile) so no `DESTROY` was reported. Observed on ZA 2026-09-15 (Athena execution `e52b4239-7cda-49c5-a1e3-aaba08decd98`): all 55 such sessions
+  had no `PLAY` row at all, and 27 of them were VSF sessions, so the bucket mixes failures (VSF) with silent exits; it is not a clean "no end event reported" bucket.
 - `play_stage_error_sessions` — a `PLAY` event with `endreason = PLAYER_ERROR`.
 - `play_timeout_sessions` — a `PLAY` event with `endreason = TIMEOUT`.
 - Outcome rule: a session's outcome is the `endreason` of its `PLAY` row when present; otherwise EBVS if a `DESTROY` appears anywhere in the session, else `INCOMPLETE_NO_DESTROY`.
-- Unverified: whether VSF (`REQUEST_VIEWING` with `PLAYER_ERROR`) overlaps `incomplete_no_destroy`, which would make the six-column sum exceed attempts. Compare against the reference CSV's
-  `attempts_sum_check` before treating the sum as exact.
+- Verified overlap: VSF sessions (`REQUEST_VIEWING` with `PLAYER_ERROR`) are counted in both the VSF column and `incomplete_no_destroy`. On ZA 2026-09-15: attempts 309, success 230, VSF 27, EBVS 16,
+  incomplete 55, play-stage error 8, timeout 0; the six-column sum is 336 = 309 + 27, and it equals attempts once VSF is excluded. One day, one OpCo; the formula for `attempts_sum_check` is undecided
+  (see MEC-2 implementation step 3).
 
 **Files to change / create:**
 - `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_reports.py` — add `--artifact adoption-gap-analysis-session`.
@@ -86,8 +88,9 @@ user's operational understanding, the rest are read from the SQL):
    covers a whole month. This reads `unified_<id>` tables, not the `_sept26` tables.
 2. This artifact is not an append artifact, so run one range call per OpCo (`--start-date 2026-09-01 --end-date 2026-09-30 --period day --tenant T --output-dir ...`), not a per-date loop. Confirm
    where the range file is written (`format_range_filename`) on a `--dry-run`/first run, and document the real path in `usage.md`.
-3. The ported pipeline has no `attempts_sum_check` column (the original adds it: Successful + VSF + EBVS + the three gap columns, compared with VOD-Playback-Attempt-Sessions). Add it with
-   `add_attempts_sum_check.py` in this investigation instead of editing the shared pipeline; treat blank cells as 0.
+3. The ported pipeline has no `attempts_sum_check` column (the original adds it: Successful + VSF + EBVS + the three gap columns, compared with VOD-Playback-Attempt-Sessions). Formula pending the
+   user's decision: on ZA 2026-09-15 that sum overshoots attempts by the 27 VSF sessions that also sit in `incomplete_no_destroy`. Add the column with `add_attempts_sum_check.py` in this investigation
+   instead of editing the shared pipeline; treat blank cells as 0.
 
 **Tests (no network, no real external services):**
 - `test_gap_artifact_runs_one_range_call_per_opco` — 4 calls, each with the month's start/end dates.
