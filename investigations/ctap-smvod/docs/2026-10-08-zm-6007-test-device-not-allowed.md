@@ -9,6 +9,8 @@ Engineering reported a Widevine licence request (Shaka error 6007) from a TECNO 
 
 - Tenant: Zambia (`ZM`, `dtunf6yo`).
 - Household: `uHcbwAcpF5F-NVFXT-GEYckvIq7sNFIRa4m4F6mGaUc=YYYY`; device `1714f6c4…a329`.
+- Device match: the engineering payload has no household/device ID and our CSVs carry only a frozen Chrome user agent (no model, no cert serial). The payload is matched to these sessions by time and
+  error only; the TECNO KM5 model appears only in the DRM service.
 - Window: 2026-10-08 20:14:46Z to 20:17:06Z, 5 sessions, all with `position_not_moved: true`, `is_wv: false`.
 - Content: `9d7f4da0-5320-56ef-a5b7-c100869a1172` (VODStreaming, Widevine); app `v2026.09.16.02`, Shaka 4.12.6.
 - Source: `output/ZM/error_eventdata_flat/2026-10-08_6007.csv` and `output/ZM/2026-10-08_error_report_1xxx_6xxx.csv`.
@@ -39,4 +41,5 @@ Engineering reported a Widevine licence request (Shaka error 6007) from a TECNO 
 ## Recommended actions
 
 - Ask engineering/Widevine to confirm the cert serial's device status. If it is a real subscriber device, correct the flag or re-provision; if it is a genuine test unit, the rejection is by design.
-- Not yet checked: whether other TECNO KM5 units, other 6211 sessions, or other tenants (SA, GH) show the same rejection.
+- Ask engineering to confirm the cert serial above belongs to `deviceId` `1714f6c4…a329`; our data cannot verify it.
+- Not yet checked: other MDRM 6211 sessions (`nested_mdrm_code`) across tenants (SA, GH) and days. A model-wide TECNO KM5 check needs the DRM service logs, since our CSVs have no device model.
