@@ -54,7 +54,9 @@ All comparisons are within a single day. Units: a session is a `parent_session_i
   volume so thin days are not over-read.
 - **Broad or concentrated (issue tree, Pareto):** per day, affected-household share against sessions per affected household. High share with a ratio near 1 is broad; low share with a high ratio is a
   few households.
-- **Trust (anticipate the counterargument):** show the outcome buckets summing to attempts and the size of the incomplete bucket; state what is unexplained.
+- **Trust (anticipate the counterargument):** this is the central chart, because the gap CSV exists to explain the unknown drop-off (attempts not equal to success + VSF + EBVS). Show attempts against
+  the stacked buckets per OpCo, put `incomplete_no_destroy` in a different colour from the failure buckets and label it "playback started, no end event reported", and show the leftover
+  (`attempts_sum_check`) explicitly.
 - **Close (Minto, three acts):** beginning is the funnel and stakes; middle ("But") is the bad days and whether they are broad or concentrated; end is a recommendation per pattern, handing off to the
   error-code breakdown.
 
@@ -63,3 +65,6 @@ Definition notes carried from the analysis of the existing reports:
 - The VSF household set is a subset of the attempting household set; the household CSV is a cross-check of the session CSV, not an independent funnel.
 - A manual check (ZA, 2026-09-15, 309 attempts) found one playback outcome per session and buckets summing to attempts; MEC-5 repeats that check for all OpCos.
 - Do not sum the daily household columns to quote a single September household figure.
+- `incomplete_no_destroy_sessions` means playback started but no `DESTROY` was reported (for example a viewer killing the app on mobile), not "no `PLAY`". Treat it as a reporting gap or silent exit,
+  not as a failure, and use `Successful-VOD-Playback-Sessions` plus this bucket only as an upper bound of sessions that actually played (a hypothesis until confirmed on data).
+- Open question: VSF may overlap `incomplete_no_destroy`, in which case the six-column sum can exceed attempts; confirm against the reference gap CSV's `attempts_sum_check`.

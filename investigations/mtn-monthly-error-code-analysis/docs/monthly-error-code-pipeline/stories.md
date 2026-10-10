@@ -62,6 +62,17 @@ so find the script that generates it and reuse it for the month under analysis.
 
 ## MEC-2 — September adoption-gap-analysis-session CSV for all OpCos
 
+**Why this CSV exists:** in the session report, `VOD-Playback-Attempt-Sessions` does not equal Successful + VSF + EBVS, so there is an unknown drop-off. The gap CSV attributes those sessions with
+three extra columns so the leftover (`attempts_sum_check`) can be explained. Column meanings (from `queries/athena/aws-access-cli_adoption_playback_outcome.sql` and `adoption.py`; the first is the
+user's operational understanding, the rest are read from the SQL):
+- `incomplete_no_destroy_sessions` — playback started (a `PLAY` event was received) but no closing `DESTROY` was reported, typically a viewer who kills the app or session after a few minutes. It is
+  mostly a missing end event, not a playback failure; present it separately from the failure buckets.
+- `play_stage_error_sessions` — a `PLAY` event with `endreason = PLAYER_ERROR`.
+- `play_timeout_sessions` — a `PLAY` event with `endreason = TIMEOUT`.
+- Outcome rule: a session's outcome is the `endreason` of its `PLAY` row when present; otherwise EBVS if a `DESTROY` appears anywhere in the session, else `INCOMPLETE_NO_DESTROY`.
+- Unverified: whether VSF (`REQUEST_VIEWING` with `PLAYER_ERROR`) overlaps `incomplete_no_destroy`, which would make the six-column sum exceed attempts. Compare against the reference CSV's
+  `attempts_sum_check` before treating the sum as exact.
+
 **Files to change / create:**
 - `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_reports.py` — add `--artifact adoption-gap-analysis-session`.
 - `investigations/mtn-monthly-error-code-analysis/scripts/add_attempts_sum_check.py` — pure post-step that appends the `attempts_sum_check` column to a gap CSV.
