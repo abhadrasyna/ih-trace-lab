@@ -159,3 +159,63 @@ the check repeatable for the whole month and all four OpCos. Run order: before M
 - `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
 
 **Commit:** `feat(mec): add playback-outcome uniqueness check`
+
+---
+
+## MEC-6 — Household concentration ratios from the session and household CSVs
+
+**Why:** the household adoption CSV exists to cross-check the session CSV: if VSF/EBVS sessions greatly exceed the households behind them, a small group of households is driving the failures. Distinct
+counts alone do not show that; the per-day ratios do. `unique-hh-no-vsf` is not used because the VSF household set is a subset of the attempted set, so it always equals `attempts-unique-hhid −
+vsf-unique-hhid`.
+
+**Files to change / create:**
+- `investigations/mtn-monthly-error-code-analysis/scripts/build_household_concentration.py` — thin script: `--month YYYY-MM` (required), `--opco` (repeatable, default all four), `--dry-run`.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_build_household_concentration.py`
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` and `SCRIPTS.md` — document and register.
+
+**What to implement:**
+
+1. Depends on MEC-0 and MEC-1 outputs. Read `output/<OPCO>/daily/<YYYY-MM>_adoption-session-report.csv` and `<YYYY-MM>_adoption-report.csv` with the `src/lib/csv_io` helpers and join on
+   `session_date`.
+2. Pure functions compute per day: `attempts_sessions_per_hh`, `success_sessions_per_hh`, `vsf_sessions_per_hh`, `ebvs_sessions_per_hh` (session column divided by the matching household column), plus
+   `vsf_hh_pct` and `ebvs_hh_pct` (affected households divided by `attempts-unique-hhid`). Blank or zero denominators give a blank cell, not a crash or a fake zero.
+3. Fail loudly when an input CSV or a required column is missing, or when the two CSVs do not cover the same days.
+4. Write `output/<OPCO>/daily/<YYYY-MM>_household-concentration.csv`. No Athena calls.
+
+**Tests (no network, no real external services):**
+- `test_ratios_computed_per_day` — known inputs give the expected ratios and percentages.
+- `test_zero_denominator_gives_blank` — a zero household count yields a blank cell.
+- `test_missing_column_or_day_mismatch_fails` — a missing column or differing day sets raises a clear error.
+
+**Commit:** `feat(mec): add household concentration ratios`
+
+---
+
+## MEC-7 — Top-N households by VSF/EBVS sessions
+
+**Why:** MEC-6 shows whether failures look concentrated; this task names the households. It is a monthly roll-up, so it also shows whether the same households fail across many days.
+
+**Files to change / create:**
+- `queries/athena/mtn-monthly_top_households_by_failure.sql` — per `user_id` for the month: `attempt_sessions`, `vsf_sessions`, `ebvs_sessions`, ordered by `vsf_sessions` then `ebvs_sessions`, limited
+  to `{{top_n}}`; register per `docs/guides/query-catalog.md`.
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_top_failure_households.py` — thin orchestrator: `--month YYYY-MM`, `--opco` (repeatable, default all four), `--top-n` (default 20),
+  `--dry-run`; resolves tenants with the existing tenant helpers, renders via `QueryCatalog`, runs via `src/lib/athena`.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_top_failure_households.py`
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` and `SCRIPTS.md` — document and register.
+
+**What to implement:**
+
+1. Reuse the shared outcome definitions: VSF is `event_type = 'REQUEST_VIEWING' AND endreason = 'PLAYER_ERROR'`; EBVS follows the shared playback-outcome logic. Count distinct `parent_session_id` per
+   household over the whole month in `unified_<id>.unified_sessions`, not the `_sept26` debug tables.
+2. Add a share column per household: its `vsf_sessions` and `ebvs_sessions` as a percentage of the OpCo's month total, plus the cumulative share of the top N.
+3. Write `output/<OPCO>/daily/<YYYY-MM>_top-vsf-households.csv`. Household ids are customer identifiers: `output/` is not git-ignored, so stage only files you deliberately approve and do not commit
+   raw `user_id` outputs without the user's go-ahead.
+4. The first live Athena run is a separate go-ahead from the user; resolve each tenant with `scripts/resolve_tenant.py` first. Run after MEC-5 so the per-session outcome is known to be unique.
+
+**Tests (no network, no real external services):**
+- `test_query_renders_for_month_and_top_n` — the template renders with database, dates and `top_n`.
+- `test_bad_month_or_top_n_fails` — an invalid month or a non-positive `top_n` raises a clear error.
+- `test_shares_and_cumulative_share` — known rows give the expected percentages and cumulative share.
+- `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
+
+**Commit:** `feat(mec): add top failure households report`
