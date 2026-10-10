@@ -13,6 +13,20 @@ only from Athena, so month-over-month trends are visible without Lightstep or HA
 Prior art exists (`aws-access-cli` Shaka error counts, `ctap-smvod` error eventdata export, `src/lib/athena/adapter.py`, `src/lib/csv_io/monthly_store.py`); this story reuses it rather than writing
 new Athena plumbing.
 
+## Data sources (September 2026 analysis)
+
+Debug events tables per OpCo, named `<athena_tenant_id>_ccl_debug_events_sept26` (OpCo → id resolved via `config/tenants.yaml`). The unified session database (`unified_<athena_tenant_id>`) is
+unchanged.
+
+| OpCo | Athena tenant id | Debug events database |
+|---|---|---|
+| ZM | `a7vli5h8` | `a7vli5h8_ccl_debug_events_sept26` |
+| GH | `is1aldzq` | `is1aldzq_ccl_debug_events_sept26` |
+| NG | `jsxgloje` | `jsxgloje_ccl_debug_events_sept26` |
+| SA | `e6auj7k7` | `e6auj7k7_ccl_debug_events_sept26` |
+
+The user supplies the remaining analysis inputs one step at a time; the table name for other months is not assumed from the `sept26` suffix.
+
 ## Scope guard
 
 In bounds: `investigations/mtn-monthly-error-code-analysis/{scripts,tests,docs,data,output}`, new catalog SQL under `queries/athena/`, `SCRIPTS.md`, `CONTEXT.md`. Out of bounds: other investigations,

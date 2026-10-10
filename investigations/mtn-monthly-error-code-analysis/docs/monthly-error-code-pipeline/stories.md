@@ -17,7 +17,8 @@ script, check `SCRIPTS.md` and the FCT-6 registry for an existing equivalent.
 
 **What to implement:**
 
-1. Confirm with the user which Athena table and field hold the error code, and whether a row counts distinct sessions, households, or raw events.
+1. The September 2026 source databases are given in `prompt.md` "Data sources" (`<athena_tenant_id>_ccl_debug_events_sept26`; the unified session DB `unified_<id>` is unchanged). Still confirm with
+   the user which table and field in them hold the error code, and whether a row counts distinct sessions, households, or raw events.
 2. Adapt the closest prior art (`aws-access-cli_shaka_error_counts.sql`, `ctap-smvod-error-eventdata.sql`) with a whole-month predicate so counts are not double-counted across days.
 3. Document the decisions in `error-code-source.md`.
 
