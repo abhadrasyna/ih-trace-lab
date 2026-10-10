@@ -505,4 +505,18 @@ difference, so any error-code story states which of the two sources it quotes. D
 - `test_classification_buckets_are_disjoint` — a fixed in-memory sample: each debug-only session lands in exactly one of `other_endreason` or `absent`.
 - `test_bad_month_fails` — an invalid month raises a clear error.
 
+**CSV design (proposal; the final columns, including whether `debug_only_absent` is split by adjacent-day presence, are decided at the start of MEC-14, not now).** One row per day per OpCo, counts
+only. Example, ZA 2026-09-18 (measured): `debug_error_sessions` 145; `unified_pe_sessions` 142; `unified_pe_play` 11; `unified_pe_request_viewing` 131 (equals VSF by definition, so no separate VSF
+column); `unified_pe_in_debug` 142; `debug_only_other_endreason` 2; `debug_only_absent` 1; `shaka_code_sum` 146 (from the MEC-13 CSV); `multi_code_sessions` 1 (`shaka_code_sum -
+debug_error_sessions`). Identity checks, failing loudly: `debug_error_sessions = debug_in_unified_pe + debug_only_other_endreason + debug_only_absent`; `unified_pe_in_debug = unified_pe_sessions`;
+`unified_pe_play + unified_pe_request_viewing >= unified_pe_sessions` (a session could carry both types).
+
+**How it helps the final analysis:**
+- One definition per claim: "sessions that ended in a player error" uses unified; "sessions with any Shaka error" uses debug; the CSV gives the exact gap per OpCo-day so the two are never mixed.
+- Per-code trends from MEC-13 reconcile to `debug_error_sessions` through `multi_code_sessions`, so each per-code chart states its own caveat.
+- Rates per 100 attempts for both sources, using the MEC-8 attempts column (the normalised funnel view in `analysis-storytelling-framework.md`).
+- Trust chart: the daily `debug_only_*` share shows how often an error event does not become the recorded end reason. That this reflects errors playback recovered from is a hypothesis to test, not a
+  finding.
+- Quality gate before any chart: flag a day where `unified_pe_in_debug` is below 100% or a table boundary appears (2026-09-30).
+
 **Commit:** `feat(mec): add Shaka vs unified PLAYER_ERROR reconciliation`
