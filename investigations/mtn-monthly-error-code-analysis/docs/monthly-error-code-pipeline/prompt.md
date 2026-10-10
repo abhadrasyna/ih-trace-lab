@@ -48,17 +48,16 @@ reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HA
 
 ## Task overview
 
-- **MEC-0** — September `adoption-session-report` CSV per OpCo in this investigation's `output/<OPCO>/daily/`, via the existing aws_access_cli runner.
-- **MEC-0b** — September `adoption-report` (household counts) CSV per OpCo, via the same orchestrator.
-- **MEC-1** — define the error-code source and count grain; add the catalog query.
-- **MEC-2** — per-OpCo monthly Athena pull script.
-- **MEC-3** — cross-OpCo aggregation into the monthly report.
-- **MEC-4** — month-over-month comparison.
-- **MEC-5** — finalize runbook, `usage.md`, `SCRIPTS.md`.
+- **MEC-0** — September `adoption-session-report` CSV for all OpCos in this investigation's `output/<OPCO>/daily/`, via the existing aws_access_cli runner.
+- **MEC-1** — September `adoption-report` (household counts) CSV for all OpCos, via the same orchestrator.
+- **MEC-2** — September `adoption-gap-analysis-session` CSV for all OpCos, with `attempts_sum_check`.
+- **MEC-3** — define the error-code source and count grain; add the catalog query.
+- **MEC-4** — finalize runbook, `usage.md`, `SCRIPTS.md`.
 
 ## Definition of done
 
-Mirrors `tasks.md` "Story done when": one command set produces per-OpCo and all-OpCo monthly error-code reports plus a month-over-month diff, all documented in `usage.md`, with tests green.
+Mirrors `tasks.md` "Story done when": the September CSVs listed there exist for all four OpCos (ZA, NG, ZM, GH), the error-code count source is documented, and everything is documented in `usage.md`
+with tests green. More CSVs and analyses are added as tasks one at a time; each reference CSV the user pastes is mapped to the existing script that generates it.
 
 ## Perspectives not covered
 

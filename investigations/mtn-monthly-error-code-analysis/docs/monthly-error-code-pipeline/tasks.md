@@ -1,27 +1,25 @@
 # Monthly error code pipeline — tasks
 
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
-spec.
+spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the month being analysed (September 2026 first).
 
-**Open: MEC-0, MEC-0b, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5.**
+**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4.**
 
-- [ ] **MEC-0** — September adoption-session-report CSV per OpCo, reusing the aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
-- [ ] **MEC-0b** — September adoption-report (household counts) CSV per OpCo, via the MEC-0 orchestrator | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
-- [ ] **MEC-1** — define error-code source and count grain; add catalog query | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
-- [ ] **MEC-2** — per-OpCo monthly Athena pull script | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
-- [ ] **MEC-3** — cross-OpCo aggregation into the monthly report | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
-- [ ] **MEC-4** — month-over-month comparison | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
-- [ ] **MEC-5** — finalize runbook, usage.md, SCRIPTS.md | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
+- [ ] **MEC-0** — September adoption-session-report CSV for all OpCos, via a month orchestrator over the existing aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
+  code-reviewer hook | SHA: —
+- [ ] **MEC-1** — September adoption-report (household counts) CSV for all OpCos, via the same orchestrator | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
+- [ ] **MEC-2** — September adoption-gap-analysis-session CSV for all OpCos, with the attempts_sum_check column | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
+- [ ] **MEC-3** — define error-code source and count grain; add the monthly error-code catalog query (pending dedup decision) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer
+  hook | SHA: —
+- [ ] **MEC-4** — finalize runbook, usage.md, SCRIPTS.md | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 
 ## Story done when
 
 - **MEC-0** — `output/<OPCO>/daily/2026-09_adoption-session-report.csv` exists in this investigation for all four OpCos, one row per day 2026-09-01..30 with the four session columns.
-- **MEC-0b** — `output/<OPCO>/daily/2026-09_adoption-report.csv` exists for all four OpCos, one row per day with the six household columns.
-- **MEC-1** — the table, error field and count grain are documented, and a catalog query renders for any OpCo and month.
-- **MEC-2** — one command pulls a month for one or all OpCos into `data/athena/<OPCO>/YYYY-MM/`.
-- **MEC-3** — per-OpCo and all-OpCo monthly report CSVs exist under `output/`.
-- **MEC-4** — a month-over-month diff report exists for any two months.
-- **MEC-5** — `usage.md` documents every script and the run order, and `SCRIPTS.md` registers them.
+- **MEC-1** — `output/<OPCO>/daily/2026-09_adoption-report.csv` exists for all four OpCos, one row per day with the six household columns.
+- **MEC-2** — a September `adoption-gap-analysis-session` CSV exists under `output/<OPCO>/daily/` for all four OpCos, with the three gap columns and `attempts_sum_check`.
+- **MEC-3** — the table, error field and count grain are documented, and a catalog query renders for any OpCo and month.
+- **MEC-4** — `usage.md` documents every script and the run order, and `SCRIPTS.md` registers them.
 
 ## After each task
 
