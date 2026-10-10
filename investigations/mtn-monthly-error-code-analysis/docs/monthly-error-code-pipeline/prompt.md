@@ -1,0 +1,42 @@
+# Monthly error code pipeline — prompt
+
+> Delivers a repeatable, Athena-only monthly error-code report across every MTN OpCo (SA, NG, ZM, GH).
+
+Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
+task id) before writing any code. One task per session. Complete it fully. Stop.
+
+## Why this story exists
+
+`investigations/mtn-monthly-error-code-analysis/` was scaffolded as a recurring campaign with no scripts yet. The goal is a monthly view of player error codes per OpCo and across all OpCos, sourced
+only from Athena, so month-over-month trends are visible without Lightstep or HAR inputs.
+
+Prior art exists (`aws-access-cli` Shaka error counts, `ctap-smvod` error eventdata export, `src/lib/athena/adapter.py`, `src/lib/csv_io/monthly_store.py`); this story reuses it rather than writing
+new Athena plumbing.
+
+## Scope guard
+
+In bounds: `investigations/mtn-monthly-error-code-analysis/{scripts,tests,docs,data,output}`, new catalog SQL under `queries/athena/`, `SCRIPTS.md`, `CONTEXT.md`. Out of bounds: other investigations,
+`src/lib/*` changes beyond reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HAR input. Read-only against Athena; no runtime behaviour of other projects changes.
+
+## Session-start load hints
+
+- `docs/guides/query-catalog.md` before writing any SQL.
+- `docs/guides/tenant-resolution.md` and `config/tenants.yaml` before any Athena call.
+- `../usage.md` and `../../RETENTION.md` in this investigation.
+- No `schema.md`: the story changes no persistent-storage schema.
+
+## Task overview
+
+- **MEC-1** — define the error-code source and count grain; add the catalog query.
+- **MEC-2** — per-OpCo monthly Athena pull script.
+- **MEC-3** — cross-OpCo aggregation into the monthly report.
+- **MEC-4** — month-over-month comparison.
+- **MEC-5** — finalize runbook, `usage.md`, `SCRIPTS.md`.
+
+## Definition of done
+
+Mirrors `tasks.md` "Story done when": one command set produces per-OpCo and all-OpCo monthly error-code reports plus a month-over-month diff, all documented in `usage.md`, with tests green.
+
+## Perspectives not covered
+
+Root-cause analysis of individual error codes, alerting/thresholds, and Lightstep cross-checks are deliberately left out.
