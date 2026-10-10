@@ -65,7 +65,8 @@ MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the 
 - **MEC-14** — `output/<OPCO>/daily/2026-09_shaka-vs-unified-errors.csv` exists for all four OpCos with one row per day: distinct debug error sessions, distinct unified `PLAYER_ERROR` sessions (split
   by `event_type`), their overlap both ways, and the debug-only sessions split into another end reason vs absent from `unified_sessions`; the same run settles MEC-13 checks (b) and (c).
 - **MEC-15** — a coverage table exists in `docs/eventdata-shape-census.md` listing, per OpCo and error code, the `eventdata` key paths present (count, share populated) against the paths
-  `flatten_error_eventdata.py` reads; any extension of the flattener covers only gaps in that table, keeps existing columns and outputs unchanged, and has regression tests.
+  `flatten_error_eventdata.py` reads; any extension of the flattener covers only gaps in that table, keeps existing columns and outputs unchanged, and has regression tests; the per-code flat output
+  appends each day into one file per error code instead of one file per date, deduplicated on `messageid`.
 
 ## After each task
 

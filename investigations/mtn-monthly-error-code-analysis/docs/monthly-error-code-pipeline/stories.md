@@ -547,9 +547,18 @@ pipeline status]`). Missing paths come out as blank cells, not errors, so a code
    a regression test with a real sample payload.
 4. The first live Athena run is a separate go-ahead; resolve each tenant with `scripts/resolve_tenant.py --system athena --tenant <athena_id>` first.
 
+5. Output layout (user preference, recorded; implemented in this task's flattener extension, not in this docs session): append each day's rows into one file per error code, for example
+   `output/<OPCO>/error_eventdata_flat/3016.csv`, instead of one file per date (`<date>_3016.csv` today). Design points to settle at the start of MEC-15, not assumed now: (a) the flattener drops
+   columns that are blank in every row of a day's per-code file, so the header would change as days are appended; either use a fixed per-code column set or rewrite the file when a new column appears
+   (reuse `src/lib/csv_io/monthly_store.py` column-gap handling where it fits; it keys on a date column, not `messageid`); (b) idempotence: dedupe on `messageid` across days (the flattener already
+   dedupes within a run), so a re-run or an overlapping day range does not double-append; (c) growth and scope: one file per code forever vs one per month (`2026-09_3016.csv`), given `raw_eventdata`
+   makes rows large; (d) the `<date>_all.csv` file: keep, replace with an appended `all.csv`, or drop; (e) the existing dated files: leave in place or migrate, without changing their content; (f)
+   these files hold household and device ids, so they are not committed without the user's approval.
+
 **Tests (no network, no real external services):**
 - `test_key_path_walker_lists_nested_paths` — a fixed sample payload yields the expected paths and counts.
 - `test_unread_paths_reported` — a payload with an extra path is reported as populated-but-unread.
+- Append layout: `test_append_adds_new_day_rows_to_code_file`, `test_rerun_same_day_does_not_duplicate_messageids` and `test_new_column_on_later_day_keeps_header_consistent`.
 - For any flattener extension: one happy-path and one missing-path test per new handler, plus a test proving existing outputs are unchanged.
 
 **Commit:** `docs(mec): add eventdata shape census` (and `feat(ctap-smvod): flatten <code> eventdata` if the flattener is extended)
