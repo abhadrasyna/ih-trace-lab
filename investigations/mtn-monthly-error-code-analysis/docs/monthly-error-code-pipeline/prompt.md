@@ -48,6 +48,7 @@ reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HA
 
 ## Task overview
 
+- **MEC-0** — September `adoption-session-report` CSV per OpCo in this investigation's `output/<OPCO>/daily/`, via the existing aws_access_cli runner.
 - **MEC-1** — define the error-code source and count grain; add the catalog query.
 - **MEC-2** — per-OpCo monthly Athena pull script.
 - **MEC-3** — cross-OpCo aggregation into the monthly report.

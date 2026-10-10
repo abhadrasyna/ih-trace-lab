@@ -3,8 +3,9 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MEC-1, MEC-2, MEC-3, MEC-4, MEC-5.**
+**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5.**
 
+- [ ] **MEC-0** — September adoption-session-report CSV per OpCo, reusing the aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
 - [ ] **MEC-1** — define error-code source and count grain; add catalog query | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
 - [ ] **MEC-2** — per-OpCo monthly Athena pull script | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
 - [ ] **MEC-3** — cross-OpCo aggregation into the monthly report | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
@@ -13,6 +14,7 @@ spec.
 
 ## Story done when
 
+- **MEC-0** — `output/<OPCO>/daily/2026-09_adoption-session-report.csv` exists in this investigation for all four OpCos, one row per day 2026-09-01..30 with the four session columns.
 - **MEC-1** — the table, error field and count grain are documented, and a catalog query renders for any OpCo and month.
 - **MEC-2** — one command pulls a month for one or all OpCos into `data/athena/<OPCO>/YYYY-MM/`.
 - **MEC-3** — per-OpCo and all-OpCo monthly report CSVs exist under `output/`.

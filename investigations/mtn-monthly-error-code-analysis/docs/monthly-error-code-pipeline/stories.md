@@ -8,6 +8,34 @@ script, check `SCRIPTS.md` and the FCT-6 registry for an existing equivalent.
 
 ---
 
+## MEC-0 — September adoption-session-report CSV per OpCo
+
+**Files to change / create:**
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_session_report.py` — thin orchestrator.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_month_adoption_session_report.py`
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` — add the entry and the first run-order row.
+
+**What to implement:**
+
+1. Reuse `src/pipelines/aws_access_cli/scripts/run_adoption_session_report.py` (`main(argv)` → `common.run_adoption_cli`, metrics `SESSION_METRICS`); do not copy its SQL. This report reads
+   `unified_<id>.unified_sessions`, not the `_ccl_debug_events_sept26` tables.
+2. Only a single `--date` run upserts into the month file via `MonthlyCsvStore` (a `--start-date/--end-date` range does not), so the orchestrator loops every date in the month and every OpCo, calling
+   `main(["--date", D, "--tenant", T, "--output-dir", "investigations/mtn-monthly-error-code-analysis/output", "--skip-auth-check"])`. Run SSO once up front; isolate per-date/per-OpCo failures and
+   exit non-zero if any failed. Result: `output/<OPCO>/daily/2026-09_adoption-session-report.csv` (the output dir is resolved against the repo root).
+3. Args: `--month YYYY-MM` (required), `--opco` (repeatable, default all four), `--force`, `--dry-run` (print the date x OpCo plan, run nothing).
+4. Open decision to confirm before coding: the pipeline names South Africa `ZA` (`src/pipelines/aws_access_cli/tenants.py`) while `config/tenants.yaml` and these docs say `SA`. Default: use the
+   pipeline's `ZA` so the folder matches the existing `output/ZA/daily/` files; document the mapping in `usage.md`.
+5. The data must have settled: ZA session counts were still rising two days after the first run (7 Oct vs 9 Oct), so September (closed) is safe; for a current month, wait 2-3 days after month end.
+
+**Tests (no network, no real external services):**
+- `test_plan_covers_every_date_and_opco` — a 30-day month x 4 OpCos yields 120 calls, with the expected `--date`/`--tenant`/`--output-dir` argv.
+- `test_failure_is_isolated_and_exit_nonzero` — one failing call does not stop the rest, and the exit code is non-zero.
+- `test_bad_month_fails` — an invalid month raises a clear error.
+
+**Commit:** `feat(mec): add September adoption-session-report orchestrator`
+
+---
+
 ## MEC-1 — Define error-code source and count grain; add catalog query
 
 **Files to change / create:**
