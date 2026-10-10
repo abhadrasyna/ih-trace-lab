@@ -1,7 +1,8 @@
 # MTN monthly error code analysis script usage
 
 All commands run from the repo root with the project venv active. Months are `YYYY-MM`. Raw Athena pulls go to `investigations/mtn-monthly-error-code-analysis/data/athena/<OPCO>/YYYY-MM/`, and reports
-go to `investigations/mtn-monthly-error-code-analysis/output/<OPCO>/`. OpCo codes come from `config/tenants.yaml` (`SA`, `NG`, `ZM`, `GH`). Data source is Athena only.
+go to `investigations/mtn-monthly-error-code-analysis/output/<OPCO>/`. OpCo codes follow the aws_access_cli pipeline: `ZA` (South Africa; `SA` in `config/tenants.yaml`), `NG`, `ZM`, `GH`. Data source
+is Athena only.
 
 ## 0. Prerequisites
 

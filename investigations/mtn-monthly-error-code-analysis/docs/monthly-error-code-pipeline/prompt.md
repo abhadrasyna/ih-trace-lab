@@ -1,6 +1,6 @@
 # Monthly error code pipeline — prompt
 
-> Delivers a repeatable, Athena-only monthly error-code report across every MTN OpCo (SA, NG, ZM, GH).
+> Delivers a repeatable, Athena-only monthly error-code report across every MTN OpCo (ZA, NG, ZM, GH; `config/tenants.yaml` calls ZA "SA").
 
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
@@ -23,7 +23,7 @@ unchanged.
 | ZM | `a7vli5h8` | `a7vli5h8_ccl_debug_events_sept26` |
 | GH | `is1aldzq` | `is1aldzq_ccl_debug_events_sept26` |
 | NG | `jsxgloje` | `jsxgloje_ccl_debug_events_sept26` |
-| SA | `e6auj7k7` | `e6auj7k7_ccl_debug_events_sept26` |
+| ZA (registry: SA) | `e6auj7k7` | `e6auj7k7_ccl_debug_events_sept26` |
 
 The user supplies the remaining analysis inputs one step at a time; the table name for other months is not assumed from the `sept26` suffix.
 

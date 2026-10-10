@@ -23,8 +23,8 @@ script, check `SCRIPTS.md` and the FCT-6 registry for an existing equivalent.
    `main(["--date", D, "--tenant", T, "--output-dir", "investigations/mtn-monthly-error-code-analysis/output", "--skip-auth-check"])`. Run SSO once up front; isolate per-date/per-OpCo failures and
    exit non-zero if any failed. Result: `output/<OPCO>/daily/2026-09_adoption-session-report.csv` (the output dir is resolved against the repo root).
 3. Args: `--month YYYY-MM` (required), `--opco` (repeatable, default all four), `--force`, `--dry-run` (print the date x OpCo plan, run nothing).
-4. Open decision to confirm before coding: the pipeline names South Africa `ZA` (`src/pipelines/aws_access_cli/tenants.py`) while `config/tenants.yaml` and these docs say `SA`. Default: use the
-   pipeline's `ZA` so the folder matches the existing `output/ZA/daily/` files; document the mapping in `usage.md`.
+4. Decided: South Africa is `ZA` in this investigation's folders and CLI (matching `src/pipelines/aws_access_cli/tenants.py` and the existing `output/ZA/daily/` files), although `config/tenants.yaml`
+   calls it `SA`. Document the mapping in `usage.md`.
 5. The data must have settled: ZA session counts were still rising two days after the first run (7 Oct vs 9 Oct), so September (closed) is safe; for a current month, wait 2-3 days after month end.
 
 **Tests (no network, no real external services):**
