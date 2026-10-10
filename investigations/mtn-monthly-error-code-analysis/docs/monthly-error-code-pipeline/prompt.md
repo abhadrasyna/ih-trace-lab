@@ -59,6 +59,7 @@ reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HA
 - **MEC-10** — guest-login MCP check, run first (docs only): is a guest-login household's later playback attempt observable under a matchable id? Records go or no-go.
 - **MEC-11** — guest-login funnel rates and day-level co-movement with attempts (no Athena).
 - **MEC-12** — guest-login to playback attribution (24h), built only on a MEC-10 go.
+- **MEC-13** — September `shaka-error-session` CSV (distinct sessions per `PLAYER_ERROR` code per day) for all OpCos, via the same orchestrator with the `_sept26` debug table; separate from MEC-3.
 
 Settled definitions (verified on ZA 2026-09-15; full detail in `stories.md` MEC-2 and MEC-8): `PLAY` is an `event_type`, never an `endreason`. `REQUEST_VIEWING`/`PLAYER_ERROR` is VSF.
 `REQUEST_VIEWING`/`DESTROY` is EBVS, using the broader shared rule (no `PLAY` row and a `DESTROY` on any row). `REQUEST_VIEWING`/`PLAYING` with no closing `PLAY` row is `playing_no_end_sessions`. The

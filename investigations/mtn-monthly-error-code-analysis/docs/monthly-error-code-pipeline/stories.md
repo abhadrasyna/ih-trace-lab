@@ -403,3 +403,59 @@ hours afterwards? It is not necessary to complete this task: build it only if ME
 **Tests (no network, no real external services):** `test_query_renders_for_month` (all placeholders resolve), `test_bad_month_fails`, `test_dry_run_makes_no_athena_calls`.
 
 **Commit:** `feat(mec): add guest-login attribution report`
+
+---
+
+## MEC-13 — September shaka-error-session CSV for all OpCos
+
+**Why:** the reference is `aws-access-cli/output/ZA/daily/202609_shaka_error_sessions.csv` (in `~/github_copilot/`): one row per day, `session_date` plus one column per Shaka `PLAYER_ERROR` code
+(`1001, 1002, 1003, 3014, 3015, 3016, 4032, 6001, 6002, 6006, 6007, 6012, 7000, E31012`, and `1006` appended late). Each cell is the number of distinct sessions that carried that code that day. The
+reference only shows which fields exist; this task regenerates it in this investigation for all four OpCos. Sibling references (`202609_shaka_error_hhid.csv`,
+`202609_shaka_1xxx_position_report_*.csv`) are out of scope: the hhid artifact is a possible follow-up task.
+
+**Files to change / create:**
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_reports.py` — add `--artifact shaka-error-session`.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_month_adoption_reports.py` — cover the new option.
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` — document it.
+
+**What to implement:**
+
+1. Reuse `src/pipelines/aws_access_cli/scripts/run_shaka_error_session_report.py` (`main(argv)` → `common.run_shaka_cli(artifact='shaka-error-session', by='session')`, logic in `shaka_errors.py`, SQL
+   `queries/athena/aws-access-cli_shaka_error_counts.sql`); do not copy its SQL. It counts `COUNT(DISTINCT json_extract_scalar(eventdata, '$.sessionid'))` per `$.errorcode` where `eventid =
+   'PLAYER_ERROR'`, from the debug events table (not `unified_sessions`), with `datetime >= D 00:00Z AND < D+1 00:00Z`.
+2. Same per-date x per-OpCo append loop as MEC-0/MEC-1/MEC-9 (`--date D --tenant T --output-dir investigations/mtn-monthly-error-code-analysis/output --skip-auth-check`), producing
+   `output/<OPCO>/daily/2026-09_shaka-error-sessions.csv`. Confirm the real filename on a `--dry-run` (the reference name is `<yyyymm>_shaka_error_sessions.csv`).
+3. Table: the orchestrator must pass `--table <id>_ccl_debug_events_sept26` per OpCo (`prompt.md` "Data sources"). The pipeline default is `<id>_ccl_debug_events`, which the user states holds only
+   October data once the month rolls over (the table resets on the last day of the month). The `_sept26` table also holds pre-September rows; the `datetime` window bounds each day.
+4. The ZA reference was generated from the default table (user-confirmed), not `_sept26`. This explains, as a stated cause to verify, why the reference shows 2026-09-30 as all zeros: the zero is a
+   zero-fill (`pivot_error_counts` writes `0` for every column when the query returns no rows), not a measured zero. Do not treat that day as zero errors in any report built from the reference.
+5. Column rules: codes outside `KNOWN_ERROR_CODES` are appended as new columns, so `1006` appears late; in the reference it is blank for 2026-09-01..21 and `0` from 2026-09-23. Blank means "column not
+   yet discovered when that row was written", not a measured zero, until a month-wide run proves otherwise. A session can carry several codes, so the per-code columns must never be summed to "sessions
+   with an error"; a session-with-any-error figure needs its own `COUNT(DISTINCT sessionid)` query.
+6. Open checks, each an Athena run needing the user's go-ahead (report results, do not assume): (a) session id grain: per day, `COUNT(*)`, `COUNT(DISTINCT messageid)` and `COUNT(DISTINCT $.sessionid)`
+   for `PLAYER_ERROR`; and whether `$.sessionid` equals `parent_session_id` in `unified_<id>.unified_sessions` for the same day. (b) 2026-09-30: `MIN/MAX(datetime)` and per-day row counts on both
+   `<id>_ccl_debug_events` and `<id>_ccl_debug_events_sept26`, to separate a real zero from a table reset, lag or cutoff. (c) reference vs `_sept26` for ZA, per day and code: report differences, do
+   not call them errors. Also the first date `1006` appears on each table. (d) the NG, ZM and GH outputs are unverified. (e) VSF relation: the MEC-8 `VSF-Sessions` (`REQUEST_VIEWING`/`PLAYER_ERROR`)
+   against distinct `PLAYER_ERROR` sessions here, per OpCo-day: the share of VSF sessions whose id appears in the error table, and the reverse. Propose-and-measure only; no equality is assumed.
+7. Relation to MEC-3 (decided: separate, cross-referenced): MEC-13 reuses the existing per-day, distinct-session, wide-pivot generator; MEC-3 is a whole-month catalog query whose count grain (raw
+   events vs dedup) is still pending. They do not share a query. Check (a) is the measured input MEC-3's dedup decision can use.
+8. The first live Athena run is a separate go-ahead from the user; resolve each tenant with `scripts/resolve_tenant.py --system athena --tenant <athena_id>` first (pass the id, not `ZA`). `output/` is
+   not git-ignored and these files hold counts only, but do not commit them without the user's approval.
+
+**Analysis ideas (from the CSV):**
+
+| Idea | Needs Athena? |
+|---|---|
+| Daily trend per code, small multiples per OpCo (annotate spikes such as ZA 1001 = 77 on 09-18) | No |
+| Error sessions per 100 playback attempts, per code (attempts from the MEC-8/MEC-2 CSV) | No, once MEC-2 exists |
+| New-code detection (first date a code is non-zero, like 1006 on 09-22) | No |
+| Sessions with any error per day (no per-code sum) | Yes |
+| Session-grain, 09-30 and table-boundary checks, reference vs `_sept26` | Yes |
+| VSF vs `PLAYER_ERROR` overlap | Yes |
+
+**Tests (no network, no real external services):**
+- `test_shaka_session_artifact_selects_runner` — `--artifact shaka-error-session` calls the shaka session runner with the expected `--date`/`--tenant`/`--output-dir` argv.
+- `test_shaka_session_artifact_passes_sept26_table_per_opco` — each OpCo's argv carries `--table <id>_ccl_debug_events_sept26` with that OpCo's Athena id.
+- `test_shaka_session_artifact_covers_every_date_and_opco` — a 30-day month x 4 OpCos yields 120 calls.
+
+**Commit:** `feat(mec): add September shaka-error-session to month orchestrator`
