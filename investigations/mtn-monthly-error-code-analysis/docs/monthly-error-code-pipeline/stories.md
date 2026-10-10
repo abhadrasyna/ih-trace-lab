@@ -71,17 +71,19 @@ data check):
 - VSF — `REQUEST_VIEWING` with `PLAYER_ERROR`. It has a known end reason, so it is its own bucket and is not incomplete.
 - EBVS — decided: the broader definition used by the shared SQL, i.e. a session with no `PLAY` row and a `DESTROY` on any row. This includes `REQUEST_VIEWING`/`DESTROY` and also sessions whose only
   `DESTROY` is on a `BUFFERING` row. How many sessions the broader rule adds beyond `REQUEST_VIEWING`/`DESTROY` is unmeasured.
-- `incomplete_no_destroy_sessions` — a session with no `PLAY` row, no `DESTROY` and no VSF, i.e. `REQUEST_VIEWING`/`PLAYING` (optionally with `BUFFERING`/`PLAYING`) and no closing `PLAY` row. Intended
-  reading (user's understanding): playback began and the viewer killed the app, so no end event was reported. Verified on ZA 2026-09-15 (Athena execution `90f7deed-c31a-4500-89d6-3163afce46b9`): 28
-  such sessions, all `REQUEST_VIEWING`/`PLAYING` (17 with that row only, 11 also with `BUFFERING`/`PLAYING`), 26 mobile and 2 desktop. This supports the app-kill reading but does not prove it. One
-  day, one OpCo.
+- `playing_no_end_sessions` (final name; replaces the shared pipeline's `incomplete_no_destroy_sessions`, whose name was confusing because VSF also has no `DESTROY`) — a session with no `PLAY` row, no
+  `DESTROY` and no VSF, i.e. `REQUEST_VIEWING`/`PLAYING` (optionally with `BUFFERING`/`PLAYING`) and no closing `PLAY` row. Intended reading (user's understanding): playback began and the viewer
+  killed the app, so no end event was reported. Verified on ZA 2026-09-15 (Athena execution `90f7deed-c31a-4500-89d6-3163afce46b9`): 28 such sessions, all `REQUEST_VIEWING`/`PLAYING` (17 with that row
+  only, 11 also with `BUFFERING`/`PLAYING`), 26 mobile and 2 desktop. This supports the app-kill reading but does not prove it. One day, one OpCo.
 - `play_stage_error_sessions` — a `PLAY` event with `endreason = PLAYER_ERROR`.
 - `play_timeout_sessions` — a `PLAY` event with `endreason = TIMEOUT`.
-- Decided: VSF is its own bucket and `incomplete_no_destroy` excludes VSF, so the six buckets are disjoint and sum exactly to attempts.
+- Final: VSF is its own bucket and `playing_no_end_sessions` excludes VSF, so the six outcome columns (success, VSF, EBVS, playing-no-end, play-stage error, play-timeout) are disjoint and their sum
+  must equal `VOD-Playback-Attempt-Sessions` on every day. `attempts_sum_check` holds that sum; compare it with the attempts column (no separate difference column).
 - Current shared SQL (`queries/athena/aws-access-cli_adoption_playback_outcome.sql`) has no VSF branch: a session's outcome is the `endreason` of its `PLAY` row when present; otherwise EBVS if a
   `DESTROY` appears anywhere in the session, else `INCOMPLETE_NO_DESTROY`. VSF sessions therefore land in `INCOMPLETE_NO_DESTROY` today. Verified on ZA 2026-09-15 (execution
   `e52b4239-7cda-49c5-a1e3-aaba08decd98`): attempts 309, success 230, VSF 27, EBVS 16, incomplete 55 (27 VSF + 28 truly incomplete), play-stage error 8, timeout 0; the six-column sum is 336 = 309
-  + 27. How the exclusion is implemented (a VSF branch in the query or a subtraction in this investigation) is not yet decided.
+  + 27. Decided: the exclusion is a new template in this investigation (MEC-8); the shared SQL and `adoption.py` are not edited because other reports (ctap-smvod and aws_access_cli) depend on the old
+    labels.
 
 **Files to change / create:**
 - `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_reports.py` — add `--artifact adoption-gap-analysis-session`.
@@ -91,18 +93,20 @@ data check):
 
 **What to implement:**
 
-1. Reuse `src/pipelines/aws_access_cli/scripts/run_adoption_gap_analysis_session_report.py` (`GAP_SESSION_METRICS`: the four session columns plus incomplete_no_destroy_sessions,
-   play_stage_error_sessions, play_timeout_sessions). Reference: `aws-access-cli/output/ZA/daily/<yyyymm>_athena_adoption_gap_session_sample.csv` — "sample" is only that script's filename suffix; it
-   covers a whole month. This reads `unified_<id>` tables, not the `_sept26` tables.
+0. Depends on MEC-8 (the new outcome template and wrapper). Do MEC-8 first. The final columns are, in order: `session_date`, `VOD-Playback-Attempt-Sessions`, `Successful-VOD-Playback-Sessions`,
+   `VSF-Sessions`, `EBVS-Sessions`, `playing_no_end_sessions`, `play_stage_error_sessions`, `play_timeout_sessions`, `attempts_sum_check`.
+1. Do not use the shared `GAP_SESSION_METRICS` (its incomplete column includes VSF); use the MEC-8 wrapper. The reference CSV only shows which fields exist. Reference:
+   `aws-access-cli/output/ZA/daily/<yyyymm>_athena_adoption_gap_session_sample.csv` — "sample" is only that script's filename suffix; it covers a whole month. This reads `unified_<id>` tables, not the
+   `_sept26` tables.
 2. This artifact is not an append artifact, so run one range call per OpCo (`--start-date 2026-09-01 --end-date 2026-09-30 --period day --tenant T --output-dir ...`), not a per-date loop. Confirm
    where the range file is written (`format_range_filename`) on a `--dry-run`/first run, and document the real path in `usage.md`.
-3. The ported pipeline has no `attempts_sum_check` column (the original adds it: Successful + VSF + EBVS + the three gap columns, compared with VOD-Playback-Attempt-Sessions). Decided: emit a single
-   exact `attempts_sum_check` = Successful + VSF + EBVS + incomplete_no_destroy (excluding VSF) + play-stage error + play-timeout, compared with VOD-Playback-Attempt-Sessions. Because VSF is its own
-   bucket and incomplete excludes it, the sum should equal attempts (ZA 2026-09-15: raw incomplete 55 minus 27 VSF = 28; 230 + 27 + 16 + 28 + 8 + 0 = 309). There is no second adjusted column. Add the
-   column with `add_attempts_sum_check.py` in this investigation instead of editing the shared pipeline; treat blank cells as 0. Where the VSF exclusion happens is an open implementation point.
+3. The ported pipeline has no `attempts_sum_check` column (the original adds it). Final: a single `attempts_sum_check` = Successful + VSF + EBVS + `playing_no_end_sessions` + play-stage error +
+   play-timeout, to be compared with VOD-Playback-Attempt-Sessions; they must be equal (ZA 2026-09-15: 230 + 27 + 16 + 28 + 8 + 0 = 309). There is no second adjusted column and no difference column.
+   Add the column with `add_attempts_sum_check.py` in this investigation instead of editing the shared pipeline; treat blank cells as 0. Any day where the sum differs from attempts is a finding to
+   report, not to patch over.
 
 **Tests (no network, no real external services):**
-- `test_gap_artifact_runs_one_range_call_per_opco` — 4 calls, each with the month's start/end dates.
+- `test_gap_artifact_runs_one_range_call_per_opco` — 4 calls, each with the month's start/end dates, using the MEC-8 wrapper and column names.
 - `test_sum_check_adds_column_and_treats_blank_as_zero` — `attempts_sum_check` equals the sum of the six disjoint component columns (VSF not double-counted in incomplete).
 - `test_sum_check_missing_column_fails` — a CSV without a required component column raises a clear error.
 
@@ -242,3 +246,40 @@ vsf-unique-hhid`.
 - `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
 
 **Commit:** `feat(mec): add top failure households report`
+
+---
+
+## MEC-8 — VSF-aware playback-outcome template and gap wrapper
+
+**Why:** the shared playback-outcome SQL has no VSF branch, so VSF sessions fall into its `INCOMPLETE_NO_DESTROY` default and the outcome columns overlap (ZA 2026-09-15: six-column sum 336 vs attempts
+309). This task adds a new template used only by this investigation, so the outcome buckets are disjoint. The shared template, `adoption.py` and the other reports that depend on the old labels
+(`aws-access-cli_playback_outcome.sql`, `ctap-smvod-playback-outcome.sql`, `aws-access-cli_incomplete_no_destroy_session_ids.sql`, the ctap-smvod scripts) are not edited.
+
+**Files to change / create:**
+- `queries/athena/mtn-monthly_playback_outcome_vsf.sql` — per-session outcome with the placeholders of the shared template; register per `docs/guides/query-catalog.md`.
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_gap_session_report.py` — thin wrapper: its own `MetricSpec` tuple using the new template for the six outcome columns, the existing
+  distinct query for attempts, the shared run/report helpers from `src/pipelines/aws_access_cli`, then `add_attempts_sum_check.py` (MEC-2). `--dry-run` supported.
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_gap_session_report.py`
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md` and `SCRIPTS.md` — document and register.
+
+**What to implement:**
+
+1. Outcome rule per session (`parent_session_id`, `timestamp_formatted`), first match wins:
+   1. a `PLAY` row exists: the outcome is that row's `endreason` (`DESTROY` = success, `PLAYER_ERROR` = play-stage error, `TIMEOUT` = play timeout);
+   2. else `REQUEST_VIEWING` with `PLAYER_ERROR` exists: `VSF`;
+   3. else a `DESTROY` on any row: `EBVS` (the broader shared definition, kept on purpose);
+   4. else `PLAYING_NO_END`.
+2. Output column names: `VOD-Playback-Attempt-Sessions`, `Successful-VOD-Playback-Sessions`, `VSF-Sessions`, `EBVS-Sessions`, `playing_no_end_sessions`, `play_stage_error_sessions`,
+   `play_timeout_sessions`. The household gap columns are out of scope (the household CSV, MEC-1, is unchanged).
+3. Read `unified_<id>.unified_sessions`, not the `_sept26` debug tables. Resolve each tenant with `scripts/resolve_tenant.py` (by Athena id) before any Athena call. The first live run is a separate
+   go-ahead from the user.
+4. Open checks to report, not assume: (a) whether the template must also restrict to sessions that have a `REQUEST_VIEWING` row for the sum to equal attempts (the shared SQL does not; it matched on ZA
+   2026-09-15); (b) how many sessions have both `REQUEST_VIEWING`/`PLAYER_ERROR` and a `DESTROY`, which rule 2 counts as VSF; (c) the same sum check on NG, ZM and GH.
+
+**Tests (no network, no real external services):**
+- `test_template_renders_with_database_and_dates` — the template renders with all placeholders resolved.
+- `test_template_has_vsf_branch_before_ebvs` — the rendered SQL checks the `PLAY` row, then VSF, then `DESTROY`, then `PLAYING_NO_END`, in that order.
+- `test_metric_specs_use_final_column_names` — the wrapper emits exactly the columns in step 2 and no `incomplete_no_destroy_sessions`.
+- `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
+
+**Commit:** `feat(mec): add VSF-aware playback-outcome template and gap wrapper`

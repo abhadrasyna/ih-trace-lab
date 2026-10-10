@@ -55,8 +55,8 @@ All comparisons are within a single day. Units: a session is a `parent_session_i
 - **Broad or concentrated (issue tree, Pareto):** per day, affected-household share against sessions per affected household. High share with a ratio near 1 is broad; low share with a high ratio is a
   few households.
 - **Trust (anticipate the counterargument):** this is the central chart, because the gap CSV exists to explain the unknown drop-off (attempts not equal to success + VSF + EBVS). Show attempts against
-  the stacked buckets per OpCo, keep `incomplete_no_destroy` visually distinct from the other failure buckets, and show the leftover (`attempts_sum_check`) explicitly. VSF sits inside
-  `incomplete_no_destroy`; the decided definition makes VSF its own bucket and excludes it from incomplete, so the buckets stack as disjoint parts of attempts.
+  the stacked buckets per OpCo, keep `playing_no_end_sessions` visually distinct from the other failure buckets, and show `attempts_sum_check` against attempts explicitly. VSF is its own bucket and
+  `playing_no_end_sessions` excludes it (MEC-8 template), so the buckets stack as disjoint parts of attempts.
 - **Close (Minto, three acts):** beginning is the funnel and stakes; middle ("But") is the bad days and whether they are broad or concentrated; end is a recommendation per pattern, handing off to the
   error-code breakdown.
 
@@ -67,7 +67,8 @@ Definition notes carried from the analysis of the existing reports:
 - Do not sum the daily household columns to quote a single September household figure.
 - `REQUEST_VIEWING` end reasons: `PLAYING` = handed to play, `PLAYER_ERROR` = VSF, `DESTROY` = EBVS, `OTHER` = unclassified. `PLAY` is an `event_type`, never an `endreason`.
 - EBVS uses the broader shared-SQL definition (no `PLAY` row and a `DESTROY` on any row), which also catches `BUFFERING`/`DESTROY`-only sessions; the extra volume is unmeasured.
-- `incomplete_no_destroy_sessions` is a session with no `PLAY` row, no `DESTROY` and no VSF: `REQUEST_VIEWING`/`PLAYING` (optionally with `BUFFERING`/`PLAYING`) and no closing `PLAY` row. Intended
-  reading (user's understanding): the viewer killed the app. Verified on ZA 2026-09-15: 28 sessions, all `REQUEST_VIEWING`/`PLAYING`, 26 mobile and 2 desktop; consistent with app-kill, not proof.
-- Verified on ZA 2026-09-15 (one day, one OpCo): the current SQL puts the 27 VSF sessions inside `INCOMPLETE_NO_DESTROY` (55 = 27 VSF + 28), so the raw six-column sum (336) exceeds attempts (309) by
-  exactly 27. Decided: VSF is its own bucket, incomplete excludes VSF, and a single exact `attempts_sum_check` is emitted (MEC-2).
+- `playing_no_end_sessions` (final name; the shared pipeline calls it `incomplete_no_destroy_sessions`) is a session with no `PLAY` row, no `DESTROY` and no VSF: `REQUEST_VIEWING`/`PLAYING`
+  (optionally with `BUFFERING`/`PLAYING`) and no closing `PLAY` row. Intended reading (user's understanding): the viewer killed the app. Verified on ZA 2026-09-15: 28 sessions, all
+  `REQUEST_VIEWING`/`PLAYING`, 26 mobile and 2 desktop; consistent with app-kill, not proof.
+- Verified on ZA 2026-09-15 (one day, one OpCo): the shared SQL puts the 27 VSF sessions inside `INCOMPLETE_NO_DESTROY` (55 = 27 VSF + 28), so its raw six-column sum (336) exceeds attempts (309) by
+  exactly 27. Final: the new MEC-8 template makes VSF its own bucket; the six outcome columns are disjoint and `attempts_sum_check` (their sum) must equal attempts. The shared SQL is not edited.

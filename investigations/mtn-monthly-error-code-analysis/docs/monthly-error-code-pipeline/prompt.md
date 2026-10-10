@@ -50,9 +50,15 @@ reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HA
 
 - **MEC-0** — September `adoption-session-report` CSV for all OpCos in this investigation's `output/<OPCO>/daily/`, via the existing aws_access_cli runner.
 - **MEC-1** — September `adoption-report` (household counts) CSV for all OpCos, via the same orchestrator.
-- **MEC-2** — September `adoption-gap-analysis-session` CSV for all OpCos, with `attempts_sum_check`.
+- **MEC-2** — September `adoption-gap-analysis-session` CSV for all OpCos, with `attempts_sum_check` (depends on MEC-8).
 - **MEC-3** — define the error-code source and count grain; add the catalog query.
 - **MEC-4** — finalize runbook, `usage.md`, `SCRIPTS.md`.
+- **MEC-5 to MEC-7** — playback-outcome uniqueness check, household concentration ratios, top failure households (see `tasks.md`).
+- **MEC-8** — VSF-aware playback-outcome template and gap wrapper for this investigation (shared SQL untouched).
+
+Settled definitions (verified on ZA 2026-09-15; full detail in `stories.md` MEC-2 and MEC-8): `PLAY` is an `event_type`, never an `endreason`. `REQUEST_VIEWING`/`PLAYER_ERROR` is VSF.
+`REQUEST_VIEWING`/`DESTROY` is EBVS, using the broader shared rule (no `PLAY` row and a `DESTROY` on any row). `REQUEST_VIEWING`/`PLAYING` with no closing `PLAY` row is `playing_no_end_sessions`. The
+six outcome columns are disjoint and their sum, `attempts_sum_check`, must equal `VOD-Playback-Attempt-Sessions`.
 
 ## Definition of done
 
