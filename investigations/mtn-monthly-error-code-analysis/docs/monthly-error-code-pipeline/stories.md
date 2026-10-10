@@ -72,8 +72,8 @@ data check):
 - `play_timeout_sessions` — a `PLAY` event with `endreason = TIMEOUT`.
 - Outcome rule: a session's outcome is the `endreason` of its `PLAY` row when present; otherwise EBVS if a `DESTROY` appears anywhere in the session, else `INCOMPLETE_NO_DESTROY`.
 - Verified overlap: VSF sessions (`REQUEST_VIEWING` with `PLAYER_ERROR`) are counted in both the VSF column and `incomplete_no_destroy`. On ZA 2026-09-15: attempts 309, success 230, VSF 27, EBVS 16,
-  incomplete 55, play-stage error 8, timeout 0; the six-column sum is 336 = 309 + 27, and it equals attempts once VSF is excluded. One day, one OpCo; the formula for `attempts_sum_check` is undecided
-  (see MEC-2 implementation step 3).
+  incomplete 55, play-stage error 8, timeout 0; the six-column sum is 336 = 309 + 27, and it equals attempts once VSF is excluded. One day, one OpCo; both sums are emitted (see MEC-2 implementation
+  step 3).
 
 **Files to change / create:**
 - `investigations/mtn-monthly-error-code-analysis/scripts/run_month_adoption_reports.py` — add `--artifact adoption-gap-analysis-session`.
@@ -88,13 +88,14 @@ data check):
    covers a whole month. This reads `unified_<id>` tables, not the `_sept26` tables.
 2. This artifact is not an append artifact, so run one range call per OpCo (`--start-date 2026-09-01 --end-date 2026-09-30 --period day --tenant T --output-dir ...`), not a per-date loop. Confirm
    where the range file is written (`format_range_filename`) on a `--dry-run`/first run, and document the real path in `usage.md`.
-3. The ported pipeline has no `attempts_sum_check` column (the original adds it: Successful + VSF + EBVS + the three gap columns, compared with VOD-Playback-Attempt-Sessions). Formula pending the
-   user's decision: on ZA 2026-09-15 that sum overshoots attempts by the 27 VSF sessions that also sit in `incomplete_no_destroy`. Add the column with `add_attempts_sum_check.py` in this investigation
-   instead of editing the shared pipeline; treat blank cells as 0.
+3. The ported pipeline has no `attempts_sum_check` column (the original adds it: Successful + VSF + EBVS + the three gap columns, compared with VOD-Playback-Attempt-Sessions). Decided: emit both sums.
+   `attempts_sum_check` keeps the original six-column sum; `attempts_sum_check_adjusted` excludes VSF (Successful + EBVS + incomplete_no_destroy + play-stage error + play-timeout) because VSF sessions
+   also sit in `incomplete_no_destroy` (ZA 2026-09-15: original 336 vs attempts 309, adjusted 309). Add both with `add_attempts_sum_check.py` in this investigation instead of editing the shared
+   pipeline; treat blank cells as 0. The adjusted column name is a proposal; confirm it before implementing.
 
 **Tests (no network, no real external services):**
 - `test_gap_artifact_runs_one_range_call_per_opco` — 4 calls, each with the month's start/end dates.
-- `test_sum_check_adds_column_and_treats_blank_as_zero` — the column equals the sum of the six component columns.
+- `test_sum_check_adds_column_and_treats_blank_as_zero` — `attempts_sum_check` equals the sum of the six component columns and `attempts_sum_check_adjusted` the sum without VSF.
 - `test_sum_check_missing_column_fails` — a CSV without a required component column raises a clear error.
 
 **Commit:** `feat(mec): add September adoption-gap-analysis-session report`

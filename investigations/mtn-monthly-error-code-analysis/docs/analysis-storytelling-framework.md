@@ -69,4 +69,4 @@ Definition notes carried from the analysis of the existing reports:
   Observed on ZA 2026-09-15: all 55 had no `PLAY` row, and 27 were also VSF, so the bucket mixes failures and silent exits. Do not label it as a pure reporting gap or as an upper bound of played
   sessions without a further check.
 - Verified on ZA 2026-09-15 (one day, one OpCo): VSF overlaps `incomplete_no_destroy`; the six-column sum (336) exceeds attempts (309) by exactly the 27 VSF sessions. The `attempts_sum_check` formula
-  is therefore undecided; see MEC-2.
+  is therefore decided: emit both the original sum and an overlap-adjusted sum (MEC-2).
