@@ -36,8 +36,9 @@ orchestrator and any aggregation/diff logic not already present. Month-suffixed 
 ## Scope guard
 
 In bounds: `investigations/mtn-monthly-error-code-analysis/{scripts,tests,docs,data,output}`, new catalog SQL under `queries/athena/`, `SCRIPTS.md`, `CONTEXT.md`, and the one `table_suffix` argument
-added to `ctap-smvod`'s `scripts/lib/tenant_context.py` (+ its regression test; done, default behaviour unchanged). Out of bounds: other changes to other investigations, `src/lib/*` changes beyond
-reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HAR input. Read-only against Athena; no runtime behaviour of other projects changes.
+added to `ctap-smvod`'s `scripts/lib/tenant_context.py` (+ its regression test; done, default behaviour unchanged), and, only after the MEC-15 census names the gaps, extending `ctap-smvod`'s
+`scripts/flatten_error_eventdata.py` (+ regression tests; existing columns and outputs must stay unchanged). Out of bounds: other changes to other investigations, `src/lib/*` changes beyond reuse
+(extend there only if a shared-vs-specific test says so), any Lightstep/HAR input. Read-only against Athena; no runtime behaviour of other projects changes.
 
 ## Session-start load hints
 
@@ -61,6 +62,7 @@ reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HA
 - **MEC-12** — guest-login to playback attribution (24h), built only on a MEC-10 go.
 - **MEC-13** — September `shaka-error-session` CSV (distinct sessions per `PLAYER_ERROR` code per day) for all OpCos, via the same orchestrator with the `_sept26` debug table; separate from MEC-3.
 - **MEC-14** — reconcile Shaka error sessions with `unified_sessions` `PLAYER_ERROR` end reasons per day for all OpCos (first ZA check: debug sessions are a superset, 12/36/145 vs 11/35/142).
+- **MEC-15** — eventdata shape census per OpCo and error code (JSON key paths vs what `flatten_error_eventdata.py` reads), then extend that flattener in `ctap-smvod` only for the gaps found.
 
 Settled definitions (verified on ZA 2026-09-15; full detail in `stories.md` MEC-2 and MEC-8): `PLAY` is an `event_type`, never an `endreason`. `REQUEST_VIEWING`/`PLAYER_ERROR` is VSF.
 `REQUEST_VIEWING`/`DESTROY` is EBVS, using the broader shared rule (no `PLAY` row and a `DESTROY` on any row). `REQUEST_VIEWING`/`PLAYING` with no closing `PLAY` row is `playing_no_end_sessions`. The

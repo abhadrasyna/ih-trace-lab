@@ -520,3 +520,36 @@ debug_error_sessions`). Identity checks, failing loudly: `debug_error_sessions =
 - Quality gate before any chart: flag a day where `unified_pe_in_debug` is below 100% or a table boundary appears (2026-09-30).
 
 **Commit:** `feat(mec): add Shaka vs unified PLAYER_ERROR reconciliation`
+
+---
+
+## MEC-15 — Eventdata shape census per error code, then extend the flattener for the gaps
+
+**Why:** `investigations/ctap-smvod/scripts/flatten_error_eventdata.py` flattens `PLAYER_ERROR` `eventdata` (output e.g. `investigations/ctap-smvod/output/GH/error_eventdata_flat/`). It is generic: a
+common envelope (`errorcode`, `sessionid`, `position`, `errordescription`, `user_agent`, `app_version`, `playerstatesnapshot`, `networkdetails`/`shakastats`),
+`shakaerror.{code,category,severity,handled,message,data[]}`, a 6007-style wrapper (nested Shaka error in `data[0]` with a double-encoded MDRM body) and 3xxx MEDIA errors (`data` = `[type, null,
+pipeline status]`). Missing paths come out as blank cells, not errors, so a code whose `eventdata` has a different shape is flattened silently incomplete. The GH sample (Oct 4-7) covers 1001, 1002,
+1003, 3016, 6001, 6006, 6007 and E31012 only; 3014, 3015, 4032, 6002, 6012, 7000 and 1006 have no sample there, and E31012 is not a Shaka error (20 columns vs 26-28 for the Shaka codes, likely no
+`shakaerror`). These are observations, not verified gaps.
+
+**Files to change / create (the flattener change is decided only after the census):**
+- `investigations/mtn-monthly-error-code-analysis/docs/eventdata-shape-census.md` — the coverage table.
+- A thin census script in this investigation's `scripts/` plus a pure key-path walker in its tests (shared helper if one already exists in `ctap-smvod` `scripts/lib/`); check `SCRIPTS.md` first.
+- Only for gaps the census names: `investigations/ctap-smvod/scripts/flatten_error_eventdata.py` (decided: extend it there, not a parallel flattener) and its regression tests. Existing columns and
+  outputs stay unchanged; `prompt.md` "Scope guard" allows this change only after the census.
+
+**What to implement:**
+
+1. Census per OpCo and `errorcode` (September `_sept26` table, a bounded sample of days; sample size decided at start, not assumed): the JSON key paths in `eventdata` with count and share populated,
+   and the distinct `shakaerror.data[]` element shapes. Counts only, no household or device ids in the doc.
+2. Compare each code's paths with the paths the flattener reads (read from the `flatten_row` source, not from memory). Report populated-but-unread paths and read-but-never-populated columns per code.
+3. Only then decide, per code, whether existing columns suffice or a new handler is needed (for example E31012 without `shakaerror`). Any new column follows the 6007/3xxx pattern: a pure function plus
+   a regression test with a real sample payload.
+4. The first live Athena run is a separate go-ahead; resolve each tenant with `scripts/resolve_tenant.py --system athena --tenant <athena_id>` first.
+
+**Tests (no network, no real external services):**
+- `test_key_path_walker_lists_nested_paths` — a fixed sample payload yields the expected paths and counts.
+- `test_unread_paths_reported` — a payload with an extra path is reported as populated-but-unread.
+- For any flattener extension: one happy-path and one missing-path test per new handler, plus a test proving existing outputs are unchanged.
+
+**Commit:** `docs(mec): add eventdata shape census` (and `feat(ctap-smvod): flatten <code> eventdata` if the flattener is extended)

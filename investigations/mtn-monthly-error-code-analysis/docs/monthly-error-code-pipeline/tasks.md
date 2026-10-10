@@ -3,8 +3,8 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the month being analysed (September 2026 first).
 
-**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14.** Exceptions to top-down: MEC-2 depends on MEC-8, so do MEC-8 before MEC-2; MEC-10
-(the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
+**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14, MEC-15.** Exceptions to top-down: MEC-2 depends on MEC-8, so do MEC-8 before
+MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
 
 - [ ] **MEC-0** — September adoption-session-report CSV for all OpCos, via a month orchestrator over the existing aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer hook | SHA: —
@@ -36,6 +36,9 @@ spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the
 - [ ] **MEC-14** — reconcile Shaka error sessions (debug table) with `unified_sessions` `PLAYER_ERROR` end reasons per day for all OpCos, classifying debug-only sessions; depends on MEC-13 | Owner:
   Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
 
+- [ ] **MEC-15** — eventdata shape census per OpCo and error code, then extend the ctap-smvod error-eventdata flattener only for the gaps found | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
+  Review: code-reviewer hook | SHA: —
+
 ## Story done when
 
 - **MEC-0** — `output/<OPCO>/daily/2026-09_adoption-session-report.csv` exists in this investigation for all four OpCos, one row per day 2026-09-01..30 with the four session columns.
@@ -61,6 +64,8 @@ spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the
   `<id>_ccl_debug_events_sept26`, not the default table; the open checks in `stories.md` (session grain, 2026-09-30, reference vs `_sept26`, VSF relation) are reported, not assumed.
 - **MEC-14** — `output/<OPCO>/daily/2026-09_shaka-vs-unified-errors.csv` exists for all four OpCos with one row per day: distinct debug error sessions, distinct unified `PLAYER_ERROR` sessions (split
   by `event_type`), their overlap both ways, and the debug-only sessions split into another end reason vs absent from `unified_sessions`; the same run settles MEC-13 checks (b) and (c).
+- **MEC-15** — a coverage table exists in `docs/eventdata-shape-census.md` listing, per OpCo and error code, the `eventdata` key paths present (count, share populated) against the paths
+  `flatten_error_eventdata.py` reads; any extension of the flattener covers only gaps in that table, keeps existing columns and outputs unchanged, and has regression tests.
 
 ## After each task
 
