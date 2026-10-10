@@ -19,7 +19,8 @@ script, check `SCRIPTS.md` and the FCT-6 registry for an existing equivalent.
 
 1. The September 2026 source databases are given in `prompt.md` "Data sources" (`<athena_tenant_id>_ccl_debug_events_sept26`; the unified session DB `unified_<id>` is unchanged). Still confirm with
    the user which table and field in them hold the error code, and whether a row counts distinct sessions, households, or raw events.
-2. Adapt the closest prior art (`aws-access-cli_shaka_error_counts.sql`, `ctap-smvod-error-eventdata.sql`) with a whole-month predicate so counts are not double-counted across days.
+2. Adapt the closest prior art (`ctap-smvod-error-eventdata.sql` first, `aws-access-cli_shaka_error_counts.sql` second) with a whole-month predicate so counts are not double-counted across days; reuse
+   `ctap-smvod`'s `render_query` and `resolve_tenant_context(code, table_suffix="sept26")` instead of new plumbing.
 3. Document the decisions in `error-code-source.md`.
 
 **Tests (no network, no real external services):**
@@ -39,7 +40,8 @@ script, check `SCRIPTS.md` and the FCT-6 registry for an existing equivalent.
 **What to implement:**
 
 1. Args: `--month YYYY-MM`, `--opco <CODE>` (default: all in `config/tenants.yaml`).
-2. Run the MEC-1 query per OpCo through `src/lib/athena/adapter.py`, isolating per-OpCo failures and exiting non-zero if any failed.
+2. Thin orchestrator: per OpCo, call `resolve_tenant_context(code, table_suffix=...)`, then reuse `run_athena_error_eventdata.build_query`/`run_athena_query` (from `ctap-smvod/scripts/lib/runtime.py`)
+   with the MEC-1 query; isolate per-OpCo failures and exit non-zero if any failed. Do not re-implement Athena polling.
 3. Write the raw result to `data/athena/<OPCO>/YYYY-MM/`.
 
 **Tests (no network, no real external services):**
@@ -58,7 +60,8 @@ script, check `SCRIPTS.md` and the FCT-6 registry for an existing equivalent.
 
 **What to implement:**
 
-1. Read the pulled data for a month and write per-OpCo and all-OpCo CSVs to `output/<OPCO>/` and `output/ALL/`, using `src/lib/csv_io/monthly_store.py` where it fits.
+1. Read the pulled data for a month and write per-OpCo and all-OpCo CSVs to `output/<OPCO>/` and `output/ALL/`, reusing `flatten_error_eventdata`/`summarize_error_eventdata` logic and
+   `src/lib/csv_io/monthly_store.py` where they fit.
 2. Include error code, count, share of total, and rank.
 
 **Tests (no network, no real external services):**

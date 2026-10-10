@@ -27,10 +27,17 @@ unchanged.
 
 The user supplies the remaining analysis inputs one step at a time; the table name for other months is not assumed from the `sept26` suffix.
 
+## Reuse precondition
+
+Reuse before writing: import from the owning lib folders — `investigations/ctap-smvod/scripts/lib/` (`runtime`, `tenant_context`, `query_catalog`, `debug_event_parser`), `src/lib/*` and
+`src/tenant_registry` — and call or compose the existing runners (`run_athena_error_eventdata.py`, `flatten_error_eventdata.py`, `summarize_error_eventdata.py`). New code here is limited to the month
+orchestrator and any aggregation/diff logic not already present. Month-suffixed tables are selected with `resolve_tenant_context(code, table_suffix="sept26")` (default unchanged).
+
 ## Scope guard
 
-In bounds: `investigations/mtn-monthly-error-code-analysis/{scripts,tests,docs,data,output}`, new catalog SQL under `queries/athena/`, `SCRIPTS.md`, `CONTEXT.md`. Out of bounds: other investigations,
-`src/lib/*` changes beyond reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HAR input. Read-only against Athena; no runtime behaviour of other projects changes.
+In bounds: `investigations/mtn-monthly-error-code-analysis/{scripts,tests,docs,data,output}`, new catalog SQL under `queries/athena/`, `SCRIPTS.md`, `CONTEXT.md`, and the one `table_suffix` argument
+added to `ctap-smvod`'s `scripts/lib/tenant_context.py` (+ its regression test; done, default behaviour unchanged). Out of bounds: other changes to other investigations, `src/lib/*` changes beyond
+reuse (extend there only if a shared-vs-specific test says so), any Lightstep/HAR input. Read-only against Athena; no runtime behaviour of other projects changes.
 
 ## Session-start load hints
 

@@ -1,6 +1,7 @@
 """Resolve a tenant code into the frozen context the CTAP/SM-VOD pipeline steps consume."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from lib.runtime import investigation_data_dir
 from src.tenant_registry import AthenaQueryTarget, TenantRegistry
 
 LIGHTSTEP_TOOL = "lightstep"
+_TABLE_SUFFIX = re.compile(r"[a-z0-9_]+")
 
 
 @dataclass(frozen=True)
@@ -23,8 +25,16 @@ class TenantContext:
     disambiguation_value: str | None
 
 
-def resolve_tenant_context(code: str, registry: TenantRegistry | None = None) -> TenantContext:
-    """Build the context for `code` from `config/tenants.yaml`; unknown codes raise ValueError."""
+def resolve_tenant_context(
+    code: str, registry: TenantRegistry | None = None, table_suffix: str | None = None
+) -> TenantContext:
+    """Build the context for `code` from `config/tenants.yaml`; unknown codes raise ValueError.
+
+    `table_suffix` (e.g. `sept26`) selects a month-suffixed debug-events table `<id>_ccl_debug_events_<suffix>`;
+    the default keeps the unsuffixed table. A suffix that is not a plain lowercase token raises ValueError.
+    """
+    if table_suffix is not None and not _TABLE_SUFFIX.fullmatch(table_suffix):
+        raise ValueError(f"invalid table_suffix {table_suffix!r}: use lowercase letters, digits and underscores")
     registry = registry or TenantRegistry()
     try:
         tenant = registry.get(code)
@@ -36,7 +46,7 @@ def resolve_tenant_context(code: str, registry: TenantRegistry | None = None) ->
         code=tenant.code,
         athena_tenant_id=tenant.athena_tenant_id,
         database=str(athena["database"]),
-        debug_events_table=f"{tenant.athena_tenant_id}_ccl_debug_events",
+        debug_events_table=f"{tenant.athena_tenant_id}_ccl_debug_events" + (f"_{table_suffix}" if table_suffix else ""),
         profile=str(athena["profile"]),
         region=str(athena["region"]),
         lightstep_project=tenant.lightstep_project,

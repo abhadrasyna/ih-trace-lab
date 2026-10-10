@@ -20,6 +20,21 @@ def test_context_values_come_from_registry() -> None:
     assert (sa.disambiguation_attribute, sa.disambiguation_value) == (None, None)
 
 
+def test_table_suffix_selects_month_table_and_default_is_unchanged() -> None:
+    plain = tenant_context.resolve_tenant_context("ZM")
+    sept = tenant_context.resolve_tenant_context("ZM", table_suffix="sept26")
+
+    assert plain.debug_events_table == "a7vli5h8_ccl_debug_events"
+    assert sept.debug_events_table == "a7vli5h8_ccl_debug_events_sept26"
+    assert sept.database == plain.database == "unified_a7vli5h8"
+
+
+@pytest.mark.parametrize("bad", ["", "Sept26", "sept-26", "sept26\n", "x; drop table t"])
+def test_table_suffix_rejects_unsafe_values(bad: str) -> None:
+    with pytest.raises(ValueError, match="invalid table_suffix"):
+        tenant_context.resolve_tenant_context("ZM", table_suffix=bad)
+
+
 def test_unknown_tenant_fails_with_expected_path() -> None:
     with pytest.raises(ValueError, match=r"Unknown tenant 'XX'.*data/lightstep/XX"):
         tenant_context.resolve_tenant_context("XX")
