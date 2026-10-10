@@ -442,6 +442,17 @@ reference only shows which fields exist; this task regenerates it in this invest
 8. The first live Athena run is a separate go-ahead from the user; resolve each tenant with `scripts/resolve_tenant.py --system athena --tenant <athena_id>` first (pass the id, not `ZA`). `output/` is
    not git-ignored and these files hold counts only, but do not commit them without the user's approval.
 
+**Measured findings (ZA only, 2026-09-04/15/18, `_sept26` table, read-only Athena; session key = `COUNT(DISTINCT $.sessionid)` vs `COUNT(DISTINCT parent_session_id)`, the only session key in
+`unified_sessions`):**
+- Session grain: raw `PLAYER_ERROR` rows are 27/69/200, distinct `messageid` 13/36/146, distinct sessions 12/36/145. Raw rows over-count (not a fixed 2x); distinct session is the safe grain.
+- The per-code column sum in the ZA reference is 12/36/146 against 12/36/145 distinct `_sept26` sessions: equal on 09-04 and 09-15, one session carrying two codes on 09-18. On these days the reference
+  and `_sept26` agree.
+- VSF (`REQUEST_VIEWING`/`PLAYER_ERROR`: 5/27/131) is a subset of the Shaka error sessions (every VSF session has an error event), but the Shaka count is higher, so do not use it as a VSF count.
+- All `unified_sessions` sessions with any `PLAYER_ERROR` end reason (any `event_type`: 11/35/142, split `PLAY` 6/8/11 and `REQUEST_VIEWING` 5/27/131) appear in the debug table; the debug table has
+  1/1/3 more. Of those 5, 4 are in `unified_sessions` with another end reason (`REQUEST_VIEWING`/`PLAYING`, `BUFFERING`/`PLAYING`, `REQUEST_VIEWING`/`DESTROY`) and 1 has no `unified_sessions` row.
+  That `PLAYING` rows mean a mid-session error is an interpretation, not proven.
+- Not yet measured: 09-30 and the table boundary, the 1006 blank, NG/ZM/GH, and any other day. These feed MEC-14.
+
 **Analysis ideas (from the CSV):**
 
 | Idea | Needs Athena? |
@@ -459,3 +470,39 @@ reference only shows which fields exist; this task regenerates it in this invest
 - `test_shaka_session_artifact_covers_every_date_and_opco` — a 30-day month x 4 OpCos yields 120 calls.
 
 **Commit:** `feat(mec): add September shaka-error-session to month orchestrator`
+
+---
+
+## MEC-14 — Reconcile Shaka error sessions with `unified_sessions` PLAYER_ERROR (all OpCos)
+
+**Why:** MEC-13 counts distinct sessions per Shaka error code from the debug table; `unified_sessions` records `PLAYER_ERROR` as an `endreason`. A first ZA check (2026-09-04/15/18, see MEC-13
+"Measured findings") showed the debug sessions are a superset of the unified `PLAYER_ERROR` sessions (11/35/142 vs 12/36/145). This task measures that gap per day for all four OpCos and classifies the
+difference, so any error-code story states which of the two sources it quotes. Depends on MEC-13 (the CSV to reconcile) and is independent of MEC-3.
+
+**Files to change / create:**
+- `queries/athena/mtn-monthly-shaka-vs-unified-error-sessions.sql` — catalog entry per `docs/guides/query-catalog.md`; reuse `ctap-smvod`'s `render_query` and `resolve_tenant_context(code,
+  table_suffix="sept26")`.
+- `investigations/mtn-monthly-error-code-analysis/scripts/run_month_error_reconciliation.py` — thin orchestrator (per-date x per-OpCo, same pattern as MEC-0/MEC-9).
+- `investigations/mtn-monthly-error-code-analysis/tests/test_run_month_error_reconciliation.py`
+- `investigations/mtn-monthly-error-code-analysis/docs/usage.md`
+
+**What to implement:**
+
+1. Per day and OpCo, with the grain `COUNT(DISTINCT $.sessionid)` (debug table `<id>_ccl_debug_events_sept26`, `eventid = 'PLAYER_ERROR'`, `datetime` window) and `COUNT(DISTINCT parent_session_id)`
+   (`unified_<id>.unified_sessions`, `endreason = 'PLAYER_ERROR'`, any `event_type`), write `output/<OPCO>/daily/2026-09_shaka-vs-unified-errors.csv` with: `debug_error_sessions`,
+   `unified_pe_sessions`, `unified_pe_play`, `unified_pe_request_viewing`, `vsf_sessions`, `debug_in_unified_pe`, `unified_pe_in_debug`, `debug_only_other_endreason` and `debug_only_absent` (counts,
+   no ids).
+2. Classify each debug-only session (in the debug table, not in unified `PLAYER_ERROR`) by its `unified_sessions` rows: another `endreason`/`event_type` pair, or no row in the window (a date-window of
+   D-1..D+1 around the session date, so day-boundary effects are not read as absent). Also record `debug_only_absent` separately; it is the cleanest "missing from `unified_sessions`" signal.
+3. `unified_pe_in_debug` must be reported, not assumed to be 100%; ZA on 3 days was 100% (11/35/142), unverified elsewhere.
+4. Also settles MEC-13's open checks (b) 2026-09-30 (min/max `datetime` per table) and (c) reference vs `_sept26`, since the same query reads both tables.
+5. The per-code columns are never summed to a session count in this CSV; the per-code view stays in MEC-13.
+6. The first live full-month run is a separate go-ahead; resolve each tenant with `scripts/resolve_tenant.py --system athena --tenant <athena_id>` first. Do not commit `output/` files without
+   approval.
+
+**Tests (no network, no real external services):**
+- `test_query_renders_for_month` — all placeholders resolve for each OpCo and month.
+- `test_classification_buckets_are_disjoint` — a fixed in-memory sample: each debug-only session lands in exactly one of `other_endreason` or `absent`.
+- `test_bad_month_fails` — an invalid month raises a clear error.
+
+**Commit:** `feat(mec): add Shaka vs unified PLAYER_ERROR reconciliation`
