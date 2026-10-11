@@ -763,3 +763,30 @@ error-to-end gap is 0-1 s for most sessions. Measure per OpCo-day: error after `
 **Tests:** `test_gap_over_150s_is_not_vpf_like`, `test_error_before_play_start_is_not_vpf_like`.
 
 **Commit:** `docs(mec): check VPF-proxy against Conviva conditions`
+
+---
+
+## MEC-25 — Business vs technical evidence profile per error code
+
+**Why:** MEC-19 needs a per-code class, but the MTN business-error list is not in the repo. Until it arrives, each code gets an evidence profile from the flattened GH eventdata and a proposed class,
+one code at a time with a decision at each step. Astro's Conviva exports (`data/reference/AstroErrorCode/`, account `c3.Astro-AstroGo`) are a reference only: they show that class is configured per
+account (Astro files network errors 1001/1002 as business; 6001, 6006, 6007, 3015, 3017 as technical; 6008 in both; 3016, 1003 and E31012 absent) and give the export format to request for MTN.
+
+**Method per code:** run `scripts/profile_error_code.py` and `scripts/summarize_error_devices.py` (`docs/usage.md` section 3), then record in `docs/error-code-classification-evidence.md`: distinct
+values, events, sessions, households per day, concentration, `error_text`, Shaka and MDRM fields, timing (`position` 0 / >0, `player_phase`, `player_readystate`), `is_wv`, app and player versions, UA
+family, the Astro key if any, the candidate class, confidence and what would settle it. Never print or commit ids; do not sum per-event measurements. A code whose text names a rule (device,
+entitlement, concurrency, geo) leans business; a player, network, DRM or media code without policy text leans technical; mark undecided whenever the text alone cannot show it.
+
+**Coverage (tick as done; sample file counts in `data/reference/GH/`):**
+- [x] 3016 (3 days): leans business (device text, position 0), undecided; one 10-09 decode event is a counter-signal.
+- [x] 1003 (5 days): leans technical (network text, mixed start and mid-play stage), undecided.
+- [ ] 1001, 1002, 6001, 6006, 6007, E31012 (GH sample present).
+- [ ] 3014, 3015, 4032, 6002, 6012, 7000, 1006 and any other code the September `_sept26` table shows (no GH sample; needs a flattened sample or an Athena read-only batch approved first, tenant
+  resolved with `python scripts/resolve_tenant.py --system athena --tenant is1aldzq`).
+- [ ] The same pass for ZA, NG and ZM once their flattened samples exist; each OpCo's list is its own account configuration.
+
+**Tests:** none (docs only; the scripts have their own tests in `tests/test_error_scripts.py`).
+
+**Output:** feeds MEC-19; also settles which rates each class splits (per 100 attempts for start errors, per 100 ended plays for play-stage errors) and whether the split needs `unified_sessions`.
+
+**Commit:** `docs(mec): record business vs technical evidence per error code`

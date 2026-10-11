@@ -3,8 +3,8 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the month being analysed (September 2026 first).
 
-**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14, MEC-15, MEC-22, MEC-23, MEC-24.** Exceptions to top-down: MEC-2 depends on MEC-8,
-so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
+**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14, MEC-15, MEC-22, MEC-23, MEC-24, MEC-25.** Exceptions to top-down: MEC-2 depends on
+MEC-8, so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
 
 - [ ] **MEC-0** — September adoption-session-report CSV for all OpCos, via a month orchestrator over the existing aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer hook | SHA: —
@@ -45,6 +45,9 @@ so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and ru
   SHA: —
 - [ ] **MEC-24** — check the class-2 VPF-proxy against Conviva's conditions (error after first frame, error-to-end within 150 s); depends on MEC-22 | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: code-reviewer hook | SHA: —
+- [ ] **MEC-25** — business vs technical evidence profile for every error code in the flattened GH eventdata, one code at a time (3016 and 1003 profiled; feeds MEC-19, which stays blocked on the MTN
+  business list)
+  | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none (docs only) | SHA: —
 
 ## Story done when
 
@@ -78,6 +81,8 @@ so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and ru
   (counts only).
 - **MEC-23** — the cause of each absent debug error session is recorded in `docs/` from an unwindowed lookup, reported as measured, not assumed.
 - **MEC-24** — per OpCo-day, class-2 sessions with the error after `PLAY` start and error-to-end within 150 s are counted and labelled VPF-proxy, never VPF.
+- **MEC-25** — `docs/error-code-classification-evidence.md` has one section per error code (every code in the story's coverage list in `stories.md` MEC-25, ticked as done) with the evidence profile,
+  the candidate class (business / technical / undecided), confidence and what would settle it; counts only, labelled a proposal from text and signals, not Conviva's classification.
 
 ## After each task
 
