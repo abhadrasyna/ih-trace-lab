@@ -6,7 +6,8 @@
 ## What Exists
 
 - `investigations/mtn-monthly-error-code-analysis/` is a recurring Athena-only monthly error-code campaign across all MTN OpCos (scaffolded, no scripts yet): local `data/athena/` (gitignored) and
-  `output/`, `RETENTION.md`, and `docs/{README,usage}.md` where `usage.md` documents every script as it is added.
+  `output/`, `RETENTION.md`, and `docs/{README,usage}.md` where `usage.md` documents every script as it is added. `docs/conviva-metrics-reference.md` lists the Conviva QoE metric definitions
+  (2026-10-11) and which are computable from `unified_sessions`; `docs/monthly-error-code-pipeline/` holds the MEC tasks and stories.
 - `investigations/ctap-smvod/` is multi-tenant (story `docs/plan/ctap-smvod-multitenant/`, MT-1..MT-10 done; pilot Zambia, results in `docs/2026-10-08-zambia-pilot-results.md`): `run_pipeline.py` runs
   every tenant with Lightstep input for the date by default, `--tenant` restricts to one; inputs/outputs live under `<TENANT>/` folders (SA history `git mv`'d); the merge's `busUnitId` guard protects
   the shared Zambia/Ghana Lightstep project; the 1xxx/6xxx error report (CSV + xlsx) has an `is_wv` column via `scripts/lib/webview.py`. `analyze_error_report_breakdown.py --all-codes` reads
