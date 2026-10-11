@@ -482,6 +482,9 @@ reference only shows which fields exist; this task regenerates it in this invest
   1/1/3 more. Of those 5, 4 are in `unified_sessions` with another end reason (`REQUEST_VIEWING`/`PLAYING`, `BUFFERING`/`PLAYING`, `REQUEST_VIEWING`/`DESTROY`) and 1 has no `unified_sessions` row.
   That `PLAYING` rows mean a mid-session error is an interpretation, not proven.
 - Not yet measured: 09-30 and the table boundary, the 1006 blank, NG/ZM/GH, and any other day. These feed MEC-14.
+- Table correction (ZA, Athena 2026-10-11): `e6auj7k7_ccl_debug_events` is not October-only; it spans 2026-08-25 17:52Z to 2026-10-11 and still contains September. `_sept26` spans 2026-08-25 04:16Z to
+  2026-09-30 23:59:26Z. Use `_sept26` for September because it is frozen; whether the two tables hold identical September rows is only confirmed for 09-04/15/18 (check (c)).
+- Per-code columns are not sessions: on ZA 09-04/15/18 the VSF sessions (163) carry 164 per-code sessions and the class-2 play-stage sessions (25) carry 26.
 
 **Analysis ideas (from the CSV):**
 
@@ -514,6 +517,24 @@ difference, so any error-code story states which of the two sources it quotes. D
 `PLAYER_ERROR` as VSF + play-stage (the existing `unified_pe_request_viewing` and `unified_pe_play` columns), then the debug-only remainder, and adds agreement statistics for the trust chart: per-day
 paired difference and ratio of debug error sessions to unified `PLAYER_ERROR` sessions, with their median and maximum over the month (computed by the MEC-18 helpers). Rates quoted per 100 attempts
 (VSF) and per 100 ended plays (play-stage), as in MEC-8.
+
+**Classification evidence (ZA 2026-09-04/15/18, `_sept26`, Athena 2026-10-11; counts only).** Each distinct debug `PLAYER_ERROR` session joined on `parent_session_id = $.sessionid` (`event_start`
+window 09-03..09-20); the classes are disjoint and ordered 1 to 4:
+
+| Class | 09-04 / 09-15 / 09-18 | Unified rows | Error vs last unified `event_end` | Reading |
+|---|---|---|---|---|
+| 1 VSF (error before first frame) | 5 / 27 / 131 | `REQUEST_VIEWING`/`PLAYER_ERROR` | 0 s | legitimate; 11 / 27 households on 09-15 / 09-18 |
+| 2 VPF-like (`PLAY`/`PLAYER_ERROR`) | 6 / 8 / 11 | `PLAY`/`PLAYER_ERROR` + `RV`/`PLAYING` | median 0-1 s; outliers -27 to -29 s, one -427 s | legitimate VPF-proxy; errors 2-983 s after `PLAY` start |
+| 3 other end reason | 1 / 1 / 2 | `RV`/`PLAYING`, `BUFFERING`/`PLAYING`, `RV`/`DESTROY` (RV = `REQUEST_VIEWING`); no `PLAY` row | -31, -26, -27, -120 s | not a data fault; error after last row |
+| 4 absent from `unified_sessions` | 0 / 0 / 1 | none in the window | n/a | candidate data fault, cause unproven; 6 events of code 1003 at one millisecond (09-18 08:08:19.983Z), mid-day |
+
+Error codes (sessions / events): class 1 has 1001 76/82, 6001 49/77, 6006 13/16, 6002 10/16, 1003 8/19, 3016 4/4, E31012 4/4; class 2 has E31012 8/17, 1001 7/15, 1003 4/14, 3016 4/4, 3014 2/2, 3015
+1/1; class 3 has 1001 2/7, 1003 1/6, E31012 1/6 (no 3xxx or 6xxx); class 4 has 1003 only. Classes 1 + 2 reproduce unified `PLAYER_ERROR` exactly (11/35/142); classes 3 + 4 are the 1/1/3 extra.
+
+**Reconciliation rule:** unified `PLAYER_ERROR` = debug error sessions that carry `REQUEST_VIEWING`/`PLAYER_ERROR` or `PLAY`/`PLAYER_ERROR`; the debug superset adds the class 3 and 4 sessions (8% / 3%
+/ 2% of debug sessions on these days). Recovery is not supported: class 3 errors arrive after the unified session's last row, so a session that "errored but kept playing" is not what the timing shows.
+Working hypothesis (untested): the debug error is logged after unified closed the session (stall, then heartbeat loss), so those plays never got a closing `PLAY` row. Untested assumptions: that
+unified `event_end` is the last heartbeat and that debug `datetime` is on the same clock. Only 4 class-3 sessions; MEC-22 widens the evidence.
 
 **Files to change / create:**
 - `queries/athena/mtn-monthly-shaka-vs-unified-error-sessions.sql` — catalog entry per `docs/guides/query-catalog.md`; reuse `ctap-smvod`'s `render_query` and `resolve_tenant_context(code,
@@ -555,6 +576,13 @@ debug_error_sessions`). Identity checks, failing loudly: `debug_error_sessions =
   finding.
 - Quality gate before any chart: flag a day where `unified_pe_in_debug` is below 100% or a table boundary appears (2026-09-30).
 
+**Design changes from the classification evidence (proposed, decided at MEC-14 start):**
+- Replace the single `debug_only_other_endreason` count with its `event_type`/`endreason` pair set, and add `median_error_minus_session_end_s` (negative means the error came after the last unified
+  row), so "recovered" is replaced by the measured timing.
+- Add a class-2 check: first error time minus the `PLAY` row `event_start`, reported as min/max seconds (ZA 3 days: 2 to 983, all after the first frame).
+- `debug_only_absent` must come from an unwindowed `parent_session_id` lookup in `unified_sessions`, not only the D-1..D+1 window (see MEC-23); report the burst shape (events per session, distinct
+  timestamps) beside it.
+
 **Commit:** `feat(mec): add Shaka vs unified PLAYER_ERROR reconciliation`
 
 ---
@@ -594,6 +622,19 @@ pipeline status]`). Missing paths come out as blank cells, not errors, so a code
    the 44 rows (about 55 KB) are small enough for one file per code; 10-04, 10-05 and 10-07 have no 3016 file, which today cannot be told apart from a day that was not run. Recommendation, to confirm
    at MEC-15 start: one file per code per month (for example `2026-10_3016.csv`, matching the `2026-09_*.csv` naming), a fixed union header with blanks where a column is absent, `messageid` dedupe,
    and a small per-day manifest (date, tenant, rows per code) so an absent day is distinguishable from a day with no rows.
+
+**GH 3016 reference-file findings (read 2026-10-11; `investigations/ctap-smvod/output/GH/error_eventdata_flat/` 10-06, 10-08, 10-09):**
+- Generator: `run_athena_error_eventdata.py` (query `ctap-smvod-error-eventdata`, UTC-day window, all `PLAYER_ERROR` events) then `flatten_error_eventdata.py`; one row is one event (`messageid`).
+- 3016 is Shaka `MEDIA.VIDEO_ERROR` (category 3, severity 2, not handled, app text E83016 "cannot be played on your current device"), not webview, not DRM, `position` 0 (a real zero, start stage).
+  `media_error_type` 4 is read as `MEDIA_ERR_SRC_NOT_SUPPORTED` (an interpretation, not documented in the repo).
+- Rows / sessions / households: 1/1/1, 36/36/8, 7/7/5 (10-08 is concentrated, about 4.5 sessions per household). Header 27, 27, 28 columns: `pipeline_status` exists only when populated, because the
+  flattener drops all-blank columns; this is the header drift that needs a fixed union header.
+- Athena check (`is1aldzq_ccl_debug_events`): 10-06 1 row; 10-07 none; 10-08 45 raw rows, 36 distinct `messageid` and 36 sessions, 8 clients. The 9 duplicate rows make the `messageid` dedupe mandatory
+  (a raw count over-counts by 25%).
+- The 10-04 `_all` file has 0 rows for every code, and 10-05 and 10-07 have no 3016 (only 1003 and E31012), so a day with no file cannot be told apart from an unrun or empty day: the per-day manifest
+  is justified.
+- Not answered by the sample: cross-day dedupe behaviour, whether to keep `<date>_all.csv`, and migration of the dated files.
+- `investigations/ctap-smvod/output/` is untracked and not git-ignored while it holds household and device ids; add an ignore rule (separate approval) before any `git add` near it.
 
 **Tests (no network, no real external services):**
 - `test_key_path_walker_lists_nested_paths` — a fixed sample payload yields the expected paths and counts.
@@ -684,3 +725,41 @@ and ASN are not available and are out of scope.
 **Tests:** `test_ratio_excludes_startup_buffering`, `test_zero_playtime_fails_loudly`.
 
 **Commit:** `feat(mec): add approximate rebuffering ratio`
+
+---
+
+## MEC-22 — Month-wide, all-OpCo error-session classification (depends on MEC-14)
+
+**Why:** the ZA 09-04/15/18 evidence (see MEC-14 "Classification evidence") has only 4 class-3 and 1 class-4 sessions. This task repeats the four-class join (VSF, VPF-like, other end reason, absent)
+for every day of September and all four OpCos, so the "error logged after the session ended" hypothesis rests on more than 4 sessions. It also tests the clock assumption: distribution of debug
+first-error time minus unified `event_end` for class 1 and class 2 (expected near 0 s) against class 3. Counts, seconds and error codes only; no ids. Per-day class counts, the per-class code table
+(sessions and events, never summed to sessions) and household concentration (share of households, sessions per household). First run ZA month, then NG/ZM/GH, each a separate go-ahead.
+
+**Tests:** `test_classes_are_disjoint_and_cover_all_debug_sessions`, `test_class_precedence_vsf_over_play_error`, `test_negative_gap_means_error_after_session_end`.
+
+**Commit:** `feat(mec): classify debug error sessions against unified_sessions`
+
+---
+
+## MEC-23 — Absent debug error sessions: where are they?
+
+**Why:** ZA 2026-09-18 has one debug error session (6 events of code 1003 at one millisecond, mid-day) with no `unified_sessions` row between 09-03 and 09-20. Query `unified_sessions` by
+`parent_session_id` with no date window, check the same device and household in the debug and unified tables on the day, and count how many debug events share one `datetime` per absent session across
+the month. Report causes as measured (outside the window, no unified row, a burst of identical timestamps), not assumed; do not call it a data fault until the lookup shows no row at any date.
+
+**Tests:** `test_absent_is_decided_without_date_window`.
+
+**Commit:** `docs(mec): record absent debug error session causes`
+
+---
+
+## MEC-24 — VPF-like check against Conviva's conditions (depends on MEC-22)
+
+**Why:** class 2 sessions (`PLAY`/`PLAYER_ERROR`) are a VPF-proxy, not Conviva's VPF (`conviva-metrics-reference.md` section 3): the error must come after the first frame, the session must end, and
+the error-to-end playing time must not exceed the last reported buffer length (150 s if none). ZA 3 days: every error is 2 to 983 s after the `PLAY` row start (after the first frame) and the
+error-to-end gap is 0-1 s for most sessions. Measure per OpCo-day: error after `PLAY` start, error-to-end seconds, and the share within 150 s. Buffer length is not in `unified_sessions`, so state the
+150 s fallback was used. Report as "VPF-proxy checked against the 150 s rule", never as VPF.
+
+**Tests:** `test_gap_over_150s_is_not_vpf_like`, `test_error_before_play_start_is_not_vpf_like`.
+
+**Commit:** `docs(mec): check VPF-proxy against Conviva conditions`

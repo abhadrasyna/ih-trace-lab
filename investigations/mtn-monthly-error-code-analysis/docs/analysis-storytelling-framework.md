@@ -64,6 +64,9 @@ Definition notes carried from the analysis of the existing reports:
 - `unique-hh-no-vsf` always equals attempting households minus VSF households, so use the subtraction.
 - The VSF household set is a subset of the attempting household set; the household CSV is a cross-check of the session CSV, not an independent funnel.
 - A manual check (ZA, 2026-09-15, 309 attempts) found one playback outcome per session and buckets summing to attempts; MEC-5 repeats that check for all OpCos.
+- Trust chart, error sources (ZA 09-04/15/18 measured): base the bar on unified `PLAYER_ERROR` = VSF + play-stage (11/35/142), then stack the debug-only sessions (1/1/3) on top as "error logged, not
+  the recorded end reason". Do not label them "recovered": the 4 other-end-reason sessions had their first error 26 to 120 s after the last unified row, which points to a late error after the session
+  closed (hypothesis, tested on 4 sessions; MEC-22). One absent session stays its own segment (MEC-23).
 - Do not sum the daily household columns to quote a single September household figure.
 - `REQUEST_VIEWING` end reasons: `PLAYING` = handed to play, `PLAYER_ERROR` = VSF, `DESTROY` = EBVS, `OTHER` = unclassified. `PLAY` is an `event_type`, never an `endreason`.
 - EBVS uses the broader shared-SQL definition (no `PLAY` row and a `DESTROY` on any row), which also catches `BUFFERING`/`DESTROY`-only sessions; the extra volume is unmeasured.
