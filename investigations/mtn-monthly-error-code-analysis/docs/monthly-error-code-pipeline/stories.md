@@ -63,8 +63,19 @@ so find the script that generates it and reuse it for the month under analysis.
 ## MEC-2 — September adoption-gap-analysis-session CSV for all OpCos
 
 **Why this CSV exists:** in the session report, `VOD-Playback-Attempt-Sessions` does not equal Successful + VSF + EBVS, so there is an unknown drop-off. The gap CSV attributes those sessions with
-three extra columns so the leftover (`attempts_sum_check`) can be explained. Column meanings (from `queries/athena/aws-access-cli_adoption_playback_outcome.sql` and `adoption.py`, plus one verified
-data check):
+three extra columns so the leftover (`attempts_sum_check`) can be explained.
+
+**Reference-review findings (ZA, September, fresh Athena counts taken 2026-10-11 after the data settled; counts only):**
+- The leftover is not unexplained and is mostly not failure: 582 of 5,029 attempts (11.6%) = 319 plays with no end record + 161 `PLAY`/`PLAYER_ERROR` + 102 `PLAY`/`TIMEOUT`. Conviva's identity
+  Attempts = Plays + VSF + EBVS holds: Plays (`REQUEST_VIEWING`/`PLAYING`) 3,967 (78.9%) + VSF 765 (15.2%) + EBVS (`REQUEST_VIEWING`/`DESTROY`) 296 (5.9%) + other 1 closes to attempts on 29 of 30 days
+  (09-18 is off by 1 session). This session-grain funnel is the headline; the six columns below are its breakdown of Plays and the failure buckets. MEC-8 carries the rule.
+- Blank cells in the reference mean zero (`play_timeout_sessions`, `play_stage_error_sessions`, `EBVS-Sessions` on thin days); the output writes explicit zeros.
+- The reference `202609_athena_adoption_gap_session_sample.csv` is a partial, stale sample (generated 2026-09-24, 24 rows, the 09-24 row is a half day with 6 attempts) and is not a valid September
+  CSV. Its `attempts_sum_check` exceeds attempts by 1 on 09-04, 09-06, 09-18, 09-20 and 09-24: the six columns are not yet proven disjoint (MEC-5 tests it).
+- Mid-month shift to confirm (MEC-20): plays with no end record fall from about 12-31 per day to 1-3 on 09-21..23 while `play_timeout_sessions` rises to 13/9/9, and no-end is near 0-1% on 09-26 and
+  09-27. This looks like a change in how unfinished sessions are closed, not viewer behaviour; any trend must combine no-end and timeout until MEC-20 settles it.
+
+Column meanings (from `queries/athena/aws-access-cli_adoption_playback_outcome.sql` and `adoption.py`, plus one verified data check):
 - Session lifecycle (user's definition): `REQUEST_VIEWING`/`PLAYING`, optionally `BUFFERING`/`PLAYING`, then `PLAY` with `DESTROY` (success), `PLAYER_ERROR` (play-stage error) or `TIMEOUT`. The
   `REQUEST_VIEWING` end reason says how the request phase ended: `PLAYING` = handed over to play, `PLAYER_ERROR` = VSF, `DESTROY` = EBVS, `OTHER` = unclassified (2 sessions in ZA September). `PLAY` is
   an `event_type`, never an `endreason`.
@@ -178,9 +189,17 @@ the check repeatable for the whole month and all four OpCos. Run order: before M
    a silently wrong result.
 2. Reuse existing code; do not copy the shared playback-outcome SQL beyond the CTE needed for the check.
 3. The first live Athena run is a separate go-ahead from the user; resolve each tenant with `scripts/resolve_tenant.py` first.
+4. Extra checks added by the reference review (ZA first measurements in brackets; each is reported per day and OpCo, not assumed):
+   - VSF never also plays: sessions with `REQUEST_VIEWING`/`PLAYER_ERROR` and any `PLAY` row (ZA September: 0 of 765). This is Conviva's rule that a session which errored and then played is not VSF.
+   - `PLAY` sessions without a `REQUEST_VIEWING`/`PLAYING` row (ZA September: 6), which decides how Plays is defined (MEC-8).
+   - Sessions carrying two `PLAY` end reasons or two `REQUEST_VIEWING` end reasons (ZA 09-18: 289 summed by end reason vs 288 distinct `PLAY` sessions; the reference sample's `attempts_sum_check`
+     exceeded attempts by 1 on five days). These are the double-counts that break disjointness.
+   - Funnel closure: attempts = Plays + VSF + EBVS + other per day (ZA September: closes on 29 of 30 days, 09-18 off by 1).
 
 **Tests (no network, no real external services):**
 - `test_clean_rows_pass` — all days with zero multi-outcome sessions and matching sums pass.
+- `test_vsf_with_play_row_fails` — a day with a session in both VSF and `PLAY` raises.
+- `test_funnel_closure_mismatch_reported` — a day where Plays + VSF + EBVS + other differs from attempts is reported with the day and the difference.
 - `test_multi_outcome_day_fails` — a day with `sessions_multi_outcome > 0` raises.
 - `test_bucket_sum_mismatch_fails` — a day where the bucket sum differs from attempts raises.
 - `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
@@ -270,7 +289,16 @@ vsf-unique-hhid`.
    3. else a `DESTROY` on any row: `EBVS` (the broader shared definition, kept on purpose);
    4. else `PLAYING_NO_END`.
 2. Output column names: `VOD-Playback-Attempt-Sessions`, `Successful-VOD-Playback-Sessions`, `VSF-Sessions`, `EBVS-Sessions`, `playing_no_end_sessions`, `play_stage_error_sessions`,
-   `play_timeout_sessions`. The household gap columns are out of scope (the household CSV, MEC-1, is unchanged).
+   `play_timeout_sessions`, plus the Conviva-aligned columns `Plays-Sessions` (see 5) and `other_start_sessions`. The household gap columns are out of scope (the household CSV, MEC-1, is unchanged).
+   Cells are explicit zeros, never blank.
+5. Conviva-aligned funnel (reference review, `https://docs.conviva.ai/sei/video/metric-dictionary/`; an analogy for naming and denominators, not a spec): Attempts = Plays + VSF + EBVS + other, where
+   Plays = sessions that started playing (`REQUEST_VIEWING`/`PLAYING`, plus any `PLAY` session without that row so none is lost; ZA September has 6 such sessions) and `other_start_sessions` =
+   `REQUEST_VIEWING`/`OTHER`. Plays split into `Successful-VOD-Playback-Sessions` + `play_stage_error_sessions` + `play_timeout_sessions` + `playing_no_end_sessions`. ZA September measurement: 3,967
+   plays = 3,648 `PLAY` sessions + 319 no-end; funnel closes on 29 of 30 days.
+6. Rates always state their denominator: VSF and EBVS and Plays per 100 attempts (ZA September: 15.2, 5.9, 78.9); the play-stage error rate (the "VPF-proxy") per 100 ended plays, where ended plays =
+   `PLAY` sessions (`DESTROY` + `PLAYER_ERROR` + `TIMEOUT`), not per attempt (ZA September: 161 of 3,649 = 4.4%, versus 3.2% if wrongly divided by attempts). Name it VPF-proxy until the first-frame
+   and buffer-length conditions of Conviva's VPF are checked; `TIMEOUT` is an ended-play outcome, not a failure. VSF, EBVS and ended plays follow Conviva's definitions closely; the EBVS rule is the
+   broad shared one here, so its difference from `REQUEST_VIEWING`/`DESTROY` (296 on fresh ZA data) is measured in MEC-16.
 3. Read `unified_<id>.unified_sessions`, not the `_sept26` debug tables. Resolve each tenant with `scripts/resolve_tenant.py` (by Athena id) before any Athena call. The first live run is a separate
    go-ahead from the user.
 4. Open checks to report, not assume: (a) whether the template must also restrict to sessions that have a `REQUEST_VIEWING` row for the sum to equal attempts (the shared SQL does not; it matched on ZA
@@ -280,6 +308,8 @@ vsf-unique-hhid`.
 - `test_template_renders_with_database_and_dates` — the template renders with all placeholders resolved.
 - `test_template_has_vsf_branch_before_ebvs` — the rendered SQL checks the `PLAY` row, then VSF, then `DESTROY`, then `PLAYING_NO_END`, in that order.
 - `test_metric_specs_use_final_column_names` — the wrapper emits exactly the columns in step 2 and no `incomplete_no_destroy_sessions`.
+- `test_funnel_identity_holds_on_fixture` — Plays + VSF + EBVS + other equals attempts on a fixed in-memory sample, and a sample with a double-counted session fails loudly.
+- `test_vpf_proxy_uses_ended_plays_denominator` — the rate helper divides play-stage errors by ended plays, not attempts.
 - `test_dry_run_makes_no_athena_calls` — `--dry-run` prints the plan and calls no client.
 
 **Commit:** `feat(mec): add VSF-aware playback-outcome template and gap wrapper`
@@ -479,6 +509,12 @@ reference only shows which fields exist; this task regenerates it in this invest
 "Measured findings") showed the debug sessions are a superset of the unified `PLAYER_ERROR` sessions (11/35/142 vs 12/36/145). This task measures that gap per day for all four OpCos and classifies the
 difference, so any error-code story states which of the two sources it quotes. Depends on MEC-13 (the CSV to reconcile) and is independent of MEC-3.
 
+**Reference-review finding (ZA, fresh Athena counts 2026-10-11):** the unified `PLAYER_ERROR` count is exactly VSF plus play-stage errors, with no overlap: 09-15 = 27 (`REQUEST_VIEWING`) + 8 (`PLAY`)
+= 35, and 09-18 = 131 + 11 = 142. So the 11/35/142 vs 12/36/145 gap is a debug-table-only remainder (1 to 3 sessions per day), not a VSF-versus-error mismatch. The CSV therefore reports unified
+`PLAYER_ERROR` as VSF + play-stage (the existing `unified_pe_request_viewing` and `unified_pe_play` columns), then the debug-only remainder, and adds agreement statistics for the trust chart: per-day
+paired difference and ratio of debug error sessions to unified `PLAYER_ERROR` sessions, with their median and maximum over the month (computed by the MEC-18 helpers). Rates quoted per 100 attempts
+(VSF) and per 100 ended plays (play-stage), as in MEC-8.
+
 **Files to change / create:**
 - `queries/athena/mtn-monthly-shaka-vs-unified-error-sessions.sql` — catalog entry per `docs/guides/query-catalog.md`; reuse `ctap-smvod`'s `render_query` and `resolve_tenant_context(code,
   table_suffix="sept26")`.
@@ -566,3 +602,85 @@ pipeline status]`). Missing paths come out as blank cells, not errors, so a code
 - For any flattener extension: one happy-path and one missing-path test per new handler, plus a test proving existing outputs are unchanged.
 
 **Commit:** `docs(mec): add eventdata shape census` (and `feat(ctap-smvod): flatten <code> eventdata` if the flattener is extended)
+
+---
+
+## MEC-16 — Conviva comparison table per OpCo
+
+**Why:** the reference review found that VSF is identical under Conviva's definition, VPF changes denominator, and the "unexplained" residual disappears (ZA September, fresh counts: VSF 765 = 15.2% of
+5,029 attempts either way; play-stage errors 3.2% of attempts but 4.4% of ended plays; residual 582 = 319 no-end plays + 161 play-stage errors + 102 timeouts, none start failures). A reader needs that
+comparison for every OpCo, not only ZA. Conviva's definitions (`docs.conviva.ai` metric dictionary: Attempts, Plays, Ended Plays, VSF, EBVS, VPF) are a naming and denominator reference, an analogy,
+not a spec. Depends on MEC-8 and MEC-5.
+
+**What to implement:** a pure comparison function plus a thin script that writes `output/<OPCO>/2026-09_conviva-comparison.csv` with one row per metric: our current definition and value, the
+Conviva-aligned definition and value, and whether the number changes. Metrics: attempts, plays, VSF, EBVS (broad shared rule vs `REQUEST_VIEWING`/`DESTROY`; the ZA difference is unmeasured on fresh
+data), ended plays, VPF-proxy, residual. Counts and rates only; each rate names its denominator.
+
+**Tests:** `test_vsf_value_unchanged_under_conviva`, `test_vpf_proxy_uses_ended_plays`, `test_residual_decomposes_into_noend_vpf_timeout`.
+
+**Commit:** `feat(mec): add Conviva comparison table`
+
+---
+
+## MEC-17 — Startup time, High Startup Time and EBVS abandonment
+
+**Why:** Conviva's VST is the attempt-to-first-frame time and High Startup Time is the share of plays over a threshold (10 s for SPI Good, 8 s for Best); abandonment is an EBVS whose wait exceeds the
+threshold. `unified_sessions` has a `REQUEST_VIEWING` `event_start`/`event_end` per session. ZA September, fresh counts: plays average 6.4 s (median 5.1, 90th percentile 11.6), 539 of 3,967 (13.6%)
+over 10 s; EBVS average 27.2 s (median 7.2), 117 of 296 (39.5%) over 10 s; VSF median 3.6 s. This task makes the daily series for all four OpCos. Depends on MEC-8.
+
+**What to implement:** per-day count, average, median, 90th percentile and over-10 s / over-8 s counts of the `REQUEST_VIEWING` duration, split by `endreason` (plays, VSF, EBVS). First check that the
+`REQUEST_VIEWING` duration equals attempt-to-first-frame (report, do not assume); SPI thresholds are Conviva's defaults and are parameters, not facts about this service.
+
+**Tests:** `test_percentiles_on_fixture`, `test_threshold_counts`, `test_negative_or_null_duration_fails_loudly`.
+
+**Commit:** `feat(mec): add startup-time and abandonment report`
+
+---
+
+## MEC-18 — Statistics helpers (confidence intervals, control chart, concentration, agreement)
+
+**Why:** daily rates on thin days mislead (for example 83% on 48 attempts) and "outlier day" must be a rule, not an impression. Permanent, tested `scripts/` module under this investigation (no
+throwaway code): Wilson interval for a rate; p-prime (overdispersion-adjusted) control limits for a daily rate varying with volume; concentration measures (top-N share, Gini, sessions per affected
+household) for MEC-6/7; paired difference and ratio with median and maximum for MEC-14 agreement; Spearman for volume versus failure rate; day-of-week split. Households repeat attempts, so plain
+binomial limits are too tight; month-over-month tests use a household cluster bootstrap.
+
+**Tests:** one happy-path and one edge-case test per helper (zero attempts, one household, all-equal values); no network.
+
+**Commit:** `feat(mec): add statistics helpers`
+
+---
+
+## MEC-19 — Business vs technical error classification
+
+**Why:** Conviva separates business errors (configured, such as user limits and playback restrictions) from technical ones (VSF-B/VSF-T, VPF-B/VPF-T). The decision-maker needs what is fixable: for
+example ZM 6007 (MDRM 6211, test device not allowed) is already a policy-style code. Blocked until the user supplies or confirms the per-code business/technical list; do not guess. Output: a per-code
+mapping file and the rates split, per 100 attempts (start errors) and per 100 ended plays (play-stage errors). Depends on MEC-13.
+
+**Tests:** `test_unmapped_code_fails_loudly`, `test_split_sums_to_total`.
+
+**Commit:** `feat(mec): add business vs technical error split`
+
+---
+
+## MEC-20 — Plays with no end record and the mid-month shift to timeouts
+
+**Why:** in ZA September 319 of 3,967 plays (8.0%) have no end record, varying from 0-1% (09-26, 09-27) to 22% (09-03, 09-04), while `play_timeout_sessions` (102 in the month) rises sharply from about
+09-21. The reference sample shows no-end falling to 1-3 per day on 09-21..23 as timeouts rise to 13/9/9. Hypothesis (to test, not a finding): a change in how unfinished sessions are closed (expired
+session recorded as `TIMEOUT` instead of left without an end). Conviva counts an expired session as an ended play, not a failure, so timeouts are demoted from the failure story. Report per day and
+OpCo no-end plays, timeouts and their sum; the sum is the trend line until this is settled. Depends on MEC-8.
+
+**Tests:** `test_noend_plus_timeout_is_series`, `test_zero_plays_day_does_not_divide_by_zero`.
+
+**Commit:** `feat(mec): add no-end and timeout trend`
+
+---
+
+## MEC-21 — Approximate Rebuffering Ratio (optional)
+
+**Why:** Conviva's Rebuffering Ratio is rebuffering time over play time plus rebuffering time, excluding the pre-first-frame buffering and paused time. `unified_sessions` `BUFFERING` rows give a rough
+equivalent (`buffering_total_ms` is in the shared outcome SQL). Label it approximate; only worth building if the story needs a quality-of-playback beat beyond the funnel. Bitrate, frame rate, CDN, ISP
+and ASN are not available and are out of scope.
+
+**Tests:** `test_ratio_excludes_startup_buffering`, `test_zero_playtime_fails_loudly`.
+
+**Commit:** `feat(mec): add approximate rebuffering ratio`
