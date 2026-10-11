@@ -3,8 +3,8 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the month being analysed (September 2026 first).
 
-**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14, MEC-15, MEC-22, MEC-23, MEC-24, MEC-25.** Exceptions to top-down: MEC-2 depends on
-MEC-8, so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
+**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14, MEC-15, MEC-19, MEC-22, MEC-23, MEC-24, MEC-25, MEC-26, MEC-27, MEC-28.**
+Exceptions to top-down: MEC-2 depends on MEC-8, so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
 
 - [ ] **MEC-0** — September adoption-session-report CSV for all OpCos, via a month orchestrator over the existing aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer hook | SHA: —
@@ -45,9 +45,16 @@ MEC-8, so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV
   SHA: —
 - [ ] **MEC-24** — check the class-2 VPF-proxy against Conviva's conditions (error after first frame, error-to-end within 150 s); depends on MEC-22 | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: code-reviewer hook | SHA: —
+- [ ] **MEC-19** — business vs technical per-code mapping file and the rates split (per 100 attempts for start errors, per 100 ended plays for play-stage errors); blocked until the user supplies the
+  MTN Business Error Configuration list | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
 - [ ] **MEC-25** — business vs technical evidence profile for every error code in the flattened GH eventdata, one code at a time (3016 and 1003 profiled; feeds MEC-19, which stays blocked on the MTN
   business list)
   | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none (docs only) | SHA: —
+- [ ] **MEC-26** — analyse the four Astro Pulse exports (`data/reference/AstroErrorCode/`: VSF-B, VSF-T, VPF-B, VPF-T) as a reference for MEC-19 (docs plus one small parser script) | Owner: Copilot
+  CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
+- [ ] **MEC-27** — device analysis per error code from `user_agent` (model, Android version and build for Android; OS and browser version for iOS, macOS, Windows), with the `is_wv` split | Owner:
+  Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
+- [ ] **MEC-28** — `is_wv` analysis per error code on South Africa data (the GH sample has no WebView events) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none (docs only) | SHA: —
 
 ## Story done when
 
@@ -83,6 +90,10 @@ MEC-8, so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV
 - **MEC-24** — per OpCo-day, class-2 sessions with the error after `PLAY` start and error-to-end within 150 s are counted and labelled VPF-proxy, never VPF.
 - **MEC-25** — `docs/error-code-classification-evidence.md` has one section per error code (every code in the story's coverage list in `stories.md` MEC-25, ticked as done) with the evidence profile,
   the candidate class (business / technical / undecided), confidence and what would settle it; counts only, labelled a proposal from text and signals, not Conviva's classification.
+- **MEC-26** — `docs/astro-business-technical-reference.md` records, from the four Astro exports, per error key: class (VSF-B, VSF-T, VPF-B, VPF-T), impacted attempts or ended plays and share, keys
+  present in both classes (for example 6008), and the export format to request for MTN; counts only, labelled a reference from another account, not an MTN classification.
+- **MEC-27** — per error code, a device table from `user_agent` (Android model, version, build; OS family and browser version otherwise) with the `is_wv` split and the unparsed share stated; no ids.
+- **MEC-28** — per error code on South Africa data, the `is_wv` share and wv vs non-wv outcomes, stating the source files and dates; the GH sample (all `is_wv` false) is recorded as no evidence.
 
 ## After each task
 

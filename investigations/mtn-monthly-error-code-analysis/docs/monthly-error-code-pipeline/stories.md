@@ -790,3 +790,41 @@ entitlement, concurrency, geo) leans business; a player, network, DRM or media c
 **Output:** feeds MEC-19; also settles which rates each class splits (per 100 attempts for start errors, per 100 ended plays for play-stage errors) and whether the split needs `unified_sessions`.
 
 **Commit:** `docs(mec): record business vs technical evidence per error code`
+
+---
+
+## MEC-26 — Astro Pulse exports as a business vs technical reference
+
+**Why:** `data/reference/AstroErrorCode/` holds four Conviva Pulse exports for account `c3.Astro-AstroGo` (filter `CONTAINS Shaka`, 2025-10-11 to 2026-10-10): VSF-B, VSF-T, VPF-B, VPF-T by error code.
+Class is configured per account, so this is a calibration reference for MEC-19, not an MTN classification. A small parser script in `scripts/` (with `mec_lib` helpers) reads the export blocks
+(preamble, then dimension tables). Per error key: class, impacted attempts or ended plays and share; keys present in both B and T (6008 appears in both with the same text, so matching is finer than
+code plus text, cause unknown); how the `Err-NNNN` suffix maps to the GH numeric `errorcode` (unverified assumption to test); and the exact export to request for MTN.
+
+**Tests:** `test_parser_reads_dimension_table`, `test_parser_fails_loudly_on_missing_dimension`.
+
+**Commit:** `docs(mec): add Astro business vs technical reference`
+
+---
+
+## MEC-27 — Device analysis per error code from user_agent
+
+**Why:** `scripts/summarize_error_devices.py` already gives model, Android version and build per error code, split by `is_wv`. Only Android user agents carry a model; iPhone and Mac agents carry OS
+and browser version only (3016 and 1003 events are almost all `(unparsed)`). Extend the script to report OS and browser version for non-Android agents, then record per error code which devices are
+affected, concentration (households, sessions per household) and the unparsed share. Reuse, do not copy, the ctap-smvod WebView device report logic where an import is possible.
+
+**Tests:** `test_ios_user_agent_yields_os_and_browser_version`, `test_unknown_user_agent_stays_unparsed`.
+
+**Commit:** `feat(mec): add OS and browser version to error device summary`
+
+---
+
+## MEC-28 — is_wv analysis per error code (South Africa)
+
+**Why:** every GH reference event (3016, 1003, 1001, 1002, 6001, 6006, 6007, E31012) has `is_wv` false, so GH shows no WebView behaviour. South Africa has WebView sessions: the ctap-smvod `SA` error
+report has an `is_wv` column and `analyze_webview_devices.py` produces a per-model wv report (`output/SA/`, 2026-10-01 onward). The ZA September reference files in this investigation have no user
+agent, so the source (the SA error reports, or a flattened ZA sample) is settled at the start of the task. Report per error code the `is_wv` share and wv vs non-wv outcomes, with sources and dates; no
+ids.
+
+**Tests:** none (docs only).
+
+**Commit:** `docs(mec): record is_wv analysis per error code for South Africa`
