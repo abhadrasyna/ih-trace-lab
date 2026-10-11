@@ -63,6 +63,11 @@ added to `ctap-smvod`'s `scripts/lib/tenant_context.py` (+ its regression test; 
 - **MEC-13** — September `shaka-error-session` CSV (distinct sessions per `PLAYER_ERROR` code per day) for all OpCos, via the same orchestrator with the `_sept26` debug table; separate from MEC-3.
 - **MEC-14** — reconcile Shaka error sessions with `unified_sessions` `PLAYER_ERROR` end reasons per day for all OpCos (first ZA check: debug sessions are a superset, 12/36/145 vs 11/35/142).
 - **MEC-15** — eventdata shape census per OpCo and error code (JSON key paths vs what `flatten_error_eventdata.py` reads), then extend that flattener in `ctap-smvod` only for the gaps found.
+- **MEC-16 to MEC-18, MEC-20, MEC-21** — Conviva comparison per OpCo, startup time and abandonment, statistics helpers, no-end plays and the timeout shift, optional approximate rebuffering (specs in
+  `stories.md`).
+- **MEC-22 to MEC-28** — error-session classification, absent-session lookup, VPF-proxy check, business vs technical evidence, Astro reference, device and `is_wv` analyses.
+- **MEC-29** — closing cross-OpCo playback-state report for September 2026 (docs only).
+- Run order is in `tasks.md` (MEC-8, 5, 18 first).
 
 Settled definitions (verified on ZA 2026-09-15; full detail in `stories.md` MEC-2 and MEC-8): `PLAY` is an `event_type`, never an `endreason`. `REQUEST_VIEWING`/`PLAYER_ERROR` is VSF.
 `REQUEST_VIEWING`/`DESTROY` is EBVS, using the broader shared rule (no `PLAY` row and a `DESTROY` on any row). `REQUEST_VIEWING`/`PLAYING` with no closing `PLAY` row is `playing_no_end_sessions`. The

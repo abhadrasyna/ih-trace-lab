@@ -828,3 +828,23 @@ ids.
 **Tests:** none (docs only).
 
 **Commit:** `docs(mec): record is_wv analysis per error code for South Africa`
+
+---
+
+## MEC-29 — Cross-OpCo playback-state report (September 2026)
+
+**Why:** MEC-0 to MEC-28 produce per-OpCo CSVs and docs; nothing joins them into the answer to "what is the state of playback in every MTN OpCo". This closing task writes that report, built on
+`docs/analysis-storytelling-framework.md` (one-sentence big idea, unit of measure defined first, one takeaway, methodology last). Docs only; no new Athena queries.
+
+**What to write (`docs/2026-09-playback-state-all-opcos.md`):**
+1. Big idea in one sentence, then the definitions used (attempt, success, VSF, EBVS, play-stage error, timeout, playing-no-end) with the MEC-8 settled names and each rate's denominator.
+2. Per OpCo (ZA, NG, ZM, GH): outcome mix and success rate with Wilson intervals (MEC-18), the Conviva-aligned comparison (MEC-16), startup time (MEC-17), no-end plays (MEC-20).
+3. Daily trend per OpCo with p-prime control-limit outliers and a day-of-week split (from the daily CSVs; no Athena).
+4. Error codes per OpCo (MEC-13/14/22), business vs technical only if MEC-19 is unblocked, otherwise stated as pending.
+5. Household concentration (MEC-6/7), device and WebView (MEC-27/28).
+6. App version: the debug eventdata carries `app_version` only on error events, so this cut covers error sessions, not all attempts; say so, and do not present it as a share of all playback.
+7. Limits: dimensions with no data (network/ISP, geography, content/asset, new vs returning households, month-over-month) and any OpCo missing a CSV are named, not omitted. Counts only, no ids.
+
+**Tests:** none (docs only).
+
+**Commit:** `docs(mec): add cross-OpCo playback-state report for September 2026`
