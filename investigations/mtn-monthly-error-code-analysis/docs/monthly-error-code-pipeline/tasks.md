@@ -3,8 +3,8 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec. Every deliverable is generated for all four OpCos (ZA, NG, ZM, GH) for the month being analysed (September 2026 first).
 
-**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14, MEC-15.** Exceptions to top-down: MEC-2 depends on MEC-8, so do MEC-8 before
-MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
+**Open: MEC-0, MEC-1, MEC-2, MEC-3, MEC-4, MEC-5, MEC-6, MEC-7, MEC-8, MEC-9, MEC-10, MEC-11, MEC-12, MEC-13, MEC-14, MEC-15, MEC-22, MEC-23, MEC-24.** Exceptions to top-down: MEC-2 depends on MEC-8,
+so do MEC-8 before MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the guest tasks, before MEC-9, MEC-11 and MEC-12.
 
 - [ ] **MEC-0** — September adoption-session-report CSV for all OpCos, via a month orchestrator over the existing aws_access_cli runner | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer hook | SHA: —
@@ -39,6 +39,13 @@ MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the 
 - [ ] **MEC-15** — eventdata shape census per OpCo and error code, then extend the ctap-smvod error-eventdata flattener only for the gaps found | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: code-reviewer hook | SHA: —
 
+- [ ] **MEC-22** — classify every debug PLAYER_ERROR session against `unified_sessions` (VSF, VPF-like, other end reason, absent) for all of September and all OpCos, with the error-minus-session-end
+  timing test | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer hook | SHA: —
+- [ ] **MEC-23** — find where absent debug error sessions are: unwindowed `unified_sessions` lookup and same-device check (docs only) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none |
+  SHA: —
+- [ ] **MEC-24** — check the class-2 VPF-proxy against Conviva's conditions (error after first frame, error-to-end within 150 s); depends on MEC-22 | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
+  Review: code-reviewer hook | SHA: —
+
 ## Story done when
 
 - **MEC-0** — `output/<OPCO>/daily/2026-09_adoption-session-report.csv` exists in this investigation for all four OpCos, one row per day 2026-09-01..30 with the four session columns.
@@ -67,6 +74,10 @@ MEC-2; MEC-10 (the guest-login MCP check) needs no CSV and runs first among the 
 - **MEC-15** — a coverage table exists in `docs/eventdata-shape-census.md` listing, per OpCo and error code, the `eventdata` key paths present (count, share populated) against the paths
   `flatten_error_eventdata.py` reads; any extension of the flattener covers only gaps in that table, keeps existing columns and outputs unchanged, and has regression tests; the per-code flat output
   appends each day into one file per error code instead of one file per date, deduplicated on `messageid`.
+- **MEC-22** — `output/<OPCO>/daily/2026-09_error-session-classes.csv` exists for all four OpCos with one row per day and class: sessions, households, error-minus-session-end seconds and error codes
+  (counts only).
+- **MEC-23** — the cause of each absent debug error session is recorded in `docs/` from an unwindowed lookup, reported as measured, not assumed.
+- **MEC-24** — per OpCo-day, class-2 sessions with the error after `PLAY` start and error-to-end within 150 s are counted and labelled VPF-proxy, never VPF.
 
 ## After each task
 
