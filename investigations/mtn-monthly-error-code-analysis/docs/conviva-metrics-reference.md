@@ -83,7 +83,7 @@ of 30 days; 09-18 is off by one session.
 - **VSF-T** (Video Start Failures Technical): VSF that does not match a configured business error. Alerts: manual yes, AI yes.
 - Rule: VSF = VSF-B + VSF-T; a business-matching error is never counted in the technical metric.
 - With traffic rules, Conviva applies the business-error configuration of the account the player sent traffic to, not the account that received it.
-- Computable: not yet. It needs the user's business-error list (task MEC-19).
+- Computable: not yet. It needs the user's business-error list (task MEC-27).
 
 ## 3. Playback failure (after the first frame)
 
@@ -111,7 +111,7 @@ of 30 days; 09-18 is off by one session.
 
 - **VPF-B**: a VPF whose error matches a configured business error. Needs the same three conditions plus the business match. Percentage of Ended Plays.
 - **VPF-T**: a VPF that does not match a business error. VPFs matching a business error are counted in VPF-B only.
-- Computable: not yet (MEC-19).
+- Computable: not yet (MEC-27).
 
 ## 4. Startup time
 
@@ -161,7 +161,7 @@ Time components:
 
 - Definition: `rebufferingTime / (playTime + rebufferingTime)`, including seek and non-seek rebuffering. Summary is total rebuffering divided by total viewing time.
 - Alerts: manual yes (may fire several times per view), AI yes.
-- Computable: approximately at best. `BUFFERING/PLAYING` rows give buffering time (task MEC-21, optional); player-state precision is unverified.
+- Computable: approximately at best. `BUFFERING/PLAYING` rows give buffering time (task MEC-12, optional); player-state precision is unverified.
 
 ### Connection Induced Rebuffering Ratio (CIRR) and Time (CIRT)
 
@@ -244,10 +244,10 @@ We can compute SPI inputs only in part: VSF, VPF-proxy, startup and abandonment 
 
 - **Attempts**: matches Conviva Attempts; revived sessions are not identifiable in our data.
 - **Success / Plays-Sessions**: matches Plays except that the 200 ms rule cannot be applied.
-- **VSF**: matches all-VSF (business plus technical) until MEC-19 supplies the business-error list.
+- **VSF**: matches all-VSF (business plus technical) until MEC-27 supplies the business-error list.
 - **EBVS**: Conviva's rule is end reason `DESTROY` at the request stage; our "broad" rule differs.
 - **Errors per 100 attempts (VPF)**: Conviva's VPF denominator is **ended plays**, not attempts, and it has the i-frame and buffer-length conditions.
 - **Shaka error sessions**: a player-side count with no Conviva equivalent; compare with unified `PLAYER_ERROR` as the trust chart.
 - **Startup chart**: VST and High Startup Time are approximations until the meaning of `REQUEST_VIEWING` duration is confirmed.
 
-Cross-references: MEC-8 (funnel), MEC-16 (comparison table), MEC-17 (VST, abandonment), MEC-19 (business vs technical), MEC-21 (rebuffering approximation).
+Cross-references: MEC-0 (funnel), MEC-22 (comparison table), MEC-10 (VST, abandonment), MEC-27 (business vs technical), MEC-12 (rebuffering approximation).

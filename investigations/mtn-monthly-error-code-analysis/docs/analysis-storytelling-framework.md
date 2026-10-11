@@ -56,17 +56,17 @@ All comparisons are within a single day. Units: a session is a `parent_session_i
   few households.
 - **Trust (anticipate the counterargument):** this is the central chart, because the gap CSV exists to explain the unknown drop-off (attempts not equal to success + VSF + EBVS). Show attempts against
   the stacked buckets per OpCo, keep `playing_no_end_sessions` visually distinct from the other failure buckets, and show `attempts_sum_check` against attempts explicitly. VSF is its own bucket and
-  `playing_no_end_sessions` excludes it (MEC-8 template), so the buckets stack as disjoint parts of attempts.
+  `playing_no_end_sessions` excludes it (MEC-0 template), so the buckets stack as disjoint parts of attempts.
 - **Close (Minto, three acts):** beginning is the funnel and stakes; middle ("But") is the bad days and whether they are broad or concentrated; end is a recommendation per pattern, handing off to the
   error-code breakdown.
 
 Definition notes carried from the analysis of the existing reports:
 - `unique-hh-no-vsf` always equals attempting households minus VSF households, so use the subtraction.
 - The VSF household set is a subset of the attempting household set; the household CSV is a cross-check of the session CSV, not an independent funnel.
-- A manual check (ZA, 2026-09-15, 309 attempts) found one playback outcome per session and buckets summing to attempts; MEC-5 repeats that check for all OpCos.
+- A manual check (ZA, 2026-09-15, 309 attempts) found one playback outcome per session and buckets summing to attempts; MEC-14 repeats that check for all OpCos.
 - Trust chart, error sources (ZA 09-04/15/18 measured): base the bar on unified `PLAYER_ERROR` = VSF + play-stage (11/35/142), then stack the debug-only sessions (1/1/3) on top as "error logged, not
   the recorded end reason". Do not label them "recovered": the 4 other-end-reason sessions had their first error 26 to 120 s after the last unified row, which points to a late error after the session
-  closed (hypothesis, tested on 4 sessions; MEC-22). One absent session stays its own segment (MEC-23).
+  closed (hypothesis, tested on 4 sessions; MEC-17). One absent session stays its own segment (MEC-16).
 - Do not sum the daily household columns to quote a single September household figure.
 - `REQUEST_VIEWING` end reasons: `PLAYING` = handed to play, `PLAYER_ERROR` = VSF, `DESTROY` = EBVS, `OTHER` = unclassified. `PLAY` is an `event_type`, never an `endreason`.
 - EBVS uses the broader shared-SQL definition (no `PLAY` row and a `DESTROY` on any row), which also catches `BUFFERING`/`DESTROY`-only sessions; the extra volume is unmeasured.
@@ -74,4 +74,4 @@ Definition notes carried from the analysis of the existing reports:
   (optionally with `BUFFERING`/`PLAYING`) and no closing `PLAY` row. Intended reading (user's understanding): the viewer killed the app. Verified on ZA 2026-09-15: 28 sessions, all
   `REQUEST_VIEWING`/`PLAYING`, 26 mobile and 2 desktop; consistent with app-kill, not proof.
 - Verified on ZA 2026-09-15 (one day, one OpCo): the shared SQL puts the 27 VSF sessions inside `INCOMPLETE_NO_DESTROY` (55 = 27 VSF + 28), so its raw six-column sum (336) exceeds attempts (309) by
-  exactly 27. Final: the new MEC-8 template makes VSF its own bucket; the six outcome columns are disjoint and `attempts_sum_check` (their sum) must equal attempts. The shared SQL is not edited.
+  exactly 27. Final: the new MEC-0 template makes VSF its own bucket; the six outcome columns are disjoint and `attempts_sum_check` (their sum) must equal attempts. The shared SQL is not edited.

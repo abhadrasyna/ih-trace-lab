@@ -36,7 +36,7 @@ Copy this block for each new script, and also register it in `SCRIPTS.md`.
 python investigations/mtn-monthly-error-code-analysis/scripts/<name>.py --month 2026-09 --opco ZM
 ```
 
-## 3. Error-code classification evidence (MEC-19 input, GH flattened eventdata)
+## 3. Error-code classification evidence (MEC-27 input, GH flattened eventdata)
 
 Both scripts read `<date>_<code>.csv` files of flattened `PLAYER_ERROR` events (for example `data/reference/GH/`), dedupe on `messageid`, count distinct sessions, and print counts only (no household,
 device or session ids). Shared code is in `scripts/mec_lib/`. A column missing from a day's file prints as "(column absent)", meaning never populated that day, not zero.
