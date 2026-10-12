@@ -108,15 +108,16 @@ Other options: `--output-dir`.
 
 ### Combine per-error-code files across opcos (`combine_error_code_by_opco.py`)
 
-Merges every `output/<TENANT>/error_eventdata_flat/<date>_<errorcode>.csv` (the `_all.csv` files are ignored) into one XLSX: one sheet per opco, all dates and codes stacked, with a leading `date`
-column. Tenants are auto-discovered; the date range is optional (omit it for every date found). Reads existing files only.
+Merges the `output/<TENANT>/error_eventdata_flat/<date>_<errorcode>.csv` files (the `_all.csv` files are ignored) into **one XLSX per error code** (flattened columns differ by code, so codes are never
+mixed): one sheet per opco, all dates stacked, with a leading `date` column. An opco with no rows for a code gets no sheet. Tenants are auto-discovered; the date range and `--codes` are optional (omit
+them for every date and code found). Reads existing files only.
 
 ```bash
-python3 combine_error_code_by_opco.py --from 08102026 --to 11102026   # -> output/2026-10-08_2026-10-11_error_by_opco.xlsx
-python3 combine_error_code_by_opco.py                                  # all dates -> output/all_dates_error_by_opco.xlsx
+python3 combine_error_code_by_opco.py --from 08102026 --to 11102026   # -> output/2026-10-08_2026-10-11_error_<code>_by_opco.xlsx per code
+python3 combine_error_code_by_opco.py --codes 6007,1003                # all dates -> output/all_dates_error_6007_by_opco.xlsx, ..._1003_...
 ```
 
-Other options: `--output-dir` (root holding the `<TENANT>/` folders), `--out`.
+Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 
 ## 4. Per-date and range analysis
 

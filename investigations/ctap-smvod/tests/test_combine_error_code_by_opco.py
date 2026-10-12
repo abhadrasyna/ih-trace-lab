@@ -34,36 +34,40 @@ def _run(monkeypatch, *argv):
     mod.main()
 
 
-def test_combines_tenants_dates_and_codes_skipping_all(tmp_path, monkeypatch) -> None:
+def _sheet(path: Path, name: str) -> list[list]:
+    return [[c.value for c in r] for r in load_workbook(path)[name].iter_rows()]
+
+
+def test_one_workbook_per_code_with_own_columns(tmp_path, monkeypatch) -> None:
     _flat(tmp_path, "GH", "2026-10-08_6007.csv", ["sessionId", "errorcode"], [["a", "6007"]])
     _flat(tmp_path, "GH", "2026-10-09_1003.csv", ["sessionId", "errorcode", "extra"], [["b", "1003", "x"]])
     _flat(tmp_path, "GH", "2026-10-09_all.csv", ["sessionId", "errorcode"], [["dup", "1003"]])
     _flat(tmp_path, "ZM", "2026-10-11_6007.csv", ["sessionId", "errorcode"], [["c", "6007"]])
     (tmp_path / "SA").mkdir()  # no flat folder -> not a tenant
-    out = tmp_path / "combined.xlsx"
-    _run(monkeypatch, "--output-dir", str(tmp_path), "--out", str(out))
-    wb = load_workbook(out)
-    assert wb.sheetnames == ["GH", "ZM"]
-    gh = [[c.value for c in r] for r in wb["GH"].iter_rows()]
-    assert gh[0] == ["date", "sessionId", "errorcode", "extra"]
-    assert [r[1] for r in gh[1:]] == ["a", "b"]
-    assert gh[2][0] == "2026-10-09"
+    _run(monkeypatch, "--output-dir", str(tmp_path))
+    f6007 = tmp_path / "all_dates_error_6007_by_opco.xlsx"
+    f1003 = tmp_path / "all_dates_error_1003_by_opco.xlsx"
+    assert load_workbook(f6007).sheetnames == ["GH", "ZM"]
+    assert load_workbook(f1003).sheetnames == ["GH"]
+    assert _sheet(f6007, "GH")[0] == ["date", "sessionId", "errorcode"]
+    assert _sheet(f1003, "GH") == [["date", "sessionId", "errorcode", "extra"], ["2026-10-09", "b", "1003", "x"]]
+    assert _sheet(f6007, "ZM")[1][0] == "2026-10-11"
 
 
-def test_date_range_filters_files(tmp_path, monkeypatch) -> None:
+def test_date_range_and_codes_filter(tmp_path, monkeypatch) -> None:
     _flat(tmp_path, "GH", "2026-10-07_6007.csv", ["sessionId"], [["old"]])
     _flat(tmp_path, "GH", "2026-10-08_6007.csv", ["sessionId"], [["in"]])
-    _run(monkeypatch, "--output-dir", str(tmp_path), "--from", "08102026", "--to", "11102026")
-    out = tmp_path / "2026-10-08_2026-10-11_error_by_opco.xlsx"
-    rows = [[c.value for c in r] for r in load_workbook(out)["GH"].iter_rows()]
-    assert rows == [["date", "sessionId"], ["2026-10-08", "in"]]
+    _flat(tmp_path, "GH", "2026-10-08_1003.csv", ["sessionId"], [["skip"]])
+    _run(monkeypatch, "--output-dir", str(tmp_path), "--from", "08102026", "--to", "11102026", "--codes", "6007")
+    out = tmp_path / "2026-10-08_2026-10-11_error_6007_by_opco.xlsx"
+    assert _sheet(out, "GH") == [["date", "sessionId"], ["2026-10-08", "in"]]
+    assert not list(tmp_path.glob("*1003*"))
 
 
-def test_empty_range_gives_header_only_sheet(tmp_path, monkeypatch) -> None:
+def test_no_matching_files_fails(tmp_path, monkeypatch) -> None:
     _flat(tmp_path, "GH", "2026-10-07_6007.csv", ["sessionId"], [["old"]])
-    out = tmp_path / "e.xlsx"
-    _run(monkeypatch, "--output-dir", str(tmp_path), "--from", "01112026", "--out", str(out))
-    assert [[c.value for c in r] for r in load_workbook(out)["GH"].iter_rows()] == [["date"]]
+    with pytest.raises(SystemExit):
+        _run(monkeypatch, "--output-dir", str(tmp_path), "--from", "01112026")
 
 
 def test_reversed_range_and_no_tenants_fail(tmp_path, monkeypatch) -> None:

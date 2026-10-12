@@ -15,7 +15,8 @@
   `setupsession_with_outcome.csv` directly (includes 3016/E31012); `run_athena_error_eventdata.py` (catalog `ctap-smvod-error-eventdata`) exports raw `PLAYER_ERROR` eventdata and
   `flatten_error_eventdata.py` (+ `--split-by-errorcode`) flattens it into columns, both run as `run_pipeline.py` Steps 6f/6g (`--skip-error-eventdata`) and `summarize_error_eventdata.py` crosstabs
   them. `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default SA,GH,ZM) exports the 1xxx-only error sessions (not limited to position_not_moved) for several tenants at once,
-  one CSV/XLSX per tenant in `output/<TENANT>/`. `summarize_tenant_status.py --date DDMMYYYY` (run by hand after the pipeline) writes the SA/GH/ZM cross-tenant daily status table to
+  one CSV/XLSX per tenant in `output/<TENANT>/`. `combine_error_code_by_opco.py` (optional `--from/--to`, `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet
+  per opco, `date` column) in `output/`. `summarize_tenant_status.py --date DDMMYYYY` (run by hand after the pipeline) writes the SA/GH/ZM cross-tenant daily status table to
   `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant.
   `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). Constrained by `docs/refactor/`.
 - `investigations/mtn-sa-span-attribute-audit/` — ad hoc audit of MTN SA Lightstep span attributes, driven live via the Lightstep MCP tools (tenant resolved through
