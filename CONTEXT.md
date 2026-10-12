@@ -21,7 +21,7 @@
   `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
-  `docs/inc-latency-shaka-1xxx-notes.md`.
+  `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
 - `investigations/mtn-sa-span-attribute-audit/` — ad hoc audit of MTN SA Lightstep span attributes, driven live via the Lightstep MCP tools (tenant resolved through
   `scripts/resolve_tenant.py`/`config/tenants.yaml` to Lightstep project `mcs-go-prod-iye9omdf-eu`, EU region). `docs/sample-span-ctap-server.md` and `docs/sample-span-households-core-server.md` each
   capture one full span's attributes (identity, timing, tags, reporter/process info) pulled via `get_stored_trace`/`query_spans`; the second file also tallies a key-by-key diff against the first (48
