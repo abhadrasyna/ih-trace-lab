@@ -106,6 +106,18 @@ python3 extract_error_report_1xxx.py --from 01102026 --to 06102026              
 
 Other options: `--output-dir`.
 
+### Combine per-error-code files across opcos (`combine_error_code_by_opco.py`)
+
+Merges every `output/<TENANT>/error_eventdata_flat/<date>_<errorcode>.csv` (the `_all.csv` files are ignored) into one XLSX: one sheet per opco, all dates and codes stacked, with a leading `date`
+column. Tenants are auto-discovered; the date range is optional (omit it for every date found). Reads existing files only.
+
+```bash
+python3 combine_error_code_by_opco.py --from 08102026 --to 11102026   # -> output/2026-10-08_2026-10-11_error_by_opco.xlsx
+python3 combine_error_code_by_opco.py                                  # all dates -> output/all_dates_error_by_opco.xlsx
+```
+
+Other options: `--output-dir` (root holding the `<TENANT>/` folders), `--out`.
+
 ## 4. Per-date and range analysis
 
 | Command | Writes |
