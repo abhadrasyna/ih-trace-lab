@@ -50,3 +50,16 @@ opcos:
     athena_tenant_id: is1aldzq
     athena_profile: clarissa-insights-product
     athena_region: eu-central-1
+  # Staging tenant: Lightstep/Matisse values not yet provided.
+  - code: STG
+    name: MTN Staging
+    go_id: puo3b8p8
+    lightstep_project: null
+    lightstep_region: EU
+    shared_project: false
+    disambiguation_attribute: null
+    matisse_project_id: null
+    matisse_client_tenant_id: null
+    athena_tenant_id: bo1ghsjj
+    athena_profile: clarissa-insights-product
+    athena_region: eu-central-1
