@@ -19,6 +19,9 @@
   per opco, `date` column) in `output/error_code/<code>/`. `summarize_tenant_status.py --date DDMMYYYY` (run by hand after the pipeline) writes the SA/GH/ZM cross-tenant daily status table to
   `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant.
   `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). Constrained by `docs/refactor/`.
+- `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
+  audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
+  `docs/inc-latency-shaka-1xxx-notes.md`.
 - `investigations/mtn-sa-span-attribute-audit/` — ad hoc audit of MTN SA Lightstep span attributes, driven live via the Lightstep MCP tools (tenant resolved through
   `scripts/resolve_tenant.py`/`config/tenants.yaml` to Lightstep project `mcs-go-prod-iye9omdf-eu`, EU region). `docs/sample-span-ctap-server.md` and `docs/sample-span-households-core-server.md` each
   capture one full span's attributes (identity, timing, tags, reporter/process info) pulled via `get_stored_trace`/`query_spans`; the second file also tallies a key-by-key diff against the first (48

@@ -5,18 +5,18 @@
 
 | Count | Slug | Suggestion | Category | First seen | Last seen |
 |---|---|---|---|---|---|
-| 40 | update-context-for-new-files | Update CONTEXT.md before commit whenever a session adds a new persistent repo file. | protocol-compliance | 2026-09-27 | 2026-10-11 |
+| 41 | update-context-for-new-files | Update CONTEXT.md before commit whenever a session adds a new persistent repo file. | protocol-compliance | 2026-09-27 | 2026-10-12 |
 | 32 | avoid-mid-session-rereads | Reuse already-loaded file context instead of re-reading the same file mid-session unless it changed. | token-efficiency | 2026-09-27 | 2026-10-11 |
-| 29 | state-plan-before-editing | State the one-sentence plan before the first edit, even when the next task seems obvious from story order. | protocol-compliance | 2026-09-30 | 2026-10-08 |
+| 30 | state-plan-before-editing | State the one-sentence plan before the first edit, even when the next task seems obvious from story order. | protocol-compliance | 2026-09-30 | 2026-10-12 |
 | 25 | wait-for-explicit-go-ahead-before-editing | Wait for explicit reply after stating the plan, before creating/committing when approval required. | protocol-compliance | 2026-09-27 | 2026-10-10 |
 | 24 | re-read-context-on-resumed-task-segments | On each resumed autopilot segment, re-open CONTEXT.md and state `CONTEXT.md ✓`. | protocol-compliance | 2026-10-02 | 2026-10-08 |
 | 19 | confirm-target-files-before-starting | When destination files aren't named, confirm which files change before creating new modules/tests. | protocol-compliance | 2026-09-29 | 2026-10-04 |
 | 18 | prefer-scoped-file-reads-over-full-cat-dumps | Prefer `view_range`/`sed -n`/`grep`/summaries over full `cat` dumps once target section is known. | token-efficiency | 2026-09-29 | 2026-10-10 |
 | 14 | avoid-broad-filesystem-finds | Use repo-local `glob`/known paths, not broad `find`/repo-wide `grep -r` probes. | token-efficiency | 2026-09-27 | 2026-10-11 |
+| 13 | state-context-md-checkmark-explicitly | State `CONTEXT.md ✓` verbatim in the first response, not just read the file silently before coding. | protocol-compliance | 2026-09-28 | 2026-10-12 |
 | 13 | edit-tool-over-inline-python-rewrite | Use the `edit` tool, not inline python rewrites; reflow can break string asserts. | protocol-compliance | 2026-10-07 | 2026-10-10 |
-| 12 | state-context-md-checkmark-explicitly | State `CONTEXT.md ✓` verbatim in the first response, not just read the file silently before coding. | protocol-compliance | 2026-09-28 | 2026-10-10 |
+| 6 | reflow-md-before-commit | Run `python -m scripts.dev.reflow_md` on edited markdown before `git commit` so md-line-length pre-commit does not fail. | commit-hygiene | 2026-10-07 | 2026-10-12 |
 | 6 | write-and-run-tests-before-commit | Add happy-path/edge-case tests for new public fns, run green before commit; missing harness isn't a stop. | protocol-compliance | 2026-09-29 | 2026-10-04 |
-| 5 | reflow-md-before-commit | Run `python -m scripts.dev.reflow_md` on edited markdown before `git commit` so md-line-length pre-commit does not fail. | commit-hygiene | 2026-10-07 | 2026-10-08 |
 | 5 | confirm-commit-sha-after-commit | After each commit, surface the resulting SHA in the user-facing summary instead of relying on git log output alone. | commit-hygiene | 2026-09-29 | 2026-10-02 |
 | 3 | no-inline-python-for-data-analysis | Put CSV analysis in a permanent scripts/ file (check SCRIPTS.md first), not inline python. | protocol-compliance | 2026-10-10 | 2026-10-11 |
 | 3 | use-edit-tool-not-sed-i | Use the edit tool for file changes, not `sed -i` or `cat >>` heredocs via bash. | protocol-compliance | 2026-10-10 | 2026-10-11 |
@@ -25,6 +25,7 @@
 | 2 | avoid-tmp-for-command-output-logs | Redirect long-run command output to a repo path (e.g. logs/), never /tmp. | protocol-compliance | 2026-10-07 | 2026-10-11 |
 | 2 | search-repo-tooling-before-live-athena-query | Before a live Athena/Lightstep query, grep `src/pipelines/` and `config/` for helpers. | protocol-compliance | 2026-10-08 | 2026-10-10 |
 | 2 | avoid-repeated-read-agent-polling | After launching a sub-agent, wait for completion instead of polling `read_agent` for status-only updates. | token-efficiency | 2026-10-04 | 2026-10-04 |
+| 1 | review-staged-files-before-commit | Run `git diff --cached --stat` before commit and tell the user about pre-staged files that will be swept in. | commit-hygiene | 2026-10-12 | 2026-10-12 |
 | 1 | no-row-level-ids-in-head-output | Inspect CSV headers only (`head -1`); never print data rows with deviceId/messageid. | token-efficiency | 2026-10-11 | 2026-10-11 |
 | 1 | re-view-section-after-reflow-before-edit | After reflowing markdown, re-view target lines before editing; reflow breaks old_str. | token-efficiency | 2026-10-10 | 2026-10-10 |
 | 1 | verify-edit-boundaries-after-markdown-edit | After an `edit` touching headings, view the edited region so dropped headings are caught at once. | commit-hygiene | 2026-10-10 | 2026-10-10 |
