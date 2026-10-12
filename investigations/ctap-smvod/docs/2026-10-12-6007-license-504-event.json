@@ -1,0 +1,85 @@
+{
+  "position": 0,
+  "sessionid": "abr-vod-c2475cb3-dd35-4bd1-869f-9308e208e9bf",
+  "errorcode": 6007,
+  "errordescription": {
+    "errordescription": "E86007 : Unable to create a streaming session at this time.",
+    "user_agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+    "app_version": "v2026.08.09.1",
+    "playerstatesnapshot": {
+      "phase": "LOADING",
+      "readystate": 0,
+      "isbuffering": false,
+      "networkstate": 0,
+      "ispaused": true,
+      "isseeking": false
+    },
+    "shakaerror": {
+      "severity": 2,
+      "category": 6,
+      "code": 6007,
+      "handled": false,
+      "data": [
+        {
+          "severity": 2,
+          "category": 1,
+          "code": 1001,
+          "handled": false,
+          "data": [
+            "https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639",
+            504,
+            "",
+            {},
+            2,
+            "https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639"
+          ],
+          "message": "Shaka Error NETWORK.BAD_HTTP_STATUS (https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639,504,,[object Object],2,https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639)",
+          "stack": [
+            "Error: Shaka Error NETWORK.BAD_HTTP_STATUS (https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639,504,,[object Object],2,https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639)",
+            "    at new shaka.util.Error (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:189:844)",
+            "    at shaka.net.HttpPluginUtils.makeResponse (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:2624:298)",
+            "    at $jscomp.generator.Engine_.program_ (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:2630:405)",
+            "    at $jscomp.generator.Engine_.nextStep_ (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:37:105)",
+            "    at $jscomp.generator.Engine_.next_ (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:33:234)",
+            "    at $jscomp.generator.Generator_.next (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:38:73)",
+            "    at b (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:39:73)",
+            "    at v.invoke (https://onetv2.mtn.com/polyfills-CSKFQODH.js:1:7036)",
+            "    at Object.onInvoke (https://onetv2.mtn.com/chunk-CNJXR2VF.js:7:61834)",
+            "    at v.invoke (https://onetv2.mtn.com/polyfills-CSKFQODH.js:1:6976)"
+          ]
+        }
+      ],
+      "message": {
+        "summary": "Shaka Error DRM.LICENSE_REQUEST_FAILED",
+        "embedded_error": {
+          "severity": 2,
+          "category": 1,
+          "code": 1001,
+          "handled": false,
+          "data": [
+            "https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639",
+            504,
+            "",
+            {},
+            2,
+            "https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639"
+          ],
+          "message": "Shaka Error NETWORK.BAD_HTTP_STATUS (https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639,504,,[object Object],2,https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639)",
+          "stack": [
+            "Error: Shaka Error NETWORK.BAD_HTTP_STATUS (https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639,504,,[object Object],2,https://api-apbyfj9d.go.synamedia.com/mdrmfe/1.0.0/apbyfj9d/license/VODStreaming/widevine/e942a541-2b9c-5480-b6d5-e227b3f38639)",
+            "    at new shaka.util.Error (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:189:844)",
+            "    at shaka.net.HttpPluginUtils.makeResponse (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:2624:298)",
+            "    at $jscomp.generator.Engine_.program_ (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:2630:405)",
+            "    at $jscomp.generator.Engine_.nextStep_ (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:37:105)",
+            "    at $jscomp.generator.Engine_.next_ (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:33:234)",
+            "    at $jscomp.generator.Generator_.next (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:38:73)",
+            "    at b (https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.6/shaka-player.ui.debug.js:39:73)",
+            "    at v.invoke (https://onetv2.mtn.com/polyfills-CSKFQODH.js:1:7036)",
+            "    at Object.onInvoke (https://onetv2.mtn.com/chunk-CNJXR2VF.js:7:61834)",
+            "    at v.invoke (https://onetv2.mtn.com/polyfills-CSKFQODH.js:1:6976)"
+          ]
+        }
+      }
+    }
+  }
+}
