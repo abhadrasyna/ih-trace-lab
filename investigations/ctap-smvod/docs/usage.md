@@ -113,8 +113,8 @@ mixed): one sheet per opco, all dates stacked, with a leading `date` column. An 
 them for every date and code found). Reads existing files only.
 
 ```bash
-python3 combine_error_code_by_opco.py --from 08102026 --to 11102026   # -> output/2026-10-08_2026-10-11_error_<code>_by_opco.xlsx per code
-python3 combine_error_code_by_opco.py --codes 6007,1003                # all dates -> output/all_dates_error_6007_by_opco.xlsx, ..._1003_...
+python3 combine_error_code_by_opco.py --from 08102026 --to 11102026   # -> output/error_code/<code>/2026-10-08_2026-10-11_error_<code>_by_opco.xlsx per code
+python3 combine_error_code_by_opco.py --codes 6007,1003                # all dates -> output/error_code/6007/all_dates_error_6007_by_opco.xlsx, output/error_code/1003/...
 ```
 
 Other options: `--output-dir` (root holding the `<TENANT>/` folders).

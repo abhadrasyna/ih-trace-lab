@@ -14,7 +14,7 @@ and every code found. Reads existing files only -- never fires Athena/Lightstep.
 Usage:
     python3 combine_error_code_by_opco.py                              # all dates, all codes
     python3 combine_error_code_by_opco.py --from 08102026 --to 11102026 --codes 6007,1003
-    # -> output/2026-10-08_2026-10-11_error_6007_by_opco.xlsx, ..._error_1003_by_opco.xlsx
+    # -> output/error_code/6007/2026-10-08_2026-10-11_error_6007_by_opco.xlsx, output/error_code/1003/...
 """
 import argparse
 import logging
@@ -32,6 +32,7 @@ from lib.runtime import ddmmyyyy_to_date, investigation_output_dir
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.combine_error_code_by_opco")
 
 FLAT_DIR = "error_eventdata_flat"
+CODE_DIR = "error_code"
 FILE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_(?!all\.csv$)(.+)\.csv$")
 
 
@@ -145,7 +146,7 @@ def main():
 
     for code in codes:
         sheets = {t: combine_tenant(g[code]) for t, g in by_tenant.items() if code in g}
-        out_path = os.path.join(out_dir, default_out_name(code, start, end))
+        out_path = os.path.join(out_dir, CODE_DIR, code, default_out_name(code, start, end))
         write_xlsx(out_path, sheets)
         summary = ", ".join(f"{t}={len(r)}" for t, (_c, r) in sheets.items())
         print(f"Wrote {out_path} (rows per opco: {summary})", file=sys.stderr)
