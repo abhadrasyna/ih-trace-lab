@@ -97,6 +97,7 @@ python3 extract_error_report_1xxx_6xxx.py --date 06102026                       
 python3 extract_error_report_1xxx_6xxx.py --from 01102026 --to 06102026           # one XLSX, one sheet per date
 python3 extract_error_report_1xxx_6xxx.py --date 06102026 --out /tmp/e.csv --columns sessionId,error_codes
 python3 extract_error_report_1xxx.py --from 01102026 --to 06102026                 # 1xxx only, SA,GH,ZM at once: one XLSX per tenant in output/<TENANT>/ (--tenants, --output-dir ROOT)
+python3 combine_error_report_1xxx_csv.py --tenant SA --from 01102026 --to 11102026 # 1xxx, ONE tenant, ONE CSV (leading `date` column): output/SA/<range>_error_report_1xxx_combined.csv
 ```
 
 | Mode | Output |
