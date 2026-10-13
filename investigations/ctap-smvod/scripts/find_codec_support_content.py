@@ -31,14 +31,44 @@ def supported_mimes(raw_eventdata: str, codec: str, value: str = "true") -> list
     return sorted(set(pattern.findall(raw_eventdata)))
 
 
-def content_by_session(rows: list[dict[str, str]]) -> dict[str, str]:
-    """Pure: sessionId -> content title (first non-blank wins)."""
-    out: dict[str, str] = {}
+def session_info(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
+    """Pure: sessionId -> content/position_not_moved/playback_outcome (first row with a title wins)."""
+    out: dict[str, dict[str, str]] = {}
     for r in rows:
         title = (r.get("content") or "").strip()
         if title and r.get("sessionId"):
-            out.setdefault(r["sessionId"], title)
+            out.setdefault(r["sessionId"], {"content": title, "position_not_moved": r.get("position_not_moved", ""),
+                                            "playback_outcome": r.get("playback_outcome", "")})
     return out
+
+
+def probe_state(raw_eventdata: str, codec: str) -> str:
+    """Pure: 'true' if any mime probe for `codec` is true, 'false' if probes exist but none true, else 'absent'."""
+    if supported_mimes(raw_eventdata, codec, "true"):
+        return "true"
+    return "false" if supported_mimes(raw_eventdata, codec, "false") else "absent"
+
+
+def split_by_probe(flat_rows: list[dict[str, str]], info: dict[str, dict[str, str]], codec: str) -> list[list[str]]:
+    """Pure: rows [errorcode, content, true_sessions, true_position_moved, false_sessions, false_position_moved].
+
+    A session counts once per (errorcode, content) and as `true` if any of its rows probes true. `position_moved`
+    counts sessions whose `position_not_moved` is exactly 'false' (blank = unknown, not counted).
+    """
+    state: dict[tuple[str, str], str] = {}
+    for r in flat_rows:
+        s = probe_state(r.get("raw_eventdata") or "", codec)
+        key = (r["errorcode"], r["sessionId"])
+        if s == "true" or (s == "false" and key not in state):
+            state[key] = s
+    agg: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0, 0, 0])
+    for (code, sid), s in state.items():
+        meta = info.get(sid, {})
+        slot = agg[(code, meta.get("content", "(unmatched)"))]
+        off = 0 if s == "true" else 2
+        slot[off] += 1
+        slot[off + 1] += meta.get("position_not_moved") == "false"
+    return [[c, t, *map(str, v)] for (c, t), v in sorted(agg.items(), key=lambda kv: (kv[0][0], -kv[1][0], kv[0][1]))]
 
 
 def match_sessions(flat_rows: list[dict[str, str]], codec: str, value: str) -> list[dict[str, str]]:
@@ -71,21 +101,32 @@ def main() -> None:
                   if args.start <= date.fromisoformat(p.name[:10]) <= args.end]
     if not flat_files:
         raise FileNotFoundError(f"no flattened *_all.csv for {args.tenant} in {args.start}..{args.end}")
-    sessions: dict[str, str] = {}
+    info: dict[str, dict[str, str]] = {}
     for p in sorted(tenant_dir.glob("*_setupsession_with_outcome.csv")):
-        for sid, title in content_by_session(read_csv(p)).items():
-            sessions.setdefault(sid, title)
+        for sid, meta in session_info(read_csv(p)).items():
+            info.setdefault(sid, meta)
+    sessions = {sid: m["content"] for sid, m in info.items()}
 
     rows_out = []
+    all_flat: list[dict[str, str]] = []
     for p in flat_files:
-        for r in match_sessions(read_csv(p), args.codec, args.value):
+        flat = read_csv(p)
+        all_flat.extend(flat)
+        for r in match_sessions(flat, args.codec, args.value):
+            meta = info.get(r["sessionId"], {})
             rows_out.append([p.name[:10], r["sessionId"], r["householdId"], r["deviceId"], r["errorcode"], r["mimes"],
-                             sessions.get(r["sessionId"], "(unmatched)")])
+                             sessions.get(r["sessionId"], "(unmatched)"), meta.get("position_not_moved", ""),
+                             meta.get("playback_outcome", "")])
     stem = tenant_dir / f"{args.start}_{args.end}_{args.codec}_{args.value}_by_content"
     with open(f"{stem}_sessions.csv", "w", newline="", encoding="utf-8") as fh:
         w = std_csv.writer(fh)
-        w.writerow(["date", "sessionId", "householdId", "deviceId", "errorcode", "mimes", "content"])
+        w.writerow(["date", "sessionId", "householdId", "deviceId", "errorcode", "mimes", "content", "position_not_moved", "playback_outcome"])
         w.writerows(rows_out)
+    with open(f"{stem}_split.csv", "w", newline="", encoding="utf-8") as fh:
+        w = std_csv.writer(fh)
+        w.writerow(["errorcode", "content", f"{args.codec}_true_sessions", f"{args.codec}_true_position_moved",
+                    f"{args.codec}_false_sessions", f"{args.codec}_false_position_moved"])
+        w.writerows(split_by_probe(all_flat, info, args.codec))
     sessions_by_content: dict[str, set[str]] = defaultdict(set)
     households: dict[str, set[str]] = defaultdict(set)
     for r in rows_out:
@@ -96,7 +137,7 @@ def main() -> None:
         w.writerow(["content", "sessions", "unique_households"])
         for content, sids in sorted(sessions_by_content.items(), key=lambda kv: (-len(kv[1]), kv[0])):
             w.writerow([content, len(sids), len(households[content])])
-    LOGGER.info("%s: %d matching rows over %d flat files -> %s(.csv|_sessions.csv)", args.tenant, len(rows_out),
+    LOGGER.info("%s: %d matching rows over %d flat files -> %s(.csv|_sessions.csv|_split.csv)", args.tenant, len(rows_out),
                 len(flat_files), stem)
 
 
