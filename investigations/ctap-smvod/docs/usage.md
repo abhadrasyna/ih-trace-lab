@@ -131,6 +131,7 @@ Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 | `python3 flatten_error_eventdata.py --input <export>.csv --date <date> --out-dir ../output/ZM/error_eventdata_flat` | `<date>_all.csv`: `eventdata` split into columns + `raw_eventdata` |
 | `python3 flatten_error_eventdata.py ... --split-by-errorcode` | also `<date>_<errorcode>.csv` per code, columns blank for that code dropped |
 | `python3 summarize_error_eventdata.py --flat <flat>.csv --by errorcode,net_effectivetype` | stdout only (counts/crosstab over flat columns; `--by` repeatable) |
+| `python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants SA [--prefix 6]` | `output/<TENANT>/<from>_<to>_error_6xxx_by_content.csv` (`error_code,content,count`) |
 | `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
 | `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |
 | `python3 build_webview_device_summary.py` | `output/webview_device_summary_report_rollup.csv` (from all `*_webview_device_report.csv`) |
