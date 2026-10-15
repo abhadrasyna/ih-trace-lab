@@ -98,6 +98,7 @@ python3 extract_error_report_1xxx_6xxx.py --from 01102026 --to 06102026         
 python3 extract_error_report_1xxx_6xxx.py --date 06102026 --out /tmp/e.csv --columns sessionId,error_codes
 python3 extract_error_report_1xxx.py --from 01102026 --to 06102026                 # 1xxx only, SA,GH,ZM at once: one XLSX per tenant in output/<TENANT>/ (--tenants, --output-dir ROOT)
 python3 combine_error_report_1xxx_csv.py --tenant SA --from 01102026 --to 11102026 # 1xxx, ONE tenant, ONE CSV (leading `date` column): output/SA/<range>_error_report_1xxx_combined.csv
+python3 rank_households_by_error.py --xlsx ../output/SA/2026-10-01_2026-10-13_error_report_1xxx.xlsx --top 25  # households by error sessions
 ```
 
 | Mode | Output |
@@ -105,7 +106,7 @@ python3 combine_error_report_1xxx_csv.py --tenant SA --from 01102026 --to 111020
 | `--date D` | `output/YYYY-MM-DD_error_report_1xxx_6xxx.csv` |
 | `--from A --to B` | `output/A_B_error_report_1xxx_6xxx.xlsx` (ISO dates; sheets named `YYYY-MM-DD`) |
 
-Other options: `--output-dir`.
+Other options: `--output-dir`. `rank_households_by_error.py` also reports days, devices and error codes per household and writes the full ranking to `<xlsx stem>_household_ranking.csv` (`--out-dir`).
 
 ### Combine per-error-code files across opcos (`combine_error_code_by_opco.py`)
 
