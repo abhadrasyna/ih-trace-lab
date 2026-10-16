@@ -80,6 +80,9 @@ Any investigation script follows the same shape:
 3. The script owns file I/O: write to the investigation's `output/<TENANT>/` folder, alongside the CSV/XLSX it accompanies.
 4. Catch `ChartError`, log it and carry on; a failed chart must never block the CSV, XLSX or text report.
 
+Worked example: `investigations/ctap-smvod/scripts/chart_concurrent_playback.py` (pilot, CH-6) composes `new_figure`, `draw_header`, `style_axes` and `render_png` directly for a three-series line
+chart, because `render_signed_line` and `render_bar` draw a single series with no header; `write_chart` shows the `ChartError` handling.
+
 Prototype new chart shapes in `scratch/` first (`SCRATCH.md` convergence rule) and promote into `src/lib/charts/` only once a second investigation needs them. The synchronous render needs no
 `asyncio.to_thread`; use it only when a chart is rendered inside an async service.
 

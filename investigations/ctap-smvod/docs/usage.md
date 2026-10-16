@@ -133,11 +133,17 @@ Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 | `python3 flatten_error_eventdata.py ... --split-by-errorcode` | also `<date>_<errorcode>.csv` per code, columns blank for that code dropped |
 | `python3 summarize_error_eventdata.py --flat <flat>.csv --by errorcode,net_effectivetype` | stdout only (counts/crosstab over flat columns; `--by` repeatable) |
 | `python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants SA` | `output/<TENANT>/<from>_<to>_error_6xxx_by_content[_rollup].csv` (`sessions,unique_households`) |
+| `python3 compute_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback[_summary].csv` (per UTC minute, three views); see note below |
+| `python3 chart_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback.png` (run compute first; a chart failure is logged, CSVs stay) |
 | `python3 find_codec_support_content.py --from 2026-10-01 --to 2026-10-11 --tenant SA --codec ec-3` | `output/<TENANT>/<from>_<to>_ec-3_true_by_content[_sessions\|_split].csv` |
 | `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
 | `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |
 | `python3 build_webview_device_summary.py` | `output/webview_device_summary_report_rollup.csv` (from all `*_webview_device_report.csv`) |
 | `python3 analyze_outcome_report.py --date 18092026 [--out report.md]` | markdown to stdout, or `--out` file |
+
+Concurrent playback: `compute_concurrent_playback.py` reads `output/<TENANT>/<date>_setupsession_with_outcome.csv` plus `data/athena/<TENANT>/<date>_session.csv` and `_debug_states.csv`, and counts
+distinct sessions per UTC minute. `csv_only` and `athena_exact` use only sessions with both `event_start` and `event_end` (a lower bound). `athena_estimated` also uses the first and last debug event
+of sessions with no `event_end`; that last event is an estimate of the end, not a real stop, and sessions with no debug events are counted as unresolved in `..._summary.csv`.
 
 ## 5. Error-code filtering and CDN correlation (need the FULL position report)
 

@@ -21,7 +21,8 @@
   `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant. `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a
   ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default SA) counts 6xxx sessions and unique households per content (per code +
   `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe as supported in the flattened eventdata (a device capability, not
-  the content's codec). Constrained by `docs/refactor/`.
+  the content's codec). `compute_concurrent_playback.py` (`--date`, `--tenants`) writes per-minute concurrent sessions per UTC day from the CSV and Athena exports (three views, last debug event as an
+  estimated end) and `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
