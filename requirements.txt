@@ -2,6 +2,8 @@
 # this starts empty; do not pre-populate speculatively.
 PyYAML==6.0.1
 openpyxl==3.1.5
+matplotlib==3.11.2
+numpy==2.5.4
 
 # athena_runner (src/lib/athena/adapter.py's delegation target) ships inside the vendor/athena-mcp-server
 # git submodule, not PyPI -- install it in editable mode after `git submodule update --init`. Pulls in
