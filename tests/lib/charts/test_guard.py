@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PYPLOT = re.compile(r"matplotlib\.pyplot|from\s+matplotlib\s+import\s+[^\n]*\bpyplot\b")
-HEX = re.compile(r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b")
+HEX = re.compile(r"""["']#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})["']""")
 
 
 def _sources() -> list[Path]:
@@ -36,4 +36,4 @@ def test_guard_patterns_detect_violations():
     assert PYPLOT.search("from matplotlib import pyplot")
     assert HEX.search('color="#1a2B3c"')
     assert HEX.search('"#1a2b3c80"') and HEX.search('"#fff"') and HEX.search('"#fff8"')
-    assert not HEX.search("#12345")
+    assert not HEX.search("#12345") and not HEX.search("# fixes #1234") and not HEX.search("#cafe")
