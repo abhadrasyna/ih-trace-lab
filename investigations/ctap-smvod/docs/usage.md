@@ -135,6 +135,7 @@ Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 | `python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants SA` | `output/<TENANT>/<from>_<to>_error_6xxx_by_content[_rollup].csv` (`sessions,unique_households`) |
 | `python3 compute_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback[_summary].csv` (per UTC minute, three views); see note below |
 | `python3 chart_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback.png` (run compute first; a chart failure is logged, CSVs stay) |
+| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants SA,GH,ZM [--bucket-min 5]` | `output/<TENANT>/<date>_playback_attempts.png` (unique-session attempts per bucket) |
 | `python3 find_codec_support_content.py --from 2026-10-01 --to 2026-10-11 --tenant SA --codec ec-3` | `output/<TENANT>/<from>_<to>_ec-3_true_by_content[_sessions\|_split].csv` |
 | `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
 | `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |
