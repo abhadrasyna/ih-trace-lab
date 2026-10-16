@@ -173,3 +173,48 @@ def test_athena_pull_unknown_tenant_exits(monkeypatch, capsys) -> None:
 
     assert exc_info.value.code == 1
     assert "Unknown tenant 'XX'" in capsys.readouterr().err
+
+
+def test_chunk_ids_splits_and_preserves_order() -> None:
+    ids = [f"s{i}" for i in range(5)]
+
+    assert debug._chunk_ids(ids, size=2) == [["s0", "s1"], ["s2", "s3"], ["s4"]]
+    assert debug._chunk_ids([], size=2) == []
+
+
+def test_merge_csv_parts_skips_empty_parts(tmp_path: Path) -> None:
+    (tmp_path / "a").write_text("sessionId,x\ns1,1\n", encoding="utf-8")
+    (tmp_path / "b").write_text("", encoding="utf-8")
+    (tmp_path / "c").write_text("sessionId,x\ns2,2\n", encoding="utf-8")
+    out = tmp_path / "out.csv"
+
+    rows = debug._merge_csv_parts([tmp_path / "a", tmp_path / "b", tmp_path / "c"], out)
+
+    assert rows == 2
+    assert out.read_text(encoding="utf-8").splitlines() == ["sessionId,x", "s1,1", "s2,2"]
+
+
+def test_debug_events_large_session_list_runs_chunked_and_merges(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(debug, "MAX_IDS_PER_QUERY", 2)
+    monkeypatch.setattr(debug, "_chunk_ids", lambda ids, size=2: [ids[i:i + size] for i in range(0, len(ids), size)])
+    calls: list[str] = []
+
+    def fake_run(**kwargs):
+        calls.append(kwargs["output_path"])
+        Path(kwargs["output_path"]).write_text(f"sessionId\n{len(calls)}\n", encoding="utf-8")
+        return SimpleNamespace(row_count=1)
+
+    report_path = tmp_path / "setupsession.csv"
+    report_path.write_text("sessionId\n", encoding="utf-8")
+    _run_cli(
+        debug,
+        ["run_athena_debug_events.py", "--date", "2026-09-30", "--input", str(report_path),
+         "--output-dir", str(tmp_path), "--skip-auth-check"],
+        monkeypatch,
+        fake_run,
+        fake_extract_ids=lambda path, column: ["a", "b", "c"],
+    )
+
+    assert len(calls) == 2
+    assert (tmp_path / "2026-09-30_debug_states.csv").read_text(encoding="utf-8").splitlines() == ["sessionId", "1", "2"]
+    assert not list(tmp_path.glob("*.part*"))

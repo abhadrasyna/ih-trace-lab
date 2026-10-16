@@ -36,6 +36,7 @@ Usage:
         --output-dir ../data/athena
 """
 import argparse
+import csv
 import logging
 import os
 import sys
@@ -58,6 +59,36 @@ LEGACY_TENANT = "SA"
 # session actually progressed) and why there's no eventclass = 'PLAYER'
 # filter (dropped 13 Jul 2026, see the same catalog sections).
 QUERY_SLUG = "ctap-smvod-debug-states"
+
+
+# ~2000 ids is ~105 KB of SQL, well under Athena's 262144-byte query-string cap.
+MAX_IDS_PER_QUERY = 2000
+
+
+def _chunk_ids(session_ids, size=MAX_IDS_PER_QUERY):
+    ids = list(session_ids)
+    return [ids[i:i + size] for i in range(0, len(ids), size)]
+
+
+def _merge_csv_parts(part_paths, out_path):
+    """Concatenates part CSVs (header from the first non-empty one) into out_path; returns data row count."""
+    rows = 0
+    header_written = False
+    with open(out_path, "w", newline="", encoding="utf-8") as out:
+        writer = csv.writer(out)
+        for part in part_paths:
+            with open(part, newline="", encoding="utf-8") as handle:
+                reader = csv.reader(handle)
+                header = next(reader, None)
+                if header is None:
+                    continue
+                if not header_written:
+                    writer.writerow(header)
+                    header_written = True
+                for row in reader:
+                    writer.writerow(row)
+                    rows += 1
+    return rows
 
 
 def _default_output_path(date_iso: str, output_dir: str) -> str:
@@ -150,10 +181,11 @@ def main():
         sys.exit(1)
     print(f"Extracted {len(session_ids)} distinct sessionIds from {input_path}", file=sys.stderr)
 
-    query = _build_query(ctx, args.database, date_iso, session_ids)
+    chunks = _chunk_ids(session_ids)
+    queries = [_build_query(ctx, args.database, date_iso, chunk) for chunk in chunks]
 
     if args.dry_run:
-        sys.stdout.write(query)
+        sys.stdout.write("\n".join(queries))
         LOGGER.info("Completed run_athena_debug_events dry_run date=%s", date_iso)
         return
 
@@ -176,27 +208,42 @@ def main():
         f"Starting Athena query [{ctx.code}] on {args.database}.{ctx.debug_events_table} for "
         f"{date_iso} ({len(session_ids)} sessionIds, profile={args.profile}, "
         f"workgroup={args.workgroup})...", file=sys.stderr)
+    part_paths = []
     try:
-        result = run_athena_query(
-            sql=query,
-            params={},
-            output_path=out_path,
-            profile=args.profile,
-            database=args.database,
-            workgroup=args.workgroup,
-            output_location=args.output_location,
-            region=args.region,
-            poll_interval=args.poll_interval,
-            timeout=args.timeout,
-        )
+        for i, query in enumerate(queries, start=1):
+            part_path = out_path if len(queries) == 1 else f"{out_path}.part{i}"
+            if len(queries) > 1:
+                print(f"Chunk {i}/{len(queries)} ({len(chunks[i - 1])} sessionIds)...", file=sys.stderr)
+            part_paths.append(part_path)
+            result = run_athena_query(
+                sql=query,
+                params={},
+                output_path=part_path,
+                profile=args.profile,
+                database=args.database,
+                workgroup=args.workgroup,
+                output_location=args.output_location,
+                region=args.region,
+                poll_interval=args.poll_interval,
+                timeout=args.timeout,
+            )
+        if len(queries) > 1:
+            row_count = _merge_csv_parts(part_paths, out_path)
+        else:
+            row_count = result.row_count
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
+    finally:
+        if len(queries) > 1:
+            for part in part_paths:
+                if os.path.exists(part):
+                    os.remove(part)
 
-    print(f"Wrote {result.row_count} rows to {out_path}", file=sys.stderr)
+    print(f"Wrote {row_count} rows to {out_path}", file=sys.stderr)
     LOGGER.info(
         "Completed run_athena_debug_events rows=%d out=%s",
-        result.row_count,
+        row_count,
         out_path,
     )
 
