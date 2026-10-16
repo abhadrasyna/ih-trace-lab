@@ -54,6 +54,35 @@ Type scale (pt): title 16 bold, subtitle 10, stat label 8.5, stat value 12 bold,
   stays deterministic.
 - Don't hold a `Figure` beyond the render call.
 
+## Planned module layout
+
+Planned in `docs/plan/shared-chart-infra/` and not yet built. One package, `src/lib/charts/`, split by responsibility with one-way dependencies (`signed_line`/`bar` → `axes`/`header`/`fig` → `theme`):
+
+| Module | Holds |
+|---|---|
+| `theme.py` | Frozen `ChartTheme`, `DARK`, `chart_font_family()` |
+| `fig.py` | Figure creation and the PNG-bytes save recipe |
+| `axes.py` | `style_axes`, count/percentage formatters, pure tick and range maths |
+| `header.py` | Optional stat header: `Tone`, `HeaderCell`, one- or two-row layout |
+| `signed_line.py`, `bar.py` | Thin drawing functions that return PNG bytes |
+| `errors.py` | `ChartError`, the only exception that leaves the package |
+
+Rules from `docs/refactor/`: wrap third-party exceptions at the module boundary (matplotlib and numpy errors become `ChartError`), keep `theme` free of imports from the rest of the package, and prefer
+`Protocol` over an abstract base if a chart interface is ever needed. Fonts: Roboto is bundled under `src/lib/charts/assets/fonts/` (Apache 2.0); `chart_font_family()` is cached, lock-guarded and
+falls back to DejaVu Sans with a logged warning, never a raise. The header is optional: a chart without cells renders a plain title.
+
+## Using charts from an investigation
+
+Any investigation script follows the same shape:
+
+1. Compute the plotted values in a pure, tested function (counts, rates, ranges); no drawing there.
+2. Call one shared `render_*` function with plain lists and a title; it returns PNG `bytes`.
+3. The script owns file I/O: write to the investigation's `output/<TENANT>/` folder, alongside the CSV/XLSX it accompanies.
+4. Catch `ChartError`, log it and carry on; a failed chart must never block the CSV, XLSX or text report.
+
+Prototype new chart shapes in `scratch/` first (`SCRATCH.md` convergence rule) and promote into `src/lib/charts/` only once a second investigation needs them. The synchronous render needs no
+`asyncio.to_thread`; use it only when a chart is rendered inside an async service.
+
 ## Adapting to a new chart type
 
 Reuse the theme, `chart_font_family()`, a shared `style_axes()` and the figure/save recipe above unchanged. Only the data layer and the annotations are new. If a chart genuinely needs a token the
