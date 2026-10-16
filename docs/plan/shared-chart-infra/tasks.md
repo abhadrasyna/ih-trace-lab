@@ -9,7 +9,7 @@ spec.
 - [x] **CH-2** — `fig.py` figure/save recipe and `axes.py` `style_axes`, formatters, tick maths | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: 85ccb7d
 - [x] **CH-3** — `signed_line` and `bar` chart types; `ChartError` boundary | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: 402af09
 - [x] **CH-4** — `header.py`: `Tone`, `HeaderCell`, one- or two-row layout | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: f0b82dc
-- [ ] **CH-5** — offline tests, pinned `matplotlib`/`numpy`, guard test (no `pyplot`, no inline hex) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
+- [x] **CH-5** — offline tests, pinned `matplotlib`/`numpy`, guard test (no `pyplot`, no inline hex) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 - [ ] **CH-6** — pilot chart in one investigation; `usage.md` and `SCRIPTS.md` entries | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [ ] **CH-7** — align `chart-guidelines.md` with the code; update `CONTEXT.md` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 
