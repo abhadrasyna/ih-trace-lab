@@ -40,7 +40,7 @@ def format_pct(v: float) -> str:
 
 
 def padded_range(values: Sequence[float], pad_frac: float = 0.08) -> tuple[float, float]:
-    """Returns (lo, hi) covering the values with proportional padding; a flat series gets unit span."""
+    """Returns (lo, hi) covering the values with proportional padding; a flat series gets ±1 around its value."""
     if not values:
         raise ValueError("values must not be empty")
     lo, hi = min(values), max(values)

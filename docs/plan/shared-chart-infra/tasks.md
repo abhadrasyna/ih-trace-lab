@@ -3,10 +3,10 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: CH-2, CH-3, CH-4, CH-5, CH-6, CH-7.**
+**Open: CH-3, CH-4, CH-5, CH-6, CH-7.**
 
 - [x] **CH-1** — `src/lib/charts/theme.py`: `ChartTheme`, `DARK`, `chart_font_family()`; bundle Roboto | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: fb34d8e
-- [ ] **CH-2** — `fig.py` figure/save recipe and `axes.py` `style_axes`, formatters, tick maths | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
+- [x] **CH-2** — `fig.py` figure/save recipe and `axes.py` `style_axes`, formatters, tick maths | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: 85ccb7d
 - [ ] **CH-3** — `signed_line` and `bar` chart types; `ChartError` boundary | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 - [ ] **CH-4** — `header.py`: `Tone`, `HeaderCell`, one- or two-row layout | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
 - [ ] **CH-5** — offline tests, pinned `matplotlib`/`numpy`, guard test (no `pyplot`, no inline hex) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: —
