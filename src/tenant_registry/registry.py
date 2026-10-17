@@ -43,6 +43,11 @@ class TenantRegistry:
 
         return [tenant.go_id for tenant in self._tenants]
 
+    def codes(self) -> list[str]:
+        """Return registered tenant codes in config order."""
+
+        return [tenant.code for tenant in self._tenants]
+
     def _build_index(self, attribute: str) -> dict[str, TenantConfig]:
         return {getattr(tenant, attribute): tenant for tenant in self._tenants}
 

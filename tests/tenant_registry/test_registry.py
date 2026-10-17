@@ -27,3 +27,16 @@ def test_get_unknown_identifier_raises_key_error_listing_available_ids() -> None
 
     with pytest.raises(KeyError, match="Unknown tenant 'missing'. Available tenant ids: iye9omdf, apbyfj9d"):
         registry.get("missing")
+
+
+def test_codes_returns_config_order() -> None:
+    codes = TenantRegistry(FIXTURE_PATH).codes()
+
+    assert codes[0] == "SA" and len(codes) == len(set(codes)) >= 2
+
+
+def test_codes_empty_config_returns_empty_list(tmp_path: Path) -> None:
+    empty = tmp_path / "tenants.yaml"
+    empty.write_text("opcos: []\n", encoding="utf-8")
+
+    assert TenantRegistry(empty).codes() == []
