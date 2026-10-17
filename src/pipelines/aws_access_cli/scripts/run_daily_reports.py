@@ -33,10 +33,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--force', action='store_true')
     parser.add_argument('--lookback-days', type=int, default=7, help='Also fill missing periods this many days before the target.')
     parser.add_argument('--no-catch-up', action='store_true', help='Only process the target period.')
+    parser.add_argument('--retry-blank-days', type=int, default=3, help='Re-run adoption dates with blank cells if at most this many days old (all sub-reports accept the flag via base_parser; only adoption ones use it).')
     args = parser.parse_args(argv)
 
     def build_argv(value: str, tenant: TenantConfig) -> list[str]:
-        return ['--date', value, '--tenant', tenant.code, '--skip-auth-check'] + (['--force'] if args.force and value == values[-1] else [])
+        base = ['--date', value, '--tenant', tenant.code, '--skip-auth-check', '--retry-blank-days', str(args.retry_blank_days)]
+        return base + (['--force'] if args.force and value == values[-1] else [])
 
     values = [args.date] if args.no_catch_up else catch_up_days(args.date, args.lookback_days)
     return run_catch_up(values, build_argv, _SUB_REPORTS, preflight=lambda: make_auth().ensure_session(DEFAULT_RUNTIME.profile))

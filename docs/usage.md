@@ -21,6 +21,7 @@ queried.
 | Option | Applies to | Default | Meaning |
 |---|---|---|---|
 | `--lookback-days N` | daily | 7 | Also process the N days before `--date` |
+| `--retry-blank-days N` | daily | 3 | Adoption reports: re-run dates with blank cells if at most N days old; use a large N to backfill old blanks |
 | `--lookback-weeks N` | weekly | 4 | Also process the N weeks before `--week` |
 | `--lookback-months N` | monthly | 3 | Also process the N months before `--month` |
 | `--no-catch-up` | all three | off | Process only the target period |
