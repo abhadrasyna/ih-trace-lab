@@ -5,30 +5,34 @@ Inputs per tenant/day (all local, no Athena/Lightstep calls; a missing input lea
     Lightstep: `output/<T>/<date>_setupsession.csv`
     unified:   `data/athena/<T>/<date>_session.csv`
     debug:     `data/athena/<T>/<date>_debug_sessions.csv` (`run_athena_debug_sessions.py`)
-A (date, tenant) with none of the three inputs is skipped. Re-running replaces the existing row for the same (date, tenant).
-Output (default `output/session_comparison_daily.csv`): date, tenant, lightstep, unified, debug, L_and_U, L_and_D, U_and_D, L_and_U_and_D,
-L_not_U, U_not_L, L_not_D, D_not_L, lightstep_blank_rows, missing_inputs. Sets are unique non-blank sessionIds; the day is UTC.
+A (date, tenant) with none of the three inputs is skipped.
+Output, appended like the adoption reports: `<out-dir>/<OPCO>/daily/<YYYY-MM>_session-comparison.csv`, one row per `session_date`, upserted per day
+(locked, atomic) so re-runs replace the same day. OPCO is the tenant code except SA -> ZA (the folder the adoption reports use).
+Columns: session_date, lightstep, unified, debug, L_and_U, L_and_D, U_and_D, L_and_U_and_D, L_not_U, U_not_L, L_not_D, D_not_L,
+lightstep_blank_rows, missing_inputs. Sets are unique non-blank sessionIds; the day is UTC.
 
 Usage:
     python3 build_session_comparison_daily.py --from 2026-10-14 --to 2026-10-14
     python3 build_session_comparison_daily.py --from 2026-10-08 --to 2026-10-16 --tenants SA,GH,ZM
 """
 import argparse
-import csv
 import logging
 import sys
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Mapping
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from compare_lightstep_athena_sessions import read_rows, unique_ids
+from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter
+from src.lib.csv_io.monthly_store import MonthlyCsvStore
 from src.lib.logging.bootstrap import init_logging
 from src.tenant_registry.registry import TenantRegistry
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.build_session_comparison_daily")
 ROOT = Path(__file__).resolve().parent.parent
-COLUMNS = ["date", "tenant", "lightstep", "unified", "debug", "L_and_U", "L_and_D", "U_and_D", "L_and_U_and_D",
+ARTIFACT = "session-comparison"
+OUTPUT_FOLDER = {"SA": "ZA"}
+COLUMNS = ["session_date", "lightstep", "unified", "debug", "L_and_U", "L_and_D", "U_and_D", "L_and_U_and_D",
            "L_not_U", "U_not_L", "L_not_D", "D_not_L", "lightstep_blank_rows", "missing_inputs"]
 
 
@@ -56,7 +60,7 @@ def build_row(
     all3 = None if lightstep is None or unified is None or debug is None else len(lightstep & unified & debug)
     missing = [name for name, s in (("lightstep", lightstep), ("unified", unified), ("debug", debug)) if s is None]
     return {
-        "date": day.isoformat(), "tenant": tenant,
+        "session_date": day.isoformat(),
         "lightstep": _n(None if lightstep is None else len(lightstep)),
         "unified": _n(None if unified is None else len(unified)),
         "debug": _n(None if debug is None else len(debug)),
@@ -68,11 +72,9 @@ def build_row(
     }
 
 
-def upsert_rows(existing: list[Mapping[str, str]], new: list[Mapping[str, str]]) -> list[Mapping[str, str]]:
-    """Pure: replaces existing rows sharing (date, tenant) with the new ones, sorted by (date, tenant)."""
-    merged = {(r["date"], r["tenant"]): r for r in existing}
-    merged.update({(r["date"], r["tenant"]): r for r in new})
-    return [merged[k] for k in sorted(merged)]
+def month_file(out_dir: Path, tenant: str, day: date) -> Path:
+    """Pure: `<out_dir>/<OPCO>/daily/<YYYY-MM>_session-comparison.csv`."""
+    return out_dir / OUTPUT_FOLDER.get(tenant, tenant) / "daily" / f"{day:%Y-%m}_{ARTIFACT}.csv"
 
 
 def load_sets(root: Path, tenant: str, day: date) -> tuple[set[str] | None, set[str] | None, set[str] | None, int | None]:
@@ -86,16 +88,6 @@ def load_sets(root: Path, tenant: str, day: date) -> tuple[set[str] | None, set[
     return lightstep, unified, debug, blank
 
 
-def read_existing(path: Path) -> list[dict[str, str]]:
-    if not path.exists():
-        return []
-    with open(path, newline="", encoding="utf-8") as fh:
-        reader = csv.DictReader(fh)
-        if list(reader.fieldnames or []) != COLUMNS:
-            raise ValueError(f"{path}: unexpected columns {reader.fieldnames}; move it aside or fix it")
-        return list(reader)
-
-
 def main() -> None:
     init_logging("ctap-smvod-build_session_comparison_daily")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -103,26 +95,24 @@ def main() -> None:
     ap.add_argument("--to", dest="end", required=True, type=date.fromisoformat, help="Last UTC day, YYYY-MM-DD (inclusive)")
     ap.add_argument("--tenants", default=None, help="Comma-separated tenant codes (default: every code in config/tenants.yaml)")
     ap.add_argument("--root", type=Path, default=ROOT, help="Investigation root (default: ctap-smvod)")
-    ap.add_argument("--out", type=Path, default=None, help="Output CSV (default: <root>/output/session_comparison_daily.csv)")
+    ap.add_argument("--out-dir", type=Path, default=None, help="Output base dir (default: <root>/output)")
     args = ap.parse_args()
 
     tenants = [t.strip() for t in args.tenants.split(",") if t.strip()] if args.tenants else TenantRegistry().codes()
-    out = args.out or args.root / "output" / "session_comparison_daily.csv"
-    new_rows = []
+    out_dir = args.out_dir or args.root / "output"
+    store = MonthlyCsvStore(CsvFileReader(), CsvFileWriter())
+    written = 0
     for day in date_range(args.start, args.end):
         for tenant in tenants:
             lightstep, unified, debug, blank = load_sets(args.root, tenant, day)
             if lightstep is None and unified is None and debug is None:
                 LOGGER.info("%s %s: no inputs, skipped", tenant, day)
                 continue
-            new_rows.append(build_row(day, tenant, lightstep, unified, debug, blank))
-    rows = upsert_rows(read_existing(out), new_rows)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
-    LOGGER.info("Wrote %s (%d rows, %d new/updated)", out, len(rows), len(new_rows))
+            row = build_row(day, tenant, lightstep, unified, debug, blank)
+            path = store.replace_date(month_file(out_dir, tenant, day), row["session_date"], [row], field_order=COLUMNS)
+            LOGGER.info("%s %s -> %s", tenant, day, path)
+            written += 1
+    LOGGER.info("Upserted %d (date, tenant) rows", written)
 
 
 if __name__ == "__main__":

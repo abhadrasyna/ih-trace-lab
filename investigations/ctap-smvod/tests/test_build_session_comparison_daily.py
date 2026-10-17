@@ -31,17 +31,20 @@ def test_build_row_missing_debug_leaves_its_columns_blank():
     assert row["L_and_U"] == "1" and row["U_not_L"] == "1" and row["missing_inputs"] == "debug"
 
 
-def test_upsert_replaces_same_key_and_sorts():
-    old = [{"date": "2026-10-15", "tenant": "SA", "lightstep": "1"}, {"date": "2026-10-14", "tenant": "SA", "lightstep": "9"}]
-    new = [{"date": "2026-10-14", "tenant": "SA", "lightstep": "5"}, {"date": "2026-10-14", "tenant": "GH", "lightstep": "2"}]
-    out = mod.upsert_rows(old, new)
-    assert [(r["date"], r["tenant"], r["lightstep"]) for r in out] == [
-        ("2026-10-14", "GH", "2"), ("2026-10-14", "SA", "5"), ("2026-10-15", "SA", "1")]
+def test_month_file_maps_sa_to_za_and_keeps_other_codes(tmp_path):
+    assert mod.month_file(tmp_path, "SA", DAY) == tmp_path / "ZA" / "daily" / "2026-10_session-comparison.csv"
+    assert mod.month_file(tmp_path, "GH", DAY) == tmp_path / "GH" / "daily" / "2026-10_session-comparison.csv"
 
 
-def test_read_existing_rejects_unexpected_columns(tmp_path):
-    p = tmp_path / "x.csv"
-    p.write_text("date,tenant\n2026-10-14,SA\n")
-    with pytest.raises(ValueError):
-        mod.read_existing(p)
-    assert mod.read_existing(tmp_path / "nope.csv") == []
+def test_month_store_upsert_replaces_same_day_and_keeps_others(tmp_path):
+    from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter
+    from src.lib.csv_io.monthly_store import MonthlyCsvStore
+
+    store = MonthlyCsvStore(CsvFileReader(), CsvFileWriter())
+    path = mod.month_file(tmp_path, "SA", DAY)
+    for d, n in (("2026-10-15", {"a"}), ("2026-10-14", {"a"}), ("2026-10-14", {"a", "b"})):
+        row = mod.build_row(date.fromisoformat(d), "SA", n, n, n, 0)
+        store.replace_date(path, d, [row], field_order=mod.COLUMNS)
+    rows = list(CsvFileReader().read_rows(str(path)))
+    assert [(r["session_date"], r["lightstep"]) for r in rows] == [("2026-10-14", "2"), ("2026-10-15", "1")]
+    assert list(rows[0].keys()) == mod.COLUMNS
