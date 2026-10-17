@@ -1,6 +1,7 @@
 """Dispatch tests: which artifacts append into a month file vs. get a per-day snapshot."""
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -225,3 +226,30 @@ def test_shaka_error_cli_refuses_to_append_onto_a_stale_long_format_file(tmp_pat
             artifact="shaka-error-session",
             by="session",
         )
+
+
+def test_adoption_report_with_no_data_writes_blank_row(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_common_collaborators(monkeypatch, rows=[])
+    monkeypatch.setattr(common, "build_adoption_report", lambda *_args, **_kwargs: [])
+
+    common.run_adoption_cli(
+        ["--date", "2026-08-01", "--tenant", "NG", "--skip-auth-check", "--output-dir", str(tmp_path)],
+        artifact="adoption-report",
+        metrics=adoption.HOUSEHOLD_METRICS,
+    )
+
+    lines = (tmp_path / "ZA" / "daily" / "2026-08_adoption-report.csv").read_text(encoding="utf-8").splitlines()
+    assert lines[1].startswith("2026-08-01,") and set(lines[1].split(",")[1:]) == {""}
+
+
+def test_adoption_report_blank_recent_date_is_retried_not_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+    _patch_common_collaborators(monkeypatch, rows=[])
+    monkeypatch.setattr(common, "build_adoption_report", lambda *_args, **_kwargs: calls.append(1) or [])
+    today = date.today().isoformat()
+    argv = ["--date", today, "--tenant", "NG", "--skip-auth-check", "--output-dir", str(tmp_path)]
+
+    common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+    common.run_adoption_cli(argv, artifact="adoption-report", metrics=adoption.HOUSEHOLD_METRICS)
+
+    assert len(calls) == 2

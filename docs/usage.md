@@ -95,6 +95,7 @@ python -m src.pipelines.aws_access_cli.scripts.run_adoption_report --date 2026-1
 | `--period day\|week\|month` | Cadence for the output folder and file layout (default `day`) |
 | `--tenant CODE` | `ZA`, `ZM`, `GH` or `NG` |
 | `--force` | Re-run Athena even if the output CSV already has this period's data |
+| `--retry-blank-days N` | Adoption reports: re-run a date with blank metric cells if at most N days old (default 3, 0 disables); a date with no data gets a blank row |
 | `--dry-run` | Show what would run without querying or writing |
 | `--preview` | Print a summary of the rows |
 | `--skip-auth-check` | Skip the AWS session check (the orchestrators do this themselves) |

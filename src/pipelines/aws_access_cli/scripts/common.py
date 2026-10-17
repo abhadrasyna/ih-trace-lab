@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from src.lib.csv_io.existing_output import csv_has_data
+from src.lib.csv_io.existing_output import csv_date_needs_retry, csv_has_data
 from src.lib.csv_io.monthly_store import MonthlyCsvStore
 from src.lib.report_render.factory import make_report_writer
 from src.pipelines.aws_access_cli.adoption import (
@@ -87,12 +87,28 @@ def base_parser(description: str) -> argparse.ArgumentParser:
     parser.add_argument("--preview", action="store_true")
     parser.add_argument("--skip-auth-check", action="store_true")
     parser.add_argument("--force", action="store_true", help="Re-run Athena even if the output CSV already has this date's data.")
+    parser.add_argument(
+        "--retry-blank-days",
+        type=int,
+        default=3,
+        help="Adoption reports: re-run a date whose row has blank metric cells if it is at most this many days old (0 disables).",
+    )
     return parser
 
 
-def _skip_if_output_exists(args: argparse.Namespace, output_path: Path, *, date_value: str | None = None) -> bool:
+def _skip_if_output_exists(
+    args: argparse.Namespace,
+    output_path: Path,
+    *,
+    date_value: str | None = None,
+    retry_blank: bool = False,
+) -> bool:
     """True (after printing why) when Athena should not be fired because the CSV already has the data."""
-    if args.force or not csv_has_data(make_csv_reader(), output_path, date_value=date_value):
+    reader = make_csv_reader()
+    if args.force or not csv_has_data(reader, output_path, date_value=date_value):
+        return False
+    if retry_blank and date_value and csv_date_needs_retry(reader, output_path, date_value=date_value, retry_days=args.retry_blank_days):
+        print(f"RETRY: {output_path} has blank cells for {date_value}; re-running Athena (within {args.retry_blank_days} days).")
         return False
     print(f"SKIP: {output_path} already has data{f' for {date_value}' if date_value else ''}; use --force to re-run Athena.")
     return True
@@ -251,7 +267,7 @@ def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[Me
             {"tenant": tenant.code, "start_date": start_date, "end_date": end_date, "period": period},
         )
     append_date = start_date if _uses_append_store(artifact, period=period, start_date=start_date, end_date=end_date) else None
-    if _skip_if_output_exists(args, output_path, date_value=append_date):
+    if _skip_if_output_exists(args, output_path, date_value=append_date, retry_blank=True):
         return 0
     if not args.skip_auth_check:
         make_auth().ensure_session(args.profile)
@@ -260,6 +276,9 @@ def run_adoption_cli(argv: list[str] | None, *, artifact: str, metrics: tuple[Me
     rows = build_adoption_report(athena, catalog, tenant, start_date, end_date, period=period, metrics=metrics, table_override=args.table)
     if _uses_append_store(artifact, period=period, start_date=start_date, end_date=end_date):
         fieldnames = ["session_date", *[metric.column_header for metric in metrics]]
+        if not rows:
+            # No events at all: keep a blank row so the date is visible and can be retried.
+            rows = [{"session_date": start_date}]
         MonthlyCsvStore(make_csv_reader(), make_csv_writer()).replace_date(output_path, start_date, rows, field_order=fieldnames)
     else:
         write_adoption_report(output_path, make_csv_writer(), rows, metrics)
