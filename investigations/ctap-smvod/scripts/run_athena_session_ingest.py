@@ -7,7 +7,7 @@ Query-catalog slug `ctap-smvod-session-ingest`. Feeds `chart_playback_attempts.p
 Writes `data/athena/<TENANT>/<date>_session_ingest.csv`.
 
 Usage:
-    python3 run_athena_session_ingest.py --date 2026-10-14 --tenant SA [--dry-run] [--force]
+    python3 run_athena_session_ingest.py --date 2026-10-14 --tenant ZA [--dry-run] [--force]
 """
 import argparse
 import logging
@@ -33,7 +33,7 @@ def main() -> None:
     init_logging("ctap-smvod-run_athena_session_ingest")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="Partition date, YYYY-MM-DD")
-    ap.add_argument("--tenant", default="SA", help="Tenant code from config/tenants.yaml (default: SA)")
+    ap.add_argument("--tenant", default="ZA", help="Tenant code from config/tenants.yaml (default: ZA)")
     ap.add_argument("--profile", default=None, help="AWS SSO profile (default: tenant registry)")
     ap.add_argument("--database", default=None, help="Athena database (default: tenant registry)")
     ap.add_argument("--region", default=None, help="AWS region (default: tenant registry)")

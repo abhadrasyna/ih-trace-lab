@@ -6,7 +6,7 @@ Reads `output/<T>/<date>_concurrent_playback.csv` and `..._summary.csv` (from co
 with each view's peak. The athena_estimated line uses the last debug event as the session end -- an estimate.
 
 Usage:
-    python3 chart_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM
+    python3 chart_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM
 """
 import argparse
 import csv
@@ -109,7 +109,7 @@ def main() -> None:
     init_logging("ctap-smvod-chart_concurrent_playback")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, type=date.fromisoformat, help="UTC day, YYYY-MM-DD")
-    ap.add_argument("--tenants", default="SA,GH,ZM", help="Comma-separated tenant folders")
+    ap.add_argument("--tenants", default="ZA,GH,ZM", help="Comma-separated tenant folders")
     args = ap.parse_args()
     for tenant in [t.strip() for t in args.tenants.split(",") if t.strip()]:
         write_chart(tenant, args.date, OUTPUT_DIR)

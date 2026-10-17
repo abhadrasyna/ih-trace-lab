@@ -13,7 +13,7 @@
 **What to implement:**
 
 1. Grep `investigations/ctap-smvod/{scripts,scripts/lib}` and the Athena SQL templates under `queries/athena/` for tenant ids, project ids, profiles, regions, `data/`/`output/` path literals.
-2. Run `python scripts/resolve_tenant.py` for ZM and SA to confirm the registry values this story will consume.
+2. Run `python scripts/resolve_tenant.py` for ZM and ZA to confirm the registry values this story will consume.
 3. Check `SCRIPTS.md`/`src/lib` for existing tenant-aware helpers before designing new ones.
 
 **Tests:** none (read-only). **Commit:** `docs(ctap-smvod-multitenant): record MT-1 audit findings`
@@ -69,12 +69,12 @@ context and discover inputs`
 
 ---
 
-## MT-6 — Migrate existing SA files
+## MT-6 — Migrate existing ZA files
 
-**Files to change / create:** `git mv` existing `data/lightstep/*`, `data/athena/*`, `output/*` under the SA tenant folder (code per `config/tenants.yaml`); fix references in docs.
+**Files to change / create:** `git mv` existing `data/lightstep/*`, `data/athena/*`, `output/*` under the ZA tenant folder (code per `config/tenants.yaml`); fix references in docs.
 
-**What to implement:** move only; no content edits. Re-run one SA date with `--dry-run` and, if inputs allow, a real run to confirm identical outputs. **Tests:** existing suite green. **Commit:**
-`refactor(ctap-smvod): move SA data under tenant folder`
+**What to implement:** move only; no content edits. Re-run one ZA date with `--dry-run` and, if inputs allow, a real run to confirm identical outputs. **Tests:** existing suite green. **Commit:**
+`refactor(ctap-smvod): move ZA data under tenant folder`
 
 ---
 
@@ -119,16 +119,16 @@ refresh error reports with is_wv`
 
 ## MT-1 findings (audit, 2026-10-08)
 
-Registry values (`scripts/resolve_tenant.py`): SA Athena `unified_e6auj7k7`, Lightstep `mcs-go-prod-iye9omdf-eu` (no filter); ZM Athena `unified_a7vli5h8`, Lightstep `mcs-go-prod-mtn-1-eu` with
+Registry values (`scripts/resolve_tenant.py`): ZA Athena `unified_e6auj7k7`, Lightstep `mcs-go-prod-iye9omdf-eu` (no filter); ZM Athena `unified_a7vli5h8`, Lightstep `mcs-go-prod-mtn-1-eu` with
 `sessionInfo.busUnitId = dtunf6yo`. Both share profile `clarissa-insights-product` and region `eu-central-1`. No existing tenant-aware helper in `src/lib`; `src/tenant_registry` is the one to consume.
 
 | File:line | Hardcode | Fixed by |
 |---|---|---|
-| `queries/athena/ctap-smvod-debug-states.sql:2,19` | table `e6auj7k7_ccl_debug_events` (SA tenant id prefix), so `{{database}}` alone is not enough | MT-3 (table from `aws_access_cli/tenants.py`) |
+| `queries/athena/ctap-smvod-debug-states.sql:2,19` | table `e6auj7k7_ccl_debug_events` (ZA tenant id prefix), so `{{database}}` alone is not enough | MT-3 (table from `aws_access_cli/tenants.py`) |
 | `queries/athena/ctap-smvod-debug-completeness.sql:2,16` | literal `unified_e6auj7k7` and `e6auj7k7_ccl_debug_events` | MT-3 (parameterise or confirm unused by the pipeline) |
 | `scripts/run_athena_debug_events.py:104` | `--database` default `unified_e6auj7k7` | MT-3 |
 | `scripts/run_athena_playback_outcome.py:65` | `--database` default `unified_e6auj7k7` | MT-3 |
-| `scripts/lib/runtime.py:16,20` | `DEFAULT_PROFILE`, `_DEFAULT_REGION` (same for ZM/SA; keep as fallback, prefer registry) | MT-3 |
+| `scripts/lib/runtime.py:16,20` | `DEFAULT_PROFILE`, `_DEFAULT_REGION` (same for ZM/ZA; keep as fallback, prefer registry) | MT-3 |
 | `scripts/run_athena_debug_events.py:54,90`, `run_athena_playback_outcome.py:46` | `data/athena` and `output` roots built by hand | MT-2 |
 | `scripts/run_pipeline.py:82-83,100-102,122,126,141,164` | `LIGHTSTEP_DIR`/`ATHENA_DIR` and input filenames, no tenant | MT-2, MT-3, MT-4 |
 | `scripts/merge_ctap_smvod_csv.py:259` | `--input-dir` default `data/lightstep`; no `busUnitId` check | MT-2, MT-5 |
@@ -136,22 +136,22 @@ Registry values (`scripts/resolve_tenant.py`): SA Athena `unified_e6auj7k7`, Lig
 | `scripts/lib/runtime.py:48-76` | `investigation_output_dir`/`snapshot_/range_/rollup_output_path` take no tenant | MT-2 |
 | `config/data_paths.yaml:15-16` | `investigation_data`/`investigation_output` templates have no tenant segment | MT-2 |
 | `analyze_*`, `build_*`, `extract_*`, `filter_error_code_report.py`, `correlate_cdn_ips.py` | `output/` defaults and rollup globs (`build_mtn_summary.py:46`) | MT-2 (rollups per tenant) |
-| `scripts/lightstep_ctap_smvod_join.py:30,286` | `--project` required, example is SA project (docs only, not hardcoded) | none |
+| `scripts/lightstep_ctap_smvod_join.py:30,286` | `--project` required, example is ZA project (docs only, not hardcoded) | none |
 | `scripts/analyze_webview_devices.py:68` | `_is_wv` defined locally | MT-8 |
 
-Not tenant-specific: `mtn_escalation*` names in `correlate_cdn_ips.py`/`build_mtn_summary.py` refer to the MTN operator group (both tenants), not SA.
+Not tenant-specific: `mtn_escalation*` names in `correlate_cdn_ips.py`/`build_mtn_summary.py` refer to the MTN operator group (both tenants), not ZA.
 
-**Risk for MT-3 (resolved 2026-10-08):** `ctap-smvod-debug-states.sql` would silently query the SA table for ZM if only `--database` changed. Verified with `SHOW TABLES` in each database (profile
+**Risk for MT-3 (resolved 2026-10-08):** `ctap-smvod-debug-states.sql` would silently query the ZA table for ZM if only `--database` changed. Verified with `SHOW TABLES` in each database (profile
 `clarissa-insights-product`, `eu-central-1`): every tenant has base table `<athena_tenant_id>_ccl_debug_events` (plus month-suffixed variants such as `_aug26`, `_sept26`, which MT-3 must not pick up)
 and `unified_sessions`.
 
 | Tenant | Database | Debug-events table | `unified_sessions` |
 |---|---|---|---|
-| SA | `unified_e6auj7k7` | `e6auj7k7_ccl_debug_events` | yes |
+| ZA | `unified_e6auj7k7` | `e6auj7k7_ccl_debug_events` | yes |
 | ZM | `unified_a7vli5h8` | `a7vli5h8_ccl_debug_events` | yes |
 | GH | `unified_is1aldzq` | `is1aldzq_ccl_debug_events` | yes |
 | NG | `unified_jsxgloje` | `jsxgloje_ccl_debug_events` | yes |
 
 MT-3 decision: reuse `src/pipelines/aws_access_cli/tenants.py` (`TenantConfig`, `get_tenant`, `all_tenants`) for `database` and `debug_events_table` (`<tenant_id>_ccl_debug_events`) instead of
-deriving them again in ctap-smvod. Two gaps to resolve in MT-3: (1) that module keys South Africa as `ZA` while `config/tenants.yaml` and this story use `SA`, so MT-3 must pick one code (prefer the
-registry's `SA` and map or align `ZA`); (2) it has no Athena profile/region or Lightstep project/`busUnitId` filter, which still come from `src/tenant_registry`.
+deriving them again in ctap-smvod. Two gaps to resolve in MT-3: (1) that module keys South Africa as `ZA` while `config/tenants.yaml` and this story used `SA` (since unified to `ZA` by the 2026-10-17
+migration, `scripts/migrate_opco_sa_to_za.py`), so MT-3 had to pick one code; (2) it has no Athena profile/region or Lightstep project/`busUnitId` filter, which still come from `src/tenant_registry`.

@@ -9,7 +9,7 @@ Athena-only sessions, and whether Lightstep-only sessions exist in Athena's D-1 
 Prints the counts and writes `output/<T>/<date>_lightstep_vs_athena_sessions.csv` (one row per session seen on one side only).
 
 Usage:
-    python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant SA
+    python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant ZA
 """
 import argparse
 import csv
@@ -115,7 +115,7 @@ def main() -> None:
     init_logging("ctap-smvod-compare_lightstep_athena_sessions")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, type=date.fromisoformat, help="UTC day, YYYY-MM-DD")
-    ap.add_argument("--tenant", default="SA")
+    ap.add_argument("--tenant", default="ZA")
     ap.add_argument("--root", type=Path, default=ROOT, help="Investigation root (default: ctap-smvod)")
     ap.add_argument("--debug", action="store_true",
                     help="3-way: add the debug-events sessions from <date>_debug_sessions.csv (run_athena_debug_sessions.py)")

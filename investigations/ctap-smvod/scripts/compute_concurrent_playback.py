@@ -12,7 +12,7 @@ Writes `output/<T>/<date>_concurrent_playback.csv` (minute, one column per view)
 Fails loudly if an input file or column is missing.
 
 Usage:
-    python3 compute_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM
+    python3 compute_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM
 """
 import argparse
 import csv
@@ -87,7 +87,7 @@ def main() -> None:
     init_logging("ctap-smvod-compute_concurrent_playback")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, type=date.fromisoformat, help="UTC day, YYYY-MM-DD")
-    ap.add_argument("--tenants", default="SA,GH,ZM", help="Comma-separated tenant folders")
+    ap.add_argument("--tenants", default="ZA,GH,ZM", help="Comma-separated tenant folders")
     args = ap.parse_args()
     for tenant in [t.strip() for t in args.tenants.split(",") if t.strip()]:
         outcome = read_rows(OUTPUT_DIR / tenant / f"{args.date}_setupsession_with_outcome.csv", {"sessionId", "event_start", "event_end"})

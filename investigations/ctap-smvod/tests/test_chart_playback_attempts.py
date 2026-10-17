@@ -46,16 +46,16 @@ def test_render_chart_bad_input_raises_chart_error():
 
 
 def test_chart_failure_does_not_block_report(tmp_path):
-    (tmp_path / "SA").mkdir()
-    path = tmp_path / "SA" / f"{DAY}_setupsession_with_outcome.csv"
+    (tmp_path / "ZA").mkdir()
+    path = tmp_path / "ZA" / f"{DAY}_setupsession_with_outcome.csv"
     with open(path, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=["sessionId", "start_time"])
         w.writeheader()
         w.writerow(row("a", "2026-10-14 00:01:00.000 UTC"))
     with mock.patch.object(mod, "render_chart", side_effect=ChartError("boom")):
-        assert mod.write_chart("SA", DAY, 5, tmp_path) is False
-    assert path.exists() and not (tmp_path / "SA" / f"{DAY}_playback_attempts.png").exists()
-    assert mod.write_chart("SA", DAY, 5, tmp_path) is True
+        assert mod.write_chart("ZA", DAY, 5, tmp_path) is False
+    assert path.exists() and not (tmp_path / "ZA" / f"{DAY}_playback_attempts.png").exists()
+    assert mod.write_chart("ZA", DAY, 5, tmp_path) is True
 
 
 def test_attempts_by_ingest_uses_earliest_ingest_per_session():
@@ -77,16 +77,16 @@ def test_read_rows_missing_ingest_column_raises(tmp_path):
 
 def test_write_chart_bad_time_field_raises(tmp_path):
     with pytest.raises(ValueError):
-        mod.write_chart("SA", DAY, 5, tmp_path, "ingest_timestamp", tmp_path)
+        mod.write_chart("ZA", DAY, 5, tmp_path, "ingest_timestamp", tmp_path)
 
 
 def test_write_chart_ingest_mode(tmp_path):
-    (tmp_path / "data" / "SA").mkdir(parents=True)
-    (tmp_path / "out" / "SA").mkdir(parents=True)
-    (tmp_path / "data" / "SA" / f"{DAY}_session_ingest.csv").write_text(
+    (tmp_path / "data" / "ZA").mkdir(parents=True)
+    (tmp_path / "out" / "ZA").mkdir(parents=True)
+    (tmp_path / "data" / "ZA" / f"{DAY}_session_ingest.csv").write_text(
         "sessionId,event_start,ingest_timestamp\na,2026-10-14 00:01:00,2026-10-14 00:10:00\nb,2026-10-14 23:59:00,2026-10-15 01:00:00\n")
-    assert mod.write_chart("SA", DAY, 5, tmp_path / "out", "ingest", tmp_path / "data") is True
-    assert (tmp_path / "out" / "SA" / f"{DAY}_playback_attempts_ingest.png").exists()
+    assert mod.write_chart("ZA", DAY, 5, tmp_path / "out", "ingest", tmp_path / "data") is True
+    assert (tmp_path / "out" / "ZA" / f"{DAY}_playback_attempts_ingest.png").exists()
 
 
 def test_late_arrivals_counts_only_day_sessions_ingested_elsewhere():

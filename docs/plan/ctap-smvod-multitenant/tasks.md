@@ -10,7 +10,7 @@ spec.
 - [x] **MT-3** — tenant context resolution + input discovery; Athena steps use registry values | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: fd19d54
 - [x] **MT-4** — `run_pipeline.py` all-tenants default, `--tenant`, continue-on-failure | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: ae13761
 - [x] **MT-5** — `busUnitId` guard for shared Lightstep projects at merge | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: bac793e
-- [x] **MT-6** — `git mv` existing SA data/output under the SA tenant folder | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: 1999fdd
+- [x] **MT-6** — `git mv` existing ZA data/output under the ZA tenant folder | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: 1999fdd
 - [x] **MT-7** — Zambia pilot run for one date + sanity checks vs Ghana | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: 57ff5f1
 - [x] **MT-8** — add `is_wv` column to the 1xxx/6xxx error report (CSV + xlsx); move `_is_wv` to `scripts/lib/` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA:
   93f3540
@@ -24,7 +24,7 @@ spec.
 - **MT-3** — tenant context is resolved once from `config/tenants.yaml`; unknown tenant or missing input folder fails with a message naming the expected path.
 - **MT-4** — no flag runs every tenant with input for the date; `--tenant` runs one; failures are collected and the exit code is non-zero if any tenant failed.
 - **MT-5** — a Zambia file containing another tenant's `busUnitId` fails the merge loudly.
-- **MT-6** — SA history preserved via `git mv`; SA reruns reproduce prior outputs.
+- **MT-6** — ZA history preserved via `git mv`; ZA reruns reproduce prior outputs.
 - **MT-7** — Zambia produces the full output set for one date; row counts reconcile with the export.
 - **MT-8** — every error-report row has `is_wv` (true/false, blank when no user agent); the xlsx carries it; `_is_wv` lives in `scripts/lib/` and `analyze_webview_devices.py` imports it.
 - **MT-9** — no error-report row is left with a blank user agent because of stale outputs.

@@ -35,7 +35,7 @@ def test_render_chart_bad_input_raises_chart_error():
 def test_chart_failure_does_not_block_report(tmp_path, monkeypatch):
     from datetime import date
 
-    out = tmp_path / "SA"
+    out = tmp_path / "ZA"
     out.mkdir()
     lines = ["minute_utc,csv_only,athena_exact,athena_estimated"] + [f"m{i},1,1,1" for i in range(1440)]
     (out / "2026-10-14_concurrent_playback.csv").write_text("\n".join(lines) + "\n")
@@ -44,10 +44,10 @@ def test_chart_failure_does_not_block_report(tmp_path, monkeypatch):
         "csv_only,1,0,0,0,1,00:00\nathena_exact,1,0,0,0,1,00:00\nathena_estimated,1,0,0,0,1,00:00\n"
     )
     monkeypatch.setattr(mod, "render_chart", lambda *a, **k: (_ for _ in ()).throw(ChartError("boom")))
-    assert mod.write_chart("SA", date(2026, 10, 14), tmp_path) is False
+    assert mod.write_chart("ZA", date(2026, 10, 14), tmp_path) is False
     assert (out / "2026-10-14_concurrent_playback.csv").exists() and not (out / "2026-10-14_concurrent_playback.png").exists()
     monkeypatch.undo()
-    assert mod.write_chart("SA", date(2026, 10, 14), tmp_path) is True
+    assert mod.write_chart("ZA", date(2026, 10, 14), tmp_path) is True
 
 
 def test_read_series_wrong_length_raises(tmp_path):

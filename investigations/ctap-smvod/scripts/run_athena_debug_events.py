@@ -52,7 +52,7 @@ from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_athena_debug_events")
 
-LEGACY_TENANT = "SA"
+LEGACY_TENANT = "ZA"
 
 # See BLUEPRINT.md Step 4 / queries/QUERY_CATALOG.md §11/§11a/§11b for why
 # APP_KEEPALIVE must stay in this list (it's sometimes the only signal a
@@ -131,7 +131,7 @@ def main():
         help="Step 2 merged report CSV to pull sessionIds from "
              "(default: ../output/YYYY-MM-DD_setupsession.csv, derived from --date)")
     ap.add_argument("--column", default="sessionId", help="sessionId column name (default: sessionId)")
-    ap.add_argument("--tenant", default=None, help="Tenant code from config/tenants.yaml (default: SA with the legacy flat data/ and output/ folders)")
+    ap.add_argument("--tenant", default=None, help="Tenant code from config/tenants.yaml (default: ZA with the legacy flat data/ and output/ folders)")
     ap.add_argument("--profile", default=None, help="AWS SSO profile (default: from the tenant registry)")
     ap.add_argument("--database", default=None, help="Athena database (default: from the tenant registry)")
     ap.add_argument("--workgroup", default="primary", help="Athena workgroup (default: primary)")

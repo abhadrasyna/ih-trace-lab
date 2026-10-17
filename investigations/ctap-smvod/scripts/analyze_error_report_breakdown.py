@@ -8,8 +8,8 @@ Read-only; prints to stdout, writes nothing.
 
 Usage:
     python3 analyze_error_report_breakdown.py \
-        --error-report ../output/SA/2026-10-09_error_report_1xxx_6xxx.csv \
-        --outcome-report ../output/SA/2026-10-09_setupsession_with_outcome.csv
+        --error-report ../output/ZA/2026-10-09_error_report_1xxx_6xxx.csv \
+        --outcome-report ../output/ZA/2026-10-09_setupsession_with_outcome.csv
 """
 import argparse
 import logging

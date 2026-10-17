@@ -7,7 +7,7 @@ analysis. Reads existing files only.
 
 Usage:
     python3 summarize_pipeline_run.py --date 01102026 --tenant ZM
-    python3 summarize_pipeline_run.py --date 01102026 --tenant SA
+    python3 summarize_pipeline_run.py --date 01102026 --tenant ZA
 """
 import argparse
 import csv

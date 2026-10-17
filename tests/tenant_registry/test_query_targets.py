@@ -37,7 +37,7 @@ def test_lightstep_go_dedicated_project_has_no_filter() -> None:
 
     context = target.build_context(
         _tenant(
-            code="SA",
+            code="ZA",
             name="South Africa",
             go_id="iye9omdf",
             lightstep_project="mcs-go-prod-iye9omdf-eu",

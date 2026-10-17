@@ -42,4 +42,4 @@ Engineering reported a Widevine licence request (Shaka error 6007) from a TECNO 
 
 - Ask engineering/Widevine to confirm the cert serial's device status. If it is a real subscriber device, correct the flag or re-provision; if it is a genuine test unit, the rejection is by design.
 - Ask engineering to confirm the cert serial above belongs to `deviceId` `1714f6c4…a329`; our data cannot verify it.
-- Not yet checked: other MDRM 6211 sessions (`nested_mdrm_code`) across tenants (SA, GH) and days. A model-wide TECNO KM5 check needs the DRM service logs, since our CSVs have no device model.
+- Not yet checked: other MDRM 6211 sessions (`nested_mdrm_code`) across tenants (ZA, GH) and days. A model-wide TECNO KM5 check needs the DRM service logs, since our CSVs have no device model.

@@ -5,7 +5,7 @@ Query-catalog slug `ctap-smvod-debug-sessions`. Feeds `compare_lightstep_athena_
 Writes `data/athena/<TENANT>/<date>_debug_sessions.csv`.
 
 Usage:
-    python3 run_athena_debug_sessions.py --date 2026-10-14 --tenant SA [--table-suffix sept26] [--dry-run] [--force]
+    python3 run_athena_debug_sessions.py --date 2026-10-14 --tenant ZA [--table-suffix sept26] [--dry-run] [--force]
 """
 import argparse
 import logging
@@ -37,7 +37,7 @@ def main() -> None:
     init_logging("ctap-smvod-run_athena_debug_sessions")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="UTC day, YYYY-MM-DD")
-    ap.add_argument("--tenant", default="SA", help="Tenant code from config/tenants.yaml (default: SA)")
+    ap.add_argument("--tenant", default="ZA", help="Tenant code from config/tenants.yaml (default: ZA)")
     ap.add_argument("--table-suffix", default=None, help="Month-suffixed debug table, e.g. sept26 (default: unsuffixed)")
     ap.add_argument("--profile", default=None)
     ap.add_argument("--database", default=None)

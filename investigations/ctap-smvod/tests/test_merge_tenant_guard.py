@@ -63,7 +63,7 @@ def test_dedicated_project_tenant_skips_guard(tmp_path, monkeypatch):
     _inputs(tmp_path, [], with_bus=False)
     _write(tmp_path / "2026-10-01_ctap.csv", ["lightstep.trace_id", "http.user_agent"], [["t1", "ua"]])
     _write(tmp_path / "2026-10-01_smvod.csv", ["lightstep.trace_id", "sessionId"], [["t1", "s1"]])
-    _run(tmp_path, "SA", monkeypatch)
+    _run(tmp_path, "ZA", monkeypatch)
     assert (tmp_path / "out.csv").exists()
 
 

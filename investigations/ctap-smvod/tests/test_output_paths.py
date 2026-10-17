@@ -31,10 +31,10 @@ def test_paths_are_tenant_scoped() -> None:
     root = runtime.repo_root() / "investigations" / "ctap-smvod"
 
     assert runtime.snapshot_output_path("30092026", "setupsession", tenant="ZM") == str(root / "output" / "ZM" / "2026-09-30_setupsession.csv")
-    assert runtime.range_output_path("29092026", "30092026", "err", tenant="SA") == str(root / "output" / "SA" / "2026-09-29_2026-09-30_err.csv")
+    assert runtime.range_output_path("29092026", "30092026", "err", tenant="ZA") == str(root / "output" / "ZA" / "2026-09-29_2026-09-30_err.csv")
     assert runtime.rollup_output_path("x", tenant="ZM") == str(root / "output" / "ZM" / "x_rollup.csv")
     assert runtime.investigation_data_dir("lightstep", tenant="ZM") == root / "data" / "lightstep" / "ZM"
-    assert runtime.investigation_data_dir("athena", tenant="SA") == root / "data" / "athena" / "SA"
+    assert runtime.investigation_data_dir("athena", tenant="ZA") == root / "data" / "athena" / "ZA"
 
 
 def test_missing_tenant_raises() -> None:

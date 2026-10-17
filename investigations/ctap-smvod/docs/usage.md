@@ -1,7 +1,7 @@
 # CTAP/SM-VOD script usage
 
 All commands run from `investigations/ctap-smvod/scripts/`. Dates are `DDMMYYYY` unless noted. Inputs and outputs are namespaced per tenant: outputs go to `../output/<TENANT>/` (per-date files are
-prefixed `YYYY-MM-DD_`), Lightstep exports are read from `../data/lightstep/<TENANT>/`, Athena pulls go to `../data/athena/<TENANT>/`. Tenant codes come from `config/tenants.yaml` (`SA`, `NG`, `ZM`,
+prefixed `YYYY-MM-DD_`), Lightstep exports are read from `../data/lightstep/<TENANT>/`, Athena pulls go to `../data/athena/<TENANT>/`. Tenant codes come from `config/tenants.yaml` (`ZA`, `NG`, `ZM`,
 `GH`); paths below that omit `<TENANT>/` for brevity are always under the tenant folder.
 
 ## 0. Multi-tenant model
@@ -10,14 +10,14 @@ prefixed `YYYY-MM-DD_`), Lightstep exports are read from `../data/lightstep/<TEN
 python3 run_pipeline.py --date 06102026                # every tenant that has Lightstep input for the date
 python3 run_pipeline.py --date 06102026 --tenant ZM    # one tenant only
 python3 summarize_pipeline_run.py --date 06102026 --tenant ZM   # reconcile export row counts vs the merged report
-python3 summarize_tenant_status.py --date 06102026              # SA,GH,ZM status table (UTC day) -> docs/2026-10-06-tenant-status-summary.md (--tenants, --out, --force)
+python3 summarize_tenant_status.py --date 06102026              # ZA,GH,ZM status table (UTC day) -> docs/2026-10-06-tenant-status-summary.md (--tenants, --out, --force)
 ```
 
 - With no `--tenant`, tenants with no `data/lightstep/<TENANT>/` input for the date are skipped. Within a tenant the pipeline stops at the first failing step; other tenants still run, a per-tenant
   summary prints, and the exit code is non-zero if any tenant failed.
 - An unknown tenant, or a missing input folder, fails with a message naming the expected path.
 - Standalone scripts (Steps 6b/6e/6d, ranges, rollups) take `--output-dir` / `--input-dir`; pass `../output/<TENANT>` explicitly, e.g. `python3 extract_error_report_1xxx_6xxx.py --from 01102026 --to
-  06102026 --output-dir ../output/SA`.
+  06102026 --output-dir ../output/ZA`.
 
 ### Per-tenant Lightstep export rule
 
@@ -29,7 +29,7 @@ and GH on `mcs-go-prod-mtn-1-eu`), the Lightstep query must filter on the tenant
 | ctap | `sessionInfo.busUnitId` |
 | smvod (sm-vod service) | `busUnitId` (no `sessionInfo.` prefix) |
 
-Step 2 (`merge_ctap_smvod_csv.py`) fails loudly if any row is blank, mismatched, or the column is missing. Dedicated-project tenants (SA, NG) need no `busUnitId` filter.
+Step 2 (`merge_ctap_smvod_csv.py`) fails loudly if any row is blank, mismatched, or the column is missing. Dedicated-project tenants (ZA, NG) need no `busUnitId` filter.
 
 ### Adding a tenant
 
@@ -96,9 +96,9 @@ existing files only (never calls Athena) and aborts listing any missing dates.
 python3 extract_error_report_1xxx_6xxx.py --date 06102026                          # one CSV
 python3 extract_error_report_1xxx_6xxx.py --from 01102026 --to 06102026           # one XLSX, one sheet per date
 python3 extract_error_report_1xxx_6xxx.py --date 06102026 --out /tmp/e.csv --columns sessionId,error_codes
-python3 extract_error_report_1xxx.py --from 01102026 --to 06102026                 # 1xxx only, SA,GH,ZM at once: one XLSX per tenant in output/<TENANT>/ (--tenants, --output-dir ROOT)
-python3 combine_error_report_1xxx_csv.py --tenant SA --from 01102026 --to 11102026 # 1xxx, ONE tenant, ONE CSV (leading `date` column): output/SA/<range>_error_report_1xxx_combined.csv
-python3 rank_households_by_error.py --xlsx ../output/SA/2026-10-01_2026-10-13_error_report_1xxx.xlsx --top 25  # households by error sessions
+python3 extract_error_report_1xxx.py --from 01102026 --to 06102026                 # 1xxx only, ZA,GH,ZM at once: one XLSX per tenant in output/<TENANT>/ (--tenants, --output-dir ROOT)
+python3 combine_error_report_1xxx_csv.py --tenant ZA --from 01102026 --to 11102026 # 1xxx, ONE tenant, ONE CSV (leading `date` column): output/ZA/<range>_error_report_1xxx_combined.csv
+python3 rank_households_by_error.py --xlsx ../output/ZA/2026-10-01_2026-10-13_error_report_1xxx.xlsx --top 25  # households by error sessions
 ```
 
 | Mode | Output |
@@ -127,28 +127,28 @@ Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 |---|---|
 | `python3 analyze_webview_devices.py --date 18092026` | `output/YYYY-MM-DD_webview_device_report.csv` |
 | `python3 analyze_webview_devices.py --start-date 2026-09-01 --end-date 2026-09-10` | one `YYYY-MM-DD_webview_device_report.csv` per date (range uses ISO dates) |
-| `python3 analyze_error_report_breakdown.py --error-report ../output/SA/2026-10-09_error_report_1xxx_6xxx.csv [--outcome-report ...]` | stdout only (error code / `is_wv` / device / hour breakdown) |
+| `python3 analyze_error_report_breakdown.py --error-report ../output/ZA/2026-10-09_error_report_1xxx_6xxx.csv [--outcome-report ...]` | stdout only (error code / `is_wv` / device / hour breakdown) |
 | `python3 analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv` | same breakdown over every error code (incl. 3016) |
 | `python3 flatten_error_eventdata.py --input <export>.csv --date <date> --out-dir ../output/ZM/error_eventdata_flat` | `<date>_all.csv`: `eventdata` split into columns + `raw_eventdata` |
 | `python3 flatten_error_eventdata.py ... --split-by-errorcode` | also `<date>_<errorcode>.csv` per code, columns blank for that code dropped |
 | `python3 summarize_error_eventdata.py --flat <flat>.csv --by errorcode,net_effectivetype` | stdout only (counts/crosstab over flat columns; `--by` repeatable) |
-| `python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants SA` | `output/<TENANT>/<from>_<to>_error_6xxx_by_content[_rollup].csv` (`sessions,unique_households`) |
-| `python3 compute_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback[_summary].csv` (per UTC minute, three views); see note below |
-| `python3 chart_concurrent_playback.py --date 2026-10-14 --tenants SA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback.png` (run compute first; a chart failure is logged, CSVs stay) |
-| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants SA,GH,ZM [--bucket-min 5]` | `output/<TENANT>/<date>_playback_attempts.png` (unique-session attempts per bucket) |
+| `python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants ZA` | `output/<TENANT>/<from>_<to>_error_6xxx_by_content[_rollup].csv` (`sessions,unique_households`) |
+| `python3 compute_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback[_summary].csv` (per UTC minute, three views); see note below |
+| `python3 chart_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback.png` (run compute first; a chart failure is logged, CSVs stay) |
+| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA,GH,ZM [--bucket-min 5]` | `output/<TENANT>/<date>_playback_attempts.png` (unique-session attempts per bucket) |
 <!-- lint-ignore-length -->
-| `python3 run_athena_session_ingest.py --date 2026-10-14 --tenant SA` | `data/athena/<TENANT>/<date>_session_ingest.csv` (`sessionId,event_start,ingest_timestamp`, partitions D-1 and D; catalog `ctap-smvod-session-ingest`) |
+| `python3 run_athena_session_ingest.py --date 2026-10-14 --tenant ZA` | `data/athena/<TENANT>/<date>_session_ingest.csv` (`sessionId,event_start,ingest_timestamp`, partitions D-1 and D; catalog `ctap-smvod-session-ingest`) |
 <!-- lint-ignore-length -->
-| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants SA --time-field ingest` | `output/<TENANT>/<date>_playback_attempts_ingest.png` (attempts at each session's earliest `ingest_timestamp`; run the export first; sessions that started that day but landed on another are counted in the title) |
+| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA --time-field ingest` | `output/<TENANT>/<date>_playback_attempts_ingest.png` (attempts at each session's earliest `ingest_timestamp`; run the export first; sessions that started that day but landed on another are counted in the title) |
 <!-- lint-ignore-length -->
-| `python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant SA` | stdout counts (both / Lightstep-only / Athena-only) + `output/<TENANT>/<date>_lightstep_vs_athena_sessions.csv` (one row per one-sided session; Lightstep side = `setupsession.csv`, Athena side = `data/athena/<T>/<date>_session.csv`, enriched from `_session_ingest.csv` when present) |
+| `python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant ZA` | stdout counts (both / Lightstep-only / Athena-only) + `output/<TENANT>/<date>_lightstep_vs_athena_sessions.csv` (one row per one-sided session; Lightstep side = `setupsession.csv`, Athena side = `data/athena/<T>/<date>_session.csv`, enriched from `_session_ingest.csv` when present) |
 <!-- lint-ignore-length -->
-| `python3 run_athena_debug_sessions.py --date 2026-10-14 --tenant SA [--table-suffix sept26]` | `data/athena/<TENANT>/<date>_debug_sessions.csv` (`sessionId,first_event`: distinct `abr-vod-` sessions with a PLAYER_SESSION_EVENT/STATE_CHANGE/ERROR in the UTC day; catalog `ctap-smvod-debug-sessions`) |
+| `python3 run_athena_debug_sessions.py --date 2026-10-14 --tenant ZA [--table-suffix sept26]` | `data/athena/<TENANT>/<date>_debug_sessions.csv` (`sessionId,first_event`: distinct `abr-vod-` sessions with a PLAYER_SESSION_EVENT/STATE_CHANGE/ERROR in the UTC day; catalog `ctap-smvod-debug-sessions`) |
 <!-- lint-ignore-length -->
-| `python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant SA --debug` | as above plus the debug-events set: per-region counts (L/U/D Venn) on stdout and an `in_debug` column in the mismatch CSV |
+| `python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant ZA --debug` | as above plus the debug-events set: per-region counts (L/U/D Venn) on stdout and an `in_debug` column in the mismatch CSV |
 <!-- lint-ignore-length -->
-| `python3 build_session_comparison_daily.py --from 2026-10-14 --to 2026-10-14 [--tenants SA,GH,ZM]` | `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (adoption-report style: per-opco month file, one row per `session_date`, SA -> `ZA`): unique-session counts for Lightstep / unified / debug, their pairwise and triple overlaps and `*_not_*` differences. Local inputs only; a missing input leaves its columns blank (named in `missing_inputs`), a tenant/day with no inputs is skipped, reruns replace the same day (locked atomic upsert). Default tenants: all in `config/tenants.yaml` |
-| `python3 find_codec_support_content.py --from 2026-10-01 --to 2026-10-11 --tenant SA --codec ec-3` | `output/<TENANT>/<from>_<to>_ec-3_true_by_content[_sessions\|_split].csv` |
+| `python3 build_session_comparison_daily.py --from 2026-10-14 --to 2026-10-14 [--tenants ZA,GH,ZM]` | `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (adoption-report style: per-opco month file, one row per `session_date`): unique-session counts for Lightstep / unified / debug, their pairwise and triple overlaps and `*_not_*` differences. Local inputs only; a missing input leaves its columns blank (named in `missing_inputs`), a tenant/day with no inputs is skipped, reruns replace the same day (locked atomic upsert). Default tenants: all in `config/tenants.yaml` |
+| `python3 find_codec_support_content.py --from 2026-10-01 --to 2026-10-11 --tenant ZA --codec ec-3` | `output/<TENANT>/<from>_<to>_ec-3_true_by_content[_sessions\|_split].csv` |
 | `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
 | `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |
 | `python3 build_webview_device_summary.py` | `output/webview_device_summary_report_rollup.csv` (from all `*_webview_device_report.csv`) |

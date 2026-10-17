@@ -200,14 +200,14 @@ def _record_runs(monkeypatch: pytest.MonkeyPatch, failing_tenant: str | None = N
 
 
 def test_default_runs_all_discovered_tenants(tenant_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _write_inputs(tenant_root, "SA")
+    _write_inputs(tenant_root, "ZA")
     _write_inputs(tenant_root, "ZM")
-    monkeypatch.setattr(run_pipeline, "discover_tenants", lambda date_iso: ["SA", "ZM"])
+    monkeypatch.setattr(run_pipeline, "discover_tenants", lambda date_iso: ["ZA", "ZM"])
     ran = _record_runs(monkeypatch)
 
     _run_main(monkeypatch, *_SKIPS)
 
-    assert ran == ["SA", "ZM"]
+    assert ran == ["ZA", "ZM"]
 
 
 def test_tenant_flag_runs_only_that_tenant(tenant_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -225,18 +225,18 @@ def test_tenant_flag_runs_only_that_tenant(tenant_root: Path, monkeypatch: pytes
 def test_one_failure_does_not_stop_others_and_exits_nonzero(
     tenant_root: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    _write_inputs(tenant_root, "SA")
+    _write_inputs(tenant_root, "ZA")
     _write_inputs(tenant_root, "ZM")
-    monkeypatch.setattr(run_pipeline, "discover_tenants", lambda date_iso: ["SA", "ZM"])
-    ran = _record_runs(monkeypatch, failing_tenant="SA")
+    monkeypatch.setattr(run_pipeline, "discover_tenants", lambda date_iso: ["ZA", "ZM"])
+    ran = _record_runs(monkeypatch, failing_tenant="ZA")
 
     with pytest.raises(SystemExit) as exc_info:
         _run_main(monkeypatch, *_SKIPS)
 
     assert exc_info.value.code != 0
-    assert ran == ["SA", "ZM"]
+    assert ran == ["ZA", "ZM"]
     err = capsys.readouterr().err
-    assert "SA: FAILED" in err and "ZM: OK" in err
+    assert "ZA: FAILED" in err and "ZM: OK" in err
 
 
 def test_no_tenant_input_fails_loudly(

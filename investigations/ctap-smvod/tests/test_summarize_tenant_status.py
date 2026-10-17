@@ -57,15 +57,15 @@ def test_tenant_metrics_empty_report_has_no_divide_error():
 
 
 def test_render_omits_incomplete_no_destroy_and_shows_tenants():
-    m = {"SA": mod.tenant_metrics([sess("a", outcome="INCOMPLETE_NO_DESTROY")]), "GH": mod.tenant_metrics([sess("b")])}
+    m = {"ZA": mod.tenant_metrics([sess("a", outcome="INCOMPLETE_NO_DESTROY")]), "GH": mod.tenant_metrics([sess("b")])}
     out = mod.render("2026-10-08", m)
-    assert "| SA | GH |" in out and "| DESTROY |" in out
+    assert "| ZA | GH |" in out and "| DESTROY |" in out
     assert "| INCOMPLETE_NO_DESTROY" not in out
 
 
 def test_main_writes_default_file_and_refuses_overwrite(tmp_path, monkeypatch, capsys):
-    write_report(tmp_path, "SA", "2026-10-08", [sess("a")])
-    monkeypatch.setattr(sys, "argv", ["x", "--date", "08102026", "--tenants", "SA", "--root", str(tmp_path)])
+    write_report(tmp_path, "ZA", "2026-10-08", [sess("a")])
+    monkeypatch.setattr(sys, "argv", ["x", "--date", "08102026", "--tenants", "ZA", "--root", str(tmp_path)])
     assert mod.main() == 0
     assert (tmp_path / "docs" / "2026-10-08-tenant-status-summary.md").exists()
     assert mod.main() == 1 and "--force" in capsys.readouterr().err
@@ -78,10 +78,10 @@ def test_main_missing_tenant_file_exits_nonzero(tmp_path, monkeypatch, capsys):
 
 
 def test_main_missing_column_exits_nonzero(tmp_path, monkeypatch, capsys):
-    d = tmp_path / "output" / "SA"
+    d = tmp_path / "output" / "ZA"
     d.mkdir(parents=True)
     (d / "2026-10-08_setupsession_with_outcome.csv").write_text("sessionId\na\n")
-    monkeypatch.setattr(sys, "argv", ["x", "--date", "08102026", "--tenants", "SA", "--root", str(tmp_path)])
+    monkeypatch.setattr(sys, "argv", ["x", "--date", "08102026", "--tenants", "ZA", "--root", str(tmp_path)])
     assert mod.main() == 1
     assert "missing required column" in capsys.readouterr().err
 

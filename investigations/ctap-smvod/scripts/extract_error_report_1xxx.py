@@ -14,7 +14,7 @@ Usage:
     python3 extract_error_report_1xxx.py --date 06102026
 
     # date range -> one .xlsx per tenant (one sheet per date): output/<TENANT>/<range>_error_report_1xxx.xlsx
-    python3 extract_error_report_1xxx.py --from 01102026 --to 06102026 --tenants SA,GH
+    python3 extract_error_report_1xxx.py --from 01102026 --to 06102026 --tenants ZA,GH
 """
 import argparse
 import logging
@@ -32,7 +32,7 @@ from lib.webview import is_wv_cell
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.extract_error_report_1xxx")
 
-DEFAULT_TENANTS = ("SA", "GH", "ZM")
+DEFAULT_TENANTS = ("ZA", "GH", "ZM")
 ERROR_CODE_RE = re.compile(r"^1\d{3}$")
 ARTIFACT = "error_report_1xxx"
 
@@ -77,7 +77,7 @@ def main() -> None:
     ap.add_argument("--date", help="Single date DDMMYYYY -> one CSV per tenant")
     ap.add_argument("--from", dest="date_from", help="Range start DDMMYYYY (with --to) -> one .xlsx per tenant, one sheet per date")
     ap.add_argument("--to", dest="date_to", help="Range end DDMMYYYY, inclusive")
-    ap.add_argument("--tenants", default=",".join(DEFAULT_TENANTS), help="Comma-separated tenant codes (default: SA,GH,ZM)")
+    ap.add_argument("--tenants", default=",".join(DEFAULT_TENANTS), help="Comma-separated tenant codes (default: ZA,GH,ZM)")
     ap.add_argument("--output-dir", default=None, help="Root holding <TENANT>/ output folders (default: investigation output dir)")
     ap.add_argument("--columns", default=",".join(base.DEFAULT_COLUMNS), help="Comma-separated columns to keep")
     args = ap.parse_args()

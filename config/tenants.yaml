@@ -2,7 +2,7 @@
 # system-specific resolution data; code, scripts, and docs must resolve from here rather than carrying tenant literals.
 # Athena databases follow the derived naming rule `unified_<athena_tenant_id>`.
 opcos:
-  - code: SA
+  - code: ZA
     name: South Africa
     go_id: iye9omdf
     lightstep_project: mcs-go-prod-iye9omdf-eu

@@ -5,7 +5,7 @@ Per household: distinct sessions, distinct days, distinct devices, error codes s
 Fails loudly on a missing column (householdId, sessionId, deviceId, error_codes) or blank householdId/sessionId.
 
 Usage:
-    python3 rank_households_by_error.py --xlsx ../output/SA/2026-10-01_2026-10-13_error_report_1xxx.xlsx --top 25
+    python3 rank_households_by_error.py --xlsx ../output/ZA/2026-10-01_2026-10-13_error_report_1xxx.xlsx --top 25
     # -> stdout table + <xlsx stem>_household_ranking.csv next to the xlsx (or in --out-dir)
 """
 import argparse

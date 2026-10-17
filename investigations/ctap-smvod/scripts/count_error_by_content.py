@@ -6,7 +6,7 @@ over a date range and writes `<from>_<to>_error_6xxx_by_content.csv` (per error 
 combined, each session/household counted once per content). Fails loudly if a date file or column is missing.
 
 Usage:
-    python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants SA --prefix 6
+    python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants ZA --prefix 6
 """
 import argparse
 import csv as std_csv
@@ -79,7 +79,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--from", dest="start", required=True, type=date.fromisoformat)
     ap.add_argument("--to", dest="end", required=True, type=date.fromisoformat)
-    ap.add_argument("--tenants", default="SA", help="Comma-separated tenant folders under output/")
+    ap.add_argument("--tenants", default="ZA", help="Comma-separated tenant folders under output/")
     ap.add_argument("--prefix", default="6", help="Error-code leading digit(s), e.g. 6 for 6xxx")
     args = ap.parse_args()
     if not re.fullmatch(r"\d{1,3}", args.prefix):

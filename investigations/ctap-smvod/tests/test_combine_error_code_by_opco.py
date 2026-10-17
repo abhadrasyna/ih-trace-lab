@@ -43,7 +43,7 @@ def test_one_workbook_per_code_with_own_columns(tmp_path, monkeypatch) -> None:
     _flat(tmp_path, "GH", "2026-10-09_1003.csv", ["sessionId", "errorcode", "extra"], [["b", "1003", "x"]])
     _flat(tmp_path, "GH", "2026-10-09_all.csv", ["sessionId", "errorcode"], [["dup", "1003"]])
     _flat(tmp_path, "ZM", "2026-10-11_6007.csv", ["sessionId", "errorcode"], [["c", "6007"]])
-    (tmp_path / "SA").mkdir()  # no flat folder -> not a tenant
+    (tmp_path / "ZA").mkdir()  # no flat folder -> not a tenant
     _run(monkeypatch, "--output-dir", str(tmp_path))
     f6007 = tmp_path / "error_code" / "6007" / "all_dates_error_6007_by_opco.xlsx"
     f1003 = tmp_path / "error_code" / "1003" / "all_dates_error_1003_by_opco.xlsx"

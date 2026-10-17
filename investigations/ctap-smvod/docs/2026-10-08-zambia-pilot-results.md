@@ -1,7 +1,7 @@
 # Zambia (ZM) pilot run — 2026-10-01
 
 MT-7 of `docs/plan/ctap-smvod-multitenant`: first real run of `run_pipeline.py --date 01102026 --tenant ZM --profile clarissa-insights-product` on a Zambia export from the shared Lightstep project
-`mcs-go-prod-mtn-1-eu`. Row counts and error-code tables below come from `scripts/summarize_pipeline_run.py --date 01102026 --tenant ZM` (and `--tenant SA` for the comparison).
+`mcs-go-prod-mtn-1-eu`. Row counts and error-code tables below come from `scripts/summarize_pipeline_run.py --date 01102026 --tenant ZM` (and `--tenant ZA` for the comparison).
 
 ## Inputs and the busUnitId guard
 
@@ -23,11 +23,11 @@ MT-7 of `docs/plan/ctap-smvod-multitenant`: first real run of `run_pipeline.py -
 | `setupsession.csv` / `setupsession_with_outcome.csv` | 74 / 74 |
 
 Every export row is accounted for in the merged report. 66 sessions have a timestamp match; 8 are `matched (no timestamp found for sessionId)`. Athena found outcomes for 51 sessions; 23 have no
-`unified_sessions` row (31%, versus 64% for SA on the same date).
+`unified_sessions` row (31%, versus 64% for ZA on the same date).
 
 ## Error-code distribution
 
-| Error code | ZM sessions | SA sessions (same date) |
+| Error code | ZM sessions | ZA sessions (same date) |
 |---|---|---|
 | 1003 | 11 | 5 |
 | E31012 | 4 | 2 |
@@ -37,12 +37,12 @@ Every export row is accounted for in the merged report. 66 sessions have a times
 | 1001 | — | 3 |
 | 6007 | — | 3 |
 
-ZM: 17 of 74 sessions carry an error code (23%); SA: 41 of 446 (9%). `playback_outcome` for ZM: DESTROY 21, PLAYER_ERROR 15, TIMEOUT 9, EBVS 3, INCOMPLETE_NO_DESTROY 3, blank 23. The 1xxx/6xxx error
+ZM: 17 of 74 sessions carry an error code (23%); ZA: 41 of 446 (9%). `playback_outcome` for ZM: DESTROY 21, PLAYER_ERROR 15, TIMEOUT 9, EBVS 3, INCOMPLETE_NO_DESTROY 3, blank 23. The 1xxx/6xxx error
 report has 12 rows, the position report 5, the WebView device report 10 wv sessions.
 
 ## Caveats
 
-- **No Ghana comparison.** The story asks for a sanity check against Ghana, but there is no Ghana export in the repo. SA (a dedicated project) is used as the reference instead; this is a different
-  tenant, so the distribution gap (1003-heavy ZM vs 6001-heavy SA) is not evidence of an error. A Ghana export for 2026-10-01 is needed to close that part of MT-7.
+- **No Ghana comparison.** The story asks for a sanity check against Ghana, but there is no Ghana export in the repo. ZA (a dedicated project) is used as the reference instead; this is a different
+  tenant, so the distribution gap (1003-heavy ZM vs 6001-heavy ZA) is not evidence of an error. A Ghana export for 2026-10-01 is needed to close that part of MT-7.
 - One day of 74 sessions is a small sample; the ZM percentages are indicative only.
 - The 1003-heavy mix and the 23 outcome-missing sessions are unexplained here and were not investigated.

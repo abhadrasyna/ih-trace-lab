@@ -7,13 +7,13 @@ Inputs per tenant/day (all local, no Athena/Lightstep calls; a missing input lea
     debug:     `data/athena/<T>/<date>_debug_sessions.csv` (`run_athena_debug_sessions.py`)
 A (date, tenant) with none of the three inputs is skipped.
 Output, appended like the adoption reports: `<out-dir>/<OPCO>/daily/<YYYY-MM>_session-comparison.csv`, one row per `session_date`, upserted per day
-(locked, atomic) so re-runs replace the same day. OPCO is the tenant code except SA -> ZA (the folder the adoption reports use).
+(locked, atomic) so re-runs replace the same day. OPCO is the tenant code (the folder the adoption reports use).
 Columns: session_date, lightstep, unified, debug, L_and_U, L_and_D, U_and_D, L_and_U_and_D, L_not_U, U_not_L, L_not_D, D_not_L,
 lightstep_blank_rows, missing_inputs. Sets are unique non-blank sessionIds; the day is UTC.
 
 Usage:
     python3 build_session_comparison_daily.py --from 2026-10-14 --to 2026-10-14
-    python3 build_session_comparison_daily.py --from 2026-10-08 --to 2026-10-16 --tenants SA,GH,ZM
+    python3 build_session_comparison_daily.py --from 2026-10-08 --to 2026-10-16 --tenants ZA,GH,ZM
 """
 import argparse
 import logging
@@ -31,7 +31,6 @@ from src.tenant_registry.registry import TenantRegistry
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.build_session_comparison_daily")
 ROOT = Path(__file__).resolve().parent.parent
 ARTIFACT = "session-comparison"
-OUTPUT_FOLDER = {"SA": "ZA"}
 COLUMNS = ["session_date", "lightstep", "unified", "debug", "L_and_U", "L_and_D", "U_and_D", "L_and_U_and_D",
            "L_not_U", "U_not_L", "L_not_D", "D_not_L", "lightstep_blank_rows", "missing_inputs"]
 
@@ -74,7 +73,7 @@ def build_row(
 
 def month_file(out_dir: Path, tenant: str, day: date) -> Path:
     """Pure: `<out_dir>/<OPCO>/daily/<YYYY-MM>_session-comparison.csv`."""
-    return out_dir / OUTPUT_FOLDER.get(tenant, tenant) / "daily" / f"{day:%Y-%m}_{ARTIFACT}.csv"
+    return out_dir / tenant / "daily" / f"{day:%Y-%m}_{ARTIFACT}.csv"
 
 
 def load_sets(root: Path, tenant: str, day: date) -> tuple[set[str] | None, set[str] | None, set[str] | None, int | None]:

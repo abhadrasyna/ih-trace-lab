@@ -11,7 +11,7 @@ With `--time-field ingest` each session is instead placed at its earliest Athena
 Writes `output/<T>/<date>_playback_attempts.png`; a chart failure for one opco is logged and the others still run.
 
 Usage:
-    python3 chart_playback_attempts.py --date 2026-10-14 --tenants SA,GH,ZM --bucket-min 5
+    python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA,GH,ZM --bucket-min 5
 """
 import argparse
 import csv
@@ -152,7 +152,7 @@ def main() -> None:
     init_logging("ctap-smvod-chart_playback_attempts")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, type=date.fromisoformat, help="UTC day, YYYY-MM-DD")
-    ap.add_argument("--tenants", default="SA,GH,ZM", help="Comma-separated tenant folders")
+    ap.add_argument("--tenants", default="ZA,GH,ZM", help="Comma-separated tenant folders")
     ap.add_argument("--bucket-min", type=int, default=5, help="Bucket size in minutes (must divide 1440)")
     ap.add_argument("--time-field", choices=["start_time", "ingest"], default="start_time",
                     help="start_time: Lightstep CSV (default); ingest: Athena ingest_timestamp from run_athena_session_ingest.py")

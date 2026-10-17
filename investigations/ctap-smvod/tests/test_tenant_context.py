@@ -11,7 +11,7 @@ tenant_context = load_script("lib/tenant_context.py")
 
 def test_context_values_come_from_registry() -> None:
     zm = tenant_context.resolve_tenant_context("ZM")
-    sa = tenant_context.resolve_tenant_context("SA")
+    sa = tenant_context.resolve_tenant_context("ZA")
 
     assert (zm.athena_tenant_id, zm.database, zm.debug_events_table) == ("a7vli5h8", "unified_a7vli5h8", "a7vli5h8_ccl_debug_events")
     assert (zm.profile, zm.region, zm.lightstep_project) == ("clarissa-insights-product", "eu-central-1", "mcs-go-prod-mtn-1-eu")
@@ -48,8 +48,8 @@ def test_missing_input_folder_names_expected_path(tmp_path: Path) -> None:
 def test_discovery_finds_only_tenants_with_date_files(tmp_path: Path) -> None:
     (tmp_path / "ZM").mkdir()
     (tmp_path / "ZM" / "2026-10-02_ctap.csv").write_text("a\n", encoding="utf-8")
-    (tmp_path / "SA").mkdir()
-    (tmp_path / "SA" / "2026-10-01_ctap.csv").write_text("a\n", encoding="utf-8")
+    (tmp_path / "ZA").mkdir()
+    (tmp_path / "ZA" / "2026-10-01_ctap.csv").write_text("a\n", encoding="utf-8")
     (tmp_path / "NG").mkdir()
     (tmp_path / "2026-10-02_ctap.csv").write_text("a\n", encoding="utf-8")
 

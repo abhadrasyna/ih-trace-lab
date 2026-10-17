@@ -11,7 +11,7 @@ The CTAP/SM-VOD pipeline (`scripts/run_pipeline.py`) is single-tenant: inputs li
 supported now and other MTN opcos later. Zambia shares a Lightstep project (`mcs-go-prod-mtn-1-eu`) with Ghana, disambiguated by `sessionInfo.busUnitId`, so a wrong-tenant row is a real risk.
 
 Decisions taken (2026-10-08): "enhance" means multi-tenant support only; `run_pipeline.py` runs every tenant discovered in the input for the requested date by default, and `--tenant <code>` restricts
-it to one tenant; existing SA files are `git mv`'d under a tenant folder; in an all-tenants run one tenant's failure does not stop the others (failures are reported at the end, exit non-zero).
+it to one tenant; existing ZA files are `git mv`'d under a tenant folder; in an all-tenants run one tenant's failure does not stop the others (failures are reported at the end, exit non-zero).
 
 ## Layout (target)
 
@@ -45,7 +45,7 @@ task per session, design review before code), `logging-and-correlation-id.md` (l
 - **MT-3** — tenant context resolution and discovery; Athena steps consume it.
 - **MT-4** — `run_pipeline.py`: all-tenants default, `--tenant`, continue-on-failure.
 - **MT-5** — shared-project `busUnitId` guard at merge.
-- **MT-6** — migrate existing SA files under a tenant folder.
+- **MT-6** — migrate existing ZA files under a tenant folder.
 - **MT-7** — Zambia pilot run for one date and sanity checks.
 - **MT-8** — `is_wv` column in the 1xxx/6xxx error report; shared wv helper in `scripts/lib/`.
 - **MT-9** — rerun dates with empty `raw_user_agent` after the tenant layout lands.

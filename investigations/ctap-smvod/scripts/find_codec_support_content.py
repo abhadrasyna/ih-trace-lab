@@ -7,7 +7,7 @@ not which codec the content uses. The content title is joined by sessionId from 
 `output/<TENANT>/*_setupsession_with_outcome.csv`; unmatched sessions are labelled `(unmatched)`.
 
 Usage:
-    python3 find_codec_support_content.py --from 2026-10-08 --to 2026-10-11 --tenant SA --codec ec-3
+    python3 find_codec_support_content.py --from 2026-10-08 --to 2026-10-11 --tenant ZA --codec ec-3
 """
 import argparse
 import csv as std_csv
@@ -91,7 +91,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--from", dest="start", required=True, type=date.fromisoformat)
     ap.add_argument("--to", dest="end", required=True, type=date.fromisoformat)
-    ap.add_argument("--tenant", default="SA")
+    ap.add_argument("--tenant", default="ZA")
     ap.add_argument("--codec", default="ec-3")
     ap.add_argument("--value", default="true", choices=["true", "false"])
     args = ap.parse_args()

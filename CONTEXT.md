@@ -10,27 +10,27 @@
   `docs/{README,usage}.md` where `usage.md` documents every script as it is added. `docs/conviva-metrics-reference.md` lists the Conviva QoE metric definitions (2026-10-11) and which are computable
   from `unified_sessions`; `docs/monthly-error-code-pipeline/` holds the MEC tasks and stories.
 - `investigations/ctap-smvod/` is multi-tenant (story `docs/plan/ctap-smvod-multitenant/`, MT-1..MT-10 done; pilot Zambia, results in `docs/2026-10-08-zambia-pilot-results.md`): `run_pipeline.py` runs
-  every tenant with Lightstep input for the date by default, `--tenant` restricts to one; inputs/outputs live under `<TENANT>/` folders (SA history `git mv`'d); the merge's `busUnitId` guard protects
+  every tenant with Lightstep input for the date by default, `--tenant` restricts to one; inputs/outputs live under `<TENANT>/` folders (ZA history `git mv`'d); the merge's `busUnitId` guard protects
   the shared Zambia/Ghana Lightstep project; the 1xxx/6xxx error report (CSV + xlsx) has an `is_wv` column via `scripts/lib/webview.py`. `analyze_error_report_breakdown.py --all-codes` reads
   `setupsession_with_outcome.csv` directly (includes 3016/E31012); `run_athena_error_eventdata.py` (catalog `ctap-smvod-error-eventdata`) exports raw `PLAYER_ERROR` eventdata and
   `flatten_error_eventdata.py` (+ `--split-by-errorcode`) flattens it into columns, both run as `run_pipeline.py` Steps 6f/6g (`--skip-error-eventdata`) and `summarize_error_eventdata.py` crosstabs
-  them. `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default SA,GH,ZM) exports the 1xxx-only error sessions (not limited to position_not_moved) for several tenants at once,
+  them. `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default ZA,GH,ZM) exports the 1xxx-only error sessions (not limited to position_not_moved) for several tenants at once,
   one CSV/XLSX per tenant in `output/<TENANT>/`. `rank_households_by_error.py --xlsx` ranks households by distinct error sessions in such an xlsx. `combine_error_code_by_opco.py` (optional
   `--from/--to`, `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet per opco, `date` column) in `output/error_code/<code>/`. `summarize_tenant_status.py
-  --date DDMMYYYY` (run by hand after the pipeline) writes the SA/GH/ZM cross-tenant daily status table to `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one
+  --date DDMMYYYY` (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one
   `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant. `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a
-  ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default SA) counts 6xxx sessions and unique households per content (per code +
+  ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default ZA) counts 6xxx sessions and unique households per content (per code +
   `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe as supported in the flattened eventdata (a device capability, not
   the content's codec). `compute_concurrent_playback.py` (`--date`, `--tenants`) writes per-minute concurrent sessions per UTC day from the CSV and Athena exports (three views, last debug event as an
   estimated end) and `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). `run_athena_session_ingest.py` (catalog `ctap-smvod-session-ingest`) exports per-session
   `ingest_timestamp` from `unified_sessions` and `chart_playback_attempts.py --time-field ingest` charts attempts by when rows landed in Athena; `run_athena_debug_sessions.py` (catalog
   `ctap-smvod-debug-sessions`) exports the distinct debug-events sessions for a day, and `compare_lightstep_athena_sessions.py` (`--debug` for the 3-way) diffs Lightstep vs `unified_sessions` (vs
   debug) session sets, writing `output/<T>/<date>_lightstep_vs_athena_sessions.csv`; `build_session_comparison_daily.py` (`--from/--to`, `--tenants`, default all tenants) appends those counts, like
-  the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`; SA -> `ZA`). Constrained by `docs/refactor/`.
+  the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
-- `investigations/mtn-sa-span-attribute-audit/` — ad hoc audit of MTN SA Lightstep span attributes, driven live via the Lightstep MCP tools (tenant resolved through
+- `investigations/mtn-sa-span-attribute-audit/` — ad hoc audit of MTN ZA Lightstep span attributes, driven live via the Lightstep MCP tools (tenant resolved through
   `scripts/resolve_tenant.py`/`config/tenants.yaml` to Lightstep project `mcs-go-prod-iye9omdf-eu`, EU region). `docs/sample-span-ctap-server.md` and `docs/sample-span-households-core-server.md` each
   capture one full span's attributes (identity, timing, tags, reporter/process info) pulled via `get_stored_trace`/`query_spans`; the second file also tallies a key-by-key diff against the first (48
   common keys, 37 differing properties total). `docs/household-device-field-naming-finding.md` resolves one of those diffed fields: within `ctap`, exactly 3 "shared"-catalogue APIs
@@ -62,7 +62,7 @@
 - `docs/archive/tenant-registry/` — story complete: `config/tenants.yaml` is now the canonical MTN tenant-identifier config for all 4 confirmed opcos (Go ID, Matisse Project/Client Tenant ID, Athena
   Tenant ID, Lightstep project/region, shared-project disambiguation attribute); `src/tenant_registry/` loads it and resolves per-system query contexts (`TenantRegistry`/`QueryTarget`); this assistant
   must consult it (via `scripts/resolve_tenant.py` or the loader directly) before any Lightstep/Matisse/Athena MCP call, per `docs/guides/tenant-resolution.md`'s CLI-first protocol. TR-1's scratch
-  probe was confirmed against real, human-reviewed Lightstep MCP data (dedicated SA project + shared Ghana project disambiguated by `busUnitId`) before any production code was written.
+  probe was confirmed against real, human-reviewed Lightstep MCP data (dedicated ZA project + shared Ghana project disambiguated by `busUnitId`) before any production code was written.
 - `docs/archive/query-catalog/` — story complete: `queries/athena/` + `queries/lightstep/` now provide a deduplicated, parameterized-template query catalog harvested from `github_copilot`'s 3
   `QUERY_CATALOG.md` files plus `lightstep-query-templates.md`; the Athena/Lightstep harvest scripts are in `scripts/dev/`, the query indexes/templates live under `queries/`, the query workflow guide
   lives at `docs/guides/query-catalog.md`, and the ported (not yet run) Athena DDL-cache tooling plus `knowledge/README.md` live under `knowledge/` / `scripts/athena/`.
@@ -79,7 +79,7 @@
 - `docs/archive/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
   `scripts/dev/promote_scratch_scripts.py` provides manual promotion with registry refresh; `scratch/SCRATCH.md`, `AGENTS.md`, and the repo-local `.github/skills/session-close/SKILL.md` enforce the
   delegated duplicate-check and close-out regeneration workflow; `tests/dev/` covers both CLIs.
-- `docs/archive/reference-knowledge-harvest/` — story complete through RKH-17: `knowledge/` now contains the harvested VOD asset mapping/pipeline references, MTN SA Lightstep tag/query references,
+- `docs/archive/reference-knowledge-harvest/` — story complete through RKH-17: `knowledge/` now contains the harvested VOD asset mapping/pipeline references, MTN ZA Lightstep tag/query references,
   Applause Athena/CSV gotchas, adoption playback-outcome gap notes, CTAP-SM-VOD playback/CDN methodology docs, MTN/TIM Play tenant+DRM references, the 3 root knowledge ports, and the SRE Jira project
   reference. The story remains extensible — future `github_copilot/*` folders would reopen it by appending new `RKH-N` tasks rather than creating a new story.
 - Story-archiving is now scripted and self-triggering: `scripts/dev/archive_completed_story.py <slug>` (epic-aware; refuses incomplete slugs) does the `git mv` + cross-reference rewrite + 200-char

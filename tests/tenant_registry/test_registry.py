@@ -14,11 +14,11 @@ FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "tenants_test.
 def test_get_by_each_id_type_returns_correct_tenant() -> None:
     registry = TenantRegistry(FIXTURE_PATH)
 
-    identifiers = ("iye9omdf", "1z5vo5g2", "rxviifsu", "e6auj7k7", "SA")
+    identifiers = ("iye9omdf", "1z5vo5g2", "rxviifsu", "e6auj7k7", "ZA")
 
     for identifier in identifiers:
         tenant = registry.get(identifier)
-        assert tenant.code == "SA"
+        assert tenant.code == "ZA"
         assert tenant.name == "South Africa"
 
 
@@ -32,7 +32,7 @@ def test_get_unknown_identifier_raises_key_error_listing_available_ids() -> None
 def test_codes_returns_config_order() -> None:
     codes = TenantRegistry(FIXTURE_PATH).codes()
 
-    assert codes[0] == "SA" and len(codes) == len(set(codes)) >= 2
+    assert codes[0] == "ZA" and len(codes) == len(set(codes)) >= 2
 
 
 def test_codes_empty_config_returns_empty_list(tmp_path: Path) -> None:

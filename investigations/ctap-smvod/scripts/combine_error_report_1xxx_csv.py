@@ -6,8 +6,8 @@ output/<TENANT>/YYYY-MM-DD_setupsession_with_outcome.csv files only -- never fir
 Aborts naming every missing input so a partial result is never written.
 
 Usage:
-    python3 combine_error_report_1xxx_csv.py --tenant SA --from 01102026 --to 11102026
-    # -> output/SA/<range>_error_report_1xxx_combined.csv
+    python3 combine_error_report_1xxx_csv.py --tenant ZA --from 01102026 --to 11102026
+    # -> output/ZA/<range>_error_report_1xxx_combined.csv
 """
 import argparse
 import logging
@@ -35,7 +35,7 @@ def main() -> None:
     init_logging("ctap-smvod-combine_error_report_1xxx_csv")
     LOGGER.info("Starting combine_error_report_1xxx_csv")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--tenant", required=True, help="Tenant code, e.g. SA")
+    ap.add_argument("--tenant", required=True, help="Tenant code, e.g. ZA")
     ap.add_argument("--from", dest="date_from", required=True, help="Range start DDMMYYYY")
     ap.add_argument("--to", dest="date_to", required=True, help="Range end DDMMYYYY, inclusive")
     ap.add_argument("--output-dir", default=None, help="Root holding <TENANT>/ output folders (default: investigation output dir)")

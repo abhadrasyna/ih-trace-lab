@@ -9,7 +9,7 @@ knowledge/mtn-adoption-playback-outcome-classification-gap.md). Takeaways are ju
 
 Usage:
     python3 summarize_tenant_status.py --date 08102026
-    python3 summarize_tenant_status.py --date 08102026 --tenants SA,GH,ZM --out /tmp/summary.md
+    python3 summarize_tenant_status.py --date 08102026 --tenants ZA,GH,ZM --out /tmp/summary.md
 """
 import argparse
 import csv
@@ -23,7 +23,7 @@ from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.pat
 from src.lib.logging.bootstrap import init_logging
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_TENANTS = ("SA", "GH", "ZM")
+DEFAULT_TENANTS = ("ZA", "GH", "ZM")
 REQUIRED_COLUMNS = ("sessionId", "deviceId", "householdId", "playback_outcome", "error_codes", "state_sequence",
                     "position_not_moved", "startup_time_ms", "Device Class")
 SHOWN_OUTCOMES = ("DESTROY", "TIMEOUT", "EBVS", "PLAYER_ERROR")
@@ -179,7 +179,7 @@ def main() -> int:
     init_logging("ctap-smvod-summarize_tenant_status")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="DDMMYYYY (UTC day)")
-    ap.add_argument("--tenants", default=",".join(DEFAULT_TENANTS), help="Comma-separated tenant codes (default: SA,GH,ZM)")
+    ap.add_argument("--tenants", default=",".join(DEFAULT_TENANTS), help="Comma-separated tenant codes (default: ZA,GH,ZM)")
     ap.add_argument("--root", type=Path, default=DEFAULT_ROOT, help="Investigation root (default: ctap-smvod)")
     ap.add_argument("--out", type=Path, default=None, help="Output markdown path (default: docs/YYYY-MM-DD-tenant-status-summary.md)")
     ap.add_argument("--force", action="store_true", help="Overwrite an existing output file")

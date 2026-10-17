@@ -43,7 +43,7 @@ from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_athena_playback_outcome")
 
-LEGACY_TENANT = "SA"
+LEGACY_TENANT = "ZA"
 
 QUERY_SLUG = "ctap-smvod-playback-outcome"
 
@@ -61,7 +61,7 @@ def main():
     LOGGER.info("Starting run_athena_playback_outcome")
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="Partition date, YYYY-MM-DD (e.g. 2026-07-08)")
-    ap.add_argument("--tenant", default=None, help="Tenant code from config/tenants.yaml (default: SA with the legacy flat data/ and output/ folders)")
+    ap.add_argument("--tenant", default=None, help="Tenant code from config/tenants.yaml (default: ZA with the legacy flat data/ and output/ folders)")
     ap.add_argument("--profile", default=None, help="AWS SSO profile (default: from the tenant registry)")
     ap.add_argument("--database", default=None, help="Athena database (default: from the tenant registry)")
     ap.add_argument("--workgroup", default="primary", help="Athena workgroup (default: primary)")

@@ -46,37 +46,37 @@ def test_filter_rows_keeps_columns_and_not_only_not_moved():
 
 
 def test_parse_tenants_dedupes_uppercases_and_rejects_empty():
-    assert mod.parse_tenants("sa, GH,sa") == ["SA", "GH"]
+    assert mod.parse_tenants("za, GH,za") == ["ZA", "GH"]
     with pytest.raises(ValueError):
         mod.parse_tenants(" , ")
 
 
 def test_single_date_writes_one_csv_per_tenant(tmp_path, monkeypatch):
-    for t in ("SA", "GH"):
+    for t in ("ZA", "GH"):
         write_source(tmp_path, t, "2026-10-08", ["1003", "6001", ""])
-    run(monkeypatch, tmp_path, "--date", "08102026", "--tenants", "SA,GH")
-    for t in ("SA", "GH"):
+    run(monkeypatch, tmp_path, "--date", "08102026", "--tenants", "ZA,GH")
+    for t in ("ZA", "GH"):
         rows = list(csv.DictReader((tmp_path / t / "2026-10-08_error_report_1xxx.csv").open()))
         assert [r["sessionId"] for r in rows] == ["s0"]
 
 
 def test_range_writes_one_xlsx_per_tenant_with_sheet_per_date(tmp_path, monkeypatch):
-    for t in ("SA", "ZM"):
+    for t in ("ZA", "ZM"):
         for iso in ("2026-10-07", "2026-10-08"):
             write_source(tmp_path, t, iso, ["1003"])
-    run(monkeypatch, tmp_path, "--from", "07102026", "--to", "08102026", "--tenants", "SA,ZM")
-    files = sorted((tmp_path / "SA").glob("*error_report_1xxx.xlsx"))
+    run(monkeypatch, tmp_path, "--from", "07102026", "--to", "08102026", "--tenants", "ZA,ZM")
+    files = sorted((tmp_path / "ZA").glob("*error_report_1xxx.xlsx"))
     assert len(files) == 1 and len(list((tmp_path / "ZM").glob("*error_report_1xxx.xlsx"))) == 1
     assert load_workbook(files[0]).sheetnames == ["2026-10-07", "2026-10-08"]
 
 
 def test_missing_tenant_input_exits_nonzero_naming_path_and_writes_nothing(tmp_path, monkeypatch, capsys):
-    write_source(tmp_path, "SA", "2026-10-08", ["1003"])
+    write_source(tmp_path, "ZA", "2026-10-08", ["1003"])
     with pytest.raises(SystemExit) as exc:
-        run(monkeypatch, tmp_path, "--date", "08102026", "--tenants", "SA,GH")
+        run(monkeypatch, tmp_path, "--date", "08102026", "--tenants", "ZA,GH")
     assert exc.value.code == 1
     assert "GH" in capsys.readouterr().err
-    assert not list((tmp_path / "SA").glob("*error_report_1xxx*"))
+    assert not list((tmp_path / "ZA").glob("*error_report_1xxx*"))
 
 
 def test_reversed_range_exits_nonzero(tmp_path, monkeypatch):
