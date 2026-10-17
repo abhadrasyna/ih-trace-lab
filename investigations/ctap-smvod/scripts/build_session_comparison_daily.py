@@ -94,11 +94,11 @@ def main() -> None:
     ap.add_argument("--to", dest="end", required=True, type=date.fromisoformat, help="Last UTC day, YYYY-MM-DD (inclusive)")
     ap.add_argument("--tenants", default=None, help="Comma-separated tenant codes (default: every code in config/tenants.yaml)")
     ap.add_argument("--root", type=Path, default=ROOT, help="Investigation root (default: ctap-smvod)")
-    ap.add_argument("--out-dir", type=Path, default=None, help="Output base dir (default: <root>/output)")
+    ap.add_argument("--out-dir", type=Path, default=None, help="Output base dir (default: <repo>/output, shared with the adoption reports)")
     args = ap.parse_args()
 
     tenants = [t.strip() for t in args.tenants.split(",") if t.strip()] if args.tenants else TenantRegistry().codes()
-    out_dir = args.out_dir or args.root / "output"
+    out_dir = args.out_dir or REPO_ROOT / "output"
     store = MonthlyCsvStore(CsvFileReader(), CsvFileWriter())
     written = 0
     for day in date_range(args.start, args.end):
