@@ -55,6 +55,19 @@ def diff_sets(lightstep: set[str], athena: set[str]) -> dict[str, set[str]]:
     return {"both": lightstep & athena, "lightstep_only": lightstep - athena, "athena_only": athena - lightstep}
 
 
+def venn3(lightstep: set[str], unified: set[str], debug: set[str]) -> dict[str, int]:
+    """Pure: sizes of the seven regions of three session sets (L=Lightstep, U=unified_sessions, D=debug events)."""
+    return {
+        "L only": len(lightstep - unified - debug),
+        "U only": len(unified - lightstep - debug),
+        "D only": len(debug - lightstep - unified),
+        "L&U only": len((lightstep & unified) - debug),
+        "L&D only": len((lightstep & debug) - unified),
+        "U&D only": len((unified & debug) - lightstep),
+        "L&U&D": len(lightstep & unified & debug),
+    }
+
+
 def mismatch_rows(
     parts: Mapping[str, set[str]],
     ls_start: Mapping[str, str],
@@ -104,6 +117,8 @@ def main() -> None:
     ap.add_argument("--date", required=True, type=date.fromisoformat, help="UTC day, YYYY-MM-DD")
     ap.add_argument("--tenant", default="SA")
     ap.add_argument("--root", type=Path, default=ROOT, help="Investigation root (default: ctap-smvod)")
+    ap.add_argument("--debug", action="store_true",
+                    help="3-way: add the debug-events sessions from <date>_debug_sessions.csv (run_athena_debug_sessions.py)")
     args = ap.parse_args()
 
     ls_rows = read_rows(args.root / "output" / args.tenant / f"{args.date}_setupsession.csv", ["sessionId", "start_time"])
@@ -116,10 +131,17 @@ def main() -> None:
     ath_ids, _ = unique_ids(ath_rows)
     parts = diff_sets(ls_ids, ath_ids)
     out_rows = mismatch_rows(parts, earliest_start(ls_rows), ingest, ingest_loaded)
+    dbg_ids: set[str] | None = None
+    if args.debug:
+        dbg_rows = read_rows(args.root / "data" / "athena" / args.tenant / f"{args.date}_debug_sessions.csv", ["sessionId"])
+        dbg_ids, _ = unique_ids(dbg_rows)
+        for r in out_rows:
+            r["in_debug"] = "yes" if r["sessionId"] in dbg_ids else "no"
+    columns = OUT_COLUMNS + (["in_debug"] if args.debug else [])
 
     out = args.root / "output" / args.tenant / f"{args.date}_lightstep_vs_athena_sessions.csv"
     with open(out, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=OUT_COLUMNS)
+        w = csv.DictWriter(fh, fieldnames=columns)
         w.writeheader()
         w.writerows(out_rows)
 
@@ -130,6 +152,10 @@ def main() -> None:
         elsewhere = [r["athena_elsewhere"] for r in out_rows if r["side"] == "lightstep_only"]
         for label in sorted(set(elsewhere)):
             print(f"  lightstep_only -> {label}: {elsewhere.count(label)}")
+    if dbg_ids is not None:
+        print(f"  debug events: {len(dbg_ids)} sessions")
+        for label, n in venn3(ls_ids, ath_ids, dbg_ids).items():
+            print(f"  {label}: {n}")
     LOGGER.info("Wrote %s (%d rows)", out, len(out_rows))
 
 

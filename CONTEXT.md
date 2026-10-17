@@ -22,7 +22,10 @@
   ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default SA) counts 6xxx sessions and unique households per content (per code +
   `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe as supported in the flattened eventdata (a device capability, not
   the content's codec). `compute_concurrent_playback.py` (`--date`, `--tenants`) writes per-minute concurrent sessions per UTC day from the CSV and Athena exports (three views, last debug event as an
-  estimated end) and `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). Constrained by `docs/refactor/`.
+  estimated end) and `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). `run_athena_session_ingest.py` (catalog `ctap-smvod-session-ingest`) exports per-session
+  `ingest_timestamp` from `unified_sessions` and `chart_playback_attempts.py --time-field ingest` charts attempts by when rows landed in Athena; `run_athena_debug_sessions.py` (catalog
+  `ctap-smvod-debug-sessions`) exports the distinct debug-events sessions for a day, and `compare_lightstep_athena_sessions.py` (`--debug` for the 3-way) diffs Lightstep vs `unified_sessions` (vs
+  debug) session sets, writing `output/<T>/<date>_lightstep_vs_athena_sessions.csv`. Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.

@@ -142,6 +142,10 @@ Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 | `python3 chart_playback_attempts.py --date 2026-10-14 --tenants SA --time-field ingest` | `output/<TENANT>/<date>_playback_attempts_ingest.png` (attempts at each session's earliest `ingest_timestamp`; run the export first; sessions that started that day but landed on another are counted in the title) |
 <!-- lint-ignore-length -->
 | `python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant SA` | stdout counts (both / Lightstep-only / Athena-only) + `output/<TENANT>/<date>_lightstep_vs_athena_sessions.csv` (one row per one-sided session; Lightstep side = `setupsession.csv`, Athena side = `data/athena/<T>/<date>_session.csv`, enriched from `_session_ingest.csv` when present) |
+<!-- lint-ignore-length -->
+| `python3 run_athena_debug_sessions.py --date 2026-10-14 --tenant SA [--table-suffix sept26]` | `data/athena/<TENANT>/<date>_debug_sessions.csv` (`sessionId,first_event`: distinct `abr-vod-` sessions with a PLAYER_SESSION_EVENT/STATE_CHANGE/ERROR in the UTC day; catalog `ctap-smvod-debug-sessions`) |
+<!-- lint-ignore-length -->
+| `python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant SA --debug` | as above plus the debug-events set: per-region counts (L/U/D Venn) on stdout and an `in_debug` column in the mismatch CSV |
 | `python3 find_codec_support_content.py --from 2026-10-01 --to 2026-10-11 --tenant SA --codec ec-3` | `output/<TENANT>/<from>_<to>_ec-3_true_by_content[_sessions\|_split].csv` |
 | `python3 analyze_wv_device_cross_date_success.py --date 18092026` | `output/YYYY-MM-DD_wv_device_cross_date_history.csv` |
 | `python3 analyze_wv_failure_then_success_devices.py` | `output/wv_failure_then_success_report_rollup.csv`, `output/wv_failure_then_success_evidence_rollup.csv` |

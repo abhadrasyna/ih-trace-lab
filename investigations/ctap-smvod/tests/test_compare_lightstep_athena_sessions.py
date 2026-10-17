@@ -45,3 +45,14 @@ def test_read_rows_missing_column_raises(tmp_path):
         mod.read_rows(p, ["sessionId"])
     with pytest.raises(FileNotFoundError):
         mod.read_rows(tmp_path / "nope.csv", ["a"])
+
+
+def test_venn3_regions_partition_the_union():
+    ls, un, dbg = {"a", "b", "c", "x"}, {"b", "c", "d", "y"}, {"c", "d", "e", "x"}
+    v = mod.venn3(ls, un, dbg)
+    assert v == {"L only": 1, "U only": 1, "D only": 1, "L&U only": 1, "L&D only": 1, "U&D only": 1, "L&U&D": 1}
+    assert sum(v.values()) == len(ls | un | dbg)
+
+
+def test_venn3_empty_sets():
+    assert sum(mod.venn3(set(), set(), set()).values()) == 0
