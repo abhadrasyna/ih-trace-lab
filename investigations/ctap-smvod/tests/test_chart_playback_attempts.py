@@ -56,3 +56,43 @@ def test_chart_failure_does_not_block_report(tmp_path):
         assert mod.write_chart("SA", DAY, 5, tmp_path) is False
     assert path.exists() and not (tmp_path / "SA" / f"{DAY}_playback_attempts.png").exists()
     assert mod.write_chart("SA", DAY, 5, tmp_path) is True
+
+
+def test_attempts_by_ingest_uses_earliest_ingest_per_session():
+    rows = [
+        {"sessionId": "a", "ingest_timestamp": "2026-10-14 00:11:00.000"},
+        {"sessionId": "a", "ingest_timestamp": "2026-10-14 00:02:00.000"},
+        {"sessionId": "b", "ingest_timestamp": "2026-10-15 00:02:00.000"},
+    ]
+    counts = mod.attempts_per_bucket(rows, DAY, 5, "ingest_timestamp")
+    assert counts[0] == 1 and sum(counts) == 1
+
+
+def test_read_rows_missing_ingest_column_raises(tmp_path):
+    path = tmp_path / "x.csv"
+    path.write_text("sessionId,event_start\na,2026-10-14 00:00:00\n")
+    with pytest.raises(ValueError):
+        mod.read_rows(path, "ingest_timestamp")
+
+
+def test_write_chart_bad_time_field_raises(tmp_path):
+    with pytest.raises(ValueError):
+        mod.write_chart("SA", DAY, 5, tmp_path, "ingest_timestamp", tmp_path)
+
+
+def test_write_chart_ingest_mode(tmp_path):
+    (tmp_path / "data" / "SA").mkdir(parents=True)
+    (tmp_path / "out" / "SA").mkdir(parents=True)
+    (tmp_path / "data" / "SA" / f"{DAY}_session_ingest.csv").write_text(
+        "sessionId,event_start,ingest_timestamp\na,2026-10-14 00:01:00,2026-10-14 00:10:00\nb,2026-10-14 23:59:00,2026-10-15 01:00:00\n")
+    assert mod.write_chart("SA", DAY, 5, tmp_path / "out", "ingest", tmp_path / "data") is True
+    assert (tmp_path / "out" / "SA" / f"{DAY}_playback_attempts_ingest.png").exists()
+
+
+def test_late_arrivals_counts_only_day_sessions_ingested_elsewhere():
+    rows = [
+        {"sessionId": "a", "event_start": "2026-10-14 23:00:00", "ingest_timestamp": "2026-10-15 01:00:00"},
+        {"sessionId": "b", "event_start": "2026-10-14 10:00:00", "ingest_timestamp": "2026-10-14 10:05:00"},
+        {"sessionId": "c", "event_start": "2026-10-13 23:00:00", "ingest_timestamp": "2026-10-13 23:05:00"},
+    ]
+    assert mod.late_arrivals(rows, DAY) == 1
