@@ -21,8 +21,8 @@ from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.trace_device_household")
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "output"
-SESSION_COLS = ("householdId", "deviceId", "sessionId", "content", "span_name", "error_flag", "playback_outcome",
-                "error_codes", "start_time")
+SESSION_COLS = ("householdId", "deviceId", "sessionId", "content", "span_name", "playback_outcome",
+                "error_codes", "state_sequence", "startup_time_ms")
 ERROR_COLS = ("datetime", "deviceId", "householdId", "sessionId", "errorcode", "shaka_category", "shaka_error_name", "pipeline_status")
 
 
@@ -45,6 +45,26 @@ def session_content_map(session_rows: list[dict]) -> dict[str, str]:
     return out
 
 
+def classify_session(rows: list[dict]) -> str:
+    """VSF = REQUEST_VIEWING seen (startup_time_ms is derived from it) but no PLAYING state; else PLAYED / NO_REQUEST_VIEWING.
+
+    Combines all rows of one session: any startup time, any PLAYING state.
+    """
+    if not any(r["startup_time_ms"] for r in rows):
+        return "NO_REQUEST_VIEWING"
+    return "PLAYED" if any("PLAYING" in r["state_sequence"] for r in rows) else "VSF"
+
+
+def session_split(session_rows: list[dict]) -> Counter:
+    """Counts (class, 'error'|'no_error') per unique sessionId, combining all its rows; blank sessionIds are skipped."""
+    by_session: dict[str, list[dict]] = defaultdict(list)
+    for r in session_rows:
+        if r["sessionId"]:
+            by_session[r["sessionId"]].append(r)
+    return Counter((classify_session(rows), "error" if any(r["error_codes"] for r in rows) else "no_error")
+                   for rows in by_session.values())
+
+
 def summarize(session_rows: list[dict], error_rows: list[dict]) -> dict:
     """Aggregate operations, playback attempts and failures for already-filtered rows."""
     content_of = session_content_map(session_rows)
@@ -62,6 +82,7 @@ def summarize(session_rows: list[dict], error_rows: list[dict]) -> dict:
         "shaka_error_names": Counter(e["shaka_error_name"] for e in error_rows),
         "pipeline_status": Counter(e["pipeline_status"] or "(blank)" for e in error_rows),
         "errors_by_content": errors_by_content,
+        "session_split": session_split(session_rows),
         "error_sessions": len({e["sessionId"] for e in error_rows if e["sessionId"]}),
     }
 
@@ -87,6 +108,9 @@ def print_report(device_id: str, s: dict) -> None:
     print(f"device: {device_id}\nhouseholds: {s['households']}")
     print(f"playback sessions (unique): {s['playback_sessions']} | sessions with errors (unique): {s['error_sessions']}")
     print("note: operations/outcomes count rows; attempts-by-content counts unique sessions")
+    print("\nsession split (class, error?) -- VSF = REQUEST_VIEWING (startup_time_ms set) and no PLAYING state:")
+    for (cls, err), n in sorted(s["session_split"].items()):
+        print(f"  {n:4d}  {cls:20s} {err}")
     for title, key in (("operations (span_name)", "operations"), ("playback outcome", "outcomes"),
                        ("attempts by content", "attempts_by_content"), ("error codes", "error_codes"),
                        ("shaka category", "shaka_categories"), ("shaka error name", "shaka_error_names"), ("pipeline status", "pipeline_status")):

@@ -11,11 +11,22 @@ Generated from `scripts/trace_device_household.py` over `output/ZA/<date>_setups
 | User agent | `Mozilla/5.0 (Linux; Android 10; K) … Chrome/155.0.0.0 Mobile Safari/537.36` |
 | Window | first error 2026-10-18T15:32:30Z, last error 2026-10-19T11:33:38Z |
 
-## Volumes
+## Session split (44 unique sessions)
 
-- Unique playback sessions: 44 (28 rows have span `POST`; 16 rows have a blank span name).
-- Sessions with at least one error event: 33 (33 error events in total).
+VSF here means a `REQUEST_VIEWING` event was seen (`startup_time_ms` is derived from it) but the session never reached a `PLAYING` state.
+
+| Class | With error code | No error code | Total |
+|---|---|---|---|
+| VSF | 33 | 8 (all `EBVS`) | 41 |
+| Played (`PLAYING` seen) | 0 | 0 | 0 |
+| No `REQUEST_VIEWING` / no startup time | 0 | 3 | 3 |
+| Total | 33 | 11 | 44 |
+
+- Sessions without `REQUEST_VIEWING` have no startup time; two of them have no outcome row at all (no `unified_sessions` match).
+- Of the 33 error sessions, 28 carry 3016 and 5 carry 3015.
+- Operations: 28 rows have span `POST`; 16 rows have a blank span name.
 - Outcomes (row counts): 33 `INCOMPLETE_NO_DESTROY`, 8 `EBVS`, 3 blank. No successful playback was recorded.
+- Caveat: `REQUEST_VIEWING` is not in the local CSVs, so its presence is inferred from `startup_time_ms` being set.
 
 ## Failures
 

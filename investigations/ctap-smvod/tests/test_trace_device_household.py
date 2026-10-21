@@ -8,9 +8,26 @@ from conftest import load_script
 mod = load_script("trace_device_household.py")
 
 
-def _s(sid, content, outcome="FAILED"):
+def _s(sid, content, outcome="FAILED", startup="100", states="CREATE->BUFFERING->ERROR(3016)", codes="3016"):
     return {"householdId": "h1", "deviceId": "d1", "sessionId": sid, "content": content,
-            "span_name": "SetupSession", "playback_outcome": outcome}
+            "span_name": "SetupSession", "playback_outcome": outcome, "startup_time_ms": startup,
+            "state_sequence": states, "error_codes": codes}
+
+
+def test_session_split_vsf_played_and_no_request_viewing():
+    rows = [_s("s1", "A"), _s("s2", "A", states="CREATE->PLAYING->DESTROY", codes=""),
+            _s("s3", "A", startup="", states="CREATE", codes=""), _s("", "A")]
+    assert mod.session_split(rows) == {("VSF", "error"): 1, ("PLAYED", "no_error"): 1, ("NO_REQUEST_VIEWING", "no_error"): 1}
+
+
+def test_session_split_combines_rows_of_one_session():
+    rows = [_s("s1", "A", startup="", states="CREATE", codes=""), _s("s1", "A")]
+    assert mod.session_split(rows) == {("VSF", "error"): 1}
+
+
+def test_classify_session_missing_column_raises():
+    with pytest.raises(KeyError):
+        mod.classify_session([{"startup_time_ms": "5"}])
 
 
 def _e(sid, code):
