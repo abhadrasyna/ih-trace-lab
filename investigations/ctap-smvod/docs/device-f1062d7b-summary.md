@@ -55,17 +55,29 @@ VSF here means a `REQUEST_VIEWING` event was seen (`startup_time_ms` is derived 
 
 ## CDN correlation (MTN_INC0256613, matched by content UUID)
 
-Source: `data/cdnReport/MTN_INC0256613_Client_query.txt` (18 blocks, 1,013 rows, IPs 41.13.78.209 and 102.66.159.55) against `output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv` (33 error
-sessions, 19 content UUIDs, 15 with blank `start_time`). Sessions were matched on the `vode/<uuid>/` path segment, not on time, so blank-`start_time` sessions are covered. All 33 sessions have CDN
-rows.
+Source: `data/cdnReport/MTN_INC0256613_Client_query.txt` (18 blocks, IPs 41.13.78.209 and 102.66.159.55) against `output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv` (33 error sessions, 19
+content UUIDs, 15 with blank `start_time`). Sessions were matched on the `vode/<uuid>/` path segment, not on time, so blank-`start_time` sessions are covered. Content names come from `content_uuid` /
+`content` in `output/ZA/2026-10-*_setupsession_with_outcome.csv`. Overlapping blocks repeat rows, so the 1,013 raw rows were deduplicated on timestamp, URL, bytes, cache result and `ttms` to 278 rows;
+all counts below use the deduplicated rows. All 33 sessions have CDN rows.
 
-- **No CDN failure:** 975 rows `200`, 35 `206`, 3 `304`; no 4xx/5xx and no row with `ttms` above 2000 ms. Cache results: `TCP_MEM_HIT` 645, `TCP_REFRESH_MISS` 187, `TCP_HIT` 162, `ERR_CLIENT_ABORT`
-  11, `TCP_MISS` 5, `TCP_IMS_HIT` 3.
-- **Most content is served from cache** (`ttfb` median 0), so the 3015/3016 errors do not look CDN-originated.
-- **Origin-bound content** (`ttfb` 257-404 ms): `2df37724` (66 refresh-misses, 6 mid-transfer aborts), `14f13bc4` (all origin fetches), `133b65f5` (3 aborts) and `869e5633` (2 aborts). The aborts have
-  `bytes > 0`, i.e. the client cancelled mid-transfer, consistent with the device-side failure above.
-- Overlapping blocks repeat rows, so per-UUID row counts are inflated; 2 CDN UUIDs have no session in the report. Matching ignores time, so a row may belong to a neighbouring session of the same
-  content.
+- **No CDN failure:** no 4xx/5xx status and no row with `ttms` above 2000 ms.
+- **Most content is served from cache** (`ttfb` median 0), so the 3015/3016 errors do not look CDN-originated: 15 of the 19 content UUIDs show no origin-bound pattern (`ttfb` 0, no aborts) and still
+  failed the same way.
+- **Origin-bound titles** (`ttfb` 261-404 ms) have refresh-misses and, for some, mid-transfer client aborts (`bytes > 0`), consistent with the device-side failure above rather than a CDN fault.
+
+| Content | Sessions | Codes | CDN pattern (deduplicated) |
+|---|---|---|---|
+| Cabin 28 (`1a1b510a`) | 6 | 3016 ×6 | all cache hits, `ttfb` 0 |
+| Sudwala (`0eef7654`) | 6 | 3016 ×6 | cache hits, 2 refresh-misses, `ttfb` 0 |
+| Pumbaa (`133b65f5`) | 3 | 3016 ×2, 3015 ×1 | origin-bound, `ttfb` 262 ms, 3 mid-transfer aborts |
+| Pelgrimsrus (`869e5633`) | 3 | 3016 ×3 | origin-bound, `ttfb` 262 ms, 2 mid-transfer aborts |
+| Twisted Fates (3 UUIDs) | 3 | 3016 ×2, 3015 ×1 | cache hits, `ttfb` 0 |
+| Elephant Whispers (`14f13bc4`) | 1 | 3016 | origin-bound, `ttfb` 404 ms, no aborts |
+| The Bear Went Over the Mountain (`2df37724`) | 1 | 3016 | origin-bound, `ttfb` 328 ms, 11 refresh-misses, 1 abort |
+| 10 other titles | 1 each | 3016 ×7, 3015 ×3 | cache hits, `ttfb` 0 |
+
+- Two CDN UUIDs have no session in this report: "Deck the Halls - Fantasy Animals" and "The Hiccup Song". Matching ignores time, so a row may belong to a neighbouring session of the same content.
+- UUID `17d99e7b…` maps to two titles in the session files ("A Promise of Escape" ×85, "The Wedding That Never Was" ×1); it is not in this device's data.
 
 ## Caveats
 
