@@ -53,6 +53,20 @@ VSF here means a `REQUEST_VIEWING` event was seen (`startup_time_ms` is derived 
 - Not WebView: `is_wv` is `false` on all 33 error events, the user agent has no `; wv)` token, and the device has no rows in the `webview_device_report` CSVs. The "K" model and Android 10 are frozen
   Chrome UA values, so the real device may differ.
 
+## CDN correlation (MTN_INC0256613, matched by content UUID)
+
+Source: `data/cdnReport/MTN_INC0256613_Client_query.txt` (18 blocks, 1,013 rows, IPs 41.13.78.209 and 102.66.159.55) against `output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv` (33 error
+sessions, 19 content UUIDs, 15 with blank `start_time`). Sessions were matched on the `vode/<uuid>/` path segment, not on time, so blank-`start_time` sessions are covered. All 33 sessions have CDN
+rows.
+
+- **No CDN failure:** 975 rows `200`, 35 `206`, 3 `304`; no 4xx/5xx and no row with `ttms` above 2000 ms. Cache results: `TCP_MEM_HIT` 645, `TCP_REFRESH_MISS` 187, `TCP_HIT` 162, `ERR_CLIENT_ABORT`
+  11, `TCP_MISS` 5, `TCP_IMS_HIT` 3.
+- **Most content is served from cache** (`ttfb` median 0), so the 3015/3016 errors do not look CDN-originated.
+- **Origin-bound content** (`ttfb` 257-404 ms): `2df37724` (66 refresh-misses, 6 mid-transfer aborts), `14f13bc4` (all origin fetches), `133b65f5` (3 aborts) and `869e5633` (2 aborts). The aborts have
+  `bytes > 0`, i.e. the client cancelled mid-transfer, consistent with the device-side failure above.
+- Overlapping blocks repeat rows, so per-UUID row counts are inflated; 2 CDN UUIDs have no session in the report. Matching ignores time, so a row may belong to a neighbouring session of the same
+  content.
+
 ## Caveats
 
 - Operations/outcomes count rows; "attempts by content" counts unique sessions.
