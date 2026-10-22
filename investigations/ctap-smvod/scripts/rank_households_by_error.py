@@ -6,7 +6,8 @@ Fails loudly on a missing column (householdId, sessionId, deviceId, error_codes)
 
 Usage:
     python3 rank_households_by_error.py --xlsx ../output/ZA/2026-10-01_2026-10-13_error_report_1xxx.xlsx --top 25
-    # -> stdout table + <xlsx stem>_household_ranking.csv next to the xlsx (or in --out-dir)
+    python3 rank_households_by_error.py --csv ../output/ZA/2026-10-20_error_report_1xxx.csv --top 10   # single-day CSV
+    # -> stdout table + <input stem>_household_ranking.csv next to the input (or in --out-dir)
 """
 import argparse
 import csv
@@ -47,6 +48,17 @@ def load_rows(path: str) -> list[dict]:
     return rows
 
 
+def load_csv_rows(path: str) -> list[dict]:
+    """Read a single-day `*_error_report_1xxx.csv`; `date` comes from start_time (else the file stem)."""
+    with open(path, newline="") as f:
+        reader = csv.DictReader(f)
+        missing = [c for c in REQUIRED if c not in (reader.fieldnames or [])]
+        if missing:
+            raise ValueError(f"{path} missing column(s): {', '.join(missing)}")
+        stem = os.path.splitext(os.path.basename(path))[0]
+        return [r | {"date": (r.get("start_time") or "")[:10] or stem} for r in reader]
+
+
 def rank_households(rows: list[dict]) -> list[dict]:
     """Pure: one dict per household, sorted by distinct sessions desc then householdId."""
     acc: dict[str, dict] = {}
@@ -71,22 +83,25 @@ def main() -> None:
     init_logging("ctap-smvod-rank_households_by_error")
     LOGGER.info("Starting rank_households_by_error")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--xlsx", required=True, help="Path to *_error_report_1xxx*.xlsx")
+    src = ap.add_mutually_exclusive_group(required=True)
+    src.add_argument("--xlsx", help="Path to *_error_report_1xxx*.xlsx")
+    src.add_argument("--csv", help="Path to a single-day *_error_report_1xxx.csv")
     ap.add_argument("--top", type=int, default=25, help="Rows to print to stdout (CSV always has all)")
     ap.add_argument("--out-dir", default=None, help="Directory for the CSV (default: next to the xlsx)")
     args = ap.parse_args()
     if args.top < 0:
         ap.error("--top must be >= 0")
     try:
-        rows = load_rows(args.xlsx)
+        in_path = args.xlsx or args.csv
+        rows = load_rows(args.xlsx) if args.xlsx else load_csv_rows(args.csv)
         ranking = rank_households(rows)
     except (ValueError, FileNotFoundError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    out_dir = args.out_dir or os.path.dirname(os.path.abspath(args.xlsx))
+    out_dir = args.out_dir or os.path.dirname(os.path.abspath(in_path))
     os.makedirs(out_dir, exist_ok=True)
-    stem = os.path.splitext(os.path.basename(args.xlsx))[0]
+    stem = os.path.splitext(os.path.basename(in_path))[0]
     out_path = os.path.join(out_dir, f"{stem}_household_ranking.csv")
     with open(out_path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=COLUMNS)

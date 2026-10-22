@@ -106,7 +106,8 @@ python3 rank_households_by_error.py --xlsx ../output/ZA/2026-10-01_2026-10-13_er
 | `--date D` | `output/YYYY-MM-DD_error_report_1xxx_6xxx.csv` |
 | `--from A --to B` | `output/A_B_error_report_1xxx_6xxx.xlsx` (ISO dates; sheets named `YYYY-MM-DD`) |
 
-Other options: `--output-dir`. `rank_households_by_error.py` also reports days, devices and error codes per household and writes the full ranking to `<xlsx stem>_household_ranking.csv` (`--out-dir`).
+Other options: `--output-dir`. `rank_households_by_error.py` takes `--xlsx` or a single-day `--csv` (e.g. `--csv ../output/ZA/2026-10-20_error_report_1xxx.csv --top 10`), and also reports days,
+devices and error codes per household and writes the full ranking to `<input stem>_household_ranking.csv` (`--out-dir`).
 
 ### Combine per-error-code files across opcos (`combine_error_code_by_opco.py`)
 

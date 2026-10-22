@@ -24,6 +24,26 @@ def make_xlsx(path, sheets, header=HEADER):
     wb.save(path)
 
 
+def test_csv_input_ranks_and_writes(tmp_path, monkeypatch, capsys):
+    c = tmp_path / "2026-10-20_error_report_1xxx.csv"
+    c.write_text("householdId,deviceId,sessionId,error_codes,start_time\n"
+                 "h1,d1,s1,1001,2026-10-20 05:00:00 UTC\nh1,d1,s2,1003,2026-10-20 06:00:00 UTC\n"
+                 "h2,d2,s3,1003,2026-10-20 07:00:00 UTC\n")
+    monkeypatch.setattr(sys, "argv", ["x", "--csv", str(c), "--top", "2"])
+    mod.main()
+    assert (tmp_path / "2026-10-20_error_report_1xxx_household_ranking.csv").exists()
+    assert "h1\t2\t1\t1\t1001,1003" in capsys.readouterr().out
+
+
+def test_csv_missing_column_fails(tmp_path, monkeypatch):
+    c = tmp_path / "bad.csv"
+    c.write_text("householdId,sessionId\nh1,s1\n")
+    monkeypatch.setattr(sys, "argv", ["x", "--csv", str(c)])
+    with pytest.raises(SystemExit) as exc:
+        mod.main()
+    assert exc.value.code == 1
+
+
 def test_rank_counts_sessions_days_devices(tmp_path, monkeypatch, capsys):
     x = tmp_path / "r.xlsx"
     make_xlsx(x, {
