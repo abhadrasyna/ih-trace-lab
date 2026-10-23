@@ -15,10 +15,11 @@
   `setupsession_with_outcome.csv` directly (includes 3016/E31012); `run_athena_error_eventdata.py` (catalog `ctap-smvod-error-eventdata`) exports raw `PLAYER_ERROR` eventdata and
   `flatten_error_eventdata.py` (+ `--split-by-errorcode`) flattens it into columns, both run as `run_pipeline.py` Steps 6f/6g (`--skip-error-eventdata`) and `summarize_error_eventdata.py` crosstabs
   them. `extract_household_error_eventdata.py --report-csv <error-report csv> --tenant ZA` pulls the local `*_error_eventdata.csv` rows for a report's sessions (matched on the eventdata `sessionid`,
-  householdId/deviceId joined back). `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default ZA,GH,ZM) exports the 1xxx-only error sessions (not limited to position_not_moved)
-  for several tenants at once, one CSV/XLSX per tenant in `output/<TENANT>/`. `rank_households_by_error.py --xlsx` ranks households by distinct error sessions in such an xlsx.
-  `combine_error_code_by_opco.py` (optional `--from/--to`, `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet per opco, `date` column) in
-  `output/error_code/<code>/`. `summarize_tenant_status.py --date DDMMYYYY` (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to
+  householdId/deviceId joined back). `run_athena_household_debug_events.py --report-csv <csv> --tenant ZA --from/--to YYYY-MM-DD` live-queries EVERY debug event for the report's `clientid`
+  (`deviceId:householdId`) pairs (catalog slug `ctap-smvod-household-debug-events`). `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default ZA,GH,ZM) exports the 1xxx-only
+  error sessions (not limited to position_not_moved) for several tenants at once, one CSV/XLSX per tenant in `output/<TENANT>/`. `rank_households_by_error.py --xlsx` ranks households by distinct error
+  sessions in such an xlsx. `combine_error_code_by_opco.py` (optional `--from/--to`, `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet per opco, `date`
+  column) in `output/error_code/<code>/`. `summarize_tenant_status.py --date DDMMYYYY` (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to
   `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant.
   `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default ZA)
   counts 6xxx sessions and unique households per content (per code + `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe

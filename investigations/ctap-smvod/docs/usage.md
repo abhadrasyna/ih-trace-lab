@@ -246,6 +246,16 @@ householdId/deviceId/sessionId/source_file, sorted by session and datetime. Neve
 python3 extract_household_error_eventdata.py --report-csv ../output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv --tenant ZA   # -> <report>_error_eventdata.csv (--out, --data-dir)
 ```
 
+## 7c. All debug events for a household/device (`run_athena_household_debug_events.py`)
+
+Live Athena query (catalog slug `ctap-smvod-household-debug-events`) for EVERY event (all eventclass/eventid, full eventdata) of the householdId/deviceId pairs in an error-report CSV, matched on
+`clientid = '<deviceId>:<householdId>'` over an inclusive date range. Needed because local `debug_states`/`error_eventdata` hold only a filtered subset.
+
+```bash
+python3 run_athena_household_debug_events.py --report-csv ../output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv --tenant ZA --from 2026-10-01 --to 2026-10-21
+# -> <report>_debug_events_all.csv (--dry-run, --out, --force)
+```
+
 ## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
 
 `extract_session_ids.py`, `extract_session_timeline.py`, `flatten_debug_events.py`, `build_debug_completeness_query.py`, `parse_debug_user_agents.py`, `analyze_debug_sample.py`,
