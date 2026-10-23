@@ -14,19 +14,20 @@
   the shared Zambia/Ghana Lightstep project; the 1xxx/6xxx error report (CSV + xlsx) has an `is_wv` column via `scripts/lib/webview.py`. `analyze_error_report_breakdown.py --all-codes` reads
   `setupsession_with_outcome.csv` directly (includes 3016/E31012); `run_athena_error_eventdata.py` (catalog `ctap-smvod-error-eventdata`) exports raw `PLAYER_ERROR` eventdata and
   `flatten_error_eventdata.py` (+ `--split-by-errorcode`) flattens it into columns, both run as `run_pipeline.py` Steps 6f/6g (`--skip-error-eventdata`) and `summarize_error_eventdata.py` crosstabs
-  them. `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default ZA,GH,ZM) exports the 1xxx-only error sessions (not limited to position_not_moved) for several tenants at once,
-  one CSV/XLSX per tenant in `output/<TENANT>/`. `rank_households_by_error.py --xlsx` ranks households by distinct error sessions in such an xlsx. `combine_error_code_by_opco.py` (optional
-  `--from/--to`, `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet per opco, `date` column) in `output/error_code/<code>/`. `summarize_tenant_status.py
-  --date DDMMYYYY` (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one
-  `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant. `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a
-  ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default ZA) counts 6xxx sessions and unique households per content (per code +
-  `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe as supported in the flattened eventdata (a device capability, not
-  the content's codec). `compute_concurrent_playback.py` (`--date`, `--tenants`) writes per-minute concurrent sessions per UTC day from the CSV and Athena exports (three views, last debug event as an
-  estimated end) and `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). `run_athena_session_ingest.py` (catalog `ctap-smvod-session-ingest`) exports per-session
-  `ingest_timestamp` from `unified_sessions` and `chart_playback_attempts.py --time-field ingest` charts attempts by when rows landed in Athena; `run_athena_debug_sessions.py` (catalog
-  `ctap-smvod-debug-sessions`) exports the distinct debug-events sessions for a day, and `compare_lightstep_athena_sessions.py` (`--debug` for the 3-way) diffs Lightstep vs `unified_sessions` (vs
-  debug) session sets, writing `output/<T>/<date>_lightstep_vs_athena_sessions.csv`; `build_session_comparison_daily.py` (`--from/--to`, `--tenants`, default all tenants) appends those counts, like
-  the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). Constrained by `docs/refactor/`.
+  them. `extract_household_error_eventdata.py --report-csv <error-report csv> --tenant ZA` pulls the local `*_error_eventdata.csv` rows for a report's sessions (matched on the eventdata `sessionid`,
+  householdId/deviceId joined back). `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default ZA,GH,ZM) exports the 1xxx-only error sessions (not limited to position_not_moved)
+  for several tenants at once, one CSV/XLSX per tenant in `output/<TENANT>/`. `rank_households_by_error.py --xlsx` ranks households by distinct error sessions in such an xlsx.
+  `combine_error_code_by_opco.py` (optional `--from/--to`, `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet per opco, `date` column) in
+  `output/error_code/<code>/`. `summarize_tenant_status.py --date DDMMYYYY` (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to
+  `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant.
+  `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default ZA)
+  counts 6xxx sessions and unique households per content (per code + `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe
+  as supported in the flattened eventdata (a device capability, not the content's codec). `compute_concurrent_playback.py` (`--date`, `--tenants`) writes per-minute concurrent sessions per UTC day
+  from the CSV and Athena exports (three views, last debug event as an estimated end) and `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). `run_athena_session_ingest.py`
+  (catalog `ctap-smvod-session-ingest`) exports per-session `ingest_timestamp` from `unified_sessions` and `chart_playback_attempts.py --time-field ingest` charts attempts by when rows landed in
+  Athena; `run_athena_debug_sessions.py` (catalog `ctap-smvod-debug-sessions`) exports the distinct debug-events sessions for a day, and `compare_lightstep_athena_sessions.py` (`--debug` for the
+  3-way) diffs Lightstep vs `unified_sessions` (vs debug) session sets, writing `output/<T>/<date>_lightstep_vs_athena_sessions.csv`; `build_session_comparison_daily.py` (`--from/--to`, `--tenants`,
+  default all tenants) appends those counts, like the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.

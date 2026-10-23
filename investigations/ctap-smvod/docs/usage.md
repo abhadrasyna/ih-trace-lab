@@ -237,13 +237,13 @@ stem>_<errorcode>.csv` per code, keeping only columns that have a value for that
 
 `summarize_error_eventdata.py --by` takes comma-separated column names and can be repeated for several crosstabs. It only prints to stdout.
 
-## 7b. Debug logs for sessions in a report (`extract_household_debug_logs.py`)
+## 7b. Error eventdata for sessions in a report (`extract_household_error_eventdata.py`)
 
-Pulls every local `data/athena/<TENANT>/*_debug_states.csv` row for the sessionIds in an error-report CSV (e.g. the 3xxx household report), adding householdId/deviceId/source_file, sorted by session
-and datetime. Never calls Athena; logs sessions with no local debug rows.
+Pulls every local `data/athena/<TENANT>/*_error_eventdata.csv` row whose `eventdata` JSON `sessionid` is in an error-report CSV (e.g. the 3xxx household report), adding
+householdId/deviceId/sessionId/source_file, sorted by session and datetime. Never calls Athena; logs sessions with no local rows.
 
 ```bash
-python3 extract_household_debug_logs.py --report-csv ../output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv --tenant ZA   # -> <report>_debug_logs.csv (--out, --data-dir)
+python3 extract_household_error_eventdata.py --report-csv ../output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv --tenant ZA   # -> <report>_error_eventdata.csv (--out, --data-dir)
 ```
 
 ## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
