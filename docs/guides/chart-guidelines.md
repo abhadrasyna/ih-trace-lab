@@ -1,8 +1,7 @@
 # Chart Guidelines (matplotlib)
 
 Standard for every generic plot rendered in this repo (investigation reports, PNG exports, scratch PoCs that may be promoted). It is adapted from NiftyShield's `docs/reference/chart_guidelines.md`
-(accepted payoff chart, 2026-10-13). No chart code exists here yet, so this guide is the spec: when the first shared chart module lands (a `ChartTheme` in `src/lib/`), the code becomes the truth and
-this doc must be fixed to match it.
+(accepted payoff chart, 2026-10-13). The shared code in `src/lib/charts/` is now the truth for the palette, figure recipe and module layout; this guide must be fixed whenever the code changes.
 
 ## Palette and fonts (default)
 
@@ -54,9 +53,9 @@ Type scale (pt): title 16 bold, subtitle 10, stat label 8.5, stat value 12 bold,
   stays deterministic.
 - Don't hold a `Figure` beyond the render call.
 
-## Planned module layout
+## Module layout
 
-Planned in `docs/plan/shared-chart-infra/` and not yet built. One package, `src/lib/charts/`, split by responsibility with one-way dependencies (`signed_line`/`bar` → `axes`/`header`/`fig` → `theme`):
+Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, split by responsibility with one-way dependencies (`signed_line`/`bar` → `axes`/`header`/`fig` → `theme`):
 
 | Module | Holds |
 |---|---|
@@ -66,6 +65,7 @@ Planned in `docs/plan/shared-chart-infra/` and not yet built. One package, `src/
 | `header.py` | Optional stat header: `Tone`, `HeaderCell`, one- or two-row layout |
 | `signed_line.py`, `bar.py` | Thin drawing functions that return PNG bytes |
 | `errors.py` | `ChartError`, the only exception that leaves the package |
+| `output.py` | `write_chart_png` / `chart_path`: saves PNGs under `<output>/<TENANT>/charts/`, creating the folder on first use |
 
 Rules from `docs/refactor/`: wrap third-party exceptions at the module boundary (matplotlib and numpy errors become `ChartError`), keep `theme` free of imports from the rest of the package, and prefer
 `Protocol` over an abstract base if a chart interface is ever needed. Fonts: Roboto is bundled under `src/lib/charts/assets/fonts/` (Apache 2.0); `chart_font_family()` is cached, lock-guarded and
@@ -77,11 +77,11 @@ Any investigation script follows the same shape:
 
 1. Compute the plotted values in a pure, tested function (counts, rates, ranges); no drawing there.
 2. Call one shared `render_*` function with plain lists and a title; it returns PNG `bytes`.
-3. The script owns file I/O: write to the investigation's `output/<TENANT>/` folder, alongside the CSV/XLSX it accompanies.
+3. The script owns file I/O: save with `write_chart_png(png, output_dir, tenant, filename)` into `output/<TENANT>/charts/` (created on first write), not beside the CSV/XLSX it accompanies.
 4. Catch `ChartError`, log it and carry on; a failed chart must never block the CSV, XLSX or text report.
 
 Worked example: `investigations/ctap-smvod/scripts/chart_concurrent_playback.py` (pilot, CH-6) composes `new_figure`, `draw_header`, `style_axes` and `render_png` directly for a three-series line
-chart, because `render_signed_line` and `render_bar` draw a single series with no header; `write_chart` shows the `ChartError` handling.
+chart, because `render_signed_line` and `render_bar` draw a single series with no header; `write_chart` shows the `ChartError` handling. Other investigations adopt the layer in their own stories.
 
 Prototype new chart shapes in `scratch/` first (`SCRATCH.md` convergence rule) and promote into `src/lib/charts/` only once a second investigation needs them. The synchronous render needs no
 `asyncio.to_thread`; use it only when a chart is rendered inside an async service.
