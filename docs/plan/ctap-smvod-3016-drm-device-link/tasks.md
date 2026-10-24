@@ -3,9 +3,9 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: DRM-1, DRM-2, DRM-3, DRM-4.**
+**Open: DRM-2, DRM-3, DRM-4.**
 
-- [ ] **DRM-1** — readers for the saved mdrmfe, Widevine, PlayReady, FairPlay and LRM CSVs | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **DRM-1** — readers for the saved mdrmfe, Widevine, PlayReady, FairPlay and LRM CSVs | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 84a9dfa
 - [ ] **DRM-2** — join builder: sessionId to fcid to CDM, with explicit missing-row outcomes | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **DRM-3** — add DRM columns to the events CSV and write a per-device-model summary | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **DRM-4** — first real ZA run, usage doc, SCRIPTS.md and CONTEXT.md entries | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
