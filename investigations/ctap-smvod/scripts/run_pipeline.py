@@ -14,7 +14,7 @@ hand. Runs, in order:
     Step 6d analyze_webview_devices.py     -- WebView device reliability report (optional, --skip-step6d)
     Step 6f run_athena_error_eventdata.py  -- raw PLAYER_ERROR eventdata export (optional, --skip-error-eventdata)
     Step 6g flatten_error_eventdata.py     -- flat + per-error-code CSVs        (optional, --skip-error-eventdata)
-    Step 6h run_3016_subcategory_report.py -- 3014/3015/3016 sub-category summary + events CSVs (optional, --skip-subcategory-3016; also skipped by --skip-error-eventdata)
+    Step 6h run_3016_subcategory_report.py -- 3014/3015/3016 sub-category summary + events CSVs (optional, --skip-subcategory-3016; also skipped by --skip-error-eventdata; --drm adds mDRM device columns + summary)
 
 Note: extract_position_report.py's --only-not-moved now defaults to on
 (see its own docstring / BLUEPRINT.md Step 6b) -- pass --full-position-report
@@ -248,7 +248,8 @@ def _build_steps(args, date_iso: str, tenant: str):
         (
             "Step 6h - 3016 sub-category report (run_3016_subcategory_report.py)",
             [py, os.path.join(SCRIPT_DIR, "run_3016_subcategory_report.py"), "--opco", tenant,
-             "--date", date_iso, "--base", os.path.dirname(output_dir)],
+             "--date", date_iso, "--base", os.path.dirname(output_dir)]
+            + (["--drm"] if args.drm else []),
             args.skip_subcategory_3016 or args.skip_error_eventdata,
         ),
     ]
@@ -327,6 +328,9 @@ def main():
                      help="Skip Steps 6f/6g (raw PLAYER_ERROR eventdata export + flatten)")
     ap.add_argument("--skip-subcategory-3016", action="store_true",
                      help="Skip Step 6h (3014/3015/3016 sub-category summary + events CSVs)")
+    ap.add_argument("--drm", action="store_true",
+                     help="Step 6h: add mDRM device columns + device summary; needs the saved Lightstep "
+                          "exports in data/lightstep/<TENANT>/ (docs/lightstep-drm-exports.md)")
     ap.add_argument(
         "--full-position-report", action="store_true",
         help="Pass --no-only-not-moved to Step 6b, so output/YYYY-MM-DD_position_report.csv "

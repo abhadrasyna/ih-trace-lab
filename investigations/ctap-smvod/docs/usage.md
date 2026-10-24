@@ -70,6 +70,7 @@ python3 run_pipeline.py --date 06102026 --skip-step6e                # no 1xxx/6
 python3 run_pipeline.py --date 06102026 --skip-step6d                # no webview device report
 python3 run_pipeline.py --date 06102026 --skip-error-eventdata       # no raw error eventdata export + flatten (Steps 6f/6g)
 python3 run_pipeline.py --date 06102026 --skip-subcategory-3016       # no 3016 sub-category report (Step 6h; also skipped by --skip-error-eventdata, which supplies its input)
+python3 run_pipeline.py --date 06102026 --drm                         # Step 6h adds mDRM device columns + summary (needs data/lightstep/<TENANT>/ exports, see lightstep-drm-exports.md)
 python3 run_pipeline.py --date 06102026 --full-position-report       # position_report.csv with ALL sessions (needed for Steps 6c/7)
 python3 run_pipeline.py --date 06102026 --profile <aws-sso-profile> --skip-auth-check   # Athena auth passthrough (Steps 3/4)
 ```

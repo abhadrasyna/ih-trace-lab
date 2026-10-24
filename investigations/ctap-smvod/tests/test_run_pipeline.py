@@ -32,6 +32,7 @@ class _Args:
     skip_step6e = False
     skip_error_eventdata = False
     skip_subcategory_3016 = False
+    drm = False
     full_position_report = False
     dry_run = False
 
@@ -261,3 +262,8 @@ def test_build_steps_adds_subcategory_report_and_can_skip(tenant_root: Path) -> 
     assert step[1][step[1].index("--date") + 1] == "2026-09-30"
     assert step[1][step[1].index("--base") + 1] == str(out.parent) and step[2] is False
     assert run_pipeline._build_steps(_args(skip_subcategory_3016=True), "2026-09-30", "ZM")[-1][2] is True
+
+
+def test_build_steps_passes_drm_flag_only_when_requested() -> None:
+    assert "--drm" not in run_pipeline._build_steps(_args(), "2026-09-30", "ZM")[-1][1]
+    assert "--drm" in run_pipeline._build_steps(_args(drm=True), "2026-09-30", "ZM")[-1][1]
