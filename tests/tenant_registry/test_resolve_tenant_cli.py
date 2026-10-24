@@ -66,7 +66,7 @@ def test_cli_lightstep_mdrm_resolves_za_and_rejects_unregistered_tenant() -> Non
     }
 
     missing = subprocess.run(
-        [sys.executable, "scripts/resolve_tenant.py", "--system", "lightstep_mdrm", "--tenant", "GH"],
+        [sys.executable, "scripts/resolve_tenant.py", "--system", "lightstep_mdrm", "--tenant", "NG"],
         cwd=REPO_ROOT,
         check=False,
         capture_output=True,

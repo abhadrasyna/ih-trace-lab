@@ -66,7 +66,8 @@
   Tenant ID, Lightstep project/region, shared-project disambiguation attribute); `src/tenant_registry/` loads it and resolves per-system query contexts (`TenantRegistry`/`QueryTarget`); this assistant
   must consult it (via `scripts/resolve_tenant.py` or the loader directly) before any Lightstep/Matisse/Athena MCP call, per `docs/guides/tenant-resolution.md`'s CLI-first protocol. TR-1's scratch
   probe was confirmed against real, human-reviewed Lightstep MCP data (dedicated ZA project + shared Ghana project disambiguated by `busUnitId`) before any production code was written. Later addition:
-  `--system lightstep_mdrm` (`LightstepMdrmQueryTarget`) resolves the US project `mcs-mdrm-production` with the mDRM-internal `tenantId` filter (ZA = `qfrtzlcj`, not the GO id); only ZA is registered.
+  `--system lightstep_mdrm` (`LightstepMdrmQueryTarget`) resolves the US project `mcs-mdrm-production` with the mDRM-internal `tenantId` filter (ZA = `qfrtzlcj`, not the GO id); ZA and GH (`bb245tf0`)
+  are registered.
 - `docs/archive/query-catalog/` — story complete: `queries/athena/` + `queries/lightstep/` now provide a deduplicated, parameterized-template query catalog harvested from `github_copilot`'s 3
   `QUERY_CATALOG.md` files plus `lightstep-query-templates.md`; the Athena/Lightstep harvest scripts are in `scripts/dev/`, the query indexes/templates live under `queries/`, the query workflow guide
   lives at `docs/guides/query-catalog.md`, and the ported (not yet run) Athena DDL-cache tooling plus `knowledge/README.md` live under `knowledge/` / `scripts/athena/`.

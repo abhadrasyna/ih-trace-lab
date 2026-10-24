@@ -53,6 +53,9 @@ opcos:
     athena_tenant_id: is1aldzq
     athena_profile: clarissa-insights-product
     athena_region: eu-central-1
+    mdrm_tenant_id: bb245tf0
+    mdrm_project: mcs-mdrm-production
+    mdrm_region: US
   # Staging tenant: Lightstep/Matisse values not yet provided.
   - code: STG
     name: MTN Staging
