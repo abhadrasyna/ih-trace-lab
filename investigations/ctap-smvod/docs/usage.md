@@ -57,6 +57,7 @@ Prerequisite: the Lightstep exports for the date already sit in `data/lightstep/
 | 6d | `analyze_webview_devices.py` | `output/YYYY-MM-DD_webview_device_report.csv` |
 | 6f | `run_athena_error_eventdata.py` | `data/athena/YYYY-MM-DD_error_eventdata.csv` (raw `PLAYER_ERROR` eventdata) |
 | 6g | `flatten_error_eventdata.py` | `output/<T>/error_eventdata_flat/<date>_all.csv` + `<date>_<errorcode>.csv` per code |
+| 6h | `run_3016_subcategory_report.py` | `output/<T>/subcategory_3016/<date>_subcategory_{summary,events}.csv` (§7d) |
 
 Variations:
 
@@ -68,6 +69,7 @@ python3 run_pipeline.py --date 06102026 --skip-step6b                # no positi
 python3 run_pipeline.py --date 06102026 --skip-step6e                # no 1xxx/6xxx error report
 python3 run_pipeline.py --date 06102026 --skip-step6d                # no webview device report
 python3 run_pipeline.py --date 06102026 --skip-error-eventdata       # no raw error eventdata export + flatten (Steps 6f/6g)
+python3 run_pipeline.py --date 06102026 --skip-subcategory-3016       # no 3016 sub-category report (Step 6h; also skipped by --skip-error-eventdata, which supplies its input)
 python3 run_pipeline.py --date 06102026 --full-position-report       # position_report.csv with ALL sessions (needed for Steps 6c/7)
 python3 run_pipeline.py --date 06102026 --profile <aws-sso-profile> --skip-auth-check   # Athena auth passthrough (Steps 3/4)
 ```

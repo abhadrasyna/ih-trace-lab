@@ -31,6 +31,7 @@ class _Args:
     skip_step6d = False
     skip_step6e = False
     skip_error_eventdata = False
+    skip_subcategory_3016 = False
     full_position_report = False
     dry_run = False
 
@@ -122,7 +123,7 @@ def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -
     athena_dir = str(tenant_root / "data" / "athena" / "ZM")
     out = tenant_root / "output" / "ZM"
 
-    fetch, flatten = steps[-2], steps[-1]
+    fetch, flatten = steps[-3], steps[-2]
     assert fetch[0].startswith("Step 6f") and fetch[1][1].endswith("run_athena_error_eventdata.py")
     assert ["--tenant", "ZM", "--output-dir", athena_dir] == fetch[1][-4:]
     assert flatten[0].startswith("Step 6g") and flatten[1][1].endswith("flatten_error_eventdata.py")
@@ -134,7 +135,7 @@ def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -
 
 def test_build_steps_skip_error_eventdata_skips_both(tenant_root: Path) -> None:
     steps = run_pipeline._build_steps(_args(skip_error_eventdata=True), "2026-09-30", "ZM")
-    assert steps[-2][2] is True and steps[-1][2] is True
+    assert steps[-3][2] is True and steps[-2][2] is True and steps[-1][2] is True
 
 
 def test_build_steps_forwards_force_to_athena_steps(tenant_root: Path) -> None:
@@ -250,3 +251,13 @@ def test_no_tenant_input_fails_loudly(
 
     assert exc_info.value.code == 1
     assert "No tenant has Lightstep input for 2026-09-30" in capsys.readouterr().err
+
+
+def test_build_steps_adds_subcategory_report_and_can_skip(tenant_root: Path) -> None:
+    out = tenant_root / "output" / "ZM"
+    step = run_pipeline._build_steps(_args(), "2026-09-30", "ZM")[-1]
+    assert step[0].startswith("Step 6h") and step[1][1].endswith("run_3016_subcategory_report.py")
+    assert step[1][step[1].index("--opco") + 1] == "ZM"
+    assert step[1][step[1].index("--date") + 1] == "2026-09-30"
+    assert step[1][step[1].index("--base") + 1] == str(out.parent) and step[2] is False
+    assert run_pipeline._build_steps(_args(skip_subcategory_3016=True), "2026-09-30", "ZM")[-1][2] is True
