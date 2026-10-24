@@ -61,3 +61,37 @@ def test_date_range_and_bad_args() -> None:
         mod.date_range("2026-10-22", "2026-10-21")
     with pytest.raises(SystemExit):
         mod.parse_args(["--opco", "ZA"])
+
+
+def _drm_fixture(drm_dir: Path) -> None:
+    drm_dir.mkdir(parents=True, exist_ok=True)
+    (drm_dir / "2026-10-22_mdrmfe.csv").write_text(
+        "drmAuthToken.sessionId,fcid,drmAuthToken.householdId,drmAuthToken.deviceId,drmAuthToken.brRef,"
+        "drmAuthToken.drmType,http.status_code\ns1,F1,H1,D1,LOW,widevine,201\n", encoding="utf-8")
+    (drm_dir / "2026-10-22_mdrm-cdm-widevine.csv").write_text(
+        "fcId,drmInfo.Make,drmInfo.Model,drmInfo.Platform,drmInfo.SecurityLevel\nF1,Samsung,a05s,ANDROID,L1\n",
+        encoding="utf-8")
+    (drm_dir / "2026-10-22_mdrm-lrm.csv").write_text(
+        "fcId,deviceId,http.status_code\nF1,D1,200\n", encoding="utf-8")
+
+
+def test_event_row_count_unchanged_with_drm(tmp_path: Path) -> None:
+    base = _fixture(tmp_path)
+    drm_dir = tmp_path / "drm"
+    _drm_fixture(drm_dir)
+    mod.main(["--opco", "ZA", "--date", "2026-10-22", "--base", str(base), "--drm", "--drm-dir", str(drm_dir)])
+    out = base / "ZA" / "subcategory_3016"
+    events = list(csv.DictReader((out / "2026-10-22_subcategory_events.csv").open()))
+    device = list(csv.DictReader((out / "2026-10-22_subcategory_device_summary.csv").open()))
+    assert len(events) == 2
+    assert {r["drm_join"] for r in events} == {"joined", "no_license_request"}
+    assert sum(int(r["events"]) for r in device) == 2
+    assert any(r["cdm_model"] == "a05s" and r["license_ok"] == "1" for r in device)
+
+
+def test_drm_missing_export_fails_and_drm_dir_needs_flag(tmp_path: Path) -> None:
+    base = _fixture(tmp_path)
+    with pytest.raises(FileNotFoundError, match="mdrmfe export"):
+        mod.run_day("ZA", "2026-10-22", base, None, tmp_path / "empty")
+    with pytest.raises(SystemExit):
+        mod.parse_args(["--opco", "ZA", "--date", "2026-10-22", "--drm-dir", "x"])

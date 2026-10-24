@@ -6,6 +6,10 @@ Reads only local files under `<base>/<OPCO>/` (no Athena or Lightstep):
 Usage:
   python investigations/ctap-smvod/scripts/run_3016_subcategory_report.py --opco ZA --date 2026-10-22
   python investigations/ctap-smvod/scripts/run_3016_subcategory_report.py --opco ZA --from 2026-10-20 --to 2026-10-22
+  python investigations/ctap-smvod/scripts/run_3016_subcategory_report.py --opco ZA --date 2026-10-22 --drm
+
+`--drm` also reads the saved mDRM exports in data/lightstep/<OPCO>/ (see docs/lightstep-drm-exports.md), adds the DRM
+columns to the events CSV and writes <date>_subcategory_device_summary.csv.
 """
 from __future__ import annotations
 
@@ -16,7 +20,10 @@ import sys
 from datetime import date as Date, timedelta
 from pathlib import Path
 
+from build_3016_drm_device_summary import SUMMARY_COLUMNS as DEVICE_SUMMARY_COLUMNS, summarise
+from build_3016_drm_link import DRM_COLUMNS, link
 from build_3016_subcategory_events import build_events
+from lib.drm_exports import read_cdm, read_lrm, read_mdrmfe
 from build_3016_subcategory_summary import SUMMARY_COLUMNS, build_summary
 
 csv.field_size_limit(10**9)
@@ -30,6 +37,7 @@ EVENT_COLUMNS = [
     "hh_repeat_events", "content_distinct_hh",
 ]
 DEFAULT_BASE = Path(__file__).resolve().parents[1] / "output"
+DEFAULT_DRM_BASE = Path(__file__).resolve().parents[1] / "data" / "lightstep"
 
 
 def read_rows(path: Path) -> list[dict]:
@@ -85,7 +93,15 @@ def read_optional(path: Path) -> list[dict]:
     return read_rows(path)
 
 
-def run_day(opco: str, day: str, base: Path, out: Path | None) -> tuple[int, int]:
+def add_drm(events: list[dict], drm_dir: Path, day: str) -> list[dict]:
+    """Add the DRM columns from the saved Lightstep exports; the row count must not change."""
+    linked = link(events, read_mdrmfe(drm_dir, day), read_cdm(drm_dir, day), read_lrm(drm_dir, day))
+    if len(linked) != len(events):
+        raise ValueError(f"DRM link changed the row count: {len(events)} -> {len(linked)}")
+    return linked
+
+
+def run_day(opco: str, day: str, base: Path, out: Path | None, drm_dir: Path | None = None) -> tuple[int, int]:
     opco_dir = base / opco
     flat_path = opco_dir / "error_eventdata_flat" / f"{day}_all.csv"
     if not flat_path.exists():
@@ -95,7 +111,12 @@ def run_day(opco: str, day: str, base: Path, out: Path | None) -> tuple[int, int
     events, summary = build_day(read_rows(flat_path), setup, pos, opco, day)
     out_dir = out or opco_dir / "subcategory_3016"
     write_csv(out_dir / f"{day}_subcategory_summary.csv", SUMMARY_COLUMNS, summary)
-    write_csv(out_dir / f"{day}_subcategory_events.csv", EVENT_COLUMNS, events)
+    columns = EVENT_COLUMNS
+    if drm_dir is not None:
+        events = add_drm(events, drm_dir, day)
+        columns = EVENT_COLUMNS + DRM_COLUMNS
+        write_csv(out_dir / f"{day}_subcategory_device_summary.csv", DEVICE_SUMMARY_COLUMNS, summarise(events))
+    write_csv(out_dir / f"{day}_subcategory_events.csv", columns, events)
     return len(events), len(summary)
 
 
@@ -114,7 +135,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--to", dest="date_to", help="range end YYYY-MM-DD")
     ap.add_argument("--base", type=Path, default=DEFAULT_BASE, help="output root holding <OPCO>/ folders")
     ap.add_argument("--out", type=Path, default=None, help="output folder (default <base>/<OPCO>/subcategory_3016)")
+    ap.add_argument("--drm", action="store_true", help="add DRM device columns and write the device summary")
+    ap.add_argument("--drm-dir", type=Path, default=None,
+                    help="folder with the saved mDRM Lightstep exports (default data/lightstep/<OPCO>)")
     args = ap.parse_args(argv)
+    if args.drm_dir and not args.drm:
+        ap.error("--drm-dir needs --drm")
     if bool(args.date) == bool(args.date_from or args.date_to) or bool(args.date_from) != bool(args.date_to):
         ap.error("give either --date, or both --from and --to")
     return args
@@ -128,7 +154,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     days = [args.date] if args.date else date_range(args.date_from, args.date_to)
     for day in days:
-        n_events, n_rows = run_day(args.opco, day, args.base, args.out)
+        drm_dir = (args.drm_dir or DEFAULT_DRM_BASE / args.opco) if args.drm else None
+        n_events, n_rows = run_day(args.opco, day, args.base, args.out, drm_dir)
         LOGGER.info("%s %s: %d events, %d summary rows", args.opco, day, n_events, n_rows)
 
 
