@@ -3,12 +3,12 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: SUB-3, SUB-4, SUB-5.**
+**Open: SUB-4, SUB-5.**
 
 - [x] **SUB-1** — rules module mapping a flat error row to one of 5 sub-categories + priority | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: f2fc20c
 - [x] **SUB-2** — events builder: join setupsession/position by sessionId, add parsed browser/model and raw user_agent | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA:
   352a41c
-- [ ] **SUB-3** — summary builder: events and distinct households per OpCo and sub-category | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **SUB-3** — summary builder: events and distinct households per OpCo and sub-category | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 9ce715f
 - [ ] **SUB-4** — daily CLI: write both CSVs per OpCo/day and reconcile with the flat-file row counts | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SUB-5** — usage doc, SCRIPTS.md and CONTEXT.md entries; retire the scratch POC | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 
