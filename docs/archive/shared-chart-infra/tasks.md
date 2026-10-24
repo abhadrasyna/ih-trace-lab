@@ -3,15 +3,15 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: CH-6, CH-7.**
+**Open: none — story complete.**
 
 - [x] **CH-1** — `src/lib/charts/theme.py`: `ChartTheme`, `DARK`, `chart_font_family()`; bundle Roboto | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: fb34d8e
 - [x] **CH-2** — `fig.py` figure/save recipe and `axes.py` `style_axes`, formatters, tick maths | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: 85ccb7d
 - [x] **CH-3** — `signed_line` and `bar` chart types; `ChartError` boundary | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: 402af09
 - [x] **CH-4** — `header.py`: `Tone`, `HeaderCell`, one- or two-row layout | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: f0b82dc
 - [x] **CH-5** — offline tests, pinned `matplotlib`/`numpy`, guard test (no `pyplot`, no inline hex) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review-checklist | SHA: d58f1f7
-- [ ] **CH-6** — pilot chart in one investigation; `usage.md` and `SCRIPTS.md` entries | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: —
-- [ ] **CH-7** — align `chart-guidelines.md` with the code; update `CONTEXT.md` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
+- [x] **CH-6** — pilot chart in one investigation; `usage.md` and `SCRIPTS.md` entries | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: 9117283
+- [x] **CH-7** — align `chart-guidelines.md` with the code; update `CONTEXT.md` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: b0b1c8b
 
 ## Story done when
 
@@ -20,7 +20,7 @@ spec.
 - **CH-3** — callers get PNG bytes or a `ChartError`; no matplotlib or numpy exception type escapes.
 - **CH-4** — a header of 1 to 6 cells renders in one or two rows with deterministic margins.
 - **CH-5** — the suite passes offline; the guard test fails on `pyplot` or a hex literal outside `theme.py`.
-- **CH-6** — the pilot investigation writes a PNG next to its report; a chart failure does not block the CSV/XLSX.
+- **CH-6** — the pilot investigation writes a PNG to `output/<TENANT>/charts/`; a chart failure does not block the CSV/XLSX.
 - **CH-7** — `chart-guidelines.md` no longer says "no chart code exists" and matches the module and function names.
 
 ## After each task
