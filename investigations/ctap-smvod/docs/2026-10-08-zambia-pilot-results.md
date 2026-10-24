@@ -1,6 +1,6 @@
 # Zambia (ZM) pilot run — 2026-10-01
 
-MT-7 of `docs/plan/ctap-smvod-multitenant`: first real run of `run_pipeline.py --date 01102026 --tenant ZM --profile clarissa-insights-product` on a Zambia export from the shared Lightstep project
+MT-7 of `docs/archive/ctap-smvod-multitenant`: first real run of `run_pipeline.py --date 01102026 --tenant ZM --profile clarissa-insights-product` on a Zambia export from the shared Lightstep project
 `mcs-go-prod-mtn-1-eu`. Row counts and error-code tables below come from `scripts/summarize_pipeline_run.py --date 01102026 --tenant ZM` (and `--tenant ZA` for the comparison).
 
 ## Inputs and the busUnitId guard

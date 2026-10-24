@@ -8,7 +8,7 @@
 ## MT-1 — Audit tenant-specific hardcoding
 
 **Files to change / create:**
-- `docs/plan/ctap-smvod-multitenant/stories.md` — append an "MT-1 findings" section (file:line, what is hardcoded, which later task fixes it).
+- `docs/archive/ctap-smvod-multitenant/stories.md` — append an "MT-1 findings" section (file:line, what is hardcoded, which later task fixes it).
 
 **What to implement:**
 

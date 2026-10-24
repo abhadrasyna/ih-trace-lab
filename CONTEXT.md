@@ -9,9 +9,9 @@
   `summarize_error_devices.py`, counts-only evidence for the MEC-27 business/technical question, helpers in `scripts/mec_lib/`): local `data/athena/` (gitignored) and `output/`, `RETENTION.md`, and
   `docs/{README,usage}.md` where `usage.md` documents every script as it is added. `docs/conviva-metrics-reference.md` lists the Conviva QoE metric definitions (2026-10-11) and which are computable
   from `unified_sessions`; `docs/monthly-error-code-pipeline/` holds the MEC tasks and stories.
-- `investigations/ctap-smvod/` is multi-tenant (story `docs/plan/ctap-smvod-multitenant/`, MT-1..MT-10 done; pilot Zambia, results in `docs/2026-10-08-zambia-pilot-results.md`): `run_pipeline.py` runs
-  every tenant with Lightstep input for the date by default, `--tenant` restricts to one; inputs/outputs live under `<TENANT>/` folders (ZA history `git mv`'d); the merge's `busUnitId` guard protects
-  the shared Zambia/Ghana Lightstep project; the 1xxx/6xxx error report (CSV + xlsx) has an `is_wv` column via `scripts/lib/webview.py`. `analyze_error_report_breakdown.py --all-codes` reads
+- `investigations/ctap-smvod/` is multi-tenant (story `docs/archive/ctap-smvod-multitenant/`, MT-1..MT-10 done; pilot Zambia, results in `docs/2026-10-08-zambia-pilot-results.md`): `run_pipeline.py`
+  runs every tenant with Lightstep input for the date by default, `--tenant` restricts to one; inputs/outputs live under `<TENANT>/` folders (ZA history `git mv`'d); the merge's `busUnitId` guard
+  protects the shared Zambia/Ghana Lightstep project; the 1xxx/6xxx error report (CSV + xlsx) has an `is_wv` column via `scripts/lib/webview.py`. `analyze_error_report_breakdown.py --all-codes` reads
   `setupsession_with_outcome.csv` directly (includes 3016/E31012); `run_athena_error_eventdata.py` (catalog `ctap-smvod-error-eventdata`) exports raw `PLAYER_ERROR` eventdata and
   `flatten_error_eventdata.py` (+ `--split-by-errorcode`) flattens it into columns, both run as `run_pipeline.py` Steps 6f/6g (`--skip-error-eventdata`) and `summarize_error_eventdata.py` crosstabs
   them. `extract_household_error_eventdata.py --report-csv <error-report csv> --tenant ZA` pulls the local `*_error_eventdata.csv` rows for a report's sessions (matched on the eventdata `sessionid`,
