@@ -136,7 +136,8 @@ port), per this epic's own "one task per session" convention — further tasks a
 ## Supersession / coordination
 
 - `src-lib-migration`'s own `README.md`/`stories.md` should, once picked up again, be updated to add `mpd` and `crypto_signing` as two additional modules (promoted here, 2026-09-30) — this epic does
-  not edit `src-lib-migration`'s files itself; this is the coordination record for whoever picks that epic up next.
+  not edit `src-lib-migration`'s files itself; this is the coordination record for whoever picks that epic up next. 2026-10-24: `src-lib-migration` was archived without them; building both modules is
+  now owned by `docs/plan/shared-lib-mpd-crypto-signing/` (SLM-1..SLM-4), which unblocks the two Tier 3 stories.
 - `project-taxonomy`'s `structure.md` and `stories.md` were corrected in this same task's commit (see "GAP-1 decisions" §2 above) — both carry a dated note citing this decision; no further edit is
   required there unless a future session resolves the second, deliberately-unresolved `vod-playback-timing-probe` tension.
 - `root-scripts-tool-migration`'s `generate_scripts_registry.py` overlaps `functional-code-taxonomy` FCT-6's own cross-project script registry extension — that story's first task must check whether
