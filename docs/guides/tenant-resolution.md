@@ -26,6 +26,6 @@ disambiguation attribute is not present on every service's spans. If that happen
 
 - `lightstep_go` returns a Lightstep project, region, and either `null` or a required tenant-disambiguation filter.
 - `lightstep_mdrm` returns the US mDRM project (`mcs-mdrm-production`), region `US`, and the filter `{"tenantId": "<mDRM-internal tenant id>"}` (for example ZA → `qfrtzlcj`, which is not the GO id
-  `iye9omdf`). It exits non-zero for a tenant with no mDRM entry in `config/tenants.yaml` (ZA and GH are registered so far; GH → `bb245tf0`).
+  `iye9omdf`). It exits non-zero for a tenant with no mDRM entry in `config/tenants.yaml` (ZA, GH and ZM are registered so far; GH → `bb245tf0`, ZM → `lcci3mag`).
 - `matisse` returns the Matisse project id and client tenant id.
 - `athena` returns the Athena database, profile, and region.

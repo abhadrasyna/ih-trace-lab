@@ -41,6 +41,9 @@ opcos:
     athena_tenant_id: a7vli5h8
     athena_profile: clarissa-insights-product
     athena_region: eu-central-1
+    mdrm_tenant_id: lcci3mag
+    mdrm_project: mcs-mdrm-production
+    mdrm_region: US
   - code: GH
     name: Ghana
     go_id: apbyfj9d
