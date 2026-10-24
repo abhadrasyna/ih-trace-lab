@@ -24,7 +24,7 @@ in `mcs-mdrm-production`. Saving steps, file names and the join are documented i
 ## Session-start load hints
 
 - `investigations/ctap-smvod/docs/lightstep-drm-exports.md` — file names, attribute names, the join and the verified example.
-- `docs/plan/ctap-smvod-3016-subcategory-report/stories.md` — the events CSV columns this story extends.
+- `docs/archive/ctap-smvod-3016-subcategory-report/stories.md` — the events CSV columns this story extends.
 - `investigations/ctap-smvod/scripts/merge_ctap_smvod_csv.py` — how existing Lightstep UI exports are read (BOM, quoted columns, `sum` count column).
 
 ## Task overview
