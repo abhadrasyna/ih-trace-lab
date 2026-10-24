@@ -30,6 +30,19 @@ class LightstepGoQueryTarget:
         }
 
 
+class LightstepMdrmQueryTarget:
+    """Build the Lightstep context for the US mDRM project, filtered by the mDRM-internal tenantId."""
+
+    def build_context(self, tenant: TenantConfig) -> dict[str, object]:
+        if not (tenant.mdrm_tenant_id and tenant.mdrm_project and tenant.mdrm_region):
+            raise ValueError(f"Tenant '{tenant.code}' has no mDRM tenant id/project/region registered.")
+        return {
+            "project": tenant.mdrm_project,
+            "region": tenant.mdrm_region,
+            "filter": {"tenantId": tenant.mdrm_tenant_id},
+        }
+
+
 class MatisseQueryTarget:
     """Build Matisse project/client-tenant context."""
 

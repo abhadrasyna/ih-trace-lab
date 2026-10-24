@@ -22,7 +22,8 @@ The EU chart title is blank in the notebook; give it the name above when you nex
 3. For each chart, use the chart's export (CSV) action and save it to `investigations/ctap-smvod/data/lightstep/ZA/` with the name in the table. Do not rename columns.
 4. If a chart hits the UI row limit, export in hourly slices and name them `<date>_01_<kind>.csv`, `<date>_02_<kind>.csv`, the way the existing `_01`/`_02` ctap and smvod files are split.
 
-Only the ZA tenant is covered. The US queries are filtered to the mDRM-internal tenant `qfrtzlcj` (MTN SA), which is not the GO tenant `iye9omdf`. Zambia and Ghana need their own mDRM tenant ids.
+Only the ZA tenant is covered. The US queries are filtered to the mDRM-internal tenant `qfrtzlcj` (MTN SA), which is not the GO tenant `iye9omdf`. It is registered in `config/tenants.yaml`; run
+`python scripts/resolve_tenant.py --system lightstep_mdrm --tenant ZA` before any US query. Zambia and Ghana need their own mDRM tenant ids added there.
 
 ## Attribute names (case matters)
 

@@ -1,8 +1,8 @@
 # Tenant resolution protocol
 
-Before invoking any Lightstep, Matisse, or Athena MCP tool for a named opco, resolve that tenant locally first with `python scripts/resolve_tenant.py --system <lightstep_go|matisse|athena> --tenant
-<identifier>`. Use the JSON it prints as the source of truth for the external call. If the command exits non-zero, stop and ask rather than guessing, retrying with a hardcoded value, or re-deriving
-ids from memory.
+Before invoking any Lightstep, Matisse, or Athena MCP tool for a named opco, resolve that tenant locally first with `python scripts/resolve_tenant.py --system
+<lightstep_go|lightstep_mdrm|matisse|athena> --tenant <identifier>`. Use the JSON it prints as the source of truth for the external call. If the command exits non-zero, stop and ask rather than
+guessing, retrying with a hardcoded value, or re-deriving ids from memory.
 
 `config/tenants.yaml` is the only place tenant data lives. This guide intentionally does not duplicate ids or project names; it defines the protocol for turning a known identifier into the right query
 context.
@@ -25,5 +25,7 @@ disambiguation attribute is not present on every service's spans. If that happen
 ## System outputs
 
 - `lightstep_go` returns a Lightstep project, region, and either `null` or a required tenant-disambiguation filter.
+- `lightstep_mdrm` returns the US mDRM project (`mcs-mdrm-production`), region `US`, and the filter `{"tenantId": "<mDRM-internal tenant id>"}` (for example ZA → `qfrtzlcj`, which is not the GO id
+  `iye9omdf`). It exits non-zero for a tenant with no mDRM entry in `config/tenants.yaml` (only ZA is registered so far).
 - `matisse` returns the Matisse project id and client tenant id.
 - `athena` returns the Athena database, profile, and region.

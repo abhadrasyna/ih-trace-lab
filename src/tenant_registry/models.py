@@ -21,3 +21,6 @@ class TenantConfig:
     athena_tenant_id: str
     athena_profile: str
     athena_region: str
+    mdrm_tenant_id: str | None = None
+    mdrm_project: str | None = None
+    mdrm_region: str | None = None

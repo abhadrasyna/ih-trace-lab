@@ -17,6 +17,7 @@ from src.lib.logging.bootstrap import init_logging
 from src.tenant_registry import (  # noqa: E402 - must follow the sys.path.insert above
     AthenaQueryTarget,
     LightstepGoQueryTarget,
+    LightstepMdrmQueryTarget,
     MatisseQueryTarget,
     QueryTarget,
     TenantRegistry,
@@ -31,13 +32,14 @@ def main(argv: list[str] | None = None) -> int:
     logger.info("Run started")
     try:
         parser = argparse.ArgumentParser(description=__doc__)
-        parser.add_argument("--system", choices=("lightstep_go", "matisse", "athena"), required=True)
+        parser.add_argument("--system", choices=("lightstep_go", "lightstep_mdrm", "matisse", "athena"), required=True)
         parser.add_argument("--tenant", required=True)
         args = parser.parse_args(argv)
 
         registry = TenantRegistry()
         targets: dict[str, QueryTarget] = {
             "lightstep_go": LightstepGoQueryTarget(),
+            "lightstep_mdrm": LightstepMdrmQueryTarget(),
             "matisse": MatisseQueryTarget(),
             "athena": AthenaQueryTarget(),
         }

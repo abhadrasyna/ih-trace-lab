@@ -10,6 +10,7 @@ from src.tenant_registry.models import TenantConfig
 from src.tenant_registry.query_targets import (
     AthenaQueryTarget,
     LightstepGoQueryTarget,
+    LightstepMdrmQueryTarget,
     MatisseQueryTarget,
 )
 
@@ -84,3 +85,20 @@ def test_lightstep_go_shared_project_missing_go_id_raises_value_error() -> None:
 
     with pytest.raises(ValueError, match="Shared-project Lightstep queries require a tenant go_id"):
         target.build_context(_tenant(go_id=""))
+
+
+def test_lightstep_mdrm_builds_us_project_with_tenant_id_filter() -> None:
+    context = LightstepMdrmQueryTarget().build_context(
+        _tenant(mdrm_tenant_id="qfrtzlcj", mdrm_project="mcs-mdrm-production", mdrm_region="US")
+    )
+
+    assert context == {
+        "project": "mcs-mdrm-production",
+        "region": "US",
+        "filter": {"tenantId": "qfrtzlcj"},
+    }
+
+
+def test_lightstep_mdrm_without_registered_tenant_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="has no mDRM tenant id/project/region registered"):
+        LightstepMdrmQueryTarget().build_context(_tenant())

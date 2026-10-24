@@ -48,3 +48,29 @@ def test_cli_unknown_tenant_exits_nonzero_with_message() -> None:
     assert result.returncode == 1
     assert result.stdout == ""
     assert "Unknown tenant 'missing'. Available tenant ids: iye9omdf, q95itlcu, dtunf6yo, apbyfj9d" in result.stderr
+
+
+def test_cli_lightstep_mdrm_resolves_za_and_rejects_unregistered_tenant() -> None:
+    ok = subprocess.run(
+        [sys.executable, "scripts/resolve_tenant.py", "--system", "lightstep_mdrm", "--tenant", "ZA"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert ok.returncode == 0
+    assert json.loads(ok.stdout) == {
+        "filter": {"tenantId": "qfrtzlcj"},
+        "project": "mcs-mdrm-production",
+        "region": "US",
+    }
+
+    missing = subprocess.run(
+        [sys.executable, "scripts/resolve_tenant.py", "--system", "lightstep_mdrm", "--tenant", "GH"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert missing.returncode == 1
+    assert "has no mDRM tenant id" in missing.stderr
