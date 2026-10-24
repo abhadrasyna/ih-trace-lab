@@ -8,7 +8,7 @@ Attempts follow the Conviva SEI definition: the number of times viewers attempte
 With `--time-field ingest` each session is instead placed at its earliest Athena `ingest_timestamp` (when it landed), read from
 `data/athena/<T>/<date>_session_ingest.csv` (`run_athena_session_ingest.py`), and the PNG is `<date>_playback_attempts_ingest.png`.
 
-Writes `output/<T>/<date>_playback_attempts.png`; a chart failure for one opco is logged and the others still run.
+Writes `output/<T>/charts/<date>_playback_attempts.png`; a chart failure for one opco is logged and the others still run.
 
 Usage:
     python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA,GH,ZM --bucket-min 5
@@ -27,6 +27,7 @@ from src.lib.charts.axes import format_count, padded_range, style_axes
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import new_figure, render_png
 from src.lib.charts.header import HeaderCell, Tone, draw_header, header_figure_height, pack_cells
+from src.lib.charts.output import write_chart_png
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
 from src.lib.logging.bootstrap import init_logging
 
@@ -141,9 +142,7 @@ def write_chart(
     except ChartError:
         LOGGER.exception("%s: chart failed; CSV outputs are unaffected", tenant)
         return False
-    out = output_dir / tenant / f"{day}{suffix}.png"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(png)
+    out = write_chart_png(png, output_dir, tenant, f"{day}{suffix}.png")
     LOGGER.info("%s: wrote %s (%d bytes)", tenant, out, len(png))
     return True
 

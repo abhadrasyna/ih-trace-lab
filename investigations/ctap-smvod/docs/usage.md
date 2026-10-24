@@ -135,12 +135,12 @@ Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 | `python3 summarize_error_eventdata.py --flat <flat>.csv --by errorcode,net_effectivetype` | stdout only (counts/crosstab over flat columns; `--by` repeatable) |
 | `python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants ZA` | `output/<TENANT>/<from>_<to>_error_6xxx_by_content[_rollup].csv` (`sessions,unique_households`) |
 | `python3 compute_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback[_summary].csv` (per UTC minute, three views); see note below |
-| `python3 chart_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback.png` (run compute first; a chart failure is logged, CSVs stay) |
-| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA,GH,ZM [--bucket-min 5]` | `output/<TENANT>/<date>_playback_attempts.png` (unique-session attempts per bucket) |
+| `python3 chart_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM` | `output/<TENANT>/charts/<date>_concurrent_playback.png` (run compute first; a chart failure is logged, CSVs stay) |
+| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA,GH,ZM [--bucket-min 5]` | `output/<TENANT>/charts/<date>_playback_attempts.png` (unique-session attempts per bucket) |
 <!-- lint-ignore-length -->
 | `python3 run_athena_session_ingest.py --date 2026-10-14 --tenant ZA` | `data/athena/<TENANT>/<date>_session_ingest.csv` (`sessionId,event_start,ingest_timestamp`, partitions D-1 and D; catalog `ctap-smvod-session-ingest`) |
 <!-- lint-ignore-length -->
-| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA --time-field ingest` | `output/<TENANT>/<date>_playback_attempts_ingest.png` (attempts at each session's earliest `ingest_timestamp`; run the export first; sessions that started that day but landed on another are counted in the title) |
+| `python3 chart_playback_attempts.py --date 2026-10-14 --tenants ZA --time-field ingest` | `output/<TENANT>/charts/<date>_playback_attempts_ingest.png` (attempts at each session's earliest `ingest_timestamp`; run the export first; sessions that started that day but landed on another are counted in the title) |
 <!-- lint-ignore-length -->
 | `python3 compare_lightstep_athena_sessions.py --date 2026-10-14 --tenant ZA` | stdout counts (both / Lightstep-only / Athena-only) + `output/<TENANT>/<date>_lightstep_vs_athena_sessions.csv` (one row per one-sided session; Lightstep side = `setupsession.csv`, Athena side = `data/athena/<T>/<date>_session.csv`, enriched from `_session_ingest.csv` when present) |
 <!-- lint-ignore-length -->

@@ -2,7 +2,7 @@
 """Chart per-minute concurrent playback for one tenant and UTC day (CH-6 pilot of `src/lib/charts`).
 
 Reads `output/<T>/<date>_concurrent_playback.csv` and `..._summary.csv` (from compute_concurrent_playback.py) and writes
-`output/<T>/<date>_concurrent_playback.png`: three lines (csv_only, athena_exact, athena_estimated) plus a stat header
+`output/<T>/charts/<date>_concurrent_playback.png`: three lines (csv_only, athena_exact, athena_estimated) plus a stat header
 with each view's peak. The athena_estimated line uses the last debug event as the session end -- an estimate.
 
 Usage:
@@ -21,6 +21,7 @@ from src.lib.charts.axes import format_count, padded_range, style_axes
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import new_figure, render_png
 from src.lib.charts.header import HeaderCell, Tone, draw_header, header_figure_height, pack_cells
+from src.lib.charts.output import write_chart_png
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
 from src.lib.logging.bootstrap import init_logging
 
@@ -90,7 +91,7 @@ def render_chart(series: dict[str, list[int]], summary: dict[str, dict[str, str]
 
 
 def write_chart(tenant: str, day: date, output_dir: Path = OUTPUT_DIR) -> bool:
-    """Writes the PNG next to the report CSVs; a ChartError is logged and returns False so other tenants still run."""
+    """Writes the PNG to the tenant's charts folder (CSVs stay in the tenant folder); a ChartError is logged and returns False so other tenants still run."""
     base = output_dir / tenant / f"{day}_concurrent_playback"
     series = read_series(Path(f"{base}.csv"))
     summary = read_summary(Path(f"{base}_summary.csv"))
@@ -100,8 +101,8 @@ def write_chart(tenant: str, day: date, output_dir: Path = OUTPUT_DIR) -> bool:
     except ChartError:
         LOGGER.exception("%s: chart failed; CSV outputs are unaffected", tenant)
         return False
-    Path(f"{base}.png").write_bytes(png)
-    LOGGER.info("%s: wrote %s.png (%d bytes)", tenant, base, len(png))
+    out = write_chart_png(png, output_dir, tenant, f"{day}_concurrent_playback.png")
+    LOGGER.info("%s: wrote %s (%d bytes)", tenant, out, len(png))
     return True
 
 

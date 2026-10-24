@@ -45,7 +45,7 @@ def test_chart_failure_does_not_block_report(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(mod, "render_chart", lambda *a, **k: (_ for _ in ()).throw(ChartError("boom")))
     assert mod.write_chart("ZA", date(2026, 10, 14), tmp_path) is False
-    assert (out / "2026-10-14_concurrent_playback.csv").exists() and not (out / "2026-10-14_concurrent_playback.png").exists()
+    assert (out / "2026-10-14_concurrent_playback.csv").exists() and not (out / "charts" / "2026-10-14_concurrent_playback.png").exists()
     monkeypatch.undo()
     assert mod.write_chart("ZA", date(2026, 10, 14), tmp_path) is True
 

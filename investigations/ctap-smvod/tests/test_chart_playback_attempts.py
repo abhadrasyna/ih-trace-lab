@@ -54,7 +54,7 @@ def test_chart_failure_does_not_block_report(tmp_path):
         w.writerow(row("a", "2026-10-14 00:01:00.000 UTC"))
     with mock.patch.object(mod, "render_chart", side_effect=ChartError("boom")):
         assert mod.write_chart("ZA", DAY, 5, tmp_path) is False
-    assert path.exists() and not (tmp_path / "ZA" / f"{DAY}_playback_attempts.png").exists()
+    assert path.exists() and not (tmp_path / "ZA" / "charts" / f"{DAY}_playback_attempts.png").exists()
     assert mod.write_chart("ZA", DAY, 5, tmp_path) is True
 
 
@@ -86,7 +86,7 @@ def test_write_chart_ingest_mode(tmp_path):
     (tmp_path / "data" / "ZA" / f"{DAY}_session_ingest.csv").write_text(
         "sessionId,event_start,ingest_timestamp\na,2026-10-14 00:01:00,2026-10-14 00:10:00\nb,2026-10-14 23:59:00,2026-10-15 01:00:00\n")
     assert mod.write_chart("ZA", DAY, 5, tmp_path / "out", "ingest", tmp_path / "data") is True
-    assert (tmp_path / "out" / "ZA" / f"{DAY}_playback_attempts_ingest.png").exists()
+    assert (tmp_path / "out" / "ZA" / "charts" / f"{DAY}_playback_attempts_ingest.png").exists()
 
 
 def test_late_arrivals_counts_only_day_sessions_ingested_elsewhere():
