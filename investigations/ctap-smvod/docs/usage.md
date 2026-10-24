@@ -256,6 +256,31 @@ python3 run_athena_household_debug_events.py --report-csv ../output/ZA/2026-10-0
 # -> <report>_debug_events_all.csv (--dry-run, --out, --force)
 ```
 
+## 7d. Daily 3016 sub-category report (`run_3016_subcategory_report.py`)
+
+Splits the SMVOD player errors 3014/3015/3016 into the 5 "Media Playback Errors" triage sub-categories. Reads local files only (no Athena/Lightstep), per OpCo and day, from `output/<OPCO>/`:
+`error_eventdata_flat/<date>_all.csv` (required; missing file exits with an error), plus `<date>_setupsession_with_outcome.csv` and `<date>_position_report.csv` (optional; if missing a warning is
+printed and the `join_*` columns stay false). Joined by `sessionId` (first row per session; empty ids never join).
+
+```bash
+python3 run_3016_subcategory_report.py --opco ZA --date 2026-10-22          # or --from 2026-10-20 --to 2026-10-22; --base, --out
+# -> output/ZA/subcategory_3016/<date>_subcategory_summary.csv  (date,opco,subcategory,events,households,sessions,priority)
+# -> output/ZA/subcategory_3016/<date>_subcategory_events.csv   (one row per error, incl. raw user_agent, parsed browser/device_model, content_uuid, hh_repeat_events, content_distinct_hh)
+```
+
+The events row count must equal the day's 3014/3015/3016 rows in the flat file, otherwise the run raises. Rules (`classify_3016_subcategory.py`, first match wins):
+
+| Order | Condition | Sub-category | Priority |
+|---|---|---|---|
+| 1 | `errorcode` 3014 or 3015 | MSE append failed (3014/3015) | P3 |
+| 2 | `pipeline_status` contains "reinitialization failed" | Video decoder re-initialisation failed | P2 |
+| 3 | `media_error_type` is 4 and `pipeline_status` empty | No data / source not supported | P2 |
+| 4 | `pipeline_status` contains "audio" or "disconnected" | Audio decode / pipeline disconnected | P3 |
+| 5 | `pipeline_status` contains "decode" | Video decode error | P1 |
+| 6 | anything else | Uncategorised | P? |
+
+No automatic pattern verdict is produced; analyse the events CSV. Segment URLs exist only on 3014/3015 events.
+
 ## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
 
 `extract_session_ids.py`, `extract_session_timeline.py`, `flatten_debug_events.py`, `build_debug_completeness_query.py`, `parse_debug_user_agents.py`, `analyze_debug_sample.py`,

@@ -28,7 +28,9 @@
   (catalog `ctap-smvod-session-ingest`) exports per-session `ingest_timestamp` from `unified_sessions` and `chart_playback_attempts.py --time-field ingest` charts attempts by when rows landed in
   Athena; `run_athena_debug_sessions.py` (catalog `ctap-smvod-debug-sessions`) exports the distinct debug-events sessions for a day, and `compare_lightstep_athena_sessions.py` (`--debug` for the
   3-way) diffs Lightstep vs `unified_sessions` (vs debug) session sets, writing `output/<T>/<date>_lightstep_vs_athena_sessions.csv`; `build_session_comparison_daily.py` (`--from/--to`, `--tenants`,
-  default all tenants) appends those counts, like the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). Constrained by `docs/refactor/`.
+  default all tenants) appends those counts, like the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). `run_3016_subcategory_report.py`
+  (`--opco`, `--date` or `--from/--to`) reads the local flat error eventdata and writes `output/<OPCO>/subcategory_3016/<date>_subcategory_{summary,events}.csv`, splitting 3014/3015/3016 into the 5
+  triage sub-categories (rules in `classify_3016_subcategory.py`; documented in `docs/usage.md` §7d). Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
