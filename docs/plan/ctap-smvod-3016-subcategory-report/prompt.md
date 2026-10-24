@@ -46,5 +46,5 @@ offline; the usage doc and registries are updated.
 ## Perspectives not covered
 
 - Segment URLs exist locally only on 3014/3015 events; 3016 events have none, so "map by segments" for video decode errors needs CDN logs (a separate story).
-- Chrome's reduced user agent hides the Android model (mostly "K"); the real device needs mDRM/CDM logs (a separate story).
+- Chrome's reduced user agent hides the Android model (mostly "K"); the real device needs mDRM/CDM logs (a separate story, `docs/plan/ctap-smvod-3016-drm-device-link`).
 - Whether a content or household "pattern" exists is left to the analyst reading the events CSV; no automatic verdict is produced.
