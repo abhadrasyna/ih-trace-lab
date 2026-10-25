@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MDRM-3, MDRM-4, MDRM-5, MDRM-6.**
+**Open: none — all tasks done.**
 
 - [x] **MDRM-1** — pure funnel logic: unique sessions, DRM-type split, license outcome, downstream error | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: e7ee80c
 - [x] **MDRM-2** — funnel CLI writing CSV plus markdown summary; first run on 2026-10-23 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 614c3e6
@@ -15,11 +15,12 @@ spec.
 - [x] **MDRM-2d** — 3014/3015/3016 triage sub-categories by license outcome, reusing the classifier | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: a0e54ce
 - [x] **MDRM-2e** — shared pie/donut chart in src/lib/charts and error-code and sub-category charts in the funnel markdown | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: efaf9c8
-- [ ] **MDRM-3** — license-chain quality report: statuses, 403/400 failures, retries, fcId consistency, part overlap | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **MDRM-4** — device and policy report: brRef vs security level, FairPlay, VOD vs linear, hot-spots, cross-date brRef | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
-  SHA: —
-- [ ] **MDRM-5** — wire the funnel into run_pipeline.py as a daily step; SCRIPTS.md and CONTEXT.md entries | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **MDRM-6** — docs: extra Lightstep attributes to export and the 2026-10-23 sample findings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
+- [x] **MDRM-3** — license-chain quality report: statuses, 403/400 failures, retries, fcId consistency, part overlap | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA:
+  ee9c2aa
+- [x] **MDRM-4** — device and policy report: brRef vs security level, FairPlay, VOD vs linear, hot-spots, cross-date brRef | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
+  SHA: 62608ce
+- [x] **MDRM-5** — wire the funnel into run_pipeline.py as a daily step; SCRIPTS.md and CONTEXT.md entries | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 260ddb8
+- [x] **MDRM-6** — docs: extra Lightstep attributes to export and the 2026-10-23 sample findings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: dbd7bb4
 
 ## Story done when
 
