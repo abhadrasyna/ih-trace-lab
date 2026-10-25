@@ -5,7 +5,7 @@ No file or network I/O; the CLI feeds in rows read by ``lib.drm_exports`` and th
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from lib.drm_exports import LrmRow, MdrmfeRow
@@ -47,6 +47,7 @@ class FunnelRow:
     error_group: str
     sessions: int
     error_code: str = NO_ERROR
+    subcategory: str = ""
 
 
 @dataclass(frozen=True)
@@ -134,7 +135,7 @@ def _lrm_by_fcid(rows: Iterable[LrmRow]) -> dict[str, list[str]]:
     return grouped
 
 
-def _error_by_session(
+def first_error_by_session(
     sessions: Sequence[SessionInput], flat_errors: Iterable[tuple[str, str]]
 ) -> dict[str, str]:
     """First code per session: the merge ``error_codes`` column wins, else the first flat-file row."""
@@ -156,11 +157,12 @@ def build_funnel(
     mdrmfe: Sequence[MdrmfeRow],
     lrm: Sequence[LrmRow],
     flat_errors: Iterable[tuple[str, str]] = (),
+    subcategories: Mapping[str, str] | None = None,
 ) -> FunnelResult:
     """Count each distinct session once; sessions only in mDRM are added as ``drm_only``."""
     by_session = _group_by_session(mdrmfe)
     lrm_status = _lrm_by_fcid(lrm)
-    errors = _error_by_session(sessions, flat_errors)
+    errors = first_error_by_session(sessions, flat_errors)
 
     universe: dict[str, str] = {}
     for s in sessions:
@@ -169,15 +171,17 @@ def build_funnel(
     for session_id in by_session:
         universe.setdefault(session_id, SOURCE_DRM_ONLY)
 
-    counts: Counter[tuple[str, str, str, str, str, str]] = Counter()
+    subcategories = subcategories or {}
+    counts: Counter[tuple[str, str, str, str, str, str, str]] = Counter()
     for session_id, source in universe.items():
         rows = by_session.get(session_id, [])
         code = errors.get(session_id, "")
         counts[(
             source, session_kind(session_id), drm_bucket(rows),
             license_outcome(rows, lrm_status), error_group(code), code or NO_ERROR,
+            subcategories.get(session_id, "") if code in NAMED_ERRORS else "",
         )] += 1
-    out = [FunnelRow(opco, date, *key[:5], n, key[5]) for key, n in sorted(counts.items())]
+    out = [FunnelRow(opco, date, *key[:5], n, key[5], key[6]) for key, n in sorted(counts.items())]
     return FunnelResult(out, stage_totals(out))
 
 

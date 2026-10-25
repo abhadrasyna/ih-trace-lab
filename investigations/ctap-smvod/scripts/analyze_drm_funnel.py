@@ -19,8 +19,12 @@ from collections import defaultdict
 from pathlib import Path
 
 from lib.drm_exports import LRM, MDRMFE, export_paths, read_lrm, read_mdrmfe
-from lib.drm_funnel import NAMED_ERRORS, NO_ERROR, FunnelResult, FunnelRow, SessionInput, build_funnel
+from lib.drm_funnel import (
+    NAMED_ERRORS, NO_ERROR, FunnelResult, FunnelRow, SessionInput, build_funnel, first_error_by_session,
+)
 from lib.drm_funnel_charts import build_chart_specs, chart_filename, render_chart
+from lib.drm_funnel_subcategory import subcategory_by_session
+from run_3016_subcategory_report import first_row_by_session, read_optional
 from src.lib.charts.errors import ChartError
 from src.lib.charts.output import write_chart_png
 
@@ -30,7 +34,7 @@ LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_drm_funnel
 DEFAULT_BASE = Path(__file__).resolve().parents[1] / "output"
 DEFAULT_DRM_BASE = Path(__file__).resolve().parents[1] / "data" / "lightstep"
 CSV_COLUMNS = [
-    "opco", "date", "source", "kind", "drm_bucket", "license_outcome", "error_group", "error_code", "sessions",
+    "opco", "date", "source", "kind", "drm_bucket", "license_outcome", "error_group", "error_code", "subcategory", "sessions",
 ]
 OUTCOMES = ("success", "retry_then_success", "failed", "no_request")
 STAGE_LABELS = [
@@ -58,7 +62,7 @@ def load_sessions(path: Path) -> list[SessionInput]:
     return [SessionInput(r["sessionId"].strip(), r["error_codes"]) for r in rows]
 
 
-def load_flat_errors(path: Path) -> list[tuple[str, str]]:
+def load_flat_rows(path: Path) -> list[dict[str, str]]:
     """Optional: an absent flat error file means no extra error rows."""
     if not path.exists():
         LOGGER.warning("%s missing; downstream errors come from the merge file only", path)
@@ -67,6 +71,10 @@ def load_flat_errors(path: Path) -> list[tuple[str, str]]:
     missing = [c for c in ("sessionId", "errorcode") if rows and c not in rows[0]]
     if missing:
         raise ValueError(f"{path.name}: missing required column(s) {missing}")
+    return rows
+
+
+def flat_error_pairs(rows: list[dict[str, str]]) -> list[tuple[str, str]]:
     return [(r["sessionId"].strip(), r["errorcode"]) for r in rows]
 
 
@@ -139,6 +147,20 @@ def named_error_section(rows: list[FunnelRow]) -> list[str]:
     return lines
 
 
+def subcategory_section(rows: list[FunnelRow]) -> list[str]:
+    """Sub-category by license outcome for 3014/3015/3016 sessions only; total equals the named-code table."""
+    cells: dict[str, dict[str, int]] = {}
+    for r in rows:
+        if r.error_code in NAMED_ERRORS:
+            cells.setdefault(r.subcategory, dict.fromkeys(OUTCOMES, 0))[r.license_outcome] += r.sessions
+    body = [[sub, str(sum(c.values())), *_outcome_cells(c)]
+            for sub, c in sorted(cells.items(), key=lambda kv: (-sum(kv[1].values()), kv[0]))]
+    lines = ["", "## 3014/3015/3016 by sub-category", ""]
+    lines += _table(["sub-category", "sessions", *OUTCOMES], body or [["none", "0", "", "", "", ""]])
+    lines += ["", f"Total: {sum(sum(c.values()) for c in cells.values())} sessions (equals the 3014/3015/3016 table above)."]
+    return lines
+
+
 def render_markdown(opco: str, date: str, result: FunnelResult, charts: dict[str, str] | None = None) -> str:
     """``charts`` maps a chart name to its file name under ``charts/`` for relative embedding."""
     totals = result.totals
@@ -163,7 +185,7 @@ def render_markdown(opco: str, date: str, result: FunnelResult, charts: dict[str
     for title, row_field, col_field in sections:
         header, body = _pivot(result.rows, row_field, col_field)
         lines += ["", f"## {title}", ""] + _table(header, body)
-    lines += error_code_section(result.rows) + named_error_section(result.rows)
+    lines += error_code_section(result.rows) + named_error_section(result.rows) + subcategory_section(result.rows)
     return "\n".join(lines) + "\n"
 
 
@@ -196,12 +218,29 @@ def write_outputs(
     return csv_path, md_path
 
 
+def load_subcategories(
+    opco_dir: Path, opco: str, date: str, sessions: list[SessionInput],
+    flat_rows: list[dict[str, str]], flat: list[tuple[str, str]],
+) -> dict[str, str]:
+    """Sub-category per 3014/3015/3016 session; a missing position report only warns (join is enrichment)."""
+    setup = read_optional(opco_dir / f"{date}_setupsession_with_outcome.csv")
+    pos = read_optional(opco_dir / f"{date}_position_report.csv")
+    first_errors = first_error_by_session(sessions, flat)
+    return subcategory_by_session(
+        first_errors, flat_rows, first_row_by_session(setup), first_row_by_session(pos), opco, date
+    )
+
+
 def run(opco: str, date: str, base: Path, drm_dir: Path) -> FunnelResult:
     opco_dir = base / opco
     sessions = load_sessions(opco_dir / f"{date}_setupsession_with_outcome.csv")
     require_exports(drm_dir, date)
-    flat = load_flat_errors(opco_dir / "error_eventdata_flat" / f"{date}_all.csv")
-    result = build_funnel(opco, date, sessions, read_mdrmfe(drm_dir, date), read_lrm(drm_dir, date), flat)
+    flat_rows = load_flat_rows(opco_dir / "error_eventdata_flat" / f"{date}_all.csv")
+    flat = flat_error_pairs(flat_rows)
+    subcategories = load_subcategories(opco_dir, opco, date, sessions, flat_rows, flat)
+    result = build_funnel(
+        opco, date, sessions, read_mdrmfe(drm_dir, date), read_lrm(drm_dir, date), flat, subcategories
+    )
     distinct = len({s.session_id for s in sessions if s.session_id})
     if result.totals["sessions"] != distinct + result.totals["drm_only"]:
         raise ValueError(f"{opco} {date}: funnel sessions do not reconcile to the merge session count")
