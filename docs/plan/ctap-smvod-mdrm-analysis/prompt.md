@@ -24,8 +24,8 @@ The funnel must run daily as a pipeline step, so it is a script plus a `run_pipe
 ## Scope guard
 
 - **In bounds:** `investigations/ctap-smvod/scripts/`, `scripts/lib/`, `tests/`, `docs/`, `data/lightstep/<OPCO>/` (read only), `output/<OPCO>/`, `run_pipeline.py`, plus root `SCRIPTS.md` and
-  `CONTEXT.md`.
-- **Out of bounds:** `src/`, other investigations, any live Lightstep or Athena call from code (inputs are saved CSVs), changing how CTAP/SMVOD parts are combined (Step 1b stays as is).
+  `CONTEXT.md`. For MDRM-2a only: `src/lib/charts/` (new stacked-bar chart and theme series palette), its tests and `docs/guides/chart-guidelines.md`.
+- **Out of bounds:** the rest of `src/`, other investigations, any live Lightstep or Athena call from code (inputs are saved CSVs), changing how CTAP/SMVOD parts are combined (Step 1b stays as is).
 - Runtime behaviour: adds one optional pipeline step; existing steps and outputs are unchanged.
 
 ## Session-start load hints
@@ -39,6 +39,8 @@ The funnel must run daily as a pipeline step, so it is a script plus a `run_pipe
 
 - **MDRM-1** — pure funnel logic: unique sessions, DRM-type split, license outcome per type, downstream error per outcome.
 - **MDRM-2** — funnel CLI: CSV plus markdown summary; first run on 2026-10-23 for ZA, GH, ZM.
+- **MDRM-2a** — shared stacked-bar chart (theme series palette, `render_stacked_bar`) in `src/lib/charts/`, with the guide updated.
+- **MDRM-2b** — funnel charts built on it and embedded in the funnel markdown summary.
 - **MDRM-3** — license-chain quality: status-code split, the 403/400 failures, requests per session and retries, `fcId` consistency across exports, ZA part-overlap check.
 - **MDRM-4** — device and policy analysis: `brRef` against Widevine security level, FairPlay devices, VOD against linear, failing devices and households, `brRef` across dates.
 - **MDRM-5** — wire the funnel into `run_pipeline.py` as a daily step, plus `SCRIPTS.md` and `CONTEXT.md`.

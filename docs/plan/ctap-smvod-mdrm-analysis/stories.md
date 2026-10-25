@@ -54,6 +54,52 @@ not exposed.
 
 ---
 
+## MDRM-2a — Shared stacked-bar chart
+
+**Files to change / create:**
+- `src/lib/charts/theme.py` — add an ordered series palette to `ChartTheme` and `DARK` (distinguishable on the dark background; `green` and `red` stay reserved for success and failure).
+- `src/lib/charts/stacked_bar.py` — `render_stacked_bar`; `src/lib/charts/__init__.py` exports if the package does.
+- `tests/` — tests next to the existing chart tests (find them with the existing `render_bar` tests); `docs/guides/chart-guidelines.md`; root `CONTEXT.md` "What Exists".
+
+**What to implement:**
+1. `render_stacked_bar(labels, series, *, title, subtitle="", horizontal=False, colours=None, theme=DARK) -> bytes`, where `series` maps a series name to one value per label. A series colour comes
+   from `colours` (a name to theme-token map, for example success green and failure red) or else the palette in order; no hex literal outside `theme.py`.
+2. Validate: at least one label and one series, equal lengths, no negative or non-finite values. Raise `ChartError` for bad input and wrap any drawing failure, like `render_bar`.
+3. Label segments directly with the value (and share when a total is given); no legend unless there are more segments than can be labelled. Reuse `style_axes`, `new_figure`, `render_png` and
+   `chart_font_family()`; no `pyplot`.
+4. Update `chart-guidelines.md` with the new function, the palette tokens and the reserved success/failure colours.
+
+**Tests (no network, no real external services):**
+- `test_renders_png_bytes_for_vertical_and_horizontal` — output starts with the PNG signature.
+- `test_unequal_series_lengths_and_negative_values_raise_chart_error`.
+- `test_series_colours_come_from_theme_palette` — the existing guard test for hex literals still passes.
+
+**Commit:** `feat(charts): add stacked bar chart and series palette`
+
+---
+
+## MDRM-2b — Funnel charts
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/lib/drm_funnel_charts.py` — pure series builders plus thin render wrappers; `investigations/ctap-smvod/scripts/analyze_drm_funnel.py` — call them and embed the
+  images; `investigations/ctap-smvod/tests/test_drm_funnel_charts.py`.
+
+**What to implement:**
+1. Series builders from the MDRM-1 funnel rows (pure, testable): stage counts (sessions, DRM requested, license success, errored), the DRM-type split, and license outcome per DRM type with success in
+   green and failure in red, split further by downstream error group (3016 and others).
+2. Render three PNGs per OpCo and date with `render_stacked_bar` (and `HeaderCell` stats for totals and `drm_only`), written with `write_chart_png` to
+   `output/<OPCO>/charts/<date>_drm_funnel_<name>.png`.
+3. Embed them in `<date>_drm_funnel.md` with relative links (`charts/<file>`). A `ChartError` is logged, the link is left out, and the CSV and markdown are still written.
+
+**Tests (no network, no real external services):**
+- `test_series_builders_reconcile_to_session_total`.
+- `test_chart_error_still_writes_csv_and_markdown_without_image_links`.
+- `test_markdown_embeds_relative_chart_links`.
+
+**Commit:** `feat(ctap-smvod): chart the DRM funnel in the markdown summary`
+
+---
+
 ## MDRM-3 — License-chain quality
 
 **Files to change / create:**
@@ -90,6 +136,7 @@ not exposed.
 3. VOD against linear license outcome.
 4. Failing devices (make, model, level), households and `contentId`s ranked by failure count and failure rate with a minimum-volume threshold (argument, default 5).
 5. `brRef` across the dates that have exports (2026-10-21 to 2026-10-23) to show whether it is constant.
+6. One stacked chart (MDRM-2a) of Widevine requests by security level with `brRef`, embedded in the report markdown; a `ChartError` is logged and the report is still written.
 
 **Tests (no network, no real external services):**
 - `test_l1_with_low_br_ref_is_flagged`.
