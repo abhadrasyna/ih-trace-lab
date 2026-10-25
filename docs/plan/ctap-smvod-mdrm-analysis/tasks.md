@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MDRM-2c, MDRM-2d, MDRM-2e, MDRM-3, MDRM-4, MDRM-5, MDRM-6.**
+**Open: MDRM-2d, MDRM-2e, MDRM-3, MDRM-4, MDRM-5, MDRM-6.**
 
 - [x] **MDRM-1** — pure funnel logic: unique sessions, DRM-type split, license outcome, downstream error | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: e7ee80c
 - [x] **MDRM-2** — funnel CLI writing CSV plus markdown summary; first run on 2026-10-23 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 614c3e6
@@ -11,7 +11,7 @@ spec.
   426089a
 - [x] **MDRM-2b** — funnel charts (stage funnel, DRM split, license outcome per DRM type) embedded in the markdown summary | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: 257b393
-- [ ] **MDRM-2c** — split "ended in error" by error code and license outcome; 3016 finding as a table | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **MDRM-2c** — split "ended in error" by error code and license outcome; 3016 finding as a table | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: c0937f1
 - [ ] **MDRM-2d** — 3014/3015/3016 triage sub-categories by license outcome, reusing the classifier | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **MDRM-2e** — shared pie/donut chart in src/lib/charts and error-code and sub-category charts in the funnel markdown | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: —
