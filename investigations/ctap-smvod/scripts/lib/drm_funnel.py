@@ -150,16 +150,23 @@ def first_error_by_session(
     return codes
 
 
-def build_funnel(
-    opco: str,
-    date: str,
+@dataclass(frozen=True)
+class ClassifiedSession:
+    session_id: str
+    source: str
+    kind: str
+    drm_bucket: str
+    license_outcome: str
+    error_code: str  # raw first code, "" when the session ended without a player error
+
+
+def classify_sessions(
     sessions: Sequence[SessionInput],
     mdrmfe: Sequence[MdrmfeRow],
     lrm: Sequence[LrmRow],
     flat_errors: Iterable[tuple[str, str]] = (),
-    subcategories: Mapping[str, str] | None = None,
-) -> FunnelResult:
-    """Count each distinct session once; sessions only in mDRM are added as ``drm_only``."""
+) -> list[ClassifiedSession]:
+    """One entry per distinct session; sessions only in mDRM are added as ``drm_only``."""
     by_session = _group_by_session(mdrmfe)
     lrm_status = _lrm_by_fcid(lrm)
     errors = first_error_by_session(sessions, flat_errors)
@@ -171,15 +178,32 @@ def build_funnel(
     for session_id in by_session:
         universe.setdefault(session_id, SOURCE_DRM_ONLY)
 
-    subcategories = subcategories or {}
-    counts: Counter[tuple[str, str, str, str, str, str, str]] = Counter()
+    out = []
     for session_id, source in universe.items():
         rows = by_session.get(session_id, [])
-        code = errors.get(session_id, "")
+        out.append(ClassifiedSession(
+            session_id, source, session_kind(session_id), drm_bucket(rows),
+            license_outcome(rows, lrm_status), errors.get(session_id, ""),
+        ))
+    return out
+
+
+def build_funnel(
+    opco: str,
+    date: str,
+    sessions: Sequence[SessionInput],
+    mdrmfe: Sequence[MdrmfeRow],
+    lrm: Sequence[LrmRow],
+    flat_errors: Iterable[tuple[str, str]] = (),
+    subcategories: Mapping[str, str] | None = None,
+) -> FunnelResult:
+    """Count each distinct session once; sessions only in mDRM are added as ``drm_only``."""
+    subcategories = subcategories or {}
+    counts: Counter[tuple[str, str, str, str, str, str, str]] = Counter()
+    for c in classify_sessions(sessions, mdrmfe, lrm, flat_errors):
         counts[(
-            source, session_kind(session_id), drm_bucket(rows),
-            license_outcome(rows, lrm_status), error_group(code), code or NO_ERROR,
-            subcategories.get(session_id, "") if code in NAMED_ERRORS else "",
+            c.source, c.kind, c.drm_bucket, c.license_outcome, error_group(c.error_code),
+            c.error_code or NO_ERROR, subcategories.get(c.session_id, "") if c.error_code in NAMED_ERRORS else "",
         )] += 1
     out = [FunnelRow(opco, date, *key[:5], n, key[5], key[6]) for key, n in sorted(counts.items())]
     return FunnelResult(out, stage_totals(out))
