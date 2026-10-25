@@ -69,3 +69,16 @@ def test_missing_flat_error_file_is_optional(tmp_path: Path) -> None:
     base, drm = _inputs(tmp_path)
     (base / "ZA" / "error_eventdata_flat" / "2026-10-23_all.csv").unlink()
     assert mod.run("ZA", "2026-10-23", base, drm).totals["errored"] == 1
+
+
+def test_3016_table_splits_by_license_outcome(tmp_path: Path) -> None:
+    base, drm = _inputs(tmp_path)
+    mod.run("ZA", "2026-10-23", base, drm)
+    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    assert "counted under its first error code only" in md
+    assert "| 3016 | 1 | 0 (0.0%) | 0 (0.0%) | 1 (100.0%) | 0 (0.0%) |" in md
+    assert "| 3014 | 0 |" in md
+    assert "Reading: most 3016 sessions had license outcome `failed` (100.0%)." in md
+    assert "| 6001 | 1 | 50.0% |" in md
+    rows = list(csv.DictReader((base / "ZA" / "2026-10-23_drm_funnel.csv").open()))
+    assert {r["error_code"] for r in rows} == {"none", "3016", "6001"}

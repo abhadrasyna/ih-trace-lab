@@ -46,6 +46,7 @@ class FunnelRow:
     license_outcome: str
     error_group: str
     sessions: int
+    error_code: str = NO_ERROR
 
 
 @dataclass(frozen=True)
@@ -168,14 +169,15 @@ def build_funnel(
     for session_id in by_session:
         universe.setdefault(session_id, SOURCE_DRM_ONLY)
 
-    counts: Counter[tuple[str, str, str, str, str]] = Counter()
+    counts: Counter[tuple[str, str, str, str, str, str]] = Counter()
     for session_id, source in universe.items():
         rows = by_session.get(session_id, [])
+        code = errors.get(session_id, "")
         counts[(
             source, session_kind(session_id), drm_bucket(rows),
-            license_outcome(rows, lrm_status), error_group(errors.get(session_id, "")),
+            license_outcome(rows, lrm_status), error_group(code), code or NO_ERROR,
         )] += 1
-    out = [FunnelRow(opco, date, *key, n) for key, n in sorted(counts.items())]
+    out = [FunnelRow(opco, date, *key[:5], n, key[5]) for key, n in sorted(counts.items())]
     return FunnelResult(out, stage_totals(out))
 
 

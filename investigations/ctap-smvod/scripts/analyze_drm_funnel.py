@@ -19,7 +19,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from lib.drm_exports import LRM, MDRMFE, export_paths, read_lrm, read_mdrmfe
-from lib.drm_funnel import FunnelResult, FunnelRow, SessionInput, build_funnel
+from lib.drm_funnel import NAMED_ERRORS, NO_ERROR, FunnelResult, FunnelRow, SessionInput, build_funnel
 from lib.drm_funnel_charts import build_chart_specs, chart_filename, render_chart
 from src.lib.charts.errors import ChartError
 from src.lib.charts.output import write_chart_png
@@ -30,8 +30,9 @@ LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_drm_funnel
 DEFAULT_BASE = Path(__file__).resolve().parents[1] / "output"
 DEFAULT_DRM_BASE = Path(__file__).resolve().parents[1] / "data" / "lightstep"
 CSV_COLUMNS = [
-    "opco", "date", "source", "kind", "drm_bucket", "license_outcome", "error_group", "sessions",
+    "opco", "date", "source", "kind", "drm_bucket", "license_outcome", "error_group", "error_code", "sessions",
 ]
+OUTCOMES = ("success", "retry_then_success", "failed", "no_request")
 STAGE_LABELS = [
     ("sessions", "Sessions"),
     ("drm_requested", "Asked for a DRM license"),
@@ -97,6 +98,47 @@ def _pivot(rows: list[FunnelRow], row_field: str, col_field: str) -> tuple[list[
     return [row_field, *cols, "total"], body
 
 
+def outcome_by_code(rows: list[FunnelRow], codes: list[str] | None = None) -> dict[str, dict[str, int]]:
+    """Sessions per error code and license outcome; ``codes`` limits (and keeps empty) the listed codes."""
+    cells: dict[str, dict[str, int]] = {c: dict.fromkeys(OUTCOMES, 0) for c in codes or []}
+    for r in rows:
+        if r.error_code == NO_ERROR or (codes is not None and r.error_code not in cells):
+            continue
+        cells.setdefault(r.error_code, dict.fromkeys(OUTCOMES, 0))[r.license_outcome] += r.sessions
+    return cells
+
+
+def _outcome_cells(counts: dict[str, int]) -> list[str]:
+    total = sum(counts.values())
+    return [f"{counts[o]} ({pct(counts[o], total)})" for o in OUTCOMES]
+
+
+def error_code_section(rows: list[FunnelRow]) -> list[str]:
+    cells = outcome_by_code(rows)
+    errored = sum(sum(c.values()) for c in cells.values())
+    body = [[code, str(sum(c.values())), pct(sum(c.values()), errored), *_outcome_cells(c)]
+            for code, c in sorted(cells.items(), key=lambda kv: (-sum(kv[1].values()), kv[0]))]
+    lines = ["", "## Ended in error by code", "",
+             "Each session is counted under its first error code only.", ""]
+    lines += _table(["error_code", "sessions", "share of errored", *OUTCOMES], body or [["none", "0", "n/a", "", "", "", ""]])
+    return lines
+
+
+def named_error_section(rows: list[FunnelRow]) -> list[str]:
+    cells = outcome_by_code(rows, list(NAMED_ERRORS))
+    body = [[code, str(sum(c.values())), *_outcome_cells(c)] for code, c in cells.items()]
+    lines = ["", "## 3014 / 3015 / 3016 by license outcome", ""]
+    lines += _table(["error_code", "sessions", *OUTCOMES], body)
+    for code, c in cells.items():
+        total = sum(c.values())
+        if total:
+            top = max(OUTCOMES, key=lambda o: c[o])
+            lines.append("")
+            word = "most" if 2 * c[top] > total else "the largest share of"
+            lines.append(f"Reading: {word} {code} sessions had license outcome `{top}` ({pct(c[top], total)}).")
+    return lines
+
+
 def render_markdown(opco: str, date: str, result: FunnelResult, charts: dict[str, str] | None = None) -> str:
     """``charts`` maps a chart name to its file name under ``charts/`` for relative embedding."""
     totals = result.totals
@@ -121,6 +163,7 @@ def render_markdown(opco: str, date: str, result: FunnelResult, charts: dict[str
     for title, row_field, col_field in sections:
         header, body = _pivot(result.rows, row_field, col_field)
         lines += ["", f"## {title}", ""] + _table(header, body)
+    lines += error_code_section(result.rows) + named_error_section(result.rows)
     return "\n".join(lines) + "\n"
 
 

@@ -97,3 +97,14 @@ def test_201_without_lrm_row_is_failed_and_flat_error_fills_gap() -> None:
 )
 def test_error_group(code: str, group: str) -> None:
     assert mod.error_group(code) == group
+
+
+def test_error_code_counts_sum_to_errored_sessions() -> None:
+    sessions = [
+        mod.SessionInput("abr-vod-1", "6001; 3016"), mod.SessionInput("abr-vod-2", "E31012"),
+        mod.SessionInput("abr-vod-3", "3016"), mod.SessionInput("abr-vod-4"),
+    ]
+    result = mod.build_funnel("ZA", "2026-10-23", sessions, [], [])
+    codes = _by_key(result, "error_code")
+    assert codes == {"6001": 1, "E31012": 1, "3016": 1, "none": 1}
+    assert sum(n for c, n in codes.items() if c != "none") == result.totals["errored"] == 3
