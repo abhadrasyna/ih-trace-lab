@@ -4,8 +4,8 @@ Reads only local files (no Athena or Lightstep):
   <base>/<OPCO>/<date>_setupsession_with_outcome.csv           (required)
   <base>/<OPCO>/error_eventdata_flat/<date>_all.csv            (optional)
   <drm-dir>/<date>_mdrmfe.csv and <date>_mdrm-lrm.csv (+ hourly parts)  (required)
-Writes <base>/<OPCO>/<date>_drm_funnel.csv and <date>_drm_funnel.md, plus three charts under
-<base>/<OPCO>/charts/ embedded in the markdown (a chart failure is logged and its link is left out).
+Writes <base>/<OPCO>/drm-analysis/<date>_drm_funnel.md, <date>_drm_funnel.csv under csv/, plus the charts under
+charts/ embedded in the markdown (a chart failure is logged and its link is left out).
 
 Usage:
   python investigations/ctap-smvod/scripts/analyze_drm_funnel.py --opco ZA --date 2026-10-23
@@ -30,6 +30,7 @@ from lib.drm_funnel import (
 )
 from lib.drm_funnel_charts import build_chart_specs, chart_filename, render_chart
 from lib.drm_funnel_subcategory import subcategory_by_session
+from lib.drm_output import DRM_ANALYSIS_DIR, drm_analysis_dir, drm_csv_dir
 from run_3016_subcategory_report import first_row_by_session, read_optional
 
 from src.lib.charts.errors import ChartError
@@ -206,7 +207,7 @@ def write_charts(base: Path, opco: str, date: str, result: FunnelResult, absolut
             LOGGER.error("%s %s: chart %s failed: %s", opco, date, spec.name, exc)
             continue
         filename = chart_filename(date, spec.name)
-        write_chart_png(png, base, opco, filename)
+        write_chart_png(png, base / opco, DRM_ANALYSIS_DIR, filename)
         written[spec.name] = filename
     return written
 
@@ -214,8 +215,9 @@ def write_charts(base: Path, opco: str, date: str, result: FunnelResult, absolut
 def write_outputs(
     out_dir: Path, opco: str, date: str, result: FunnelResult, charts: dict[str, str] | None = None
 ) -> tuple[Path, Path]:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / f"{date}_drm_funnel.csv"
+    csv_dir = drm_csv_dir(out_dir)
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = csv_dir / f"{date}_drm_funnel.csv"
     md_path = out_dir / f"{date}_drm_funnel.md"
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=CSV_COLUMNS)
@@ -251,7 +253,7 @@ def run(opco: str, date: str, base: Path, drm_dir: Path, absolute: bool = False)
     distinct = len({s.session_id for s in sessions if s.session_id})
     if result.totals["sessions"] != distinct + result.totals["drm_only"]:
         raise ValueError(f"{opco} {date}: funnel sessions do not reconcile to the merge session count")
-    write_outputs(opco_dir, opco, date, result, write_charts(base, opco, date, result, absolute))
+    write_outputs(drm_analysis_dir(base, opco), opco, date, result, write_charts(base, opco, date, result, absolute))
     return result
 
 

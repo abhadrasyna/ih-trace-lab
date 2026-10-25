@@ -286,11 +286,12 @@ No automatic pattern verdict is produced; analyse the events CSV. Segment URLs e
 
 ## 7e. mDRM funnel and reports (`analyze_drm_funnel.py`, `analyze_mdrm_quality.py`, `analyze_mdrm_devices.py`)
 
-All three read the hand-saved mDRM exports (`docs/lightstep-drm-exports.md`) from `data/lightstep/<OPCO>/` (or `--drm-dir`) and write to `output/<OPCO>/`; no Athena or Lightstep calls.
+All three read the hand-saved mDRM exports (`docs/lightstep-drm-exports.md`) from `data/lightstep/<OPCO>/` (or `--drm-dir`) and write to `output/<OPCO>/drm-analysis/` (markdown reports at the top,
+`csv/` for CSVs, `charts/` for PNGs; shared path helper `scripts/lib/drm_output.py`); no Athena or Lightstep calls.
 
 ```bash
-python3 analyze_drm_funnel.py --opco ZA --date 2026-10-23     # <date>_drm_funnel.{csv,md} + charts/; run_pipeline.py Step 6i; --absolute draws license_outcome as raw counts, not shares
-python3 analyze_mdrm_quality.py --opco ZA --date 2026-10-23   # <date>_mdrm_quality.md + <date>_mdrm_quality_failures.csv (statuses, failing fcIds, retries, fcId chain, part overlap)
+python3 analyze_drm_funnel.py --opco ZA --date 2026-10-23     # <date>_drm_funnel.md + csv/<date>_drm_funnel.csv + charts/ (5 PNGs); Step 6i; --absolute = raw counts
+python3 analyze_mdrm_quality.py --opco ZA --date 2026-10-23   # <date>_mdrm_quality.md + csv/<date>_mdrm_quality_failures.csv (statuses, failing fcIds, retries, fcId chain, part overlap)
 python3 analyze_mdrm_devices.py --opco ZA --date 2026-10-23 [--min-volume 5]  # <date>_mdrm_devices.md + Widevine level/brRef chart
 ```
 

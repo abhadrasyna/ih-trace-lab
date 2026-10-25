@@ -63,5 +63,5 @@ def test_report_writes_markdown_and_failures_csv(tmp_path: Path) -> None:
         "fcId,drmInfo.Make,drmInfo.Model,drmInfo.Platform,drmInfo.SecurityLevel\nF1,S,m,ANDROID,L1\n", encoding="utf-8-sig")
     failures = cli.run("ZA", "2026-10-23", tmp_path / "out", drm)
     assert len(failures) == 1
-    assert "1 distinct fcId" in (tmp_path / "out" / "ZA" / "2026-10-23_mdrm_quality.md").read_text()
-    assert "F1" in (tmp_path / "out" / "ZA" / "2026-10-23_mdrm_quality_failures.csv").read_text()
+    assert "1 distinct fcId" in (tmp_path / "out" / "ZA" / "drm-analysis" / "2026-10-23_mdrm_quality.md").read_text()
+    assert "F1" in (tmp_path / "out" / "ZA" / "drm-analysis" / "csv" / "2026-10-23_mdrm_quality_failures.csv").read_text()

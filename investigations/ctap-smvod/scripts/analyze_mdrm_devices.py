@@ -1,7 +1,7 @@
 """mDRM device and policy report for one OpCo: ``brRef`` vs security level, FairPlay/PlayReady devices, VOD vs linear, failures.
 
 Reads only the saved Lightstep exports (no Athena or Lightstep calls). ``brRef`` across dates uses every date that has an
-mdrmfe export in --drm-dir (or --dates). Writes <base>/<OPCO>/<date>_mdrm_devices.md and one Widevine chart under charts/.
+mdrmfe export in --drm-dir (or --dates). Writes <base>/<OPCO>/drm-analysis/<date>_mdrm_devices.md and one Widevine chart under its charts/.
 
 Usage:
   python investigations/ctap-smvod/scripts/analyze_mdrm_devices.py --opco ZA --date 2026-10-23 [--min-volume 5]
@@ -14,10 +14,19 @@ from pathlib import Path
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.drm_devices import (
-    DIMENSIONS, GroupStat, br_ref_by_date, br_ref_by_drm_type, device_split, outcome_by_kind, rank_failures,
-    widevine_hd_loss, widevine_level_br_ref,
+    DIMENSIONS,
+    GroupStat,
+    br_ref_by_date,
+    br_ref_by_drm_type,
+    device_split,
+    outcome_by_kind,
+    rank_failures,
+    widevine_hd_loss,
+    widevine_level_br_ref,
 )
 from lib.drm_exports import export_dates, read_cdm, read_lrm, read_mdrmfe
+from lib.drm_output import DRM_ANALYSIS_DIR, drm_analysis_dir
+
 from src.lib.charts.errors import ChartError
 from src.lib.charts.output import write_chart_png
 from src.lib.charts.stacked_bar import render_stacked_bar
@@ -65,7 +74,7 @@ def write_chart(base: Path, opco: str, date: str, levels: dict[str, dict[str, in
     except ChartError as exc:
         LOGGER.error("%s %s: widevine chart failed: %s", opco, date, exc)
         return ""
-    write_chart_png(png, base, opco, chart_filename(date))
+    write_chart_png(png, base / opco, DRM_ANALYSIS_DIR, chart_filename(date))
     return chart_filename(date)
 
 
@@ -100,7 +109,7 @@ def run(opco: str, date: str, base: Path, drm_dir: Path, min_volume: int = 5, da
     levels = widevine_level_br_ref(mdrmfe, cdm)
     chart = write_chart(base, opco, date, levels, widevine_hd_loss(mdrmfe, cdm).widevine_requests)
     text = render_markdown(opco, date, drm_dir, dates or export_dates(drm_dir), min_volume, chart)
-    out = base / opco
+    out = drm_analysis_dir(base, opco)
     out.mkdir(parents=True, exist_ok=True)
     path = out / f"{date}_mdrm_devices.md"
     path.write_text(text, encoding="utf-8")
@@ -119,7 +128,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> None:
-    from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 
     from src.lib.logging.bootstrap import init_logging
 

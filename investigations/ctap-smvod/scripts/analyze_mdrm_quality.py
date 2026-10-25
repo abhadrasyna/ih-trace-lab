@@ -2,7 +2,7 @@
 
 Reads only the saved Lightstep exports (no Athena or Lightstep calls):
   <drm-dir>/<date>_mdrmfe.csv, _mdrm-lrm.csv, _mdrm-cdm-{widevine,fairplay,playready}.csv (+ hourly parts)
-Writes <base>/<OPCO>/<date>_mdrm_quality.md and <date>_mdrm_quality_failures.csv.
+Writes <base>/<OPCO>/drm-analysis/<date>_mdrm_quality.md and csv/<date>_mdrm_quality_failures.csv.
 
 Usage:
   python investigations/ctap-smvod/scripts/analyze_mdrm_quality.py --opco ZA --date 2026-10-23
@@ -16,11 +16,29 @@ from dataclasses import asdict, fields
 from pathlib import Path
 
 from lib.drm_exports import (
-    LRM, MDRMFE, WIDEVINE, FAIRPLAY, PLAYREADY, export_paths, read_cdm, read_fcids_by_part, read_lrm, read_mdrmfe,
+    FAIRPLAY,
+    LRM,
+    MDRMFE,
+    PLAYREADY,
+    WIDEVINE,
+    export_paths,
+    read_cdm,
+    read_fcids_by_part,
+    read_lrm,
+    read_mdrmfe,
 )
+from lib.drm_output import drm_analysis_dir, drm_csv_dir
 from lib.drm_quality import (
-    EXPORT_CDM, EXPORT_LRM, EXPORT_MDRMFE, FailedRequest, duplicate_fcids_across_parts, failing_requests, fcid_chain,
-    layer_overlap, repeat_failures, requests_per_key, retry_sessions, status_counts, whole_day_with_parts,
+    FailedRequest,
+    duplicate_fcids_across_parts,
+    failing_requests,
+    fcid_chain,
+    layer_overlap,
+    repeat_failures,
+    requests_per_key,
+    retry_sessions,
+    status_counts,
+    whole_day_with_parts,
 )
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_mdrm_quality")
@@ -63,7 +81,7 @@ def render_markdown(opco: str, date: str, drm_dir: Path) -> tuple[str, list[Fail
     overlap = layer_overlap(failures)
     lines += ["", f"## Failing requests ({len(failures)} distinct fcId)", "",
               f"Failing at both layers: {overlap['mdrmfe+lrm']}; mdrmfe only: {overlap['mdrmfe']}; LRM only: {overlap['lrm']}. "
-              f"Full list with device, household, content and user agent: `{date}_mdrm_quality_failures.csv`.", ""]
+              f"Full list with device, household, content and user agent: `csv/{date}_mdrm_quality_failures.csv`.", ""]
     for dim, items in repeat_failures(failures).items():
         lines.append(f"- Repeat failures by `{dim}`: " + (", ".join(f"{k[:12]}… ×{n}" for k, n in items[:TOP_N]) or "none"))
     lines += ["", "## Requests per session and household", "",
@@ -88,9 +106,10 @@ def render_markdown(opco: str, date: str, drm_dir: Path) -> tuple[str, list[Fail
 
 
 def write_outputs(out_dir: Path, opco: str, date: str, markdown: str, failures: list[FailedRequest]) -> tuple[Path, Path]:
-    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_dir = drm_csv_dir(out_dir)
+    csv_dir.mkdir(parents=True, exist_ok=True)
     md_path = out_dir / f"{date}_mdrm_quality.md"
-    csv_path = out_dir / f"{date}_mdrm_quality_failures.csv"
+    csv_path = csv_dir / f"{date}_mdrm_quality_failures.csv"
     md_path.write_text(markdown, encoding="utf-8")
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=[f.name for f in fields(FailedRequest)])
@@ -101,7 +120,7 @@ def write_outputs(out_dir: Path, opco: str, date: str, markdown: str, failures: 
 
 def run(opco: str, date: str, base: Path, drm_dir: Path) -> list[FailedRequest]:
     markdown, failures = render_markdown(opco, date, drm_dir)
-    write_outputs(base / opco, opco, date, markdown, failures)
+    write_outputs(drm_analysis_dir(base, opco), opco, date, markdown, failures)
     return failures
 
 

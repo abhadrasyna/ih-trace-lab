@@ -52,7 +52,7 @@ def test_subcategory_by_license_outcome_for_sample_sessions(tmp_path: Path) -> N
     (drm / "2026-10-23_mdrm-lrm.csv").write_text("fcId,deviceId,http.status_code\nF1,D,200\nF2,D,400\n",
                                                  encoding="utf-8-sig")
     cli.run("ZA", "2026-10-23", base, drm)
-    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    md = (base / "ZA" / "drm-analysis" / "2026-10-23_drm_funnel.md").read_text()
     section = md.split("## 3014/3015/3016 by sub-category")[1]
     assert f"| {AUDIO} | 1 | 1 (100.0%) | 0 (0.0%) | 0 (0.0%) | 0 (0.0%) |" in section
     assert f"| {REINIT} | 1 | 0 (0.0%) | 0 (0.0%) | 1 (100.0%) | 0 (0.0%) |" in section
@@ -73,5 +73,5 @@ def test_subcategory_sessions_reconcile_to_3016_table(tmp_path: Path) -> None:
     with_sub = sum(r.sessions for r in result.rows if r.subcategory)
     assert named == with_sub == 3
     assert all(not r.subcategory for r in result.rows if r.error_code not in ("3014", "3015", "3016"))
-    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    md = (base / "ZA" / "drm-analysis" / "2026-10-23_drm_funnel.md").read_text()
     assert "Total: 3 sessions" in md

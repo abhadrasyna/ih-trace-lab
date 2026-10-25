@@ -120,9 +120,9 @@ def test_no_errors_yields_empty_error_mix_and_no_extra_charts() -> None:
 def test_markdown_embeds_relative_chart_links(tmp_path: Path) -> None:
     base, drm = _inputs(tmp_path)
     cli.run("ZA", "2026-10-23", base, drm)
-    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    md = (base / "ZA" / "drm-analysis" / "2026-10-23_drm_funnel.md").read_text()
     for name in ("stages", "drm_split", "license_outcome"):
-        png = base / "ZA" / "charts" / f"2026-10-23_drm_funnel_{name}.png"
+        png = base / "ZA" / "drm-analysis" / "charts" / f"2026-10-23_drm_funnel_{name}.png"
         assert png.read_bytes().startswith(b"\x89PNG")
         assert f"(charts/2026-10-23_drm_funnel_{name}.png)" in md
 
@@ -134,8 +134,8 @@ def test_chart_error_still_writes_csv_and_markdown_without_image_links(tmp_path:
     monkeypatch.setattr(cli, "render_chart", boom)
     base, drm = _inputs(tmp_path)
     cli.run("ZA", "2026-10-23", base, drm)
-    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    md = (base / "ZA" / "drm-analysis" / "2026-10-23_drm_funnel.md").read_text()
     assert "charts/" not in md and "## Stages" in md
-    rows = list(csv.DictReader((base / "ZA" / "2026-10-23_drm_funnel.csv").open()))
+    rows = list(csv.DictReader((base / "ZA" / "drm-analysis" / "csv" / "2026-10-23_drm_funnel.csv").open()))
     assert sum(int(r["sessions"]) for r in rows) == 4
-    assert not (base / "ZA" / "charts").exists()
+    assert not (base / "ZA" / "drm-analysis" / "charts").exists()

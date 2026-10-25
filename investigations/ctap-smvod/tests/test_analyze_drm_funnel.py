@@ -45,10 +45,10 @@ def test_writes_csv_and_markdown_for_sample_inputs(tmp_path: Path) -> None:
 
     assert result.totals == {"sessions": 4, "drm_requested": 3, "license_success": 2, "license_failed": 1,
                              "errored": 2, "drm_only": 1}
-    rows = list(csv.DictReader((base / "ZA" / "2026-10-23_drm_funnel.csv").open()))
+    rows = list(csv.DictReader((base / "ZA" / "drm-analysis" / "csv" / "2026-10-23_drm_funnel.csv").open()))
     assert sum(int(r["sessions"]) for r in rows) == 4
     assert {r["source"] for r in rows} == {"merge", "drm_only"}
-    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    md = (base / "ZA" / "drm-analysis" / "2026-10-23_drm_funnel.md").read_text()
     assert "# DRM funnel — ZA — 2026-10-23" in md
     assert "`source=drm_only`" in md and "License outcome per DRM type" in md
 
@@ -74,11 +74,11 @@ def test_missing_flat_error_file_is_optional(tmp_path: Path) -> None:
 def test_3016_table_splits_by_license_outcome(tmp_path: Path) -> None:
     base, drm = _inputs(tmp_path)
     mod.run("ZA", "2026-10-23", base, drm)
-    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    md = (base / "ZA" / "drm-analysis" / "2026-10-23_drm_funnel.md").read_text()
     assert "counted under its first error code only" in md
     assert "| 3016 | 1 | 0 (0.0%) | 0 (0.0%) | 1 (100.0%) | 0 (0.0%) |" in md
     assert "| 3014 | 0 |" in md
     assert "Reading: most 3016 sessions had license outcome `failed` (100.0%)." in md
     assert "| 6001 | 1 | 50.0% |" in md
-    rows = list(csv.DictReader((base / "ZA" / "2026-10-23_drm_funnel.csv").open()))
+    rows = list(csv.DictReader((base / "ZA" / "drm-analysis" / "csv" / "2026-10-23_drm_funnel.csv").open()))
     assert {r["error_code"] for r in rows} == {"none", "3016", "6001"}

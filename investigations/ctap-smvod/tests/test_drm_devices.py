@@ -60,4 +60,4 @@ def test_report_is_written_with_chart(tmp_path: Path) -> None:
     path = cli.run("ZA", "2026-10-23", tmp_path / "out", drm)
     text = path.read_text()
     assert "HD loss:** 1 of 1" in text and "constant" in text
-    assert (tmp_path / "out" / "ZA" / "charts" / "2026-10-23_mdrm_widevine_level_brref.png").exists()
+    assert (tmp_path / "out" / "ZA" / "drm-analysis" / "charts" / "2026-10-23_mdrm_widevine_level_brref.png").exists()
