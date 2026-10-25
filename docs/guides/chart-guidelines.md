@@ -117,6 +117,29 @@ Rules from `docs/refactor/`: wrap third-party exceptions at the module boundary 
 `Protocol` over an abstract base if a chart interface is ever needed. Fonts: Roboto is bundled under `src/lib/charts/assets/fonts/` (Apache 2.0); `chart_font_family()` is cached, lock-guarded and
 falls back to DejaVu Sans with a logged warning, never a raise. The header is optional: a chart without cells renders a plain title.
 
+## Funnel charts
+
+Decision record for the DRM funnel charts (story `chart-funnel-visual-consistency`, decided 2026-10-25). The mockups in `output/ZA/charts/modified/` are AI-generated design direction, not a spec: they
+are about 5 MB each, carry a watermark and one uses placeholder percentages. They are never committed.
+
+| Mockup trait | Decision | Reason |
+|---|---|---|
+| Lighter navy background, saturated blue | Rejected | Every colour comes from `ChartTheme`: keep `bg` and `series[0]`. |
+| Watermark | Rejected | Never drawn. |
+| Gradient funnel connectors | Adapted | Flat `muted` connectors; the guide forbids gradients. |
+| Error-rate card with coloured border and amber fill | Adapted | A `HeaderCell` with `Tone.NEGATIVE`; no borders or cards. |
+| Legend beside the subtitle | Adapted | One legend above the plot, outside the bars, only when series carry meaning (success, failed, no_request). No legend for a single series. |
+| Muted grey `none` bar | Adopted | `none` (no DRM) is a null category: `muted`, and it stays visible in DRM-type charts. |
+| `license_outcome` as 100% bars, green/red/muted | Adopted | `normalize` makes DRM types comparable; the three outcomes are the only series. The error split stays in the markdown tables. |
+| Absolute volume | Adapted | `license_outcome` defaults to share of DRM type with the absolute total under each x label; `--absolute` on `analyze_drm_funnel.py` draws raw counts. |
+| Funnel shape with step conversion, separate error-rate KPI, no clipped labels | Adopted | Built in MV-5. |
+
+Rules for every funnel chart:
+
+- DRM types appear in one fixed order (widevine, fairplay, playready, none; unknown buckets last), with capitalised display labels and a fixed colour per type, so a type looks the same in every chart.
+- A share-of-total stack (`normalize=True`) scales each stack to 100%; a stack whose total is zero is drawn empty (no segments, no label), never an error or a division by zero.
+- A bar under 5% of the longest keeps a minimum drawn height and its label is drawn above it.
+
 ## Using charts from an investigation
 
 Any investigation script follows the same shape:
