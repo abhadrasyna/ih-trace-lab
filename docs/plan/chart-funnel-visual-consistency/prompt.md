@@ -16,7 +16,7 @@ What the mockups get right, and the shipped charts lack:
 - **stages**: a funnel shape with step conversion between stages (-46.5%, 98.9%), a separate "ended in error" KPI (42.3%), and no clipped labels. The shipped chart is four same-colour horizontal bars
   whose y labels are cut off ("DRM requested", "License success"), with "ended in error" in the same blue as the success stages.
 - **drm_split**: the "none" (no DRM) bar is muted grey, so it reads as "not a DRM type"; the shipped chart has all bars one blue and a pointless "vod" legend for a single series.
-- **license_outcome**: success/failed/no_request in green/red/grey, one clear legend outside the plot, shares normalised to 100% so DRM types are comparable. The shipped chart has seven series with
+- **license_outcome**: success/failed/no_request in green/red/grey, one clear legend outside the plot, shares normalized to 100% so DRM types are comparable. The shipped chart has seven series with
   palette colours that carry no meaning (success-error amber, failed-error pink), a legend over the bars, and the tiny playready bar is invisible.
 
 ## Conflicts with `docs/guides/chart-guidelines.md` (decide in MV-1, do not copy blindly)
@@ -30,7 +30,7 @@ What the mockups get right, and the shipped charts lack:
 
 In bounds: `investigations/ctap-smvod/scripts/lib/drm_funnel_charts.py` and its tests, `scripts/analyze_drm_funnel.py` only if the chart set changes, shared additions to `src/lib/charts/` that a
 second chart needs, `docs/guides/chart-guidelines.md`. Out of bounds: `chart_concurrent_playback.py`, `chart_playback_attempts.py` (own polish stories), the funnel numbers themselves
-(`lib/drm_funnel.py`), committing the mockup PNGs. Depends on `chart-guide-code-alignment` CA-1 and CA-2 (shared title helper, axis formatting) being done first.
+(`lib/drm_funnel.py`), committing the mockup PNGs. Depends on `chart-guide-code-alignment` CA-1, CA-2 and CA-4 (title helper, axis formatting, amber and palette) being done first.
 
 ## Session-start load hints
 
@@ -39,7 +39,7 @@ second chart needs, `docs/guides/chart-guidelines.md`. Out of bounds: `chart_con
 
 ## Task overview
 
-- **MV-1** — decision record: mockup vs guide conflicts, token additions, normalised-share rule.
+- **MV-1** — decision record: mockup vs guide conflicts, token additions, normalized-share rule.
 - **MV-2** — shared ordering, labels and colour mapping for DRM types across all funnel charts.
 - **MV-3** — `drm_split`: muted `none`, no single-series legend, visible tiny bars.
 - **MV-4** — `license_outcome`: 100% share mode, three semantic series, legend outside the plot.

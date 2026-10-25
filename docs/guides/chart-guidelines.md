@@ -3,6 +3,22 @@
 Standard for every generic plot rendered in this repo (investigation reports, PNG exports, scratch PoCs that may be promoted). It is adapted from NiftyShield's `docs/reference/chart_guidelines.md`
 (accepted payoff chart, 2026-10-13). The shared code in `src/lib/charts/` is now the truth for the palette, figure recipe and module layout; this guide must be fixed whenever the code changes.
 
+## Audience and principle
+
+Charts are investigation evidence (counts, rates, error mix per tenant and day) written for an executive reader: the chart must carry the story on its own, so a reader gets the conclusion in seconds
+without the accompanying text. Minimise cognitive load, maximise data-ink, and use colour for meaning, never decoration. Every chart states its base (what the percentages are a share of) in the title,
+subtitle or label. Spelling in code and docs: `normalize` (US), as in `render_stacked_bar(..., normalize=True)`.
+
+## Choosing a chart type
+
+| Insight goal | Chart | Reasoning |
+|---|---|---|
+| Pipeline and drop-off | Funnel (stages read top to bottom) | Absolute volume per stage, with step-to-step conversion annotated (e.g. 98.9% of the previous stage), not just totals. |
+| Rates across segments of very different size | 100% stacked bar (`normalize=True`) | Compares success/failure/error efficiency, not scale; show absolute totals alongside so volume is not hidden. |
+| Absolute volume across categories | Bar or horizontal bar, sorted descending | Rank is instant; horizontal when labels are long. |
+| Trend and sign over time | Signed line | Green or red fill tells at a glance whether the trend is net good or bad. |
+| Parts of a whole | Donut, 2 to 4 categories, small ones grouped as `other` | Total in the hole as the KPI; if one category dominates (e.g. error code 6001), use a horizontal bar. |
+
 ## Palette and fonts (default)
 
 Dark-only; there is no light variant. Once a shared `ChartTheme` exists, every colour comes from it and nowhere else.
@@ -19,6 +35,16 @@ Dark-only; there is no light variant. Once a shared `ChartTheme` exists, every c
 
 `green` and `red` are reserved for success and failure: they never appear in `series`, and a multi-series chart gets them only by mapping a series to them explicitly (for example
 `render_stacked_bar`'s `colours={"success": "green", "failed": "red"}`). Any other series takes the palette in order, cycling after six; a chart with more segments than it can label needs a legend.
+
+**Merged standard, pending in code (story `chart-guide-code-alignment`, task CA-4):** add `amber` `#f59e0b` as a third status colour (warning, retries, non-fatal or degraded states) with a
+`Tone.WARNING` header tone; `green`, `red` and `amber` are all reserved for status and none appears in `series`. `series` then becomes five colours (blue, violet, pink, slate, sand), so `render_pie`
+defaults to `max_slices=5` (four categories plus `other`). Until CA-4 lands, the table above is what the code does and `series[1]` is still amber.
+
+Colour rules:
+- Assign each recurring category one fixed colour across every chart of a report (e.g. a DRM type keeps its colour), so colours do not drift across an executive deck.
+- Structural or null categories (`none`, `no_request`, `unprotected`, `other`) use `muted`, never a series colour, so the active data pops. Not `faint`: `#1f2937` on `bg` is almost invisible and
+  `faint` stays for grid, spines and guides.
+- Don't compress the active series by plotting a huge null column on the same absolute scale; dim it, label it directly, or separate it.
 
 Area fills reuse the line colour with alpha: `fill_alpha_green = 0.22`, `fill_alpha_red = 0.14` (the bad side is deliberately quieter). Font is Roboto when bundled, resolved only through one
 `chart_font_family()` helper that falls back to `"DejaVu Sans"` and never raises.
@@ -50,6 +76,7 @@ Type scale (pt): title 16 bold, subtitle 10, stat label 8.5, stat value 12 bold,
 - Don't use `matplotlib.pyplot` (`plt.subplots`, `plt.figure`, `plt.show`, `plt.savefig`) in `src/` or `scripts/`. It drags in global state, a GUI backend and figure-leak bugs.
 - Don't rely on matplotlib's default font, and don't call `font_manager.addfont` outside `chart_font_family()`.
 - Don't add a light theme, gradients, drop shadows, 3D, or chart borders. Don't add a legend when direct labels do the job.
+- Don't use emoji, icons or pictographs; clean typography and geometric shapes only. Don't keep a legend for a single series or when segments are large enough for direct labels.
 - Don't use a rainbow or more than two hues for a signed series. Green and red carry sign; everything else is `ink`, `muted` or `faint`. Multi-series charts (not signed) use the `series` palette.
 - Don't draw a full box grid, vertical gridlines, or visible tick marks. Don't use thick lines (> 2 pt) or tiny markers (< 5 pt).
 - Don't call `savefig` to disk inside reusable render functions (return bytes; the script owns I/O).
@@ -80,6 +107,10 @@ labelled with its value, plus its share when `total` is given. A legend appears 
 `render_pie(labels, values, *, title, subtitle="", max_slices=6, theme=DARK)` draws a donut and a legend below it. Slices beyond `max_slices - 1` merge into a muted `other` slice. Use it only for a
 handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty, unequal, negative or non-finite input raises
 `ChartError`.
+
+**Planned, not in code yet** (do not rely on these until the owning task lands): `render_stacked_bar(..., normalize: bool = False)` scaling each stack to 100% with absolute totals shown (story
+`chart-funnel-visual-consistency` MV-4); a funnel chart with automatic step conversion (MV-5, investigation-local first and promoted to `src/lib/charts/funnel.py` only once a second investigation
+needs it, per the convergence rule below); a `render_horizontal_bar` sorted descending (promote when a second chart needs it).
 
 Rules from `docs/refactor/`: wrap third-party exceptions at the module boundary (matplotlib and numpy errors become `ChartError`), keep `theme` free of imports from the rest of the package, and prefer
 `Protocol` over an abstract base if a chart interface is ever needed. Fonts: Roboto is bundled under `src/lib/charts/assets/fonts/` (Apache 2.0); `chart_font_family()` is cached, lock-guarded and

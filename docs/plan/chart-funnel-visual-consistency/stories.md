@@ -1,7 +1,7 @@
 # DRM funnel chart visual consistency — story specs
 
 > One task per session. Find the first unchecked item in `tasks.md`. That is your only task. Full implementation rules live in `AGENTS.md` and `docs/guides/chart-guidelines.md`. After each task: set
-> `SHA:` on the task line + tick the box, update the story status summary, add one line to your backlog/session-log file. Prerequisite: `chart-guide-code-alignment` CA-1 and CA-2.
+> `SHA:` on the task line + tick the box, update the story status summary, add one line to your backlog/session-log file. Prerequisite: `chart-guide-code-alignment` CA-1, CA-2 and CA-4.
 
 ---
 
@@ -9,12 +9,12 @@
 
 **Files to change / create:**
 - `docs/guides/chart-guidelines.md` — new "Funnel charts" section with the decisions below.
-- `src/lib/charts/theme.py` and `tests/lib/charts/test_theme.py` — only if a token is added.
+- `src/lib/charts/theme.py` and `tests/lib/charts/test_theme.py` — not needed here; the `amber` token and palette change belong to `chart-guide-code-alignment` CA-4 (a prerequisite).
 
 **What to implement:**
 
-1. Ask the user to confirm each decision (use `ask_user`; do not assume): gradients (guide says no: flat connectors in `faint` or low-alpha series colour), error-rate callout (use a `HeaderCell` with
-   `Tone.NEGATIVE` instead of a bordered card), background and blue (keep `bg` and `series[0]`), legend (direct labels, one outside legend only when a stack has more than one series), watermark
+1. The merged guide (2026-10-25) already settles: no gradients, no borders or cards (use a `HeaderCell`, `Tone.NEGATIVE` for error rate), no emoji, null categories in `muted`, no single-series legend,
+   `normalize` for 100% stacks. Confirm only what is still open with the user via `ask_user`: background and blue (keep `bg` and `series[0]`), flat connector colour for the funnel, and watermark
    (never).
 2. Decide whether `license_outcome` is share-only or offers `--share` / absolute, and whether `none` (no DRM) is shown in the DRM-type charts.
 3. Record each decision as adopted / adapted / rejected with the reason. Treat `modified/` as direction only; do not commit those PNGs (about 5 MB each, watermarked).
@@ -68,7 +68,7 @@
 ## MV-4 — `license_outcome`
 
 **Files to change / create:**
-- `src/lib/charts/stacked_bar.py` — `normalise: bool = False` (each stack scaled to 100%; label shows share, subtitle or label carries the absolute count) and a legend placed above the plot, outside
+- `src/lib/charts/stacked_bar.py` — `normalize: bool = False` (each stack scaled to 100%; label shows share, subtitle or label carries the absolute count) and a legend placed above the plot, outside
   the bars.
 - `investigations/ctap-smvod/scripts/lib/drm_funnel_charts.py`, tests for both.
 
@@ -76,11 +76,11 @@
 
 1. Collapse the seven series to success / failed / no_request (green / red / muted); keep the error split as a second table or in the markdown, not in colour (the amber and pink series carry no
    meaning).
-2. Add `normalise`; guard against zero-total stacks (raise `ChartError` or draw empty, decide in MV-1).
+2. Add `normalize`; guard against zero-total stacks (raise `ChartError` or draw empty, decide in MV-1).
 3. Axis shows `0%`..`100%` via `format_pct`; the absolute total per type goes under each x label.
 
 **Tests (no network, no real external services):**
-- `test_normalised_stacks_sum_to_100`, `test_zero_total_stack_handled`, `test_legend_outside_plot_area`.
+- `test_normalized_stacks_sum_to_100`, `test_zero_total_stack_handled`, `test_legend_outside_plot_area`.
 
 **Commit:** `feat(charts): share-of-total stacked bars for license outcome`
 

@@ -62,3 +62,25 @@
 - Docs only; run the repo's markdown line-length/pre-commit hooks.
 
 **Commit:** `docs(charts): align guide and CONTEXT with chart code`
+
+---
+
+## CA-4 — status colours and palette from the merged guide
+
+**Files to change / create:**
+- `src/lib/charts/theme.py` — add `amber` (`#f59e0b`); `series` becomes `#60a5fa`, `#a78bfa`, `#f472b6`, `#94a3b8`, `#d4a373`.
+- `src/lib/charts/header.py` — `Tone.WARNING` mapped to `theme.amber`.
+- `src/lib/charts/pie.py` — default `max_slices=5` (the validation caps it at the palette size).
+- `src/lib/charts/stacked_bar.py` — add `amber` to `COLOUR_TOKENS`.
+- `tests/lib/charts/test_theme.py`, `test_header.py`, `test_pie.py`, `test_stacked_bar.py`, `test_guard.py`; `docs/guides/chart-guidelines.md` (drop the "pending in code" note).
+
+**What to implement:**
+
+1. Add the colour and tone; reorder `series` so no status colour is in it.
+2. Check every caller still renders: `drm_funnel_charts.py` (series colours change by position, so view the regenerated PNGs) and the ctap-smvod line charts.
+3. Hard-coded colour tokens elsewhere stay token names, never hex.
+
+**Tests (no network, no real external services):**
+- `test_amber_token_not_in_series`, `test_series_has_no_status_colour`, `test_warning_tone_uses_amber`, `test_pie_default_max_slices_fits_palette`, `test_pie_rejects_max_slices_above_palette`.
+
+**Commit:** `feat(charts): add amber status colour and five-colour series`
