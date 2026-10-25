@@ -17,7 +17,7 @@ ELLIPSIS = "…"
 
 def _truncate_to_fit(fig: Figure, text, title: str) -> None:
     """Shortens the drawn title with an ellipsis until its rendered width ends inside the right margin."""
-    renderer = fig.canvas.get_renderer()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]  # Agg canvas only; absent from the base-class stubs
     limit = MARGIN_RIGHT * fig.bbox.width
     while len(title) > 1 and text.get_window_extent(renderer).x1 > limit:
         title = title.removesuffix(ELLIPSIS)[:-1].rstrip() + ELLIPSIS

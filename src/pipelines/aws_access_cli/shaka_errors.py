@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -173,7 +174,7 @@ def pivot_error_counts(
     date_value: str,
     *,
     known_error_codes: tuple[str, ...] = KNOWN_ERROR_CODES,
-    existing_columns: list[str] = (),
+    existing_columns: Sequence[str] = (),
 ) -> dict[str, str]:
     """Pivots one period's long-format `{errorcode, metric_value}` rows into one wide report row.
 

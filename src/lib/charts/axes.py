@@ -80,7 +80,7 @@ def style_axes(ax: Axes, theme: ChartTheme, family: str) -> None:
     ax.xaxis.grid(False)
     ax.set_axisbelow(True)
     for label in (*ax.get_xticklabels(), *ax.get_yticklabels()):
-        label.set_family(family)
+        label.set_fontfamily(family)
 
 
 def _axis_tick_label(v: float, _pos: int | None = None) -> str:

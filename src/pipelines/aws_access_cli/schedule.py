@@ -78,7 +78,7 @@ def run_catch_up(
         exit_code = max(
             exit_code,
             run_for_all_tenants(
-                lambda tenant, value=value: build_argv(value, tenant),
+                lambda tenant, value=value: build_argv(value, tenant),  # type: ignore[misc]
                 sub_reports,
                 preflight=preflight if position == 0 else None,
             ),

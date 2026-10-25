@@ -29,7 +29,7 @@ def insert_zero_crossings(xs: Sequence[float], ys: Sequence[float]) -> tuple[np.
     return np.asarray(out_x), np.asarray(out_y)
 
 
-def split_by_sign(ys: Sequence[float]) -> tuple[np.ma.MaskedArray, np.ma.MaskedArray]:
+def split_by_sign(ys: Sequence[float] | np.ndarray) -> tuple[np.ma.MaskedArray, np.ma.MaskedArray]:
     """Returns (positive, negative) masked views of ``ys``; zero points belong to both so segments join."""
     arr = np.asarray(ys, dtype=float)
     return np.ma.masked_where(arr < 0, arr), np.ma.masked_where(arr > 0, arr)

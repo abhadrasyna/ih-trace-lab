@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 OTHER_LABEL = "other"
 DONUT_WIDTH = 0.42
 # Pie above, legend below: long labels never clip at the figure edge.
-PIE_AXES = [0.2, 0.36, 0.6, 0.52]
+PIE_AXES = (0.2, 0.36, 0.6, 0.52)
 
 
 def merge_small_slices(
