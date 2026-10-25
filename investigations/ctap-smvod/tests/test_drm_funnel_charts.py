@@ -61,7 +61,7 @@ def test_error_mix_series_reconcile_to_errored_sessions() -> None:
 def test_no_errors_yields_empty_error_mix_and_no_extra_charts() -> None:
     assert error_code_series(ROWS) == ([], {"sessions": []})
     assert subcategory_series([_row("merge", "vod", "widevine", "success", "none", 1)])[0] == []
-    blank = [_row("merge", "vod", "widevine", "success", "3016", 2)]
+    blank = [FunnelRow("ZA", "2026-10-23", "merge", "vod", "widevine", "success", "x", 2, "3016")]
     assert subcategory_series(blank) == (["unclassified"], {"sessions": [2]})
 
 
