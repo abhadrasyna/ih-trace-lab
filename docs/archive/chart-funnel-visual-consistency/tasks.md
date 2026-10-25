@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MV-6 (code and docs done; awaiting user review of the rendered PNGs).**
+**Open: none — all tasks done; PNGs reviewed by user.**
 
 - [x] **MV-1** — decision record: resolve mockup-vs-guide conflicts and settle theme/token additions | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: 413cfcf
 - [x] **MV-2** — shared DRM-type order, display labels and colour mapping used by every funnel chart | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: 5fdf5ea
@@ -11,7 +11,7 @@ spec.
 - [x] **MV-4** — `license_outcome`: share-of-DRM-type mode, three semantic series, legend outside the plot | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: 5376298
 - [x] **MV-5** — `stages`: funnel prototype in `scratch/`, no clipped labels, colour by meaning, step conversion, error-rate header | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-review | SHA: 25573bf
-- [ ] **MV-6** — align `error_codes` and `3016_subcategory`, regenerate ZA/GH/ZM, update the guide | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: —
+- [x] **MV-6** — align `error_codes` and `3016_subcategory`, regenerate ZA/GH/ZM, update the guide | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: fd94e24
 
 ## Story done when
 

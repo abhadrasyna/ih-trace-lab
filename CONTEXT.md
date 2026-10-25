@@ -54,9 +54,9 @@
   multi-series charts; `render_stacked_bar` (MDRM-2a) draws stacked bars with `green`/`red` reserved for success/failure. `output.write_chart_png` saves PNGs to
   `<investigation>/output/<TENANT>/charts/`, apart from the CSV/XLSX reports. Pilot: ctap-smvod `chart_concurrent_playback.py`/`chart_playback_attempts.py`; other investigations adopt the layer in
   their own stories (story `docs/archive/shared-chart-infra/`).
-- `docs/archive/chart-guide-code-alignment/` (done, archived 2026-10-25) and `docs/plan/chart-funnel-visual-consistency/` (open) — chart-improvement stories: the first aligned shared title/axis code
-  and the guide (CA-1 `title.draw_title` at 16/10 pt, CA-2 `axes.format_value_axis`, CA-3 guide/CONTEXT alignment, CA-4 `amber` status colour and 5-colour palette); the second brings the ctap-smvod
-  DRM funnel charts to the look of the (AI-generated, uncommitted) mockups in `investigations/ctap-smvod/output/ZA/charts/modified/`.
+- `docs/archive/chart-guide-code-alignment/` (done, archived 2026-10-25) and `docs/archive/chart-funnel-visual-consistency/` (open) — chart-improvement stories: the first aligned shared title/axis
+  code and the guide (CA-1 `title.draw_title` at 16/10 pt, CA-2 `axes.format_value_axis`, CA-3 guide/CONTEXT alignment, CA-4 `amber` status colour and 5-colour palette); the second brings the
+  ctap-smvod DRM funnel charts to the look of the (AI-generated, uncommitted) mockups in `investigations/ctap-smvod/output/ZA/charts/modified/`.
 - `docs/usage.md` — command reference for every `src/pipelines/aws_access_cli/scripts/` variant (daily/weekly/monthly orchestrators, historical backfills, single reports, catalog query, header
   seeding). The daily/weekly/monthly orchestrators catch up missed periods by default (lookback 7 days / 4 weeks / 3 months; `--no-catch-up` and `--force` documented there); existing outputs are
   skipped before Athena runs.
