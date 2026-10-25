@@ -1,6 +1,6 @@
 import pytest
 
-from src.lib.charts.axes import format_count, format_pct, nice_ticks, padded_range, style_axes
+from src.lib.charts.axes import format_count, format_pct, format_value_axis, nice_ticks, padded_range, style_axes
 from src.lib.charts.fig import new_figure
 from src.lib.charts.theme import DARK
 
@@ -46,3 +46,29 @@ def test_format_rounding_edges():
     assert format_count(-0.04) == "0"
     assert format_pct(-0.04) == "0%"
     assert format_pct(-2.5) == "-2.5%"
+
+
+@pytest.mark.parametrize("horizontal", [False, True])
+def test_format_value_axis_vertical_and_horizontal(horizontal):
+    ax = new_figure(DARK).add_subplot(111)
+    format_value_axis(ax, horizontal)
+    value_axis, other_axis = (ax.xaxis, ax.yaxis) if horizontal else (ax.yaxis, ax.xaxis)
+    assert value_axis.get_major_formatter()(2000) == "2k"
+    assert other_axis.get_major_formatter()(2000) != "2k"
+
+
+def test_format_value_axis_keeps_fractions():
+    ax = new_figure(DARK).add_subplot(111)
+    format_value_axis(ax)
+    assert ax.yaxis.get_major_formatter()(0.25) == "0.25"
+
+
+def test_value_axis_labels_never_misreport_the_tick():
+    ax = new_figure(DARK).add_subplot(111)
+    format_value_axis(ax)
+    fmt = ax.yaxis.get_major_formatter()
+    assert [fmt(v) for v in (1250, 3750, 10050, 2_500_000)] == ["1.25k", "3.75k", "10.05k", "2.5M"]
+    assert [fmt(v) for v in (1000, 10_000, 20_000, 100_000, 1_000_000)] == ["1k", "10k", "20k", "100k", "1M"]
+    assert fmt(1234.5) == "1234.5"
+    assert fmt(1234567) == "1234567"
+    assert fmt(5.55e-17) == "0" and fmt(-5.55e-17) == "0"

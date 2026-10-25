@@ -1,5 +1,8 @@
+import re
+
 import pytest
 
+from src.lib.charts import stacked_bar
 from src.lib.charts.errors import ChartError
 from src.lib.charts.stacked_bar import render_stacked_bar, segment_label, series_colours
 from src.lib.charts.theme import DARK
@@ -47,3 +50,14 @@ def test_series_colours_come_from_theme_palette():
 def test_segment_label_adds_share_only_with_total():
     assert segment_label(1500, None) == "1.5k"
     assert segment_label(25, 100) == "25 (25%)"
+
+
+@pytest.mark.parametrize("horizontal", [False, True])
+def test_stacked_bar_axis_labels_abbreviated(monkeypatch, horizontal):
+    figs = []
+    real = stacked_bar.render_png
+    monkeypatch.setattr(stacked_bar, "render_png", lambda fig, theme: figs.append(fig) or real(fig, theme))
+    render_stacked_bar(["a", "b"], {"x": [1500, 2000], "y": [500, 1000]}, title="t", horizontal=horizontal)
+    ax = figs[0].axes[0]
+    labels = [t.get_text() for t in (ax.get_xticklabels() if horizontal else ax.get_yticklabels())]
+    assert "2k" in labels and not any(re.fullmatch(r"\d{4,}", t) for t in labels)

@@ -6,6 +6,7 @@ import math
 from typing import Sequence
 
 from matplotlib.axes import Axes
+from matplotlib.ticker import FuncFormatter
 
 from src.lib.charts.theme import ChartTheme
 
@@ -80,3 +81,26 @@ def style_axes(ax: Axes, theme: ChartTheme, family: str) -> None:
     ax.set_axisbelow(True)
     for label in (*ax.get_xticklabels(), *ax.get_yticklabels()):
         label.set_family(family)
+
+
+def _axis_tick_label(v: float, _pos: int | None = None) -> str:
+    """Tick text that never misreports its value: abbreviates (``2k``, ``1.25k``) only when that is exact."""
+    v = round(v, 9) + 0.0
+    if abs(v) < 1000:
+        return f"{v:g}"
+    for threshold, suffix in _ABBREVIATIONS:
+        if abs(v) < threshold:
+            continue
+        for decimals in range(4):
+            scaled = round(v / threshold, decimals)
+            if math.isclose(scaled * threshold, v, rel_tol=1e-9):
+                text = f"{scaled:.{decimals}f}"
+                return (text.rstrip("0").rstrip(".") if decimals else text) + suffix
+        break
+    return f"{v:.2f}".rstrip("0").rstrip(".")
+
+
+def format_value_axis(ax: Axes, horizontal: bool = False) -> None:
+    """Abbreviates the value-axis ticks (``2000 -> "2k"``): y for vertical charts, x for horizontal ones."""
+    axis = ax.xaxis if horizontal else ax.yaxis
+    axis.set_major_formatter(FuncFormatter(_axis_tick_label))

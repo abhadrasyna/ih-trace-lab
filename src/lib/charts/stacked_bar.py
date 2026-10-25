@@ -6,7 +6,7 @@ import logging
 import math
 from collections.abc import Mapping, Sequence
 
-from src.lib.charts.axes import format_count, format_pct, style_axes
+from src.lib.charts.axes import format_count, format_pct, format_value_axis, style_axes
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import new_figure, render_png
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
@@ -111,6 +111,7 @@ def render_stacked_bar(
         else:
             ax.set_xticks(positions, ticks)
         style_axes(ax, theme, family)
+        format_value_axis(ax, horizontal)
         if horizontal:
             ax.yaxis.grid(False)
             ax.xaxis.grid(True, color=theme.faint, lw=0.6)

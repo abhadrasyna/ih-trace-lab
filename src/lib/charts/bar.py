@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from src.lib.charts.axes import style_axes
+from src.lib.charts.axes import format_value_axis, style_axes
 from src.lib.charts.errors import ChartError, require_series
 from src.lib.charts.fig import new_figure, render_png
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
@@ -34,6 +34,7 @@ def render_bar(
         ax.set_xticks(range(len(labels)), [str(label) for label in labels])
         ax.axhline(0, color=theme.muted, lw=0.8)
         style_axes(ax, theme, family)
+        format_value_axis(ax)
         draw_title(fig, title, subtitle, theme, family)
         png = render_png(fig, theme)
     except Exception as exc:  # noqa: BLE001 - boundary: nothing but ChartError escapes

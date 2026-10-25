@@ -22,3 +22,13 @@ def test_mismatched_lengths_raise_chart_error():
 def test_empty_input_raises_chart_error():
     with pytest.raises(ChartError):
         render_bar([], [], title="t")
+
+
+def test_bar_value_axis_is_abbreviated(monkeypatch):
+    from src.lib.charts import bar
+
+    figs = []
+    real = bar.render_png
+    monkeypatch.setattr(bar, "render_png", lambda fig, theme: figs.append(fig) or real(fig, theme))
+    render_bar(["a", "b"], [1500, 4000], title="t")
+    assert "2k" in [t.get_text() for t in figs[0].axes[0].get_yticklabels()]
