@@ -16,3 +16,12 @@ data/
 
 # MonthlyCsvStore flock sidecar files
 output/**/*.lock
+
+# macOS metadata
+.DS_Store
+
+# Generated local outputs and cron logs
+/output/
+investigations/ctap-smvod/output/
+logs/*.out
+logs/crontab-backups/
