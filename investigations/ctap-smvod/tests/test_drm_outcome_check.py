@@ -19,6 +19,13 @@ def test_tabulates_only_the_requested_cell_by_playback_outcome() -> None:
     assert mod.tabulate_playback_outcome(sessions, outcomes, "no_request", "1001") == {"EBVS": 1}
 
 
+def test_outcome_map_joins_several_columns_and_labels_blanks() -> None:
+    rows = [{"sessionId": "a", "playback_outcome": "", "outcome_match_status": "no_match"},
+            {"sessionId": "b", "playback_outcome": "EBVS", "outcome_match_status": ""}]
+    got = mod.outcome_map(rows, ["playback_outcome", "outcome_match_status"])
+    assert got == {"a": "(blank) | no_match", "b": "EBVS | (blank)"}
+
+
 def test_outcome_map_merges_duplicates_and_rejects_conflicts() -> None:
     rows = [{"sessionId": "a", "playback_outcome": ""}, {"sessionId": "a", "playback_outcome": "EBVS"},
             {"sessionId": "a", "playback_outcome": ""}, {"sessionId": "b", "playback_outcome": "DESTROY"}]
@@ -29,5 +36,5 @@ def test_outcome_map_merges_duplicates_and_rejects_conflicts() -> None:
 
 def test_drm_only_and_blank_outcomes_are_labelled_not_guessed() -> None:
     sessions = [_cs("a", SOURCE_DRM_ONLY), _cs("b"), _cs("c")]
-    result = mod.tabulate_playback_outcome(sessions, {"b": "  "}, "no_request")
+    result = mod.tabulate_playback_outcome(sessions, {}, "no_request")
     assert result == {mod.NO_MERGE_OUTCOME: 1, mod.BLANK_OUTCOME: 2}

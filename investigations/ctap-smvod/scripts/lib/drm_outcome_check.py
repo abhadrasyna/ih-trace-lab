@@ -13,23 +13,31 @@ NO_MERGE_OUTCOME = "(drm_only: not in merge)"
 BLANK_OUTCOME = "(blank)"
 
 
-def outcome_map(rows: Iterable[Mapping[str, str]]) -> dict[str, str]:
-    """``sessionId -> playback_outcome``; duplicate merge rows must agree (a blank defers to a non-blank)."""
-    out: dict[str, str] = {}
+def outcome_map(
+    rows: Iterable[Mapping[str, str]], columns: Sequence[str] = ("playback_outcome",)
+) -> dict[str, str]:
+    """``sessionId -> " | "``-joined values of ``columns``.
+
+    Duplicate merge rows must agree per column (a blank defers to a non-blank); a conflict raises.
+    """
+    merged: dict[str, list[str]] = {}
     for r in rows:
-        sid, outcome = r["sessionId"].strip(), r["playback_outcome"].strip()
+        sid = r["sessionId"].strip()
         if not sid:
             continue
-        if out.get(sid) and outcome and out[sid] != outcome:
-            raise ValueError(f"session {sid}: conflicting playback_outcome {out[sid]!r} vs {outcome!r}")
-        out[sid] = outcome or out.get(sid, "")
-    return out
+        values = merged.setdefault(sid, [""] * len(columns))
+        for i, col in enumerate(columns):
+            new = r[col].strip()
+            if values[i] and new and values[i] != new:
+                raise ValueError(f"session {sid}: conflicting {col} {values[i]!r} vs {new!r}")
+            values[i] = new or values[i]
+    return {sid: " | ".join(v or BLANK_OUTCOME for v in vals) for sid, vals in merged.items()}
 
 
 def playback_outcome_of(session: ClassifiedSession, outcome_by_session: Mapping[str, str]) -> str:
     if session.source == SOURCE_DRM_ONLY:
         return NO_MERGE_OUTCOME
-    return outcome_by_session.get(session.session_id, "").strip() or BLANK_OUTCOME
+    return outcome_by_session.get(session.session_id, BLANK_OUTCOME)
 
 
 def tabulate_playback_outcome(
