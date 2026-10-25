@@ -12,7 +12,7 @@ from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.pat
 from src.lib.charts.axes import format_count, format_pct, style_axes
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import BASE_WIDTH, MARGIN_LEFT, MARGIN_RIGHT, TWO_ROW_HEIGHT, new_figure, render_png
-from src.lib.charts.header import HeaderCell, Tone, draw_header
+from src.lib.charts.header import UNDER_TITLE_AXES_TOP, UNDER_TITLE_SHIFT, HeaderCell, Tone, draw_header
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
 from src.lib.charts.title import draw_title
 
@@ -25,8 +25,6 @@ CHAR_WIDTH_PER_PT_IN = 0.0085  # same rough advance as the header packer
 LABEL_PAD_IN = 0.25
 MAX_MARGIN_LEFT = 0.45
 BAR_HEIGHT = 0.55
-HEADER_Y_SHIFT = 0.095  # header sits under the title block
-AXES_TOP = 0.76
 RIGHT_HEADROOM = 1.55  # x-limit multiple of the longest bar so end labels never clip
 
 
@@ -81,9 +79,9 @@ def render_stages_chart(totals: Mapping[str, int], *, title: str, subtitle: str 
     try:
         family = chart_font_family()
         fig = new_figure(theme, TWO_ROW_HEIGHT)
-        fig.subplots_adjust(left=left_margin_for_labels(STAGE_NAMES), right=MARGIN_RIGHT, top=AXES_TOP)
+        fig.subplots_adjust(left=left_margin_for_labels(STAGE_NAMES), right=MARGIN_RIGHT, top=UNDER_TITLE_AXES_TOP)
         draw_title(fig, title, subtitle, theme, family)
-        draw_header(fig, header_cells(totals), theme, family, y_shift=HEADER_Y_SHIFT)
+        draw_header(fig, header_cells(totals), theme, family, y_shift=UNDER_TITLE_SHIFT)
         ax = fig.add_subplot(111)
         longest = max(counts)
         colours = [getattr(theme, c) if c else theme.series[0] for c in STAGE_COLOURS]

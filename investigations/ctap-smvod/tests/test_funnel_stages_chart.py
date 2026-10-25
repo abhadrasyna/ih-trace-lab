@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from lib.drm_funnel import FunnelRow
 from lib.drm_funnel_charts import ChartSpec, build_chart_specs, render_chart
 from lib.funnel_stages_chart import (
     STAGE_NAMES,
@@ -15,6 +16,7 @@ from test_drm_funnel_charts import ROWS
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import MARGIN_LEFT
 from src.lib.charts.header import Tone
+from src.lib.charts.theme import DARK
 
 TOTALS = {"sessions": 1000, "drm_requested": 535, "license_success": 529, "errored": 40}
 
@@ -50,3 +52,13 @@ def test_zero_sessions_raises_chart_error() -> None:
         render_stages_chart({**TOTALS, "sessions": 0}, title="t")
     with pytest.raises(ChartError):
         render_stages_chart({"sessions": 5}, title="t")
+
+
+def test_error_codes_chart_is_red_with_muted_other_and_header() -> None:
+    from lib.drm_funnel_charts import error_bar_colours
+
+    assert error_bar_colours(["6001", "other"]) == [DARK.red, DARK.muted]
+    rows = [*ROWS, FunnelRow("ZA", "2026-10-23", "merge", "vod", "widevine", "failed", "3016", 4, error_code="3016")]
+    spec = next(s for s in build_chart_specs("ZA", "2026-10-23", rows) if s.name == "error_codes")
+    assert spec.header and spec.header[0].tone is Tone.NEGATIVE
+    assert render_chart(spec).startswith(b"\x89PNG")

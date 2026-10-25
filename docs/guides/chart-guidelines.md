@@ -112,9 +112,8 @@ negative or non-finite raises `ChartError`.
 a muted `other` slice. Use it only for a handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty,
 unequal, negative or non-finite input raises `ChartError`.
 
-**Planned, not in code yet** (do not rely on these until the owning task lands): a funnel chart with automatic step conversion (story `chart-funnel-visual-consistency` MV-5, investigation-local first
-and promoted to `src/lib/charts/funnel.py` only once a second investigation needs it, per the convergence rule below); a `render_horizontal_bar` sorted descending (promote when a second chart needs
-it).
+**Planned, not in code yet** (do not rely on this until the owning task lands): a `render_horizontal_bar` sorted descending (promote when a second chart needs it). The funnel stages chart with step
+conversion exists investigation-local (`investigations/ctap-smvod/scripts/lib/funnel_stages_chart.py`); promote it to `src/lib/charts/funnel.py` only once a second investigation needs it.
 
 Rules from `docs/refactor/`: wrap third-party exceptions at the module boundary (matplotlib and numpy errors become `ChartError`), keep `theme` free of imports from the rest of the package, and prefer
 `Protocol` over an abstract base if a chart interface is ever needed. Fonts: Roboto is bundled under `src/lib/charts/assets/fonts/` (Apache 2.0); `chart_font_family()` is cached, lock-guarded and
@@ -141,7 +140,13 @@ Rules for every funnel chart:
 
 - DRM types appear in one fixed order (widevine, fairplay, playready, none; unknown buckets last), with capitalised display labels and a fixed colour per type, so a type looks the same in every chart.
 - A share-of-total stack (`normalize=True`) scales each stack to 100%; a stack whose total is zero is drawn empty (no segments, no label), never an error or a division by zero.
-- A bar under 5% of the longest has its label drawn above it, and under 2% it is also lifted to a minimum drawn height.
+- A bar under 5% of the longest has its label drawn above it, and under 2% it is also lifted to a minimum drawn height; in a horizontal single-series bar the threshold is 25%, so "count (share)" text
+  never overruns the bar.
+- The `stages` chart sizes its left margin from the longest label, colours stages by meaning (neutral series colour for volume, `green` license success, `red` ended in error), annotates step
+  conversion between bars and names each base (`-46.5% vs sessions`, `98.9% of DRM requested`; bar labels are shares of all sessions).
+- Error rate is always a `HeaderCell` with `Tone.NEGATIVE` (red) under the title block, drawn by `draw_header(..., y_shift=UNDER_TITLE_SHIFT)`; `render_stacked_bar(header=...)` does the same and
+  cannot be combined with `legend="above"`. Used by `stages` and `error_codes`.
+- Error-code bars are `red` with the merged `other` bar `muted`. The 3016 donut keeps the shared title block and palette until `chart-pie-donut-rework` lands.
 
 ## Using charts from an investigation
 

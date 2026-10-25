@@ -16,7 +16,8 @@ from src.lib.charts.axes import (
     style_axes,
 )
 from src.lib.charts.errors import ChartError
-from src.lib.charts.fig import new_figure, render_png
+from src.lib.charts.fig import BASE_HEIGHT, TWO_ROW_HEIGHT, new_figure, render_png
+from src.lib.charts.header import UNDER_TITLE_AXES_TOP, UNDER_TITLE_SHIFT, HeaderCell, draw_header, require_single_row
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
 from src.lib.charts.title import draw_title
 
@@ -25,6 +26,8 @@ logger = logging.getLogger(__name__)
 COLOUR_TOKENS = ("ink", "muted", "faint", "green", "red", "amber")
 # A segment narrower than this share of the longest stack is too small to carry its own label.
 MIN_LABEL_SHARE = 0.05
+# A horizontal single-series bar must be this share of the longest to hold its "count (share)" text inside.
+MIN_INSIDE_LABEL_SHARE_HORIZONTAL = 0.25
 # A single-series bar shorter than this share of the longest is drawn at this height so it stays visible.
 MIN_BAR_SHARE = 0.02
 LEGEND_OPTIONS = ("auto", "above", False)
@@ -115,6 +118,7 @@ def render_stacked_bar(
     total: float | None = None,
     normalize: bool = False,
     legend: bool | str = "auto",
+    header: Sequence[HeaderCell] | None = None,
     theme: ChartTheme = DARK,
 ) -> bytes:
     """Renders stacked bars to PNG bytes; raises ``ChartError`` on bad input or any drawing failure.
@@ -124,17 +128,24 @@ def render_stacked_bar(
     stack; a zero-total stack is drawn empty). ``legend="auto"`` draws a legend inside the plot only for more than
     one series; ``"above"`` puts it above the plot, outside the bars; ``False`` never draws one. ``bar_colours``
     (single series only) gives each bar its own colour. In a single-series chart a bar under ``MIN_LABEL_SHARE``
-    of the longest is labelled above the bar, and one under ``MIN_BAR_SHARE`` is also lifted to that minimum height.
+    of the longest (``MIN_INSIDE_LABEL_SHARE_HORIZONTAL`` when horizontal) is labelled above the bar, and one under ``MIN_BAR_SHARE`` is also lifted to that minimum height.
+    ``header`` (1..6 cells) draws a stat header under the title block; it cannot be combined with ``legend="above"``.
     """
     require_stacked_input(labels, series)
     require_legend_option(legend)
+    if header:
+        require_single_row(header)
+    if header and legend == "above":
+        raise ChartError('header and legend="above" both claim the space under the title')
     require_bar_colours(bar_colours, labels, len(series))
     names = list(series)
     single = len(names) == 1
     try:
         colour_list = series_colours(names, colours, theme)
         family = chart_font_family()
-        fig = new_figure(theme)
+        fig = new_figure(theme, TWO_ROW_HEIGHT if header else BASE_HEIGHT)
+        if header:
+            fig.subplots_adjust(top=UNDER_TITLE_AXES_TOP)
         ax = fig.add_subplot(111)
         positions = list(range(len(labels)))
         stack_totals = [sum(series[n][i] for n in names) for i in positions]
@@ -153,7 +164,7 @@ def render_stacked_bar(
                 if v <= 0:
                     continue
                 text = segment_label(series[name][i], stack_totals[i] if normalize else total)
-                if v / longest < MIN_LABEL_SHARE:
+                if v / longest < (MIN_INSIDE_LABEL_SHARE_HORIZONTAL if single and horizontal else MIN_LABEL_SHARE):
                     if single:
                         _label_above(ax, i, drawn[i], text, horizontal, theme, family)
                     continue
@@ -189,6 +200,8 @@ def render_stacked_bar(
             key = ax.legend(frameon=False, labelcolor=theme.muted, prop={"family": family, "size": 8.5})
             key.set_zorder(10)
         draw_title(fig, title, subtitle, theme, family)
+        if header:
+            draw_header(fig, header, theme, family, y_shift=UNDER_TITLE_SHIFT)
         png = render_png(fig, theme)
     except ChartError:
         raise

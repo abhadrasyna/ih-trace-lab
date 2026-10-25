@@ -19,10 +19,11 @@ from lib.drm_funnel import (
     FunnelRow,
     stage_totals,
 )
-from lib.funnel_stages_chart import render_stages_chart
+from lib.funnel_stages_chart import header_cells, render_stages_chart
 
 from src.lib.charts.axes import format_count
-from src.lib.charts.pie import merge_small_slices, render_pie
+from src.lib.charts.header import HeaderCell
+from src.lib.charts.pie import OTHER_LABEL, merge_small_slices, render_pie
 from src.lib.charts.stacked_bar import render_stacked_bar
 from src.lib.charts.theme import DARK, ChartTheme
 
@@ -57,6 +58,7 @@ class ChartSpec:
     normalize: bool = False
     legend: str = "auto"
     stage_totals: dict[str, int] | None = None
+    header: list[HeaderCell] | None = None
 
 def ordered_drm_types(rows: Sequence[FunnelRow]) -> list[str]:
     """DRM buckets present in ``rows`` in the fixed funnel order; unknown buckets sort last, alphabetically."""
@@ -136,6 +138,11 @@ def outcome_colours(series: dict[str, list[int]]) -> dict[str, str]:
     return {n: OUTCOME_COLOURS[n] for n in series if n in OUTCOME_COLOURS}
 
 
+def error_bar_colours(labels: Sequence[str]) -> list[str]:
+    """Error codes are errors, so red like the stages chart's error bar; the merged ``other`` bar is muted."""
+    return [DARK.muted if label == OTHER_LABEL else DARK.red for label in labels]
+
+
 def split_bar_colours(rows: Sequence[FunnelRow], series: dict[str, list[int]]) -> list[str] | None:
     """Per-bar DRM colours when one series (a single kind) is drawn; stacked kinds use the legend palette."""
     if len(series) != 1:
@@ -167,7 +174,8 @@ def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow], *, absolu
     if err_labels:
         # A bar, not a pie: one code (6001) usually dominates and a pie would hide the rest.
         specs.append(ChartSpec("error_codes", "Errored sessions by first error code", sub, err_labels, err_s,
-                               horizontal=True, total=t["errored"]))
+                               horizontal=True, total=t["errored"], bar_colours=error_bar_colours(err_labels),
+                               header=header_cells(t)))
     if sub_labels:
         specs.append(ChartSpec("3016_subcategory", "3014/3015/3016 by sub-category", sub, sub_labels, sub_s,
                                pie=True))
@@ -182,7 +190,7 @@ def render_chart(spec: ChartSpec) -> bytes:
     return render_stacked_bar(
         spec.labels, spec.series, title=spec.title, subtitle=spec.subtitle,
         horizontal=spec.horizontal, colours=spec.colours or None, bar_colours=spec.bar_colours, total=spec.total,
-        normalize=spec.normalize, legend=spec.legend,
+        normalize=spec.normalize, legend=spec.legend, header=spec.header,
     )
 
 

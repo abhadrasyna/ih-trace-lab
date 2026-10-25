@@ -157,3 +157,33 @@ def test_legend_outside_plot_area(monkeypatch):
     assert len(calls) == 1
     x, y = calls[0]["bbox_to_anchor"]
     assert y >= 1.0 and calls[0]["ncol"] == 2
+
+
+def test_header_draws_cells_and_rejects_above_legend():
+    from src.lib.charts.header import HeaderCell, Tone
+
+    cells = [HeaderCell("ERROR RATE", "42%", Tone.NEGATIVE)]
+    assert render_stacked_bar(["a"], {"s": [3]}, title="t", header=cells).startswith(b"\x89PNG")
+    with pytest.raises(ChartError):
+        render_stacked_bar(["a"], {"s": [3]}, title="t", header=cells, legend="above")
+
+
+def test_horizontal_single_series_moves_short_bar_labels_outside(monkeypatch):
+    outside = []
+    real = Axes.annotate
+
+    def spy(self, text, *args, **kwargs):
+        outside.append(text)
+        return real(self, text, *args, **kwargs)
+
+    monkeypatch.setattr(Axes, "annotate", spy)
+    render_stacked_bar(["big", "mid", "small"], {"s": [100, 20, 3]}, title="t", horizontal=True)
+    assert len(outside) == 2
+
+
+def test_two_row_header_is_rejected():
+    from src.lib.charts.header import HeaderCell
+
+    cells = [HeaderCell(f"METRIC {i}", "1,234,567,890 sessions") for i in range(6)]
+    with pytest.raises(ChartError):
+        render_stacked_bar(["a"], {"s": [3]}, title="t", header=cells)

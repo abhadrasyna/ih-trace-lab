@@ -27,6 +27,9 @@ ROW_LABEL_Y_ONE = 0.965
 ROW_LABEL_Y_TWO = (0.975, 0.895)
 VALUE_Y_OFFSET = 0.035
 LEFT_X = 0.13
+# One header row placed under the title block: its downward shift and the axes top that clears it.
+UNDER_TITLE_SHIFT = 0.095
+UNDER_TITLE_AXES_TOP = 0.76
 
 
 class Tone(str, Enum):
@@ -76,6 +79,12 @@ def pack_cells(cells: Sequence[HeaderCell], budget_in: float = ROW_WIDTH_BUDGET_
         return [list(cells)]
     split = (len(cells) + 1) // 2
     return [list(cells[:split]), list(cells[split:])]
+
+
+def require_single_row(cells: Sequence[HeaderCell]) -> None:
+    """The under-title layout has room for one header row; more raises ``ChartError`` instead of overlapping the plot."""
+    if len(pack_cells(cells)) > 1:
+        raise ChartError("header needs more than one row; use fewer or shorter cells under the title block")
 
 
 def header_figure_height(rows: Sequence[Sequence[HeaderCell]]) -> float:
