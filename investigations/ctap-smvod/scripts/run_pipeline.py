@@ -348,7 +348,7 @@ def main():
     ap.add_argument("--skip-drm-funnel", action="store_true",
                      help="Skip Step 6i (DRM session funnel); it is also skipped when no mDRM exports exist for the date")
     ap.add_argument("--drm-dir", default=None,
-                     help="Step 6i: folder with the saved mDRM exports (default data/lightstep/<TENANT>/)")
+                     help="Step 6i: folder with the saved mDRM exports (default data/lightstep/<TENANT>/); needs --tenant")
     ap.add_argument("--drm", action="store_true",
                      help="Step 6h: add mDRM device columns + device summary; needs the saved Lightstep "
                           "exports in data/lightstep/<TENANT>/ (docs/lightstep-drm-exports.md)")
