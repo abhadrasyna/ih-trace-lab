@@ -18,7 +18,7 @@ SUCCESS = "success"
 FAILED = "failed"
 RETRY_THEN_SUCCESS = "retry_then_success"
 
-NO_ERROR = "none"
+NO_ERROR = "no_error"
 MIXED = "mixed"
 NO_DRM = "no_drm_activity"
 KNOWN_DRM_TYPES = ("widevine", "fairplay", "playready")
@@ -65,7 +65,7 @@ def session_kind(session_id: str) -> str:
 
 
 def error_group(code: str) -> str:
-    """3014/3015/3016 by name, other 1xxx/6xxx by family, everything else ``other``; empty is ``none``."""
+    """3014/3015/3016 by name, other 1xxx/6xxx by family, any other code as itself; empty is ``no_error``."""
     code = code.strip()
     if not code:
         return NO_ERROR
@@ -73,7 +73,7 @@ def error_group(code: str) -> str:
         return code
     if len(code) == 4 and code.isdigit() and code[0] in "16":
         return f"{code[0]}xxx"
-    return "other"
+    return code
 
 
 def first_error_code(raw: str) -> str:

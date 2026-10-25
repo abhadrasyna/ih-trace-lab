@@ -81,4 +81,4 @@ def test_3016_table_splits_by_license_outcome(tmp_path: Path) -> None:
     assert "Reading: most 3016 sessions had license outcome `failed` (100.0%)." in md
     assert "| 6001 | 1 | 50.0% |" in md
     rows = list(csv.DictReader((base / "ZA" / "drm-analysis" / "csv" / "2026-10-23_drm_funnel.csv").open()))
-    assert {r["error_code"] for r in rows} == {"none", "3016", "6001"}
+    assert {r["error_code"] for r in rows} == {"no_error", "3016", "6001"}

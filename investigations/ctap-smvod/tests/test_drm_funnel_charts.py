@@ -31,10 +31,10 @@ def _row(source, kind, bucket, outcome, err, n) -> FunnelRow:
 
 
 ROWS = [
-    _row("merge", "vod", "widevine", "success", "none", 5),
+    _row("merge", "vod", "widevine", "success", "no_error", 5),
     _row("merge", "vod", "widevine", "failed", "3016", 2),
     _row("merge", "linear", "fairplay", "retry_then_success", "6xxx", 1),
-    _row("drm_only", "vod", "widevine", "failed", "none", 1),
+    _row("drm_only", "vod", "widevine", "failed", "no_error", 1),
     _row("merge", "vod", "no_drm_activity", "no_request", "3016", 3),
 ]
 TOTAL = sum(r.sessions for r in ROWS)
@@ -55,7 +55,7 @@ def test_series_builders_reconcile_to_session_total() -> None:
 
 
 def test_drm_type_order_is_stable_across_charts() -> None:
-    rows = [_row("merge", "vod", b, "success", "none", n)
+    rows = [_row("merge", "vod", b, "success", "no_error", n)
             for b, n in (("no_drm_activity", 9), ("playready", 1), ("fairplay", 5), ("widevine", 3))]
     expected = ["Widevine", "Fairplay", "Playready", "No DRM activity"]
     assert ordered_drm_types(rows) == ["widevine", "fairplay", "playready", "no_drm_activity"]
@@ -66,7 +66,7 @@ def test_drm_type_order_is_stable_across_charts() -> None:
 
 
 def test_unknown_bucket_sorts_last() -> None:
-    rows = [_row("merge", "vod", b, "success", "none", 1) for b in ("zzz", "no_drm_activity", "aaa", "widevine")]
+    rows = [_row("merge", "vod", b, "success", "no_error", 1) for b in ("zzz", "no_drm_activity", "aaa", "widevine")]
     assert ordered_drm_types(rows) == ["widevine", "no_drm_activity", "aaa", "zzz"]
     assert drm_type_colour("aaa") == DARK.muted
     assert drm_type_label("aaa") == "Aaa"
@@ -100,7 +100,7 @@ def test_error_mix_series_reconcile_to_errored_sessions() -> None:
     rows = [FunnelRow("ZA", "2026-10-23", "merge", "vod", "widevine", "success", "x", n, c,
                       "Video decode error" if c == "3016" else "")
             for n, c in zip([50, 9, 8, 7, 6, 5, 4, 3], codes, strict=True)]
-    rows.append(_row("merge", "vod", "widevine", "success", "none", 100))
+    rows.append(_row("merge", "vod", "widevine", "success", "no_error", 100))
     labels, series = error_code_series(rows)
     assert labels[0] == "6001" and labels[-1] == "other" and len(labels) == 6
     assert sum(series["sessions"]) == 92
@@ -112,7 +112,7 @@ def test_error_mix_series_reconcile_to_errored_sessions() -> None:
 
 def test_no_errors_yields_empty_error_mix_and_no_extra_charts() -> None:
     assert error_code_series(ROWS) == ([], {"sessions": []})
-    assert subcategory_series([_row("merge", "vod", "widevine", "success", "none", 1)])[0] == []
+    assert subcategory_series([_row("merge", "vod", "widevine", "success", "no_error", 1)])[0] == []
     blank = [FunnelRow("ZA", "2026-10-23", "merge", "vod", "widevine", "success", "x", 2, "3016")]
     assert subcategory_series(blank) == (["unclassified"], {"sessions": [2]})
 
