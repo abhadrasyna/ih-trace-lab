@@ -10,6 +10,7 @@ from src.lib.charts.axes import format_count, format_pct, style_axes
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import new_figure, render_png
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
+from src.lib.charts.title import draw_title
 
 logger = logging.getLogger(__name__)
 
@@ -116,9 +117,7 @@ def render_stacked_bar(
         if skipped:
             legend = ax.legend(frameon=False, labelcolor=theme.muted, prop={"family": family, "size": 8.5})
             legend.set_zorder(10)
-        fig.text(0.13, 0.95, title, color=theme.ink, fontsize=13, fontweight="bold", family=family)
-        if subtitle:
-            fig.text(0.13, 0.915, subtitle, color=theme.muted, fontsize=9.5, family=family)
+        draw_title(fig, title, subtitle, theme, family)
         png = render_png(fig, theme)
     except ChartError:
         raise

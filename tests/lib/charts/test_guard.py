@@ -37,3 +37,9 @@ def test_guard_patterns_detect_violations():
     assert HEX.search('color="#1a2B3c"')
     assert HEX.search('"#1a2b3c80"') and HEX.search('"#fff"') and HEX.search('"#fff8"')
     assert not HEX.search("#12345") and not HEX.search("# fixes #1234") and not HEX.search("#cafe")
+
+
+def test_only_title_module_draws_figure_text_with_title_styling():
+    charts = ROOT / "src/lib/charts"
+    inline = [p.name for p in charts.glob("*.py") if p.name not in ("title.py", "header.py") and "fig.text(" in p.read_text(encoding="utf-8")]
+    assert inline == []
