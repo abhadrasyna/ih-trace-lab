@@ -10,8 +10,9 @@ from dataclasses import dataclass, field
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.drm_funnel import (
-    FAILED, NO_ERROR, NO_REQUEST, RETRY_THEN_SUCCESS, SUCCESS, FunnelRow, stage_totals,
+    FAILED, NAMED_ERRORS, NO_ERROR, NO_REQUEST, RETRY_THEN_SUCCESS, SUCCESS, FunnelRow, stage_totals,
 )
+from src.lib.charts.pie import merge_small_slices, render_pie
 from src.lib.charts.stacked_bar import render_stacked_bar
 
 STAGE_NAMES = ("Sessions", "DRM requested", "License success", "Ended in error")
@@ -22,7 +23,7 @@ OUTCOME_GROUPS = (
     ("no_request", (NO_REQUEST,), ("", "3016", "other error")),
 )
 OUTCOME_COLOURS = {"success": "green", "failed": "red", "no_request": "muted"}
-CHART_NAMES = ("stages", "drm_split", "license_outcome")
+TOP_ERROR_CODES = 6  # top 5 codes plus "other"
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,7 @@ class ChartSpec:
     colours: dict[str, str] = field(default_factory=dict)
     horizontal: bool = False
     total: int | None = None
+    pie: bool = False
 
 
 def _error_class(group: str) -> str:
@@ -82,6 +84,28 @@ def license_outcome_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[s
     return labels, series
 
 
+def error_code_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, list[int]]]:
+    """Errored sessions by exact first error code: the top 5 plus ``other``."""
+    counts: dict[str, int] = defaultdict(int)
+    for r in rows:
+        if r.error_code != NO_ERROR:
+            counts[r.error_code] += r.sessions
+    if not counts:
+        return [], {"sessions": []}
+    labels, values = merge_small_slices(list(counts), list(counts.values()), TOP_ERROR_CODES)
+    return labels, {"sessions": values}
+
+
+def subcategory_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, list[int]]]:
+    """3014/3015/3016 sessions by triage sub-category."""
+    counts: dict[str, int] = defaultdict(int)
+    for r in rows:
+        if r.error_code in NAMED_ERRORS:
+            counts[r.subcategory or "unclassified"] += r.sessions
+    labels = sorted(counts, key=lambda k: (-counts[k], k))
+    return labels, {"sessions": [counts[k] for k in labels]}
+
+
 def outcome_colours(series: dict[str, list[int]]) -> dict[str, str]:
     """Plain outcome series use success green / failure red; error-split series fall back to the palette."""
     return {n: OUTCOME_COLOURS[n] for n in series if n in OUTCOME_COLOURS}
@@ -93,16 +117,29 @@ def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow]) -> list[C
     stage_labels, stage_s = stage_series(rows)
     split_labels, split_s = drm_split_series(rows)
     out_labels, out_s = license_outcome_series(rows)
-    return [
+    err_labels, err_s = error_code_series(rows)
+    sub_labels, sub_s = subcategory_series(rows)
+    specs = [
         ChartSpec("stages", "DRM funnel stages", sub, stage_labels, stage_s, horizontal=True,
                   total=t["sessions"]),
         ChartSpec("drm_split", "Sessions by DRM type", sub, split_labels, split_s, total=t["sessions"]),
         ChartSpec("license_outcome", "License outcome per DRM type", sub, out_labels, out_s,
                   colours=outcome_colours(out_s), total=t["sessions"]),
     ]
+    # Error-mix charts only exist when there is something to plot.
+    if err_labels:
+        # A bar, not a pie: one code (6001) usually dominates and a pie would hide the rest.
+        specs.append(ChartSpec("error_codes", "Errored sessions by first error code", sub, err_labels, err_s,
+                               horizontal=True, total=t["errored"]))
+    if sub_labels:
+        specs.append(ChartSpec("3016_subcategory", "3014/3015/3016 by sub-category", sub, sub_labels, sub_s,
+                               pie=True))
+    return specs
 
 
 def render_chart(spec: ChartSpec) -> bytes:
+    if spec.pie:
+        return render_pie(spec.labels, spec.series["sessions"], title=spec.title, subtitle=spec.subtitle)
     return render_stacked_bar(
         spec.labels, spec.series, title=spec.title, subtitle=spec.subtitle,
         horizontal=spec.horizontal, colours=spec.colours or None, total=spec.total,

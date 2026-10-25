@@ -69,11 +69,16 @@ Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, spl
 | `header.py` | Optional stat header: `Tone`, `HeaderCell`, one- or two-row layout |
 | `signed_line.py`, `bar.py` | Thin drawing functions that return PNG bytes |
 | `stacked_bar.py` | `render_stacked_bar`: one stack per label; segment labels, optional legend (see below) |
+| `pie.py` | `render_pie`: donut with the total in the centre and a legend below; small slices merge into `other` |
 | `errors.py` | `ChartError`, the only exception that leaves the package |
 | `output.py` | `write_chart_png` / `chart_path`: saves PNGs under `<output>/<TENANT>/charts/`, creating the folder on first use |
 
 `render_stacked_bar(labels, series, *, title, subtitle="", horizontal=False, colours=None, total=None, theme=DARK)` takes `series` as a name-to-values map with one value per label. Each segment is
 labelled with its value, plus its share when `total` is given. A legend appears only when a segment is too small to label. Input that is empty, unequal in length, negative or non-finite raises
+`ChartError`.
+
+`render_pie(labels, values, *, title, subtitle="", max_slices=6, theme=DARK)` draws a donut and a legend below it. Slices beyond `max_slices - 1` merge into a muted `other` slice. Use it only for a
+handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty, unequal, negative or non-finite input raises
 `ChartError`.
 
 Rules from `docs/refactor/`: wrap third-party exceptions at the module boundary (matplotlib and numpy errors become `ChartError`), keep `theme` free of imports from the rest of the package, and prefer

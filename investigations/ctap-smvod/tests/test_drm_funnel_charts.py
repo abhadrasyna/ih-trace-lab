@@ -8,7 +8,8 @@ from test_analyze_drm_funnel import _inputs
 
 from lib.drm_funnel import FunnelRow, stage_totals
 from lib.drm_funnel_charts import (
-    build_chart_specs, drm_split_series, license_outcome_series, stage_series,
+    build_chart_specs, drm_split_series, error_code_series, license_outcome_series, stage_series,
+    subcategory_series,
 )
 from src.lib.charts.errors import ChartError
 
@@ -40,6 +41,28 @@ def test_series_builders_reconcile_to_session_total() -> None:
     assert all(len(v) == len(labels) for v in outcome.values())
     assert "failed, error" in outcome and "no_request, 3016" in outcome and "success, error" in outcome
     assert [s.name for s in build_chart_specs("ZA", "2026-10-23", ROWS)] == ["stages", "drm_split", "license_outcome"]
+
+
+def test_error_mix_series_reconcile_to_errored_sessions() -> None:
+    codes = ["6001"] * 1 + ["1003", "1004", "1005", "1006", "1007", "1008", "3016"]
+    rows = [FunnelRow("ZA", "2026-10-23", "merge", "vod", "widevine", "success", "x", n, c,
+                      "Video decode error" if c == "3016" else "")
+            for n, c in zip([50, 9, 8, 7, 6, 5, 4, 3], codes, strict=True)]
+    rows.append(_row("merge", "vod", "widevine", "success", "none", 100))
+    labels, series = error_code_series(rows)
+    assert labels[0] == "6001" and labels[-1] == "other" and len(labels) == 6
+    assert sum(series["sessions"]) == 92
+    sub_labels, sub = subcategory_series(rows)
+    assert sub_labels == ["Video decode error"] and sub["sessions"] == [3]
+    names = [s.name for s in build_chart_specs("ZA", "2026-10-23", rows)]
+    assert names[-2:] == ["error_codes", "3016_subcategory"]
+
+
+def test_no_errors_yields_empty_error_mix_and_no_extra_charts() -> None:
+    assert error_code_series(ROWS) == ([], {"sessions": []})
+    assert subcategory_series([_row("merge", "vod", "widevine", "success", "none", 1)])[0] == []
+    blank = [_row("merge", "vod", "widevine", "success", "3016", 2)]
+    assert subcategory_series(blank) == (["unclassified"], {"sessions": [2]})
 
 
 def test_markdown_embeds_relative_chart_links(tmp_path: Path) -> None:
