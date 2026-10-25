@@ -8,6 +8,7 @@ from src.lib.charts.errors import ChartError
 from src.lib.charts.stacked_bar import (
     MIN_BAR_SHARE,
     drawn_value,
+    normalized_series,
     render_stacked_bar,
     segment_label,
     series_colours,
@@ -119,3 +120,40 @@ def test_bar_colours_validated():
         render_stacked_bar(["a", "b"], {"vod": [1, 2]}, title="t", bar_colours=["#111111"])
     with pytest.raises(ChartError):
         render_stacked_bar(["a"], {"x": [1], "y": [1]}, title="t", bar_colours=["#111111"])
+
+
+def test_normalized_stacks_sum_to_100(monkeypatch):
+    out = normalized_series({"ok": [30, 1], "bad": [10, 3]}, [40, 4])
+    assert out == {"ok": [75.0, 25.0], "bad": [25.0, 75.0]}
+    figs = []
+    real = stacked_bar.render_png
+    monkeypatch.setattr(stacked_bar, "render_png", lambda fig, theme: figs.append(fig) or real(fig, theme))
+    png = render_stacked_bar(["a", "b"], {"ok": [30, 1], "bad": [10, 3]}, title="t", normalize=True)
+    assert png.startswith(b"\x89PNG")
+    ax = figs[0].axes[0]
+    assert ax.get_ylim() == (0, 100)
+    assert [t.get_text() for t in ax.get_yticklabels()][-1] == "100%"
+    heights = [sum(p.get_height() for p in ax.patches if p.get_x() + p.get_width() / 2 == pos) for pos in (0, 1)]
+    assert heights == pytest.approx([100.0, 100.0])
+
+
+def test_zero_total_stack_handled():
+    assert normalized_series({"ok": [0, 2], "bad": [0, 2]}, [0, 4]) == {"ok": [0.0, 50.0], "bad": [0.0, 50.0]}
+    png = render_stacked_bar(["empty", "full"], {"ok": [0, 2], "bad": [0, 2]}, title="t", normalize=True)
+    assert png.startswith(b"\x89PNG")
+    assert render_stacked_bar(["empty"], {"ok": [0], "bad": [0]}, title="t", normalize=True).startswith(b"\x89PNG")
+
+
+def test_legend_outside_plot_area(monkeypatch):
+    calls = []
+    real = Axes.legend
+
+    def spy(self, *args, **kwargs):
+        calls.append(kwargs)
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(Axes, "legend", spy)
+    render_stacked_bar(["a"], {"ok": [3], "bad": [1]}, title="t", legend="above")
+    assert len(calls) == 1
+    x, y = calls[0]["bbox_to_anchor"]
+    assert y >= 1.0 and calls[0]["ncol"] == 2

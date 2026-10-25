@@ -104,3 +104,10 @@ def format_value_axis(ax: Axes, horizontal: bool = False) -> None:
     """Abbreviates the value-axis ticks (``2000 -> "2k"``): y for vertical charts, x for horizontal ones."""
     axis = ax.xaxis if horizontal else ax.yaxis
     axis.set_major_formatter(FuncFormatter(_axis_tick_label))
+
+
+def format_share_axis(ax: Axes, horizontal: bool = False) -> None:
+    """Fixes the value axis to 0-100 and labels its ticks ``0%``..``100%`` (for share-of-total charts)."""
+    axis = ax.xaxis if horizontal else ax.yaxis
+    (ax.set_xlim if horizontal else ax.set_ylim)(0, 100)
+    axis.set_major_formatter(FuncFormatter(lambda v, _pos=None: format_pct(v)))

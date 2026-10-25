@@ -20,11 +20,18 @@ from pathlib import Path
 
 from lib.drm_exports import LRM, MDRMFE, export_paths, read_lrm, read_mdrmfe
 from lib.drm_funnel import (
-    NAMED_ERRORS, NO_ERROR, FunnelResult, FunnelRow, SessionInput, build_funnel, first_error_by_session,
+    NAMED_ERRORS,
+    NO_ERROR,
+    FunnelResult,
+    FunnelRow,
+    SessionInput,
+    build_funnel,
+    first_error_by_session,
 )
 from lib.drm_funnel_charts import build_chart_specs, chart_filename, render_chart
 from lib.drm_funnel_subcategory import subcategory_by_session
 from run_3016_subcategory_report import first_row_by_session, read_optional
+
 from src.lib.charts.errors import ChartError
 from src.lib.charts.output import write_chart_png
 
@@ -189,10 +196,10 @@ def render_markdown(opco: str, date: str, result: FunnelResult, charts: dict[str
     return "\n".join(lines) + "\n"
 
 
-def write_charts(base: Path, opco: str, date: str, result: FunnelResult) -> dict[str, str]:
+def write_charts(base: Path, opco: str, date: str, result: FunnelResult, absolute: bool = False) -> dict[str, str]:
     """Writes each chart PNG; a ``ChartError`` is logged and that chart is skipped."""
     written: dict[str, str] = {}
-    for spec in build_chart_specs(opco, date, result.rows):
+    for spec in build_chart_specs(opco, date, result.rows, absolute=absolute):
         try:
             png = render_chart(spec)
         except ChartError as exc:
@@ -231,7 +238,7 @@ def load_subcategories(
     )
 
 
-def run(opco: str, date: str, base: Path, drm_dir: Path) -> FunnelResult:
+def run(opco: str, date: str, base: Path, drm_dir: Path, absolute: bool = False) -> FunnelResult:
     opco_dir = base / opco
     sessions = load_sessions(opco_dir / f"{date}_setupsession_with_outcome.csv")
     require_exports(drm_dir, date)
@@ -244,7 +251,7 @@ def run(opco: str, date: str, base: Path, drm_dir: Path) -> FunnelResult:
     distinct = len({s.session_id for s in sessions if s.session_id})
     if result.totals["sessions"] != distinct + result.totals["drm_only"]:
         raise ValueError(f"{opco} {date}: funnel sessions do not reconcile to the merge session count")
-    write_outputs(opco_dir, opco, date, result, write_charts(base, opco, date, result))
+    write_outputs(opco_dir, opco, date, result, write_charts(base, opco, date, result, absolute))
     return result
 
 
@@ -255,6 +262,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--base", type=Path, default=DEFAULT_BASE, help="output root holding <OPCO>/ folders")
     ap.add_argument("--drm-dir", type=Path, default=None,
                     help="folder with the saved mDRM exports (default data/lightstep/<OPCO>)")
+    ap.add_argument("--absolute", action="store_true",
+                    help="draw the license_outcome chart as raw counts instead of share of each DRM type")
     return ap.parse_args(argv)
 
 
@@ -265,7 +274,7 @@ def main(argv: list[str] | None = None) -> None:
 
     init_logging("ctap-smvod-analyze_drm_funnel")
     args = parse_args(argv)
-    result = run(args.opco, args.date, args.base, args.drm_dir or DEFAULT_DRM_BASE / args.opco)
+    result = run(args.opco, args.date, args.base, args.drm_dir or DEFAULT_DRM_BASE / args.opco, args.absolute)
     LOGGER.info("%s %s: %s", args.opco, args.date, result.totals)
 
 

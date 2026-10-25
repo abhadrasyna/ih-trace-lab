@@ -8,7 +8,13 @@ from collections.abc import Mapping, Sequence
 
 from matplotlib.axes import Axes
 
-from src.lib.charts.axes import format_count, format_pct, format_value_axis, style_axes
+from src.lib.charts.axes import (
+    format_count,
+    format_pct,
+    format_share_axis,
+    format_value_axis,
+    style_axes,
+)
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import new_figure, render_png
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
@@ -21,13 +27,23 @@ COLOUR_TOKENS = ("ink", "muted", "faint", "green", "red", "amber")
 MIN_LABEL_SHARE = 0.05
 # A single-series bar shorter than this share of the longest is drawn at this height so it stays visible.
 MIN_BAR_SHARE = 0.02
-LEGEND_OPTIONS = ("auto", False)
+LEGEND_OPTIONS = ("auto", "above", False)
+SHARE_TOTAL = 100.0
+LEGEND_TOP_MARGIN = 0.82  # axes top when the legend sits above the plot, below the title block
 
 
 def require_legend_option(legend: object) -> None:
-    """Rejects anything but ``"auto"`` (legend only when a segment is too small to label) or ``False``."""
-    if legend != "auto" and legend is not False:
+    """Rejects anything but ``"auto"`` (legend inside the plot for several series), ``"above"`` or ``False``."""
+    if legend != "auto" and legend != "above" and legend is not False:
         raise ChartError(f"legend must be one of {LEGEND_OPTIONS}, got {legend!r}")
+
+
+def normalized_series(series: Mapping[str, Sequence[float]], stack_totals: Sequence[float]) -> dict[str, list[float]]:
+    """Scales every stack to ``SHARE_TOTAL``; a stack whose total is zero stays all zeros (drawn empty)."""
+    return {
+        name: [SHARE_TOTAL * v / t if t else 0.0 for v, t in zip(values, stack_totals, strict=True)]
+        for name, values in series.items()
+    }
 
 
 def require_bar_colours(bar_colours: Sequence[str] | None, labels: Sequence[str], n_series: int) -> None:
@@ -97,15 +113,18 @@ def render_stacked_bar(
     colours: Mapping[str, str] | None = None,
     bar_colours: Sequence[str] | None = None,
     total: float | None = None,
+    normalize: bool = False,
     legend: bool | str = "auto",
     theme: ChartTheme = DARK,
 ) -> bytes:
     """Renders stacked bars to PNG bytes; raises ``ChartError`` on bad input or any drawing failure.
 
     ``series`` maps a series name to one value per label. ``total`` adds each segment's share to its label.
-    ``legend="auto"`` draws a legend only for more than one series; ``False`` never does. ``bar_colours`` (single
-    series only) gives each bar its own colour. In a single-series chart a bar under ``MIN_LABEL_SHARE`` of the
-    longest is labelled above the bar, and one under ``MIN_BAR_SHARE`` is also lifted to that minimum height.
+    ``normalize`` scales each stack to 100% (axis ``0%``..``100%``; labels show the count and its share of that
+    stack; a zero-total stack is drawn empty). ``legend="auto"`` draws a legend inside the plot only for more than
+    one series; ``"above"`` puts it above the plot, outside the bars; ``False`` never draws one. ``bar_colours``
+    (single series only) gives each bar its own colour. In a single-series chart a bar under ``MIN_LABEL_SHARE``
+    of the longest is labelled above the bar, and one under ``MIN_BAR_SHARE`` is also lifted to that minimum height.
     """
     require_stacked_input(labels, series)
     require_legend_option(legend)
@@ -119,10 +138,11 @@ def render_stacked_bar(
         ax = fig.add_subplot(111)
         positions = list(range(len(labels)))
         stack_totals = [sum(series[n][i] for n in names) for i in positions]
-        longest = max(stack_totals) or 1.0
+        plotted = normalized_series(series, stack_totals) if normalize else series
+        longest = max(sum(plotted[n][i] for n in names) for i in positions) or 1.0
         base = [0.0] * len(labels)
         for name, colour in zip(names, colour_list, strict=True):
-            values = list(series[name])
+            values = list(plotted[name])
             drawn = [drawn_value(v, longest, single) for v in values]
             bar_colour = list(bar_colours) if bar_colours is not None else colour
             if horizontal:
@@ -132,13 +152,14 @@ def render_stacked_bar(
             for i, v in enumerate(values):
                 if v <= 0:
                     continue
+                text = segment_label(series[name][i], stack_totals[i] if normalize else total)
                 if v / longest < MIN_LABEL_SHARE:
                     if single:
-                        _label_above(ax, i, drawn[i], segment_label(v, total), horizontal, theme, family)
+                        _label_above(ax, i, drawn[i], text, horizontal, theme, family)
                     continue
                 mid = base[i] + v / 2
                 x, y = (mid, i) if horizontal else (i, mid)
-                ax.text(x, y, segment_label(v, total), ha="center", va="center", color=theme.bg,
+                ax.text(x, y, text, ha="center", va="center", color=theme.bg,
                         fontsize=8.5, fontweight="bold", family=family)
             base = [b + v for b, v in zip(base, drawn, strict=True)]
         ticks = [str(label) for label in labels]
@@ -157,7 +178,14 @@ def render_stacked_bar(
                 ax.margins(x=0.12)
             else:
                 ax.margins(y=0.12)
-        if legend == "auto" and not single:
+        if normalize:
+            format_share_axis(ax, horizontal)
+        if legend == "above":
+            fig.subplots_adjust(top=LEGEND_TOP_MARGIN)
+            key = ax.legend(loc="lower left", bbox_to_anchor=(0.0, 1.02), ncol=len(names), frameon=False,
+                            labelcolor=theme.muted, prop={"family": family, "size": 8.5})
+            key.set_zorder(10)
+        elif legend == "auto" and not single:
             key = ax.legend(frameon=False, labelcolor=theme.muted, prop={"family": family, "size": 8.5})
             key.set_zorder(10)
         draw_title(fig, title, subtitle, theme, family)

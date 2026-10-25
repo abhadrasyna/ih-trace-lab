@@ -20,16 +20,17 @@ from lib.drm_funnel import (
     stage_totals,
 )
 
+from src.lib.charts.axes import format_count
 from src.lib.charts.pie import merge_small_slices, render_pie
 from src.lib.charts.stacked_bar import render_stacked_bar
 from src.lib.charts.theme import DARK, ChartTheme
 
 STAGE_NAMES = ("Sessions", "DRM requested", "License success", "Ended in error")
-# Error splits per outcome group; kept to 7 series at most so palette colours never repeat.
+# The three semantic outcome series; the downstream-error split lives in the markdown tables, not in colour.
 OUTCOME_GROUPS = (
-    ("success", (SUCCESS, RETRY_THEN_SUCCESS), ("", "error")),
-    ("failed", (FAILED,), ("", "error")),
-    ("no_request", (NO_REQUEST,), ("", "3016", "other error")),
+    ("success", (SUCCESS, RETRY_THEN_SUCCESS)),
+    ("failed", (FAILED,)),
+    ("no_request", (NO_REQUEST,)),
 )
 OUTCOME_COLOURS = {"success": "green", "failed": "red", "no_request": "muted"}
 # Fixed order: a DRM type keeps its position and colour (series index) in every chart; ``none`` is muted.
@@ -52,7 +53,8 @@ class ChartSpec:
     total: int | None = None
     pie: bool = False
     bar_colours: list[str] | None = None
-
+    normalize: bool = False
+    legend: str = "auto"
 
 def ordered_drm_types(rows: Sequence[FunnelRow]) -> list[str]:
     """DRM buckets present in ``rows`` in the fixed funnel order; unknown buckets sort last, alphabetically."""
@@ -72,17 +74,6 @@ def drm_type_colour(bucket: str, theme: ChartTheme = DARK) -> str:
     return theme.muted
 
 
-def _error_class(group: str) -> str:
-    if group == NO_ERROR:
-        return ""
-    return "3016" if group == "3016" else "other error"
-
-
-def _split_class(error_class: str, splits: Sequence[str]) -> str:
-    """Maps an error class onto the group's splits; groups without a 3016 split fold it into ``error``."""
-    return error_class if error_class in splits else ("error" if error_class else "")
-
-
 def stage_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, list[int]]]:
     t = stage_totals(rows)
     counts = [t["sessions"], t["drm_requested"], t["license_success"], t["errored"]]
@@ -100,19 +91,20 @@ def drm_split_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, li
 
 
 def license_outcome_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, list[int]]]:
-    """Per DRM bucket: success / failed / no_request split by downstream error (no_request: 3016 vs other)."""
+    """Per DRM bucket: sessions by license outcome (success / failed / no_request); absent outcomes are omitted."""
     buckets = ordered_drm_types(rows)
-    cells: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    order: list[str] = []
-    for group, outcomes, splits in OUTCOME_GROUPS:
-        for suffix in splits:
-            name = f"{group}, {suffix}" if suffix else group
-            order.append(name)
-            for r in rows:
-                if r.license_outcome in outcomes and _split_class(_error_class(r.error_group), splits) == suffix:
-                    cells[name][r.drm_bucket] += r.sessions
-    series = {n: [cells[n][b] for b in buckets] for n in order if any(cells[n].values())}
+    series: dict[str, list[int]] = {}
+    for group, outcomes in OUTCOME_GROUPS:
+        counts = [sum(r.sessions for r in rows if r.drm_bucket == b and r.license_outcome in outcomes)
+                  for b in buckets]
+        if any(counts):
+            series[group] = counts
     return [drm_type_label(b) for b in buckets], series
+
+
+def labels_with_totals(labels: Sequence[str], series: dict[str, list[int]]) -> list[str]:
+    """Adds each stack's absolute total on a second line under its label (``Widevine`` -> ``Widevine`` / ``1.2k``)."""
+    return [f"{label}\n{format_count(sum(v[i] for v in series.values()))}" for i, label in enumerate(labels)]
 
 
 def error_code_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, list[int]]]:
@@ -138,7 +130,7 @@ def subcategory_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, 
 
 
 def outcome_colours(series: dict[str, list[int]]) -> dict[str, str]:
-    """Plain outcome series use success green / failure red; error-split series fall back to the palette."""
+    """Success green, failed red, no_request muted."""
     return {n: OUTCOME_COLOURS[n] for n in series if n in OUTCOME_COLOURS}
 
 
@@ -149,7 +141,8 @@ def split_bar_colours(rows: Sequence[FunnelRow], series: dict[str, list[int]]) -
     return [drm_type_colour(b) for b in ordered_drm_types(rows)]
 
 
-def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow]) -> list[ChartSpec]:
+def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow], *, absolute: bool = False) -> list[ChartSpec]:
+    """Specs for every funnel chart; ``absolute`` draws ``license_outcome`` as raw counts instead of shares."""
     t = stage_totals(rows)
     sub = f"{opco} {date} · {t['sessions']} sessions · {t['drm_only']} drm_only"
     stage_labels, stage_s = stage_series(rows)
@@ -162,8 +155,11 @@ def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow]) -> list[C
                   total=t["sessions"]),
         ChartSpec("drm_split", "Sessions by DRM type", sub, split_labels, split_s, total=t["sessions"],
                   bar_colours=split_bar_colours(rows, split_s)),
-        ChartSpec("license_outcome", "License outcome per DRM type", sub, out_labels, out_s,
-                  colours=outcome_colours(out_s), total=t["sessions"]),
+        ChartSpec("license_outcome", "License outcome per DRM type",
+                  sub if absolute else f"{sub} · share of each DRM type's sessions",
+                  out_labels if absolute else labels_with_totals(out_labels, out_s), out_s,
+                  colours=outcome_colours(out_s), total=t["sessions"] if absolute else None,
+                  normalize=not absolute, legend="above"),
     ]
     # Error-mix charts only exist when there is something to plot.
     if err_labels:
@@ -182,6 +178,7 @@ def render_chart(spec: ChartSpec) -> bytes:
     return render_stacked_bar(
         spec.labels, spec.series, title=spec.title, subtitle=spec.subtitle,
         horizontal=spec.horizontal, colours=spec.colours or None, bar_colours=spec.bar_colours, total=spec.total,
+        normalize=spec.normalize, legend=spec.legend,
     )
 
 

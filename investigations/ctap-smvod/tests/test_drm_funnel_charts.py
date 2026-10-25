@@ -13,6 +13,7 @@ from lib.drm_funnel_charts import (
     error_code_series,
     license_outcome_series,
     ordered_drm_types,
+    outcome_colours,
     render_chart,
     stage_series,
     subcategory_series,
@@ -48,7 +49,8 @@ def test_series_builders_reconcile_to_session_total() -> None:
     labels, outcome = license_outcome_series(ROWS)
     assert sum(sum(v) for v in outcome.values()) == TOTAL
     assert all(len(v) == len(labels) for v in outcome.values())
-    assert "failed, error" in outcome and "no_request, 3016" in outcome and "success, error" in outcome
+    assert list(outcome) == ["success", "failed", "no_request"]
+    assert outcome_colours(outcome) == {"success": "green", "failed": "red", "no_request": "muted"}
     assert [s.name for s in build_chart_specs("ZA", "2026-10-23", ROWS)] == ["stages", "drm_split", "license_outcome"]
 
 
@@ -80,6 +82,17 @@ def test_drm_split_spec_mutes_none_and_keeps_one_colour_per_type() -> None:
     spec = next(s for s in build_chart_specs("ZA", "2026-10-23", vod_only) if s.name == "drm_split")
     assert spec.bar_colours == [drm_type_colour("widevine"), DARK.muted]
     assert render_chart(spec).startswith(b"\x89PNG")
+
+
+def test_license_outcome_spec_is_share_by_default_and_absolute_on_request() -> None:
+    spec = next(s for s in build_chart_specs("ZA", "2026-10-23", ROWS) if s.name == "license_outcome")
+    assert spec.normalize and spec.legend == "above" and spec.total is None
+    assert spec.labels == ["Widevine\n8", "Fairplay\n1", "None\n3"]
+    assert "share of each DRM type" in spec.subtitle
+    assert render_chart(spec).startswith(b"\x89PNG")
+    raw = next(s for s in build_chart_specs("ZA", "2026-10-23", ROWS, absolute=True) if s.name == "license_outcome")
+    assert not raw.normalize and raw.labels == ["Widevine", "Fairplay", "None"] and raw.total == TOTAL
+    assert render_chart(raw).startswith(b"\x89PNG")
 
 
 def test_error_mix_series_reconcile_to_errored_sessions() -> None:
