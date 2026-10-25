@@ -4,7 +4,8 @@ Reads only local files (no Athena or Lightstep):
   <base>/<OPCO>/<date>_setupsession_with_outcome.csv           (required)
   <base>/<OPCO>/error_eventdata_flat/<date>_all.csv            (optional)
   <drm-dir>/<date>_mdrmfe.csv and <date>_mdrm-lrm.csv (+ hourly parts)  (required)
-Writes <base>/<OPCO>/<date>_drm_funnel.csv and <date>_drm_funnel.md.
+Writes <base>/<OPCO>/<date>_drm_funnel.csv and <date>_drm_funnel.md, plus three charts under
+<base>/<OPCO>/charts/ embedded in the markdown (a chart failure is logged and its link is left out).
 
 Usage:
   python investigations/ctap-smvod/scripts/analyze_drm_funnel.py --opco ZA --date 2026-10-23
@@ -19,6 +20,9 @@ from pathlib import Path
 
 from lib.drm_exports import LRM, MDRMFE, export_paths, read_lrm, read_mdrmfe
 from lib.drm_funnel import FunnelResult, FunnelRow, SessionInput, build_funnel
+from lib.drm_funnel_charts import build_chart_specs, chart_filename, render_chart
+from src.lib.charts.errors import ChartError
+from src.lib.charts.output import write_chart_png
 
 csv.field_size_limit(10**9)
 
@@ -93,10 +97,14 @@ def _pivot(rows: list[FunnelRow], row_field: str, col_field: str) -> tuple[list[
     return [row_field, *cols, "total"], body
 
 
-def render_markdown(opco: str, date: str, result: FunnelResult) -> str:
+def render_markdown(opco: str, date: str, result: FunnelResult, charts: dict[str, str] | None = None) -> str:
+    """``charts`` maps a chart name to its file name under ``charts/`` for relative embedding."""
     totals = result.totals
     total = totals["sessions"]
     lines = [f"# DRM funnel — {opco} — {date}", ""]
+    if charts:
+        for name, filename in charts.items():
+            lines += [f"![{name.replace('_', ' ')}](charts/{filename})", ""]
     lines += ["## Stages", ""]
     lines += _table(
         ["Stage", "Sessions", "Share of sessions"],
@@ -116,7 +124,24 @@ def render_markdown(opco: str, date: str, result: FunnelResult) -> str:
     return "\n".join(lines) + "\n"
 
 
-def write_outputs(out_dir: Path, opco: str, date: str, result: FunnelResult) -> tuple[Path, Path]:
+def write_charts(base: Path, opco: str, date: str, result: FunnelResult) -> dict[str, str]:
+    """Writes each chart PNG; a ``ChartError`` is logged and that chart is skipped."""
+    written: dict[str, str] = {}
+    for spec in build_chart_specs(opco, date, result.rows):
+        try:
+            png = render_chart(spec)
+        except ChartError as exc:
+            LOGGER.error("%s %s: chart %s failed: %s", opco, date, spec.name, exc)
+            continue
+        filename = chart_filename(date, spec.name)
+        write_chart_png(png, base, opco, filename)
+        written[spec.name] = filename
+    return written
+
+
+def write_outputs(
+    out_dir: Path, opco: str, date: str, result: FunnelResult, charts: dict[str, str] | None = None
+) -> tuple[Path, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / f"{date}_drm_funnel.csv"
     md_path = out_dir / f"{date}_drm_funnel.md"
@@ -124,7 +149,7 @@ def write_outputs(out_dir: Path, opco: str, date: str, result: FunnelResult) -> 
         writer = csv.DictWriter(handle, fieldnames=CSV_COLUMNS)
         writer.writeheader()
         writer.writerows({c: getattr(r, c) for c in CSV_COLUMNS} for r in result.rows)
-    md_path.write_text(render_markdown(opco, date, result), encoding="utf-8")
+    md_path.write_text(render_markdown(opco, date, result, charts), encoding="utf-8")
     return csv_path, md_path
 
 
@@ -137,7 +162,7 @@ def run(opco: str, date: str, base: Path, drm_dir: Path) -> FunnelResult:
     distinct = len({s.session_id for s in sessions if s.session_id})
     if result.totals["sessions"] != distinct + result.totals["drm_only"]:
         raise ValueError(f"{opco} {date}: funnel sessions do not reconcile to the merge session count")
-    write_outputs(opco_dir, opco, date, result)
+    write_outputs(opco_dir, opco, date, result, write_charts(base, opco, date, result))
     return result
 
 

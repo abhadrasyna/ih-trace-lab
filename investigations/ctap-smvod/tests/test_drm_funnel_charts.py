@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+import csv
+from pathlib import Path
+
+from conftest import load_script
+from test_analyze_drm_funnel import _inputs
+
+from lib.drm_funnel import FunnelRow, stage_totals
+from lib.drm_funnel_charts import (
+    build_chart_specs, drm_split_series, license_outcome_series, stage_series,
+)
+from src.lib.charts.errors import ChartError
+
+cli = load_script("analyze_drm_funnel.py")
+
+
+def _row(source, kind, bucket, outcome, err, n) -> FunnelRow:
+    return FunnelRow("ZA", "2026-10-23", source, kind, bucket, outcome, err, n)
+
+
+ROWS = [
+    _row("merge", "vod", "widevine", "success", "none", 5),
+    _row("merge", "vod", "widevine", "failed", "3016", 2),
+    _row("merge", "linear", "fairplay", "retry_then_success", "6xxx", 1),
+    _row("drm_only", "vod", "widevine", "failed", "none", 1),
+    _row("merge", "vod", "none", "no_request", "3016", 3),
+]
+TOTAL = sum(r.sessions for r in ROWS)
+
+
+def test_series_builders_reconcile_to_session_total() -> None:
+    _, stages = stage_series(ROWS)
+    assert stages["sessions"][0] == TOTAL
+    assert stages["sessions"] == [TOTAL, stage_totals(ROWS)["drm_requested"], 6, 6]
+    _, split = drm_split_series(ROWS)
+    assert sum(sum(v) for v in split.values()) == TOTAL
+    labels, outcome = license_outcome_series(ROWS)
+    assert sum(sum(v) for v in outcome.values()) == TOTAL
+    assert all(len(v) == len(labels) for v in outcome.values())
+    assert "failed, error" in outcome and "no_request, 3016" in outcome and "success, error" in outcome
+    assert [s.name for s in build_chart_specs("ZA", "2026-10-23", ROWS)] == ["stages", "drm_split", "license_outcome"]
+
+
+def test_markdown_embeds_relative_chart_links(tmp_path: Path) -> None:
+    base, drm = _inputs(tmp_path)
+    cli.run("ZA", "2026-10-23", base, drm)
+    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    for name in ("stages", "drm_split", "license_outcome"):
+        png = base / "ZA" / "charts" / f"2026-10-23_drm_funnel_{name}.png"
+        assert png.read_bytes().startswith(b"\x89PNG")
+        assert f"(charts/2026-10-23_drm_funnel_{name}.png)" in md
+
+
+def test_chart_error_still_writes_csv_and_markdown_without_image_links(tmp_path: Path, monkeypatch) -> None:
+    def boom(spec):
+        raise ChartError("no font")
+
+    monkeypatch.setattr(cli, "render_chart", boom)
+    base, drm = _inputs(tmp_path)
+    cli.run("ZA", "2026-10-23", base, drm)
+    md = (base / "ZA" / "2026-10-23_drm_funnel.md").read_text()
+    assert "charts/" not in md and "## Stages" in md
+    rows = list(csv.DictReader((base / "ZA" / "2026-10-23_drm_funnel.csv").open()))
+    assert sum(int(r["sessions"]) for r in rows) == 4
+    assert not (base / "ZA" / "charts").exists()
