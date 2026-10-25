@@ -31,6 +31,8 @@ class ChartTheme:
     red: str
     fill_alpha_green: float
     fill_alpha_red: float
+    # Ordered, distinguishable on ``bg``; ``green`` and ``red`` stay reserved for good/bad meaning.
+    series: tuple[str, ...] = ()
 
 
 DARK = ChartTheme(
@@ -42,6 +44,7 @@ DARK = ChartTheme(
     red="#ef5350",
     fill_alpha_green=0.22,
     fill_alpha_red=0.14,
+    series=("#60a5fa", "#f59e0b", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
 )
 
 

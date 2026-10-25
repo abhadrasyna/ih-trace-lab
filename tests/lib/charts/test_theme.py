@@ -11,7 +11,7 @@ from src.lib.charts.theme import DARK, FALLBACK_FONT_FAMILY, ChartTheme, chart_f
 
 
 def test_dark_tokens_match_guide() -> None:
-    assert DARK == ChartTheme(
+    assert ChartTheme(
         bg="#0e1117",
         ink="#e5e7eb",
         muted="#9ca3af",
@@ -20,7 +20,8 @@ def test_dark_tokens_match_guide() -> None:
         red="#ef5350",
         fill_alpha_green=0.22,
         fill_alpha_red=0.14,
-    )
+        series=("#60a5fa", "#f59e0b", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
+    ) == DARK
 
 
 def test_theme_is_frozen() -> None:

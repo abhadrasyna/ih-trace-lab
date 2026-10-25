@@ -15,6 +15,10 @@ Dark-only; there is no light variant. Once a shared `ChartTheme` exists, every c
 | `faint` | `#1f2937` | Grid, spines, secondary vertical guides |
 | `green` | `#26b3a0` | Good / positive series |
 | `red` | `#ef5350` | Bad / negative series (errors, failures) |
+| `series[0..5]` | `#60a5fa`, `#f59e0b`, `#a78bfa`, `#f472b6`, `#94a3b8`, `#d4a373` | Ordered palette for multi-series charts (blue, amber, violet, pink, slate, sand); `ChartTheme.series` |
+
+`green` and `red` are reserved for success and failure: they never appear in `series`, and a multi-series chart gets them only by mapping a series to them explicitly (for example
+`render_stacked_bar`'s `colours={"success": "green", "failed": "red"}`). Any other series takes the palette in order, cycling after six; a chart with more segments than it can label needs a legend.
 
 Area fills reuse the line colour with alpha: `fill_alpha_green = 0.22`, `fill_alpha_red = 0.14` (the bad side is deliberately quieter). Font is Roboto when bundled, resolved only through one
 `chart_font_family()` helper that falls back to `"DejaVu Sans"` and never raises.
@@ -46,7 +50,7 @@ Type scale (pt): title 16 bold, subtitle 10, stat label 8.5, stat value 12 bold,
 - Don't use `matplotlib.pyplot` (`plt.subplots`, `plt.figure`, `plt.show`, `plt.savefig`) in `src/` or `scripts/`. It drags in global state, a GUI backend and figure-leak bugs.
 - Don't rely on matplotlib's default font, and don't call `font_manager.addfont` outside `chart_font_family()`.
 - Don't add a light theme, gradients, drop shadows, 3D, or chart borders. Don't add a legend when direct labels do the job.
-- Don't use a rainbow or more than two hues for a signed series. Green and red carry sign; everything else is `ink`, `muted` or `faint`.
+- Don't use a rainbow or more than two hues for a signed series. Green and red carry sign; everything else is `ink`, `muted` or `faint`. Multi-series charts (not signed) use the `series` palette.
 - Don't draw a full box grid, vertical gridlines, or visible tick marks. Don't use thick lines (> 2 pt) or tiny markers (< 5 pt).
 - Don't call `savefig` to disk inside reusable render functions (return bytes; the script owns I/O).
 - Don't use `tight_layout()` for the headered layout. Use explicit `subplots_adjust` margins (`left=0.13`, `right=0.97`, plus top and bottom values for one or two header rows) so the header geometry
@@ -64,8 +68,13 @@ Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, spl
 | `axes.py` | `style_axes`, count/percentage formatters, pure tick and range maths |
 | `header.py` | Optional stat header: `Tone`, `HeaderCell`, one- or two-row layout |
 | `signed_line.py`, `bar.py` | Thin drawing functions that return PNG bytes |
+| `stacked_bar.py` | `render_stacked_bar`: one stack per label; segment labels, optional legend (see below) |
 | `errors.py` | `ChartError`, the only exception that leaves the package |
 | `output.py` | `write_chart_png` / `chart_path`: saves PNGs under `<output>/<TENANT>/charts/`, creating the folder on first use |
+
+`render_stacked_bar(labels, series, *, title, subtitle="", horizontal=False, colours=None, total=None, theme=DARK)` takes `series` as a name-to-values map with one value per label. Each segment is
+labelled with its value, plus its share when `total` is given. A legend appears only when a segment is too small to label. Input that is empty, unequal in length, negative or non-finite raises
+`ChartError`.
 
 Rules from `docs/refactor/`: wrap third-party exceptions at the module boundary (matplotlib and numpy errors become `ChartError`), keep `theme` free of imports from the rest of the package, and prefer
 `Protocol` over an abstract base if a chart interface is ever needed. Fonts: Roboto is bundled under `src/lib/charts/assets/fonts/` (Apache 2.0); `chart_font_family()` is cached, lock-guarded and

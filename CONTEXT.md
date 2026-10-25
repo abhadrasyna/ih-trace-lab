@@ -47,7 +47,8 @@
   `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable method for refactoring a different ad hoc Python legacy tree later. No project-specific names (entities, tenants, repos) appear in it by
   design — it is meant to be read by a future, unrelated Python project.
 - `docs/guides/chart-guidelines.md` — matplotlib chart standard (dark theme, palette, font fallback, headless figure recipe) matching the shared `src/lib/charts/` package (`theme`, `fig`, `axes`,
-  `header`, `signed_line`, `bar`, `errors`, `output`). `output.write_chart_png` saves PNGs to `<investigation>/output/<TENANT>/charts/`, apart from the CSV/XLSX reports. Pilot: ctap-smvod
+  `header`, `signed_line`, `bar`, `stacked_bar`, `errors`, `output`). `ChartTheme.series` is an ordered 6-colour palette for multi-series charts; `render_stacked_bar` (MDRM-2a) draws stacked bars with
+  `green`/`red` reserved for success/failure. `output.write_chart_png` saves PNGs to `<investigation>/output/<TENANT>/charts/`, apart from the CSV/XLSX reports. Pilot: ctap-smvod
   `chart_concurrent_playback.py`/`chart_playback_attempts.py`; other investigations adopt the layer in their own stories (story `docs/archive/shared-chart-infra/`).
 - `docs/usage.md` — command reference for every `src/pipelines/aws_access_cli/scripts/` variant (daily/weekly/monthly orchestrators, historical backfills, single reports, catalog query, header
   seeding). The daily/weekly/monthly orchestrators catch up missed periods by default (lookback 7 days / 4 weeks / 3 months; `--no-catch-up` and `--force` documented there); existing outputs are
