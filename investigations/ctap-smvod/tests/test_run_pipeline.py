@@ -32,7 +32,7 @@ class _Args:
     skip_step6e = False
     skip_error_eventdata = False
     skip_subcategory_3016 = False
-    skip_drm_funnel = False
+    skip_drm_reports = False
     drm_dir = None
     drm = False
     full_position_report = False
@@ -126,7 +126,7 @@ def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -
     athena_dir = str(tenant_root / "data" / "athena" / "ZM")
     out = tenant_root / "output" / "ZM"
 
-    fetch, flatten = steps[-4], steps[-3]
+    fetch, flatten = steps[-6], steps[-5]
     assert fetch[0].startswith("Step 6f") and fetch[1][1].endswith("run_athena_error_eventdata.py")
     assert ["--tenant", "ZM", "--output-dir", athena_dir] == fetch[1][-4:]
     assert flatten[0].startswith("Step 6g") and flatten[1][1].endswith("flatten_error_eventdata.py")
@@ -138,7 +138,7 @@ def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -
 
 def test_build_steps_skip_error_eventdata_skips_both(tenant_root: Path) -> None:
     steps = run_pipeline._build_steps(_args(skip_error_eventdata=True), "2026-09-30", "ZM")
-    assert steps[-4][2] is True and steps[-3][2] is True and steps[-2][2] is True
+    assert steps[-6][2] is True and steps[-5][2] is True and steps[-4][2] is True
 
 
 def test_build_steps_forwards_force_to_athena_steps(tenant_root: Path) -> None:
@@ -287,11 +287,20 @@ def test_funnel_step_present_and_skippable(tenant_root: Path) -> None:
     assert step[1][1].endswith("analyze_drm_funnel.py") and step[2] is False
     assert step[1][step[1].index("--opco") + 1] == "ZM" and "--drm-dir" not in step[1]
     assert step[1][step[1].index("--base") + 1] == str(tenant_root / "output")
-    assert _step("Step 6i", _args(skip_drm_funnel=True), "ZM")[2] is True
+    assert _step("Step 6i", _args(skip_drm_reports=True), "ZM")[2] is True
     other = tenant_root / "elsewhere"
     _write_drm(other)
     forwarded = _step("Step 6i", _args(drm_dir=str(other)), "ZM")
     assert forwarded[1][forwarded[1].index("--drm-dir") + 1] == str(other) and forwarded[2] is False
+
+
+def test_all_drm_report_steps_share_one_skip_flag(tenant_root: Path) -> None:
+    _write_drm(tenant_root / "data" / "lightstep" / "ZM")
+    scripts = {"Step 6i": "analyze_drm_funnel.py", "Step 6j": "analyze_mdrm_quality.py", "Step 6k": "analyze_mdrm_devices.py"}
+    for prefix, script in scripts.items():
+        assert _step(prefix, _args(), "ZM")[1][1].endswith(script)
+        assert _step(prefix, _args(), "ZM")[2] is False
+        assert _step(prefix, _args(skip_drm_reports=True), "ZM")[2] is True
 
 
 def test_funnel_step_skipped_without_mdrm_exports(tenant_root: Path) -> None:

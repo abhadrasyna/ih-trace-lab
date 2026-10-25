@@ -15,7 +15,9 @@ hand. Runs, in order:
     Step 6f run_athena_error_eventdata.py  -- raw PLAYER_ERROR eventdata export (optional, --skip-error-eventdata)
     Step 6g flatten_error_eventdata.py     -- flat + per-error-code CSVs        (optional, --skip-error-eventdata)
     Step 6h run_3016_subcategory_report.py -- 3014/3015/3016 sub-category summary + events CSVs (optional, --skip-subcategory-3016; also skipped by --skip-error-eventdata; --drm adds mDRM device columns + summary)
-    Step 6i analyze_drm_funnel.py          -- DRM session funnel CSV + markdown (optional, --skip-drm-funnel; also skipped when no mDRM exports exist for the date in --drm-dir or data/lightstep/<TENANT>/)
+    Step 6i analyze_drm_funnel.py          -- DRM session funnel CSV + markdown (optional, --skip-drm-reports; also skipped when no mDRM exports exist for the date in --drm-dir or data/lightstep/<TENANT>/)
+    Step 6j analyze_mdrm_quality.py        -- mDRM license-chain quality markdown + failures CSV (same --skip-drm-reports gate as 6i)
+    Step 6k analyze_mdrm_devices.py        -- mDRM device/brRef policy markdown + Widevine chart (same --skip-drm-reports gate as 6i)
 
 Note: extract_position_report.py's --only-not-moved now defaults to on
 (see its own docstring / BLUEPRINT.md Step 6b) -- pass --full-position-report
@@ -262,14 +264,20 @@ def _build_steps(args, date_iso: str, tenant: str):
             + (["--drm"] if args.drm else []),
             args.skip_subcategory_3016 or args.skip_error_eventdata,
         ),
-        (
-            "Step 6i - DRM session funnel (analyze_drm_funnel.py)" + ("" if drm_present else " [skipped: no mDRM exports]"),
-            [py, os.path.join(SCRIPT_DIR, "analyze_drm_funnel.py"), "--opco", tenant,
+    ]
+    drm_reports = (
+        ("Step 6i - DRM session funnel", "analyze_drm_funnel.py"),
+        ("Step 6j - mDRM license-chain quality", "analyze_mdrm_quality.py"),
+        ("Step 6k - mDRM device/brRef policy", "analyze_mdrm_devices.py"),
+    )
+    for title, script in drm_reports:
+        steps.append((
+            f"{title} ({script})" + ("" if drm_present else " [skipped: no mDRM exports]"),
+            [py, os.path.join(SCRIPT_DIR, script), "--opco", tenant,
              "--date", date_iso, "--base", os.path.dirname(output_dir)]
             + (["--drm-dir", args.drm_dir] if args.drm_dir else []),
-            args.skip_drm_funnel or not drm_present,
-        ),
-    ]
+            args.skip_drm_reports or not drm_present,
+        ))
     return steps
 
 
@@ -345,10 +353,10 @@ def main():
                      help="Skip Steps 6f/6g (raw PLAYER_ERROR eventdata export + flatten)")
     ap.add_argument("--skip-subcategory-3016", action="store_true",
                      help="Skip Step 6h (3014/3015/3016 sub-category summary + events CSVs)")
-    ap.add_argument("--skip-drm-funnel", action="store_true",
-                     help="Skip Step 6i (DRM session funnel); it is also skipped when no mDRM exports exist for the date")
+    ap.add_argument("--skip-drm-reports", "--skip-drm-funnel", dest="skip_drm_reports", action="store_true",
+                     help="Skip Steps 6i-6k (DRM funnel, mDRM quality, mDRM devices); also skipped when no mDRM exports exist for the date")
     ap.add_argument("--drm-dir", default=None,
-                     help="Step 6i: folder with the saved mDRM exports (default data/lightstep/<TENANT>/); needs --tenant")
+                     help="Steps 6i-6k: folder with the saved mDRM exports (default data/lightstep/<TENANT>/); needs --tenant")
     ap.add_argument("--drm", action="store_true",
                      help="Step 6h: add mDRM device columns + device summary; needs the saved Lightstep "
                           "exports in data/lightstep/<TENANT>/ (docs/lightstep-drm-exports.md)")

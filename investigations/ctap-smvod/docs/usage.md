@@ -289,12 +289,13 @@ No automatic pattern verdict is produced; analyse the events CSV. Segment URLs e
 All three read the hand-saved mDRM exports (`docs/lightstep-drm-exports.md`) from `data/lightstep/<OPCO>/` (or `--drm-dir`) and write to `output/<OPCO>/`; no Athena or Lightstep calls.
 
 ```bash
-python3 analyze_drm_funnel.py --opco ZA --date 2026-10-23     # <date>_drm_funnel.{csv,md} + charts/; run_pipeline.py Step 6i (--skip-drm-funnel, --drm-dir)
+python3 analyze_drm_funnel.py --opco ZA --date 2026-10-23     # <date>_drm_funnel.{csv,md} + charts/; run_pipeline.py Step 6i
 python3 analyze_mdrm_quality.py --opco ZA --date 2026-10-23   # <date>_mdrm_quality.md + <date>_mdrm_quality_failures.csv (statuses, failing fcIds, retries, fcId chain, part overlap)
 python3 analyze_mdrm_devices.py --opco ZA --date 2026-10-23 [--min-volume 5]  # <date>_mdrm_devices.md + Widevine level/brRef chart
 ```
 
-Step 6i is skipped when the mdrmfe or LRM export is missing for the date. The funnel needs `<date>_setupsession_with_outcome.csv` (Step 5) in `output/<OPCO>/`.
+`run_pipeline.py` runs all three as Steps 6i-6k, together: one `--skip-drm-reports` flag (alias `--skip-drm-funnel`) skips them and `--drm-dir` applies to all; they are also skipped when the mdrmfe or
+LRM export is missing for the date. The funnel needs `<date>_setupsession_with_outcome.csv` (Step 5) in `output/<OPCO>/`.
 
 ## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
 
