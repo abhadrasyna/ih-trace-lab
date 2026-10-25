@@ -35,7 +35,7 @@ ROWS = [
     _row("merge", "vod", "widevine", "failed", "3016", 2),
     _row("merge", "linear", "fairplay", "retry_then_success", "6xxx", 1),
     _row("drm_only", "vod", "widevine", "failed", "none", 1),
-    _row("merge", "vod", "none", "no_request", "3016", 3),
+    _row("merge", "vod", "no_drm_activity", "no_request", "3016", 3),
 ]
 TOTAL = sum(r.sessions for r in ROWS)
 
@@ -56,18 +56,18 @@ def test_series_builders_reconcile_to_session_total() -> None:
 
 def test_drm_type_order_is_stable_across_charts() -> None:
     rows = [_row("merge", "vod", b, "success", "none", n)
-            for b, n in (("none", 9), ("playready", 1), ("fairplay", 5), ("widevine", 3))]
-    expected = ["Widevine", "Fairplay", "Playready", "None"]
-    assert ordered_drm_types(rows) == ["widevine", "fairplay", "playready", "none"]
+            for b, n in (("no_drm_activity", 9), ("playready", 1), ("fairplay", 5), ("widevine", 3))]
+    expected = ["Widevine", "Fairplay", "Playready", "No DRM activity"]
+    assert ordered_drm_types(rows) == ["widevine", "fairplay", "playready", "no_drm_activity"]
     assert drm_split_series(rows)[0] == expected
     assert license_outcome_series(rows)[0] == expected
     assert drm_type_colour("widevine") != drm_type_colour("fairplay")
-    assert drm_type_colour("none") == DARK.muted
+    assert drm_type_colour("no_drm_activity") == DARK.muted
 
 
 def test_unknown_bucket_sorts_last() -> None:
-    rows = [_row("merge", "vod", b, "success", "none", 1) for b in ("zzz", "none", "aaa", "widevine")]
-    assert ordered_drm_types(rows) == ["widevine", "none", "aaa", "zzz"]
+    rows = [_row("merge", "vod", b, "success", "none", 1) for b in ("zzz", "no_drm_activity", "aaa", "widevine")]
+    assert ordered_drm_types(rows) == ["widevine", "no_drm_activity", "aaa", "zzz"]
     assert drm_type_colour("aaa") == DARK.muted
     assert drm_type_label("aaa") == "Aaa"
     labels, series = drm_split_series(rows)
@@ -76,7 +76,7 @@ def test_unknown_bucket_sorts_last() -> None:
 
 def test_drm_split_spec_mutes_none_and_keeps_one_colour_per_type() -> None:
     spec = next(s for s in build_chart_specs("ZA", "2026-10-23", ROWS) if s.name == "drm_split")
-    assert spec.labels == ["Widevine", "Fairplay", "None"] and list(spec.series) == ["linear", "vod"]
+    assert spec.labels == ["Widevine", "Fairplay", "No DRM activity"] and list(spec.series) == ["linear", "vod"]
     assert spec.bar_colours is None
     vod_only = [r for r in ROWS if r.kind == "vod"]
     spec = next(s for s in build_chart_specs("ZA", "2026-10-23", vod_only) if s.name == "drm_split")
@@ -87,11 +87,11 @@ def test_drm_split_spec_mutes_none_and_keeps_one_colour_per_type() -> None:
 def test_license_outcome_spec_is_share_by_default_and_absolute_on_request() -> None:
     spec = next(s for s in build_chart_specs("ZA", "2026-10-23", ROWS) if s.name == "license_outcome")
     assert spec.normalize and spec.legend == "above" and spec.total is None
-    assert spec.labels == ["Widevine\n8", "Fairplay\n1", "None\n3"]
+    assert spec.labels == ["Widevine\n8", "Fairplay\n1", "No DRM activity\n3"]
     assert "share of each DRM type" in spec.subtitle
     assert render_chart(spec).startswith(b"\x89PNG")
     raw = next(s for s in build_chart_specs("ZA", "2026-10-23", ROWS, absolute=True) if s.name == "license_outcome")
-    assert not raw.normalize and raw.labels == ["Widevine", "Fairplay", "None"] and raw.total == TOTAL
+    assert not raw.normalize and raw.labels == ["Widevine", "Fairplay", "No DRM activity"] and raw.total == TOTAL
     assert render_chart(raw).startswith(b"\x89PNG")
 
 

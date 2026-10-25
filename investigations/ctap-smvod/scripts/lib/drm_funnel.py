@@ -20,7 +20,7 @@ RETRY_THEN_SUCCESS = "retry_then_success"
 
 NO_ERROR = "none"
 MIXED = "mixed"
-NO_DRM = "none"
+NO_DRM = "no_drm_activity"
 KNOWN_DRM_TYPES = ("widevine", "fairplay", "playready")
 NAMED_ERRORS = ("3014", "3015", "3016")
 
@@ -84,7 +84,7 @@ def first_error_code(raw: str) -> str:
 
 
 def drm_bucket(rows: Sequence[MdrmfeRow]) -> str:
-    """``none`` with no mdrmfe row, ``mixed`` for several types, else the type.
+    """``no_drm_activity`` with no mdrmfe row, ``mixed`` for several types, else the type.
 
     Blank types are ignored when another type is present; unknown or all-blank types are ``other``.
     """

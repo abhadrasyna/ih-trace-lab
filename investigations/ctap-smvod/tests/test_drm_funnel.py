@@ -32,7 +32,7 @@ def test_every_session_in_exactly_one_bucket_and_outcome() -> None:
     result = mod.build_funnel("ZA", "2026-10-23", sessions, fe, lrm)
 
     assert sum(r.sessions for r in result.rows) == 4 == result.totals["sessions"]
-    assert _by_key(result, "drm_bucket") == {"widevine": 2, "fairplay": 1, "none": 1}
+    assert _by_key(result, "drm_bucket") == {"widevine": 2, "fairplay": 1, "no_drm_activity": 1}
     assert _by_key(result, "license_outcome") == {"success": 1, "failed": 2, "no_request": 1}
     assert _by_key(result, "error_group") == {"none": 2, "3016": 1, "6xxx": 1}
     assert _by_key(result, "kind") == {"vod": 3, "linear": 1}

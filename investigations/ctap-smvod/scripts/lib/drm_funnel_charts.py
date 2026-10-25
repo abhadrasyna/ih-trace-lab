@@ -35,8 +35,8 @@ OUTCOME_GROUPS = (
     ("no_request", (NO_REQUEST,)),
 )
 OUTCOME_COLOURS = {"success": "green", "failed": "red", "no_request": "muted"}
-# Fixed order: a DRM type keeps its position and colour (series index) in every chart; ``none`` is muted.
-DRM_TYPE_ORDER = ("widevine", "fairplay", "playready", "none")
+# Fixed order: a DRM type keeps its position and colour (series index) in every chart; ``no_drm_activity`` is muted.
+DRM_TYPE_ORDER = ("widevine", "fairplay", "playready", "no_drm_activity")
 UNKNOWN_DRM_RANK = len(DRM_TYPE_ORDER)
 TOP_ERROR_CODES = 6  # top 5 codes plus "other"
 
@@ -67,13 +67,15 @@ def ordered_drm_types(rows: Sequence[FunnelRow]) -> list[str]:
 
 
 def drm_type_label(bucket: str) -> str:
-    """Display label for a DRM bucket (``widevine -> Widevine``)."""
+    """Display label for a DRM bucket (``widevine -> Widevine``, ``no_drm_activity -> No DRM activity``)."""
+    if bucket == "no_drm_activity":
+        return "No DRM activity"
     return bucket.capitalize()
 
 
 def drm_type_colour(bucket: str, theme: ChartTheme = DARK) -> str:
-    """Fixed colour per DRM type: the series palette by order index; ``none`` and unknown buckets are muted."""
-    if bucket in DRM_TYPE_ORDER and bucket != "none" and DRM_TYPE_ORDER.index(bucket) < len(theme.series):
+    """Fixed colour per DRM type: the series palette by order index; ``no_drm_activity`` and unknown buckets are muted."""
+    if bucket in DRM_TYPE_ORDER and bucket != "no_drm_activity" and DRM_TYPE_ORDER.index(bucket) < len(theme.series):
         return theme.series[DRM_TYPE_ORDER.index(bucket)]
     return theme.muted
 
