@@ -100,6 +100,70 @@ not exposed.
 
 ---
 
+## MDRM-2c — Error-code split
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/lib/drm_funnel.py` — add an `error_code` field (first code per session, same rule as `error_group`) to `FunnelRow`; `scripts/analyze_drm_funnel.py` — new markdown
+  tables and the CSV column; extend `tests/test_drm_funnel.py` and `tests/test_analyze_drm_funnel.py`.
+
+**What to implement:**
+1. Carry the exact first error code (6001, 1003, 3016, E31012 and so on) alongside `error_group`; `none` when the session has no error. The CSV gains an `error_code` column.
+2. Markdown "Ended in error by code": one row per code with sessions, share of errored sessions and the license outcome split (success, retry_then_success, failed, no_request) as counts and shares.
+3. Replace the loose 3016 sentence with a table: for each of 3014, 3015 and 3016, sessions by license outcome with counts and shares, plus a one-line reading ("most 3016 sessions had a successful
+   license").
+4. State in the markdown that each session is counted under its first error code only.
+
+**Tests (no network, no real external services):**
+- `test_error_code_counts_sum_to_errored_sessions`.
+- `test_3016_table_splits_by_license_outcome`.
+
+**Commit:** `feat(ctap-smvod): split funnel errors by code and license outcome`
+
+---
+
+## MDRM-2d — 3014/3015/3016 sub-categories
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/lib/drm_funnel_subcategory.py` — pure join of funnel sessions to the sub-category from `classify_3016_subcategory.py`; `scripts/analyze_drm_funnel.py` — read the
+  flat events, merge and position report (as `run_3016_subcategory_report.py` does) and add the section; `tests/test_drm_funnel_subcategory.py`.
+
+**What to implement:**
+1. Reuse the existing classifier and `build_events`; do not copy its rules. A missing position report warns and leaves the affected sessions in the classifier's own fallback bucket, as the
+   sub-category report does.
+2. Markdown "3014/3015/3016 by sub-category": sub-category by license outcome, with counts and shares; sessions without a 3014/3015/3016 error are not included.
+3. Reconcile: the sessions listed equal the 3014/3015/3016 sessions in the MDRM-2c table.
+
+**Tests (no network, no real external services):**
+- `test_subcategory_by_license_outcome_for_sample_sessions`.
+- `test_subcategory_sessions_reconcile_to_3016_table`.
+
+**Commit:** `feat(ctap-smvod): split 3016-family errors by sub-category in the funnel`
+
+---
+
+## MDRM-2e — Pie chart and error-mix charts
+
+**Files to change / create:**
+- `src/lib/charts/pie.py` — `render_pie`; `src/lib/charts/__init__.py` exports if the package does; the chart tests next to `render_bar`; `docs/guides/chart-guidelines.md`; root `CONTEXT.md` "What
+  Exists".
+- `investigations/ctap-smvod/scripts/lib/drm_funnel_charts.py` — pure series builders; `scripts/analyze_drm_funnel.py` — render and embed; `tests/test_drm_funnel_charts.py`.
+
+**What to implement:**
+1. `render_pie(labels, values, *, title, subtitle="", donut=True, max_slices=6, theme=DARK) -> bytes`: slices beyond `max_slices - 1` merge into `other`; colours come from the MDRM-2a theme palette,
+   no hex literal outside `theme.py`; every slice is labelled with value and share. Validate input and raise `ChartError`, wrapping any drawing failure, like `render_bar`; no `pyplot`.
+2. Two funnel charts per OpCo and date, written with `write_chart_png` to `output/<OPCO>/charts/<date>_drm_funnel_error_codes.png` and `..._3016_subcategory.png`: errored sessions by code (top 5 plus
+   other) and 3014/3015/3016 sessions by sub-category.
+3. Embed both in the funnel markdown with relative links. A `ChartError` is logged, the link is left out, and the CSV and markdown are still written.
+
+**Tests (no network, no real external services):**
+- `test_render_pie_returns_png_and_merges_small_slices_into_other`.
+- `test_invalid_pie_input_raises_chart_error`.
+- `test_error_mix_series_reconcile_to_errored_sessions`.
+
+**Commit:** `feat(charts): add pie chart and chart the funnel error mix`
+
+---
+
 ## MDRM-3 — License-chain quality
 
 **Files to change / create:**
