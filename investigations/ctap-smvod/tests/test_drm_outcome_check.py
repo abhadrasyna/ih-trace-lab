@@ -38,3 +38,13 @@ def test_drm_only_and_blank_outcomes_are_labelled_not_guessed() -> None:
     sessions = [_cs("a", SOURCE_DRM_ONLY), _cs("b"), _cs("c")]
     result = mod.tabulate_playback_outcome(sessions, {}, "no_request")
     assert result == {mod.NO_MERGE_OUTCOME: 1, mod.BLANK_OUTCOME: 2}
+
+
+def test_sample_session_ids_filters_cell_and_group_and_limits() -> None:
+    sessions = [_cs("c"), _cs("a"), _cs("b"), _cs("x", lic="success"), _cs("e", code="1001")]
+    outcomes = {"a": "EBVS", "b": "missing", "c": "missing"}
+    got = mod.sample_session_ids(sessions, outcomes, "no_request", group_prefix="missing", limit=1)
+    assert got == ["b"]
+    assert mod.sample_session_ids(sessions, outcomes, "no_request", group_prefix="nothing") == []
+    with pytest.raises(ValueError, match="limit"):
+        mod.sample_session_ids(sessions, outcomes, "no_request", limit=-3)

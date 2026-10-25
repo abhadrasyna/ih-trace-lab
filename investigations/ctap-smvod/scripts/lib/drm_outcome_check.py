@@ -52,3 +52,22 @@ def tabulate_playback_outcome(
         if s.license_outcome == license_outcome and (s.error_code or NO_ERROR) == error_code:
             counts[playback_outcome_of(s, outcome_by_session)] += 1
     return counts
+
+
+def sample_session_ids(
+    sessions: Sequence[ClassifiedSession],
+    outcome_by_session: Mapping[str, str],
+    license_outcome: str,
+    error_code: str = NO_ERROR,
+    group_prefix: str = "",
+    limit: int = 5,
+) -> list[str]:
+    """First ``limit`` session ids (sorted) in the cell whose group label starts with ``group_prefix``."""
+    if limit < 1:
+        raise ValueError(f"limit must be >= 1, got {limit}")
+    ids = sorted(
+        s.session_id for s in sessions
+        if s.license_outcome == license_outcome and (s.error_code or NO_ERROR) == error_code
+        and playback_outcome_of(s, outcome_by_session).startswith(group_prefix)
+    )
+    return ids[:limit]

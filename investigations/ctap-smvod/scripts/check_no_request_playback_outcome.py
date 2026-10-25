@@ -22,7 +22,7 @@ from analyze_drm_funnel import (
 )
 from lib.drm_exports import read_lrm, read_mdrmfe
 from lib.drm_funnel import NO_ERROR, NO_REQUEST, classify_sessions
-from lib.drm_outcome_check import outcome_map, tabulate_playback_outcome
+from lib.drm_outcome_check import outcome_map, sample_session_ids, tabulate_playback_outcome
 
 
 def render_table(
@@ -38,7 +38,7 @@ def render_table(
 
 def run(
     opco: str, date: str, base: Path, drm_dir: Path, license_outcome: str, error_code: str,
-    group_by: list[str] | None = None,
+    group_by: list[str] | None = None, sample: int = 0, group_value: str = "",
 ) -> str:
     opco_dir = base / opco
     merge_path = opco_dir / f"{date}_setupsession_with_outcome.csv"
@@ -52,6 +52,11 @@ def run(
     require_exports(drm_dir, date)
     flat = flat_error_pairs(load_flat_rows(opco_dir / "error_eventdata_flat" / f"{date}_all.csv"))
     classified = classify_sessions(sessions, read_mdrmfe(drm_dir, date), read_lrm(drm_dir, date), flat)
+    if sample:
+        ids = sample_session_ids(classified, outcome_by_session, license_outcome, error_code, group_value, sample)
+        if not ids:
+            raise ValueError(f"no sessions in the cell with group starting {group_value!r}")
+        return "\n".join(ids)
     counts = tabulate_playback_outcome(classified, outcome_by_session, license_outcome, error_code)
     if not counts:
         raise ValueError(f"no sessions with license_outcome={license_outcome}, error={error_code}")
@@ -68,7 +73,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--group-by", nargs="+", default=["playback_outcome"], metavar="COLUMN",
                     help="merge column(s) to tabulate, e.g. playback_outcome outcome_match_status")
     ap.add_argument("--error", default=NO_ERROR, help="first error code to inspect ('no_error' = none)")
-    return ap.parse_args(argv)
+    ap.add_argument("--sample", type=int, default=0, metavar="N",
+                    help="instead of the table, print N (>=1) sorted sessionIds from the cell (see --group-value)")
+    ap.add_argument("--group-value", default="", help="with --sample: only groups whose label starts with this text")
+    args = ap.parse_args(argv)
+    if args.sample < 0:
+        ap.error("--sample must be >= 1")
+    if args.group_value and not args.sample:
+        ap.error("--group-value requires --sample")
+    return args
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -79,7 +92,7 @@ def main(argv: list[str] | None = None) -> None:
     init_logging("ctap-smvod-check_no_request_playback_outcome")
     args = parse_args(argv)
     print(run(args.opco, args.date, args.base, args.drm_dir or DEFAULT_DRM_BASE / args.opco,
-              args.license_outcome, args.error, args.group_by))
+              args.license_outcome, args.error, args.group_by, args.sample, args.group_value))
 
 
 if __name__ == "__main__":
