@@ -98,11 +98,16 @@ def draw_header(
     theme: ChartTheme,
     family: str,
     budget_in: float = ROW_WIDTH_BUDGET_IN,
+    y_shift: float = 0.0,
 ) -> list[list[HeaderCell]]:
-    """Draws the cells on ``fig`` and returns the packed rows; build ``fig`` with ``header_figure_height``."""
+    """Draws the cells on ``fig`` and returns the packed rows; build ``fig`` with ``header_figure_height``.
+
+    ``y_shift`` moves the header down (figure fraction) so it can sit under a title block.
+    """
     rows = pack_cells(cells, budget_in)
     label_ys = (ROW_LABEL_Y_ONE,) if len(rows) == 1 else ROW_LABEL_Y_TWO
     for row, label_y in zip(rows, label_ys, strict=False):
+        label_y -= y_shift
         for cell, x in zip(row, cell_x_positions(row), strict=False):
             fig.text(x, label_y, cell.label, color=theme.muted, fontsize=LABEL_FONT_SIZE, family=family, va="top")
             fig.text(

@@ -51,6 +51,14 @@ def test_tone_uses_theme_colours():
     assert not re.search(r"#[0-9a-fA-F]{6}", Path(header.__file__).read_text())
 
 
+def test_draw_header_y_shift_moves_cells_down():
+    fig = new_figure(DARK, TWO_ROW_HEIGHT)
+    draw_header(fig, _cells(2), DARK, chart_font_family())
+    draw_header(fig, _cells(2), DARK, chart_font_family(), y_shift=0.1)
+    plain, shifted = fig.texts[:4], fig.texts[4:]
+    assert [t.get_position()[1] - s.get_position()[1] for t, s in zip(plain, shifted, strict=True)] == pytest.approx([0.1] * 4)
+
+
 def test_draw_header_renders_rows_and_height():
     cells = _cells(6, value="1,234,567,890 sessions")
     rows = pack_cells(cells)

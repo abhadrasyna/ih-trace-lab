@@ -19,6 +19,7 @@ from lib.drm_funnel import (
     FunnelRow,
     stage_totals,
 )
+from lib.funnel_stages_chart import render_stages_chart
 
 from src.lib.charts.axes import format_count
 from src.lib.charts.pie import merge_small_slices, render_pie
@@ -55,6 +56,7 @@ class ChartSpec:
     bar_colours: list[str] | None = None
     normalize: bool = False
     legend: str = "auto"
+    stage_totals: dict[str, int] | None = None
 
 def ordered_drm_types(rows: Sequence[FunnelRow]) -> list[str]:
     """DRM buckets present in ``rows`` in the fixed funnel order; unknown buckets sort last, alphabetically."""
@@ -152,7 +154,7 @@ def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow], *, absolu
     sub_labels, sub_s = subcategory_series(rows)
     specs = [
         ChartSpec("stages", "DRM funnel stages", sub, stage_labels, stage_s, horizontal=True,
-                  total=t["sessions"]),
+                  total=t["sessions"], stage_totals=t),
         ChartSpec("drm_split", "Sessions by DRM type", sub, split_labels, split_s, total=t["sessions"],
                   bar_colours=split_bar_colours(rows, split_s)),
         ChartSpec("license_outcome", "License outcome per DRM type",
@@ -173,6 +175,8 @@ def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow], *, absolu
 
 
 def render_chart(spec: ChartSpec) -> bytes:
+    if spec.stage_totals is not None:
+        return render_stages_chart(spec.stage_totals, title=spec.title, subtitle=spec.subtitle)
     if spec.pie:
         return render_pie(spec.labels, spec.series["sessions"], title=spec.title, subtitle=spec.subtitle)
     return render_stacked_bar(
