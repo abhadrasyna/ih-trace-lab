@@ -61,14 +61,17 @@ not exposed.
 
 **What to implement:**
 1. Status-code counts per export (mdrmfe, LRM, CDM) by DRM type and OpCo.
-2. The failing requests (mdrmfe `403`, LRM `400`): device, household, content, user agent, DRM type; check whether the same `fcId` fails at both layers.
+2. The failing requests (mdrmfe `403`, LRM `400`): device, household, content, user agent, DRM type; check whether the same `fcId` fails at both layers, and whether the same device, household or
+   session fails more than once (repeat failures).
 3. Requests per session and per household, and retries (several license calls on one session).
-4. `fcId` consistency: in mdrmfe but missing from LRM or CDM, and the reverse; `deviceId` mismatch between mdrmfe and LRM.
+4. `fcId` consistency: in mdrmfe but missing from LRM or CDM, and the reverse; `deviceId` mismatch between mdrmfe and LRM only (the CDM exports have no `deviceId` or `sessionId`, so a mismatch cannot
+   be checked against them).
 5. Duplicate `fcId` across numbered ZA parts, and a warning when a whole-day file coexists with parts (`export_paths` reads both without dedup).
 
 **Tests (no network, no real external services):**
 - `test_counts_failures_and_joins_by_fcid`.
 - `test_flags_duplicate_fcid_across_parts_and_missing_chain_rows`.
+- `test_repeat_failures_by_device_household_and_session`.
 
 **Commit:** `feat(ctap-smvod): add mDRM license-chain quality report`
 
@@ -80,14 +83,17 @@ not exposed.
 - `investigations/ctap-smvod/scripts/lib/drm_devices.py` and `scripts/analyze_mdrm_devices.py`; `investigations/ctap-smvod/tests/test_drm_devices.py`.
 
 **What to implement:**
-1. `brRef` distribution per DRM type, and Widevine `SecurityLevel` L1 against L3 with `brRef=LOW` (the policy finding in the guide).
-2. FairPlay device type and OS split from `FP_SPC_contents`, with failure rate; PlayReady listed separately.
+1. `brRef` distribution per DRM type, and Widevine `SecurityLevel` L1 against L3 with `brRef=LOW` (the policy finding in the guide). Size the HD loss: the number and share of Widevine requests and
+   sessions that are L1 but got `LOW`.
+2. FairPlay device type and OS split from `FP_SPC_contents`, with failure rate; PlayReady listed separately. FairPlay has no L1/L3 split, so `LOW` there is reported as the likely default, not a
+   downgrade, and is excluded from the HD-loss count.
 3. VOD against linear license outcome.
-4. Failing devices (make, model, level) and households ranked with a minimum-volume threshold (argument, default 5).
+4. Failing devices (make, model, level), households and `contentId`s ranked by failure count and failure rate with a minimum-volume threshold (argument, default 5).
 5. `brRef` across the dates that have exports (2026-10-21 to 2026-10-23) to show whether it is constant.
 
 **Tests (no network, no real external services):**
 - `test_l1_with_low_br_ref_is_flagged`.
+- `test_fairplay_low_is_excluded_from_hd_loss_count`.
 - `test_min_volume_threshold_hides_small_groups`.
 
 **Commit:** `feat(ctap-smvod): add mDRM device and policy report`
