@@ -108,13 +108,13 @@ def license_outcome(rows: Sequence[MdrmfeRow], lrm_status_by_fcid: dict[str, lis
     """
     if not rows:
         return NO_REQUEST
-    results = [_request_ok(r, lrm_status_by_fcid) for r in rows]
+    results = [request_ok(r, lrm_status_by_fcid) for r in rows]
     if all(results):
         return SUCCESS
     return RETRY_THEN_SUCCESS if results[-1] else FAILED
 
 
-def _request_ok(row: MdrmfeRow, lrm_status_by_fcid: dict[str, list[str]]) -> bool:
+def request_ok(row: MdrmfeRow, lrm_status_by_fcid: dict[str, list[str]]) -> bool:
     lrm = lrm_status_by_fcid.get(row.fcid, [])
     return row.status_code == MDRMFE_OK and bool(lrm) and all(s == LRM_OK for s in lrm)
 

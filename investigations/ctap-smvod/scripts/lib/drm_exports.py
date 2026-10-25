@@ -34,6 +34,8 @@ class MdrmfeRow:
     br_ref: str
     drm_type: str
     status_code: str
+    content_id: str = ""
+    user_agent: str = ""
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,7 @@ class CdmRow:
     model: str
     platform: str
     security_level: str
+    status_code: str = ""
 
 
 @dataclass(frozen=True)
@@ -102,6 +105,21 @@ def _read_kind(directory: Path, date: str, kind: str) -> list[dict[str, str]]:
     return [row for path in paths for row in _read_dicts(path, kind)]
 
 
+_FCID_COLUMN = {MDRMFE: "fcid"}
+
+
+def read_fcids_by_part(directory: Path, date: str, kind: str) -> dict[str, list[str]]:
+    """``fcId`` values per source file name (whole-day file and each ``_NN_`` part), for overlap checks."""
+    column = _FCID_COLUMN.get(kind, "fcId")
+    return {path.name: [_s(r, column) for r in _read_dicts(path, kind)] for path in export_paths(directory, date, kind)}
+
+
+def export_dates(directory: Path, kind: str = MDRMFE) -> list[str]:
+    """Dates (``YYYY-MM-DD``) that have a whole-day or part export of ``kind`` in ``directory``."""
+    dates = {p.name[:10] for p in directory.glob(f"20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]*_{kind}.csv")}
+    return sorted(dates)
+
+
 def _s(row: dict[str, str], key: str) -> str:
     return (row.get(key) or "").strip()
 
@@ -111,7 +129,7 @@ def read_mdrmfe(directory: Path, date: str) -> list[MdrmfeRow]:
         MdrmfeRow(
             _s(r, "drmAuthToken.sessionId"), _s(r, "fcid"), _s(r, "drmAuthToken.householdId"),
             _s(r, "drmAuthToken.deviceId"), _s(r, "drmAuthToken.brRef"), _s(r, "drmAuthToken.drmType"),
-            _s(r, "http.status_code"),
+            _s(r, "http.status_code"), _s(r, "request.contentId"), _s(r, "http.user_agent"),
         )
         for r in _read_kind(directory, date, MDRMFE)
     ]
@@ -140,15 +158,17 @@ def read_cdm(directory: Path, date: str) -> list[CdmRow]:
         for r in _read_kind(directory, date, kind):
             if kind == WIDEVINE:
                 rows.append(CdmRow(_s(r, "fcId"), scheme, _s(r, "drmInfo.Make"), _s(r, "drmInfo.Model"),
-                                   _s(r, "drmInfo.Platform"), _s(r, "drmInfo.SecurityLevel")))
+                                   _s(r, "drmInfo.Platform"), _s(r, "drmInfo.SecurityLevel"),
+                                   _s(r, "http.status_code")))
             elif kind == PLAYREADY:
                 rows.append(CdmRow(_s(r, "fcId"), scheme, _s(r, "drmInfo.manufacturerName"),
-                                   _s(r, "drmInfo.modelName"), "", ""))
+                                   _s(r, "drmInfo.modelName"), "", "", _s(r, "http.status_code")))
             else:
                 dev = parse_fairplay_spc(r.get("FP_SPC_contents") or "")
                 if not dev.valid:
                     unparsed += 1
-                rows.append(CdmRow(_s(r, "fcId"), scheme, "Apple", dev.device_type, dev.os, dev.security_level))
+                rows.append(CdmRow(_s(r, "fcId"), scheme, "Apple", dev.device_type, dev.os, dev.security_level,
+                                   _s(r, "http.status_code")))
     if not found:
         raise FileNotFoundError(f"no CDM export (widevine/playready/fairplay) for {date} in {directory}")
     if unparsed:
