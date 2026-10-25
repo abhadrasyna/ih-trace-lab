@@ -3,12 +3,12 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: CA-1, CA-2, CA-3, CA-4.**
+**Open: none — all four tasks done (2026-10-25).**
 
-- [ ] **CA-1** — shared `draw_title` helper at the guide's 16/10 pt scale, used by bar, signed_line, stacked_bar, pie | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: —
-- [ ] **CA-2** — apply `format_count` to the value axis of `render_bar` and `render_stacked_bar` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: —
-- [ ] **CA-3** — align `chart-guidelines.md` and `CONTEXT.md` with the code; drop stale statements | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
-- [ ] **CA-4** — theme: `amber` status colour, `Tone.WARNING`, five-colour `series`, pie `max_slices` default 5 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: —
+- [x] **CA-1** — shared `draw_title` helper at 16/10 pt, used by every chart module | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: b0bada7
+- [x] **CA-2** — apply `format_count` to the value axis of `render_bar` and `render_stacked_bar` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: de913aa
+- [x] **CA-3** — align `chart-guidelines.md` and `CONTEXT.md` with the code; drop stale statements | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: d4d060f
+- [x] **CA-4** — theme: `amber` status colour, `Tone.WARNING`, five-colour `series`, pie `max_slices` default 5 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: 2c890f5
 
 ## Story done when
 
