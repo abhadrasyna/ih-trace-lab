@@ -55,3 +55,31 @@ Only the ZA tenant is covered. The US queries are filtered to the mDRM-internal 
 
 `fcid 6ADCA78ABAA1B5290003C530` → `sessionId abr-vod-21f5d080-e427-453f-aa09-edbbabd92a4e`, `deviceId 684b86fc…ac32b`, user agent Android "K" with Samsung Browser, `brRef=LOW`, status 201 → US
 Widevine span: Samsung a05s, `PHONE`, `ANDROID`, `L1`, status 200. The reduced user agent hid the model; the CDM data resolved it.
+
+## Attributes worth adding
+
+The 2026-10-23 exports carry no timestamps, no error bodies and no `deviceId` on the CDM side, which limits what `analyze_mdrm_quality.py` and `analyze_mdrm_devices.py` can say. Add these to the
+notebook charts the next time they are edited:
+
+| Attribute | Reason |
+|---|---|
+| Span start timestamp and duration (all five charts) | Enables latency, time-of-day clustering of the `403`/`400` failures and token-to-license delay; row order stands in for time today. |
+| Response or error body (`403` on `go-mdrmfe`, `400` on LRM) | The 29 failures have no reason text; the analysis can say who failed, not why. |
+| `deviceId` on the CDM exports (Widevine, FairPlay, PlayReady) | The chain check compares `deviceId` between mdrmfe and LRM only; CDM rows can be matched by `fcId` alone. |
+| `sessionId` on the LRM and CDM exports | Lets a failing license span be tied to a session without the mdrmfe hop. |
+| The token claims behind `brRef` (policy or entitlement claims in `drmAuthToken`) | `brRef=LOW` on every request is a finding; the claim that sets it is the next question. |
+| A PlayReady security level (for example `SL2000` / `SL3000`) | PlayReady has none in the export, so an HD-loss check like Widevine's is not possible. |
+
+## 2026-10-23 sample findings
+
+Produced by `analyze_drm_funnel.py`, `analyze_mdrm_quality.py` and `analyze_mdrm_devices.py` for ZA, GH and ZM (the reports live in `output/<OPCO>/`):
+
+- **`brRef` is `LOW` on all 3,343 requests** (ZA 2,614, GH 563, ZM 166), and on every one of the three dates 2026-10-21 to 2026-10-23 for each OpCo. It never varies, so it carries no per-device
+  information.
+- **HD loss on Widevine:** L1 devices that got `LOW` are 54.3% of Widevine requests in ZA (1,136 of 2,093), 44.1% in GH (199 of 451) and 18.1% in ZM (25 of 138). FairPlay and PlayReady are excluded,
+  as they have no L1/L3 split.
+- **29 failing requests, all matched across layers:** ZA 15 and GH 14 are an mdrmfe `403` with an LRM `400` on the same `fcId`; ZM has none. In ZA, 12 of the 15 sit on two devices and households with
+  6 failures each, and HUAWEI L1 devices failed 12 of 12 requests. In GH one device accounts for 9 of the 14.
+- **DRM mix of sessions (ZA):** 2,091 Widevine, 228 FairPlay, 9 PlayReady and 2,024 with no license request, against 4,352 sessions in total.
+- **Sessions only in the mDRM exports (`drm_only`):** ZA 8, GH 125 (13.7%) and ZM 14 (9.5%); they are counted in the funnel and marked in the `source` column.
+- **`fcId` chain (ZA):** 13 mdrmfe `201` rows have no LRM row and 17 have no CDM row; no `deviceId` differs between mdrmfe and LRM. No `fcId` repeats across the numbered part files.
