@@ -47,6 +47,7 @@ def test_tone_uses_theme_colours():
     assert tone_colour(Tone.NEGATIVE, DARK) == DARK.red
     assert tone_colour(Tone.NEUTRAL, DARK) == DARK.ink
     assert tone_colour(Tone.MUTED, DARK) == DARK.muted
+    assert tone_colour(Tone.WARNING, DARK) == DARK.amber
     assert not re.search(r"#[0-9a-fA-F]{6}", Path(header.__file__).read_text())
 
 
@@ -59,3 +60,7 @@ def test_draw_header_renders_rows_and_height():
     assert draw_header(fig, cells, DARK, chart_font_family()) == rows
     assert len(fig.texts) == 12
     assert render_png(fig, DARK).startswith(b"\x89PNG")
+
+
+def test_warning_tone_uses_amber():
+    assert tone_colour(Tone.WARNING, DARK) == DARK.amber

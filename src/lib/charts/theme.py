@@ -29,9 +29,10 @@ class ChartTheme:
     faint: str
     green: str
     red: str
+    amber: str
     fill_alpha_green: float
     fill_alpha_red: float
-    # Ordered, distinguishable on ``bg``; ``green`` and ``red`` stay reserved for good/bad meaning.
+    # Ordered, distinguishable on ``bg``; ``green``, ``red`` and ``amber`` stay reserved for status meaning.
     series: tuple[str, ...] = ()
 
 
@@ -42,9 +43,10 @@ DARK = ChartTheme(
     faint="#1f2937",
     green="#26b3a0",
     red="#ef5350",
+    amber="#f59e0b",
     fill_alpha_green=0.22,
     fill_alpha_red=0.14,
-    series=("#60a5fa", "#f59e0b", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
+    series=("#60a5fa", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
 )
 
 

@@ -52,7 +52,7 @@ def render_pie(
     title: str,
     subtitle: str = "",
     donut: bool = True,
-    max_slices: int = 6,
+    max_slices: int = 5,
     theme: ChartTheme = DARK,
 ) -> bytes:
     """Renders a pie (or donut) to PNG bytes; raises ``ChartError`` on bad input or any drawing failure.

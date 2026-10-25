@@ -18,9 +18,10 @@ def test_dark_tokens_match_guide() -> None:
         faint="#1f2937",
         green="#26b3a0",
         red="#ef5350",
+        amber="#f59e0b",
         fill_alpha_green=0.22,
         fill_alpha_red=0.14,
-        series=("#60a5fa", "#f59e0b", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
+        series=("#60a5fa", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
     ) == DARK
 
 
@@ -39,3 +40,12 @@ def test_font_falls_back_when_missing(tmp_path: Path, caplog: pytest.LogCaptureF
         family = theme._resolve_family(tmp_path / "no-such-dir")
     assert family == FALLBACK_FONT_FAMILY
     assert "falling back" in caplog.text
+
+
+def test_amber_token_not_in_series() -> None:
+    assert DARK.amber == "#f59e0b" and DARK.amber not in DARK.series
+
+
+def test_series_has_no_status_colour() -> None:
+    assert not {DARK.green, DARK.red, DARK.amber} & set(DARK.series)
+    assert len(DARK.series) == 5

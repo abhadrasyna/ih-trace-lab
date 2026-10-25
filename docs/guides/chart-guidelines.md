@@ -31,14 +31,12 @@ Dark-only; there is no light variant. Once a shared `ChartTheme` exists, every c
 | `faint` | `#1f2937` | Grid, spines, secondary vertical guides |
 | `green` | `#26b3a0` | Good / positive series |
 | `red` | `#ef5350` | Bad / negative series (errors, failures) |
-| `series[0..5]` | `#60a5fa`, `#f59e0b`, `#a78bfa`, `#f472b6`, `#94a3b8`, `#d4a373` | Ordered palette for multi-series charts (blue, amber, violet, pink, slate, sand); `ChartTheme.series` |
+| `amber` | `#f59e0b` | Warning: retries, non-fatal or degraded states (`Tone.WARNING`) |
+| `series[0..4]` | `#60a5fa`, `#a78bfa`, `#f472b6`, `#94a3b8`, `#d4a373` | Ordered palette for multi-series charts (blue, violet, pink, slate, sand); `ChartTheme.series` |
 
-`green` and `red` are reserved for success and failure: they never appear in `series`, and a multi-series chart gets them only by mapping a series to them explicitly (for example
-`render_stacked_bar`'s `colours={"success": "green", "failed": "red"}`). Any other series takes the palette in order, cycling after six; a chart with more segments than it can label needs a legend.
-
-**Merged standard, pending in code (story `chart-guide-code-alignment`, task CA-4):** add `amber` `#f59e0b` as a third status colour (warning, retries, non-fatal or degraded states) with a
-`Tone.WARNING` header tone; `green`, `red` and `amber` are all reserved for status and none appears in `series`. `series` then becomes five colours (blue, violet, pink, slate, sand), so `render_pie`
-defaults to `max_slices=5` (four categories plus `other`). Until CA-4 lands, the table above is what the code does and `series[1]` is still amber.
+`green`, `red` and `amber` are reserved for status (good, bad, warning): they never appear in `series`, and a multi-series chart gets them only by mapping a series to them explicitly (for example
+`render_stacked_bar`'s `colours={"success": "green", "failed": "red", "retried": "amber"}`). Any other series takes the palette in order, cycling after five; a chart with more segments than it can
+label needs a legend. `render_pie` defaults to `max_slices=5` (four categories plus `other`) and rejects more than the palette size.
 
 Colour rules:
 - Assign each recurring category one fixed colour across every chart of a report (e.g. a DRM type keeps its colour), so colours do not drift across an executive deck.
@@ -107,7 +105,7 @@ Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, spl
 labelled with its value, plus its share when `total` is given. A legend appears only when a segment is too small to label. Input that is empty, unequal in length, negative or non-finite raises
 `ChartError`.
 
-`render_pie(labels, values, *, title, subtitle="", donut=True, max_slices=6, theme=DARK)` draws a donut (a full pie with `donut=False`) and a legend below it. Slices beyond `max_slices - 1` merge into
+`render_pie(labels, values, *, title, subtitle="", donut=True, max_slices=5, theme=DARK)` draws a donut (a full pie with `donut=False`) and a legend below it. Slices beyond `max_slices - 1` merge into
 a muted `other` slice. Use it only for a handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty,
 unequal, negative or non-finite input raises `ChartError`.
 

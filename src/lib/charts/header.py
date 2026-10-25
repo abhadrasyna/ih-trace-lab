@@ -32,6 +32,7 @@ LEFT_X = 0.13
 class Tone(str, Enum):
     POSITIVE = "positive"
     NEGATIVE = "negative"
+    WARNING = "warning"
     NEUTRAL = "neutral"
     MUTED = "muted"
 
@@ -48,6 +49,7 @@ def tone_colour(tone: Tone, theme: ChartTheme) -> str:
     return {
         Tone.POSITIVE: theme.green,
         Tone.NEGATIVE: theme.red,
+        Tone.WARNING: theme.amber,
         Tone.NEUTRAL: theme.ink,
         Tone.MUTED: theme.muted,
     }[tone]

@@ -25,14 +25,28 @@ def test_few_slices_are_not_merged_and_zero_slices_render():
     [
         ([], [], 6),
         (["a", "b"], [1], 6),
-        (["a", "b"], [1, -1], 6),
-        (["a", "b"], [1, float("nan")], 6),
-        (["a", "b"], [1, "2"], 6),
-        (["a", "b"], [0, 0], 6),
+        (["a", "b"], [1, -1], 5),
+        (["a", "b"], [1, float("nan")], 5),
+        (["a", "b"], [1, "2"], 5),
+        (["a", "b"], [0, 0], 5),
         (["a", "b"], [1, 2], 1),
-        (["a", "b"], [1, 2], 7),
+        (["a", "b"], [1, 2], 6),
     ],
 )
 def test_invalid_pie_input_raises_chart_error(labels, values, max_slices):
     with pytest.raises(ChartError):
         render_pie(labels, values, title="t", max_slices=max_slices)
+
+
+def test_pie_default_max_slices_fits_palette():
+    import inspect
+
+    from src.lib.charts.theme import DARK
+
+    assert inspect.signature(render_pie).parameters["max_slices"].default == len(DARK.series) == 5
+    assert render_pie([str(i) for i in range(8)], list(range(1, 9)), title="t").startswith(b"\x89PNG")
+
+
+def test_pie_rejects_max_slices_above_palette():
+    with pytest.raises(ChartError):
+        render_pie(["a", "b"], [1, 2], title="t", max_slices=6)

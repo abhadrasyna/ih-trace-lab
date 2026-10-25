@@ -14,7 +14,7 @@ from src.lib.charts.title import draw_title
 
 logger = logging.getLogger(__name__)
 
-COLOUR_TOKENS = ("ink", "muted", "faint", "green", "red")
+COLOUR_TOKENS = ("ink", "muted", "faint", "green", "red", "amber")
 # A segment narrower than this share of the longest stack is too small to carry its own label.
 MIN_LABEL_SHARE = 0.05
 

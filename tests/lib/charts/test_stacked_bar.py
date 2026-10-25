@@ -42,7 +42,7 @@ def test_series_colours_come_from_theme_palette():
     assert series_colours(["a", "b", "c"], None, DARK) == list(DARK.series[:3])
     mapped = series_colours(["ok", "bad", "x"], {"ok": "green", "bad": "red"}, DARK)
     assert mapped == [DARK.green, DARK.red, DARK.series[2]]
-    assert DARK.green not in DARK.series and DARK.red not in DARK.series
+    assert DARK.amber not in DARK.series and DARK.green not in DARK.series and DARK.red not in DARK.series
     with pytest.raises(ChartError):
         series_colours(["a"], {"a": "#ffffff"}, DARK)
 
@@ -61,3 +61,7 @@ def test_stacked_bar_axis_labels_abbreviated(monkeypatch, horizontal):
     ax = figs[0].axes[0]
     labels = [t.get_text() for t in (ax.get_xticklabels() if horizontal else ax.get_yticklabels())]
     assert "2k" in labels and not any(re.fullmatch(r"\d{4,}", t) for t in labels)
+
+
+def test_amber_colour_token_is_accepted():
+    assert series_colours(["w"], {"w": "amber"}, DARK) == [DARK.amber]
