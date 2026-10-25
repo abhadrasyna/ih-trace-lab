@@ -284,6 +284,18 @@ The events row count must equal the day's 3014/3015/3016 rows in the flat file, 
 
 No automatic pattern verdict is produced; analyse the events CSV. Segment URLs exist only on 3014/3015 events.
 
+## 7e. mDRM funnel and reports (`analyze_drm_funnel.py`, `analyze_mdrm_quality.py`, `analyze_mdrm_devices.py`)
+
+All three read the hand-saved mDRM exports (`docs/lightstep-drm-exports.md`) from `data/lightstep/<OPCO>/` (or `--drm-dir`) and write to `output/<OPCO>/`; no Athena or Lightstep calls.
+
+```bash
+python3 analyze_drm_funnel.py --opco ZA --date 2026-10-23     # <date>_drm_funnel.{csv,md} + charts/; run_pipeline.py Step 6i (--skip-drm-funnel, --drm-dir)
+python3 analyze_mdrm_quality.py --opco ZA --date 2026-10-23   # <date>_mdrm_quality.md + <date>_mdrm_quality_failures.csv (statuses, failing fcIds, retries, fcId chain, part overlap)
+python3 analyze_mdrm_devices.py --opco ZA --date 2026-10-23 [--min-volume 5]  # <date>_mdrm_devices.md + Widevine level/brRef chart
+```
+
+Step 6i is skipped when the mdrmfe or LRM export is missing for the date. The funnel needs `<date>_setupsession_with_outcome.csv` (Step 5) in `output/<OPCO>/`.
+
 ## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
 
 `extract_session_ids.py`, `extract_session_timeline.py`, `flatten_debug_events.py`, `build_debug_completeness_query.py`, `parse_debug_user_agents.py`, `analyze_debug_sample.py`,

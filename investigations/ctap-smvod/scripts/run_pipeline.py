@@ -15,6 +15,7 @@ hand. Runs, in order:
     Step 6f run_athena_error_eventdata.py  -- raw PLAYER_ERROR eventdata export (optional, --skip-error-eventdata)
     Step 6g flatten_error_eventdata.py     -- flat + per-error-code CSVs        (optional, --skip-error-eventdata)
     Step 6h run_3016_subcategory_report.py -- 3014/3015/3016 sub-category summary + events CSVs (optional, --skip-subcategory-3016; also skipped by --skip-error-eventdata; --drm adds mDRM device columns + summary)
+    Step 6i analyze_drm_funnel.py          -- DRM session funnel CSV + markdown (optional, --skip-drm-funnel; also skipped when no mDRM exports exist for the date in --drm-dir or data/lightstep/<TENANT>/)
 
 Note: extract_position_report.py's --only-not-moved now defaults to on
 (see its own docstring / BLUEPRINT.md Step 6b) -- pass --full-position-report
@@ -81,8 +82,10 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
+from lib.drm_exports import LRM, MDRMFE, export_paths
 from lib.runtime import investigation_data_dir, investigation_output_dir, snapshot_output_path
 from lib.tenant_context import discover_tenants, require_lightstep_dir, resolve_tenant_context
 from src.lib.logging.bootstrap import init_logging
@@ -149,6 +152,12 @@ def _step6f_output_path(date_ddmmyyyy: str, tenant: str) -> str:
     return os.path.join(_tenant_dirs(tenant)["athena"], f"{_ddmmyyyy_to_iso(date_ddmmyyyy)}_error_eventdata.csv")
 
 
+def _drm_exports_present(drm_dir: str, date_iso: str) -> bool:
+    """True when both the mdrmfe and LRM exports (whole-day or parts) exist, the funnel's required inputs."""
+    folder = Path(drm_dir)
+    return all(export_paths(folder, date_iso, kind) for kind in (MDRMFE, LRM))
+
+
 def _build_steps(args, date_iso: str, tenant: str):
     """Returns the ordered list of (step_label, command_list, skip) tuples
     for one tenant's pipeline run, given parsed CLI `args`."""
@@ -176,6 +185,7 @@ def _build_steps(args, date_iso: str, tenant: str):
     step6f_path = _step6f_output_path(args.date, tenant)
     skip3_existing = args.skip_if_exists and os.path.exists(step3_path)
     skip4_existing = args.skip_if_exists and os.path.exists(step4_path)
+    drm_present = _drm_exports_present(args.drm_dir or lightstep_dir, date_iso)
 
     step3_label = "Step 3 - Athena playback outcome (run_athena_playback_outcome.py)"
     if skip3_existing:
@@ -251,6 +261,13 @@ def _build_steps(args, date_iso: str, tenant: str):
              "--date", date_iso, "--base", os.path.dirname(output_dir)]
             + (["--drm"] if args.drm else []),
             args.skip_subcategory_3016 or args.skip_error_eventdata,
+        ),
+        (
+            "Step 6i - DRM session funnel (analyze_drm_funnel.py)" + ("" if drm_present else " [skipped: no mDRM exports]"),
+            [py, os.path.join(SCRIPT_DIR, "analyze_drm_funnel.py"), "--opco", tenant,
+             "--date", date_iso, "--base", os.path.dirname(output_dir)]
+            + (["--drm-dir", args.drm_dir] if args.drm_dir else []),
+            args.skip_drm_funnel or not drm_present,
         ),
     ]
     return steps
@@ -328,6 +345,10 @@ def main():
                      help="Skip Steps 6f/6g (raw PLAYER_ERROR eventdata export + flatten)")
     ap.add_argument("--skip-subcategory-3016", action="store_true",
                      help="Skip Step 6h (3014/3015/3016 sub-category summary + events CSVs)")
+    ap.add_argument("--skip-drm-funnel", action="store_true",
+                     help="Skip Step 6i (DRM session funnel); it is also skipped when no mDRM exports exist for the date")
+    ap.add_argument("--drm-dir", default=None,
+                     help="Step 6i: folder with the saved mDRM exports (default data/lightstep/<TENANT>/)")
     ap.add_argument("--drm", action="store_true",
                      help="Step 6h: add mDRM device columns + device summary; needs the saved Lightstep "
                           "exports in data/lightstep/<TENANT>/ (docs/lightstep-drm-exports.md)")
@@ -345,6 +366,9 @@ def main():
         help="Print the commands that would run, in order, and exit -- no "
              "filesystem/Athena/network access")
     args = ap.parse_args()
+    if args.drm_dir and not args.tenant:
+        # Export names carry no tenant, so one folder would be reused for every tenant.
+        ap.error("--drm-dir requires --tenant")
 
     try:
         date_iso = _ddmmyyyy_to_iso(args.date)

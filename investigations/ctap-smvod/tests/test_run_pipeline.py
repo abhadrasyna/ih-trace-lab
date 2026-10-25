@@ -32,6 +32,8 @@ class _Args:
     skip_step6e = False
     skip_error_eventdata = False
     skip_subcategory_3016 = False
+    skip_drm_funnel = False
+    drm_dir = None
     drm = False
     full_position_report = False
     dry_run = False
@@ -124,7 +126,7 @@ def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -
     athena_dir = str(tenant_root / "data" / "athena" / "ZM")
     out = tenant_root / "output" / "ZM"
 
-    fetch, flatten = steps[-3], steps[-2]
+    fetch, flatten = steps[-4], steps[-3]
     assert fetch[0].startswith("Step 6f") and fetch[1][1].endswith("run_athena_error_eventdata.py")
     assert ["--tenant", "ZM", "--output-dir", athena_dir] == fetch[1][-4:]
     assert flatten[0].startswith("Step 6g") and flatten[1][1].endswith("flatten_error_eventdata.py")
@@ -136,7 +138,7 @@ def test_build_steps_adds_error_eventdata_fetch_and_flatten(tenant_root: Path) -
 
 def test_build_steps_skip_error_eventdata_skips_both(tenant_root: Path) -> None:
     steps = run_pipeline._build_steps(_args(skip_error_eventdata=True), "2026-09-30", "ZM")
-    assert steps[-3][2] is True and steps[-2][2] is True and steps[-1][2] is True
+    assert steps[-4][2] is True and steps[-3][2] is True and steps[-2][2] is True
 
 
 def test_build_steps_forwards_force_to_athena_steps(tenant_root: Path) -> None:
@@ -254,16 +256,52 @@ def test_no_tenant_input_fails_loudly(
     assert "No tenant has Lightstep input for 2026-09-30" in capsys.readouterr().err
 
 
+def _step(prefix: str, args: _Args, tenant: str) -> tuple:
+    return next(s for s in run_pipeline._build_steps(args, "2026-09-30", tenant) if s[0].startswith(prefix))
+
+
 def test_build_steps_adds_subcategory_report_and_can_skip(tenant_root: Path) -> None:
     out = tenant_root / "output" / "ZM"
-    step = run_pipeline._build_steps(_args(), "2026-09-30", "ZM")[-1]
+    step = _step("Step 6h", _args(), "ZM")
     assert step[0].startswith("Step 6h") and step[1][1].endswith("run_3016_subcategory_report.py")
     assert step[1][step[1].index("--opco") + 1] == "ZM"
     assert step[1][step[1].index("--date") + 1] == "2026-09-30"
     assert step[1][step[1].index("--base") + 1] == str(out.parent) and step[2] is False
-    assert run_pipeline._build_steps(_args(skip_subcategory_3016=True), "2026-09-30", "ZM")[-1][2] is True
+    assert _step("Step 6h", _args(skip_subcategory_3016=True), "ZM")[2] is True
 
 
 def test_build_steps_passes_drm_flag_only_when_requested() -> None:
-    assert "--drm" not in run_pipeline._build_steps(_args(), "2026-09-30", "ZM")[-1][1]
-    assert "--drm" in run_pipeline._build_steps(_args(drm=True), "2026-09-30", "ZM")[-1][1]
+    assert "--drm" not in _step("Step 6h", _args(), "ZM")[1]
+    assert "--drm" in _step("Step 6h", _args(drm=True), "ZM")[1]
+
+
+def _write_drm(folder: Path, kinds=("mdrmfe", "mdrm-lrm")) -> None:
+    folder.mkdir(parents=True, exist_ok=True)
+    for kind in kinds:
+        (folder / f"2026-09-30_{kind}.csv").write_text("header\n", encoding="utf-8")
+
+
+def test_funnel_step_present_and_skippable(tenant_root: Path) -> None:
+    _write_drm(tenant_root / "data" / "lightstep" / "ZM")
+    step = _step("Step 6i", _args(), "ZM")
+    assert step[1][1].endswith("analyze_drm_funnel.py") and step[2] is False
+    assert step[1][step[1].index("--opco") + 1] == "ZM" and "--drm-dir" not in step[1]
+    assert step[1][step[1].index("--base") + 1] == str(tenant_root / "output")
+    assert _step("Step 6i", _args(skip_drm_funnel=True), "ZM")[2] is True
+    other = tenant_root / "elsewhere"
+    _write_drm(other)
+    forwarded = _step("Step 6i", _args(drm_dir=str(other)), "ZM")
+    assert forwarded[1][forwarded[1].index("--drm-dir") + 1] == str(other) and forwarded[2] is False
+
+
+def test_funnel_step_skipped_without_mdrm_exports(tenant_root: Path) -> None:
+    assert _step("Step 6i", _args(), "ZM")[2] is True
+    _write_drm(tenant_root / "data" / "lightstep" / "ZM", kinds=("mdrmfe",))
+    step = _step("Step 6i", _args(), "ZM")
+    assert step[2] is True and "no mDRM exports" in step[0]
+
+
+def test_drm_dir_requires_tenant(tenant_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        _run_main(monkeypatch, "--drm-dir", str(tenant_root))
+    assert exc_info.value.code == 2
