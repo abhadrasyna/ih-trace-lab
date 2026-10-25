@@ -49,11 +49,12 @@
   `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable method for refactoring a different ad hoc Python legacy tree later. No project-specific names (entities, tenants, repos) appear in it by
   design — it is meant to be read by a future, unrelated Python project.
 - `docs/guides/chart-guidelines.md` — matplotlib chart standard (dark theme, palette, font fallback, headless figure recipe) matching the shared `src/lib/charts/` package (`theme`, `fig`, `axes`,
-  `header`, `signed_line`, `bar`, `stacked_bar`, `errors`, `output`). `ChartTheme.series` is an ordered 6-colour palette for multi-series charts; `render_stacked_bar` (MDRM-2a) draws stacked bars with
-  `green`/`red` reserved for success/failure. `output.write_chart_png` saves PNGs to `<investigation>/output/<TENANT>/charts/`, apart from the CSV/XLSX reports. Pilot: ctap-smvod
+  `title`, `header`, `signed_line`, `bar`, `stacked_bar`, `pie`, `errors`, `output`). `ChartTheme.series` is an ordered 6-colour palette for multi-series charts; `render_stacked_bar` (MDRM-2a) draws
+  stacked bars with `green`/`red` reserved for success/failure. `output.write_chart_png` saves PNGs to `<investigation>/output/<TENANT>/charts/`, apart from the CSV/XLSX reports. Pilot: ctap-smvod
   `chart_concurrent_playback.py`/`chart_playback_attempts.py`; other investigations adopt the layer in their own stories (story `docs/archive/shared-chart-infra/`).
-- `docs/plan/chart-guide-code-alignment/` and `docs/plan/chart-funnel-visual-consistency/` — open chart-improvement stories (2026-10-25, docs only so far): the first aligns shared title/axis code and
-  the guide; the second brings the ctap-smvod DRM funnel charts to the look of the (AI-generated, uncommitted) mockups in `investigations/ctap-smvod/output/ZA/charts/modified/`.
+- `docs/plan/chart-guide-code-alignment/` and `docs/plan/chart-funnel-visual-consistency/` — open chart-improvement stories (2026-10-25): the first aligns shared title/axis code and the guide (CA-1
+  `title.draw_title` at 16/10 pt, CA-2 `axes.format_value_axis` and CA-3 guide/CONTEXT alignment done; CA-4 amber/palette pending); the second brings the ctap-smvod DRM funnel charts to the look of
+  the (AI-generated, uncommitted) mockups in `investigations/ctap-smvod/output/ZA/charts/modified/`.
 - `docs/usage.md` — command reference for every `src/pipelines/aws_access_cli/scripts/` variant (daily/weekly/monthly orchestrators, historical backfills, single reports, catalog query, header
   seeding). The daily/weekly/monthly orchestrators catch up missed periods by default (lookback 7 days / 4 weeks / 3 months; `--no-catch-up` and `--force` documented there); existing outputs are
   skipped before Athena runs.
@@ -78,8 +79,6 @@
 - `docs/archive/query-catalog/` — story complete: `queries/athena/` + `queries/lightstep/` now provide a deduplicated, parameterized-template query catalog harvested from `github_copilot`'s 3
   `QUERY_CATALOG.md` files plus `lightstep-query-templates.md`; the Athena/Lightstep harvest scripts are in `scripts/dev/`, the query indexes/templates live under `queries/`, the query workflow guide
   lives at `docs/guides/query-catalog.md`, and the ported (not yet run) Athena DDL-cache tooling plus `knowledge/README.md` live under `knowledge/` / `scripts/athena/`.
-- `docs/guides/chart-guidelines.md` — shared matplotlib chart standard (dark palette, headless Figure+Agg recipe, do/don't rules), adapted from NiftyShield's chart guide (2026-10-16); no chart code
-  exists in this repo yet, so it is the spec until a shared `ChartTheme` lands in `src/lib/`.
 - `docs/archive/project-taxonomy/` — story complete: `docs/guides/project-taxonomy.md` now defines the four categories, folder skeletons, prior-art checklist, pipeline cron-cutover procedure, and PT-7
   data/knowledge conventions; `config/data_paths.yaml` is the path-template source of truth; `scripts/dev/check_project_taxonomy.py` audits unclassified top-level dirs; and
   `.github/skills/investigation-doc-sync/SKILL.md` defines the deferred cross-session case-doc sync workflow. `structure.md` remains the canonical target-tree reference for this story and

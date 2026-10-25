@@ -49,7 +49,8 @@ Colour rules:
 Area fills reuse the line colour with alpha: `fill_alpha_green = 0.22`, `fill_alpha_red = 0.14` (the bad side is deliberately quieter). Font is Roboto when bundled, resolved only through one
 `chart_font_family()` helper that falls back to `"DejaVu Sans"` and never raises.
 
-Type scale (pt): title 16 bold, subtitle 10, stat label 8.5, stat value 12 bold, stat sub 9, tick labels 9.5, annotations 9-10.
+Type scale (pt): title 16 bold, subtitle 10 (both drawn only by `title.draw_title`; a title wider than the figure is truncated with an ellipsis, measured on the rendered text), stat label 8.5, stat
+value 12 bold, stat sub 9, tick labels 9.5, annotations 9-10.
 
 ## Do
 
@@ -86,15 +87,17 @@ Type scale (pt): title 16 bold, subtitle 10, stat label 8.5, stat value 12 bold,
 
 ## Module layout
 
-Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, split by responsibility with one-way dependencies (`signed_line`/`bar` → `axes`/`header`/`fig` → `theme`):
+Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, split by responsibility with one-way dependencies (`signed_line`/`bar`/`stacked_bar`/`pie` → `title`/`axes`/`header`/`fig`
+→ `theme`):
 
 | Module | Holds |
 |---|---|
 | `theme.py` | Frozen `ChartTheme`, `DARK`, `chart_font_family()` |
 | `fig.py` | Figure creation and the PNG-bytes save recipe |
-| `axes.py` | `style_axes`, count/percentage formatters, pure tick and range maths |
+| `axes.py` | `style_axes`, `format_count`/`format_pct`, `format_value_axis` (abbreviates value-axis ticks, e.g. `2k`), pure tick and range maths |
+| `title.py` | `draw_title`: the 16 pt bold title and 10 pt subtitle (`TITLE_FONT_SIZE`, `SUBTITLE_FONT_SIZE`); every chart module calls it, none draws its own |
 | `header.py` | Optional stat header: `Tone`, `HeaderCell`, one- or two-row layout |
-| `signed_line.py`, `bar.py` | Thin drawing functions that return PNG bytes |
+| `signed_line.py`, `bar.py` | Thin drawing functions returning PNG bytes: `render_signed_line(xs, ys, *, title, subtitle="", theme=DARK)`, `render_bar(labels, values, *, title, ...)` (same kwargs) |
 | `stacked_bar.py` | `render_stacked_bar`: one stack per label; segment labels, optional legend (see below) |
 | `pie.py` | `render_pie`: donut with the total in the centre and a legend below; small slices merge into `other` |
 | `errors.py` | `ChartError`, the only exception that leaves the package |
@@ -104,9 +107,9 @@ Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, spl
 labelled with its value, plus its share when `total` is given. A legend appears only when a segment is too small to label. Input that is empty, unequal in length, negative or non-finite raises
 `ChartError`.
 
-`render_pie(labels, values, *, title, subtitle="", max_slices=6, theme=DARK)` draws a donut and a legend below it. Slices beyond `max_slices - 1` merge into a muted `other` slice. Use it only for a
-handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty, unequal, negative or non-finite input raises
-`ChartError`.
+`render_pie(labels, values, *, title, subtitle="", donut=True, max_slices=6, theme=DARK)` draws a donut (a full pie with `donut=False`) and a legend below it. Slices beyond `max_slices - 1` merge into
+a muted `other` slice. Use it only for a handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty,
+unequal, negative or non-finite input raises `ChartError`.
 
 **Planned, not in code yet** (do not rely on these until the owning task lands): `render_stacked_bar(..., normalize: bool = False)` scaling each stack to 100% with absolute totals shown (story
 `chart-funnel-visual-consistency` MV-4); a funnel chart with automatic step conversion (MV-5, investigation-local first and promoted to `src/lib/charts/funnel.py` only once a second investigation
