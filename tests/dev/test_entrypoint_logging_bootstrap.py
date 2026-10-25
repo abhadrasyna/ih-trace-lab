@@ -5,10 +5,10 @@ import logging
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+import scripts.resolve_tenant as resolve_tenant
 from scripts.athena import discover_athena_tables, run_table_ddl_export
 from scripts.dev import reflow_md, update_athena_table_ddl_knowledge
 from scripts.reference_diagram import main as reference_diagram_main
-import scripts.resolve_tenant as resolve_tenant
 
 
 def test_discover_athena_tables_apply_log_level_accepts_lowercase() -> None:

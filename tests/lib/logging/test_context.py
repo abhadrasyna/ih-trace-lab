@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import contextvars
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Sequence
+from collections.abc import Sequence
 
 from matplotlib.axes import Axes
 from matplotlib.ticker import FuncFormatter

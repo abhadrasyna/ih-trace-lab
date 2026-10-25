@@ -50,8 +50,8 @@ from src.lib.athena.exceptions import (
     AthenaQueryTimeoutError,
     AthenaResultDownloadError,
 )
-from src.lib.logging.redact import redact_params
 from src.lib.athena.protocols import QueryResult
+from src.lib.logging.redact import redact_params
 
 if TYPE_CHECKING:
     from athena_runner.query_executor import AthenaQueryExecutor

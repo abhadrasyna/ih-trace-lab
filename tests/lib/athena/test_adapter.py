@@ -112,9 +112,8 @@ def test_adapter_logs_query_success_with_duration(tmp_path: Path, caplog: pytest
 def test_adapter_logs_query_failure_once(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     adapter = AthenaAdapter(_FakeExecutor([_non_throttling_error()]), _FakeDownloader(), _make_config(tmp_path), database="test_db")
 
-    with caplog.at_level(logging.ERROR, logger="src.lib.athena.adapter"):
-        with pytest.raises(AthenaQueryExecutionError):
-            adapter.start_query("SELECT 1", {})
+    with caplog.at_level(logging.ERROR, logger="src.lib.athena.adapter"), pytest.raises(AthenaQueryExecutionError):
+        adapter.start_query("SELECT 1", {})
 
     error_records = [record for record in caplog.records if record.levelno == logging.ERROR and record.getMessage() == "Athena query failed"]
     assert len(error_records) == 1

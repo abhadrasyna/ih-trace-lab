@@ -18,10 +18,7 @@ def csv_has_data(reader: CsvReaderProtocol, path: Path, *, date_value: str | Non
     """True if `path` exists and has a data row (for `date_value` in `date_field`, when given)."""
     if not path.is_file():
         return False
-    for row in reader.read_rows(str(path)):
-        if date_value is None or row.get(date_field) == date_value:
-            return True
-    return False
+    return any(date_value is None or row.get(date_field) == date_value for row in reader.read_rows(str(path)))
 
 
 def csv_date_needs_retry(

@@ -5,9 +5,9 @@ Packing is pure (no matplotlib) so it can be tested without rendering. Colours c
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Sequence
 
 from matplotlib.figure import Figure
 
@@ -102,8 +102,8 @@ def draw_header(
     """Draws the cells on ``fig`` and returns the packed rows; build ``fig`` with ``header_figure_height``."""
     rows = pack_cells(cells, budget_in)
     label_ys = (ROW_LABEL_Y_ONE,) if len(rows) == 1 else ROW_LABEL_Y_TWO
-    for row, label_y in zip(rows, label_ys):
-        for cell, x in zip(row, cell_x_positions(row)):
+    for row, label_y in zip(rows, label_ys, strict=False):
+        for cell, x in zip(row, cell_x_positions(row), strict=False):
             fig.text(x, label_y, cell.label, color=theme.muted, fontsize=LABEL_FONT_SIZE, family=family, va="top")
             fig.text(
                 x,

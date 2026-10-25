@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -20,7 +20,7 @@ def insert_zero_crossings(xs: Sequence[float], ys: Sequence[float]) -> tuple[np.
     """Adds an interpolated (x, 0) point wherever consecutive values change sign, so both colours meet at zero."""
     out_x: list[float] = [float(xs[0])]
     out_y: list[float] = [float(ys[0])]
-    for x0, x1, y0, y1 in zip(xs, xs[1:], ys, ys[1:]):
+    for x0, x1, y0, y1 in zip(xs, xs[1:], ys, ys[1:], strict=False):
         if y0 * y1 < 0:
             out_x.append(float(x0) + (x1 - x0) * (-y0 / (y1 - y0)))
             out_y.append(0.0)

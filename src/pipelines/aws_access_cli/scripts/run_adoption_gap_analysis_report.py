@@ -1,9 +1,9 @@
 """Thin wrapper for run_adoption_gap_analysis_report."""
 from __future__ import annotations
 
-from src.pipelines.aws_access_cli.adoption import GAP_HOUSEHOLD_METRICS
 from src.lib.logging.bootstrap import init_logging
 from src.lib.logging.context import current_fcid
+from src.pipelines.aws_access_cli.adoption import GAP_HOUSEHOLD_METRICS
 from src.pipelines.aws_access_cli.scripts.common import run_adoption_cli
 
 

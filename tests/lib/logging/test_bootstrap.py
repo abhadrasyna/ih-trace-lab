@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 
 from src.lib.logging import setup as _logging_setup_mod
-from src.lib.logging.context import FcidLogFilter, _fcid_var, current_fcid
 from src.lib.logging.bootstrap import init_logging
+from src.lib.logging.context import FcidLogFilter, _fcid_var, current_fcid
 
 
 @pytest.fixture(autouse=True)

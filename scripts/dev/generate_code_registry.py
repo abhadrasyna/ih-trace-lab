@@ -18,13 +18,12 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.lib.logging.bootstrap import init_logging
-
 from scripts.dev.generate_scripts_registry import (
     EXCLUDED_DIR_NAMES,
     SCRIPT_EXTENSIONS,
     extract_purpose,
 )
+from src.lib.logging.bootstrap import init_logging
 
 SCRIPT_SCOPES = (
     "investigations",
