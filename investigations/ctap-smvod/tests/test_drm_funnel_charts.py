@@ -8,10 +8,11 @@ from test_analyze_drm_funnel import _inputs
 
 from lib.drm_funnel import FunnelRow, stage_totals
 from lib.drm_funnel_charts import (
-    build_chart_specs, drm_split_series, error_code_series, license_outcome_series, stage_series,
-    subcategory_series,
+    build_chart_specs, drm_split_series, drm_type_colour, drm_type_label, error_code_series,
+    license_outcome_series, ordered_drm_types, stage_series, subcategory_series,
 )
 from src.lib.charts.errors import ChartError
+from src.lib.charts.theme import DARK
 
 cli = load_script("analyze_drm_funnel.py")
 
@@ -41,6 +42,26 @@ def test_series_builders_reconcile_to_session_total() -> None:
     assert all(len(v) == len(labels) for v in outcome.values())
     assert "failed, error" in outcome and "no_request, 3016" in outcome and "success, error" in outcome
     assert [s.name for s in build_chart_specs("ZA", "2026-10-23", ROWS)] == ["stages", "drm_split", "license_outcome"]
+
+
+def test_drm_type_order_is_stable_across_charts() -> None:
+    rows = [_row("merge", "vod", b, "success", "none", n)
+            for b, n in (("none", 9), ("playready", 1), ("fairplay", 5), ("widevine", 3))]
+    expected = ["Widevine", "Fairplay", "Playready", "None"]
+    assert ordered_drm_types(rows) == ["widevine", "fairplay", "playready", "none"]
+    assert drm_split_series(rows)[0] == expected
+    assert license_outcome_series(rows)[0] == expected
+    assert drm_type_colour("widevine") != drm_type_colour("fairplay")
+    assert drm_type_colour("none") == DARK.muted
+
+
+def test_unknown_bucket_sorts_last() -> None:
+    rows = [_row("merge", "vod", b, "success", "none", 1) for b in ("zzz", "none", "aaa", "widevine")]
+    assert ordered_drm_types(rows) == ["widevine", "none", "aaa", "zzz"]
+    assert drm_type_colour("aaa") == DARK.muted
+    assert drm_type_label("aaa") == "Aaa"
+    labels, series = drm_split_series(rows)
+    assert labels[-1] == "Zzz" and sum(sum(v) for v in series.values()) == 4
 
 
 def test_error_mix_series_reconcile_to_errored_sessions() -> None:

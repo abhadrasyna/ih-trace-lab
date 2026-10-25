@@ -14,6 +14,7 @@ from lib.drm_funnel import (
 )
 from src.lib.charts.pie import merge_small_slices, render_pie
 from src.lib.charts.stacked_bar import render_stacked_bar
+from src.lib.charts.theme import DARK, ChartTheme
 
 STAGE_NAMES = ("Sessions", "DRM requested", "License success", "Ended in error")
 # Error splits per outcome group; kept to 7 series at most so palette colours never repeat.
@@ -23,6 +24,9 @@ OUTCOME_GROUPS = (
     ("no_request", (NO_REQUEST,), ("", "3016", "other error")),
 )
 OUTCOME_COLOURS = {"success": "green", "failed": "red", "no_request": "muted"}
+# Fixed order: a DRM type keeps its position and colour (series index) in every chart; ``none`` is muted.
+DRM_TYPE_ORDER = ("widevine", "fairplay", "playready", "none")
+UNKNOWN_DRM_RANK = len(DRM_TYPE_ORDER)
 TOP_ERROR_CODES = 6  # top 5 codes plus "other"
 
 
@@ -39,6 +43,24 @@ class ChartSpec:
     horizontal: bool = False
     total: int | None = None
     pie: bool = False
+
+
+def ordered_drm_types(rows: Sequence[FunnelRow]) -> list[str]:
+    """DRM buckets present in ``rows`` in the fixed funnel order; unknown buckets sort last, alphabetically."""
+    present = {r.drm_bucket for r in rows}
+    return sorted(present, key=lambda b: (DRM_TYPE_ORDER.index(b) if b in DRM_TYPE_ORDER else UNKNOWN_DRM_RANK, b))
+
+
+def drm_type_label(bucket: str) -> str:
+    """Display label for a DRM bucket (``widevine -> Widevine``)."""
+    return bucket.capitalize()
+
+
+def drm_type_colour(bucket: str, theme: ChartTheme = DARK) -> str:
+    """Fixed colour per DRM type: the series palette by order index; ``none`` and unknown buckets are muted."""
+    if bucket in DRM_TYPE_ORDER and bucket != "none" and DRM_TYPE_ORDER.index(bucket) < len(theme.series):
+        return theme.series[DRM_TYPE_ORDER.index(bucket)]
+    return theme.muted
 
 
 def _error_class(group: str) -> str:
@@ -63,14 +85,14 @@ def drm_split_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, li
     cells: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     for r in rows:
         cells[r.drm_bucket][r.kind] += r.sessions
-    labels = sorted(cells, key=lambda b: -sum(cells[b].values()))
+    buckets = ordered_drm_types(rows)
     kinds = sorted({k for per in cells.values() for k in per})
-    return labels, {k: [cells[b][k] for b in labels] for k in kinds}
+    return [drm_type_label(b) for b in buckets], {k: [cells[b][k] for b in buckets] for k in kinds}
 
 
 def license_outcome_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, list[int]]]:
     """Per DRM bucket: success / failed / no_request split by downstream error (no_request: 3016 vs other)."""
-    labels = sorted({r.drm_bucket for r in rows})
+    buckets = ordered_drm_types(rows)
     cells: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     order: list[str] = []
     for group, outcomes, splits in OUTCOME_GROUPS:
@@ -80,8 +102,8 @@ def license_outcome_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[s
             for r in rows:
                 if r.license_outcome in outcomes and _split_class(_error_class(r.error_group), splits) == suffix:
                     cells[name][r.drm_bucket] += r.sessions
-    series = {n: [cells[n][b] for b in labels] for n in order if any(cells[n].values())}
-    return labels, series
+    series = {n: [cells[n][b] for b in buckets] for n in order if any(cells[n].values())}
+    return [drm_type_label(b) for b in buckets], series
 
 
 def error_code_series(rows: Sequence[FunnelRow]) -> tuple[list[str], dict[str, list[int]]]:
