@@ -4,13 +4,21 @@ import csv
 from pathlib import Path
 
 from conftest import load_script
-from test_analyze_drm_funnel import _inputs
-
 from lib.drm_funnel import FunnelRow, stage_totals
 from lib.drm_funnel_charts import (
-    build_chart_specs, drm_split_series, drm_type_colour, drm_type_label, error_code_series,
-    license_outcome_series, ordered_drm_types, stage_series, subcategory_series,
+    build_chart_specs,
+    drm_split_series,
+    drm_type_colour,
+    drm_type_label,
+    error_code_series,
+    license_outcome_series,
+    ordered_drm_types,
+    render_chart,
+    stage_series,
+    subcategory_series,
 )
+from test_analyze_drm_funnel import _inputs
+
 from src.lib.charts.errors import ChartError
 from src.lib.charts.theme import DARK
 
@@ -62,6 +70,16 @@ def test_unknown_bucket_sorts_last() -> None:
     assert drm_type_label("aaa") == "Aaa"
     labels, series = drm_split_series(rows)
     assert labels[-1] == "Zzz" and sum(sum(v) for v in series.values()) == 4
+
+
+def test_drm_split_spec_mutes_none_and_keeps_one_colour_per_type() -> None:
+    spec = next(s for s in build_chart_specs("ZA", "2026-10-23", ROWS) if s.name == "drm_split")
+    assert spec.labels == ["Widevine", "Fairplay", "None"] and list(spec.series) == ["linear", "vod"]
+    assert spec.bar_colours is None
+    vod_only = [r for r in ROWS if r.kind == "vod"]
+    spec = next(s for s in build_chart_specs("ZA", "2026-10-23", vod_only) if s.name == "drm_split")
+    assert spec.bar_colours == [drm_type_colour("widevine"), DARK.muted]
+    assert render_chart(spec).startswith(b"\x89PNG")
 
 
 def test_error_mix_series_reconcile_to_errored_sessions() -> None:

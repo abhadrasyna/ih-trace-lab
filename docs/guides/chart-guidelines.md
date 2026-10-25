@@ -101,9 +101,10 @@ Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, spl
 | `errors.py` | `ChartError`, the only exception that leaves the package |
 | `output.py` | `write_chart_png` / `chart_path`: saves PNGs under `<output>/<TENANT>/charts/`, creating the folder on first use |
 
-`render_stacked_bar(labels, series, *, title, subtitle="", horizontal=False, colours=None, total=None, theme=DARK)` takes `series` as a name-to-values map with one value per label. Each segment is
-labelled with its value, plus its share when `total` is given. A legend appears only when a segment is too small to label. Input that is empty, unequal in length, negative or non-finite raises
-`ChartError`.
+`render_stacked_bar(labels, series, *, title, subtitle="", horizontal=False, colours=None, bar_colours=None, total=None, legend="auto", theme=DARK)` takes `series` as a name-to-values map with one
+value per label. Each segment is labelled with its value, plus its share when `total` is given. `legend="auto"` draws a legend only for more than one series; `False` never does; any other value raises
+`ChartError`. `bar_colours` (hex colours derived from the theme, one per label, single series only) colours each bar separately. In a single-series chart a bar under 5% of the longest is labelled
+above the bar, and one under 2% is also lifted to that minimum drawn height. Input that is empty, unequal in length, negative or non-finite raises `ChartError`.
 
 `render_pie(labels, values, *, title, subtitle="", donut=True, max_slices=5, theme=DARK)` draws a donut (a full pie with `donut=False`) and a legend below it. Slices beyond `max_slices - 1` merge into
 a muted `other` slice. Use it only for a handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty,
@@ -138,7 +139,7 @@ Rules for every funnel chart:
 
 - DRM types appear in one fixed order (widevine, fairplay, playready, none; unknown buckets last), with capitalised display labels and a fixed colour per type, so a type looks the same in every chart.
 - A share-of-total stack (`normalize=True`) scales each stack to 100%; a stack whose total is zero is drawn empty (no segments, no label), never an error or a division by zero.
-- A bar under 5% of the longest keeps a minimum drawn height and its label is drawn above it.
+- A bar under 5% of the longest has its label drawn above it, and under 2% it is also lifted to a minimum drawn height.
 
 ## Using charts from an investigation
 

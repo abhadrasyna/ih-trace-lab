@@ -10,8 +10,16 @@ from dataclasses import dataclass, field
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.drm_funnel import (
-    FAILED, NAMED_ERRORS, NO_ERROR, NO_REQUEST, RETRY_THEN_SUCCESS, SUCCESS, FunnelRow, stage_totals,
+    FAILED,
+    NAMED_ERRORS,
+    NO_ERROR,
+    NO_REQUEST,
+    RETRY_THEN_SUCCESS,
+    SUCCESS,
+    FunnelRow,
+    stage_totals,
 )
+
 from src.lib.charts.pie import merge_small_slices, render_pie
 from src.lib.charts.stacked_bar import render_stacked_bar
 from src.lib.charts.theme import DARK, ChartTheme
@@ -43,6 +51,7 @@ class ChartSpec:
     horizontal: bool = False
     total: int | None = None
     pie: bool = False
+    bar_colours: list[str] | None = None
 
 
 def ordered_drm_types(rows: Sequence[FunnelRow]) -> list[str]:
@@ -133,6 +142,13 @@ def outcome_colours(series: dict[str, list[int]]) -> dict[str, str]:
     return {n: OUTCOME_COLOURS[n] for n in series if n in OUTCOME_COLOURS}
 
 
+def split_bar_colours(rows: Sequence[FunnelRow], series: dict[str, list[int]]) -> list[str] | None:
+    """Per-bar DRM colours when one series (a single kind) is drawn; stacked kinds use the legend palette."""
+    if len(series) != 1:
+        return None
+    return [drm_type_colour(b) for b in ordered_drm_types(rows)]
+
+
 def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow]) -> list[ChartSpec]:
     t = stage_totals(rows)
     sub = f"{opco} {date} · {t['sessions']} sessions · {t['drm_only']} drm_only"
@@ -144,7 +160,8 @@ def build_chart_specs(opco: str, date: str, rows: Sequence[FunnelRow]) -> list[C
     specs = [
         ChartSpec("stages", "DRM funnel stages", sub, stage_labels, stage_s, horizontal=True,
                   total=t["sessions"]),
-        ChartSpec("drm_split", "Sessions by DRM type", sub, split_labels, split_s, total=t["sessions"]),
+        ChartSpec("drm_split", "Sessions by DRM type", sub, split_labels, split_s, total=t["sessions"],
+                  bar_colours=split_bar_colours(rows, split_s)),
         ChartSpec("license_outcome", "License outcome per DRM type", sub, out_labels, out_s,
                   colours=outcome_colours(out_s), total=t["sessions"]),
     ]
@@ -164,7 +181,7 @@ def render_chart(spec: ChartSpec) -> bytes:
         return render_pie(spec.labels, spec.series["sessions"], title=spec.title, subtitle=spec.subtitle)
     return render_stacked_bar(
         spec.labels, spec.series, title=spec.title, subtitle=spec.subtitle,
-        horizontal=spec.horizontal, colours=spec.colours or None, total=spec.total,
+        horizontal=spec.horizontal, colours=spec.colours or None, bar_colours=spec.bar_colours, total=spec.total,
     )
 
 

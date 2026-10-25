@@ -1,10 +1,17 @@
 import re
 
 import pytest
+from matplotlib.axes import Axes
 
 from src.lib.charts import stacked_bar
 from src.lib.charts.errors import ChartError
-from src.lib.charts.stacked_bar import render_stacked_bar, segment_label, series_colours
+from src.lib.charts.stacked_bar import (
+    MIN_BAR_SHARE,
+    drawn_value,
+    render_stacked_bar,
+    segment_label,
+    series_colours,
+)
 from src.lib.charts.theme import DARK
 
 SERIES = {"success": [90, 40], "failed": [10, 2]}
@@ -65,3 +72,50 @@ def test_stacked_bar_axis_labels_abbreviated(monkeypatch, horizontal):
 
 def test_amber_colour_token_is_accepted():
     assert series_colours(["w"], {"w": "amber"}, DARK) == [DARK.amber]
+
+
+def test_single_series_has_no_legend(monkeypatch):
+    calls = []
+    real = Axes.legend
+
+    def spy(self, *args, **kwargs):
+        calls.append(kwargs)
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(Axes, "legend", spy)
+    assert render_stacked_bar(["a", "b"], {"vod": [10, 5]}, title="t").startswith(b"\x89PNG")
+    assert calls == []
+    render_stacked_bar(["a", "b"], {"vod": [10, 5], "linear": [2, 1]}, title="t")
+    assert len(calls) == 1
+    render_stacked_bar(["a", "b"], {"vod": [10, 5], "linear": [2, 1]}, title="t", legend=False)
+    assert len(calls) == 1
+
+
+def test_small_bar_label_above_bar(monkeypatch):
+    labels = []
+    real = Axes.annotate
+
+    def spy(self, text, *args, **kwargs):
+        labels.append(text)
+        return real(self, text, *args, **kwargs)
+
+    monkeypatch.setattr(Axes, "annotate", spy)
+    png = render_stacked_bar(["big", "tiny"], {"vod": [1000, 3]}, title="t", bar_colours=["#111111", "#222222"])
+    assert png.startswith(b"\x89PNG")
+    assert labels == ["3"]
+    assert drawn_value(3, 1000, single_series=True) == MIN_BAR_SHARE * 1000
+    assert drawn_value(3, 1000, single_series=False) == 3
+    assert drawn_value(0, 1000, single_series=True) == 0
+
+
+@pytest.mark.parametrize("legend", ["below", None, 0, True])
+def test_invalid_legend_option_raises_chart_error(legend):
+    with pytest.raises(ChartError):
+        render_stacked_bar(["a"], {"vod": [1]}, title="t", legend=legend)
+
+
+def test_bar_colours_validated():
+    with pytest.raises(ChartError):
+        render_stacked_bar(["a", "b"], {"vod": [1, 2]}, title="t", bar_colours=["#111111"])
+    with pytest.raises(ChartError):
+        render_stacked_bar(["a"], {"x": [1], "y": [1]}, title="t", bar_colours=["#111111"])

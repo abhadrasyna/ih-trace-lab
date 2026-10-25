@@ -3,10 +3,10 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: MV-2, MV-3, MV-4, MV-5, MV-6.**
+**Open: MV-3, MV-4, MV-5, MV-6.**
 
 - [x] **MV-1** — decision record: resolve mockup-vs-guide conflicts and settle theme/token additions | Owner: Copilot CLI + user | Model: claude-sonnet-5.5 | Review: user | SHA: 413cfcf
-- [ ] **MV-2** — shared DRM-type order, display labels and colour mapping used by every funnel chart | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: —
+- [x] **MV-2** — shared DRM-type order, display labels and colour mapping used by every funnel chart | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: 5fdf5ea
 - [ ] **MV-3** — `drm_split`: muted `none` bar, no single-series legend, tiny bars stay visible | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: —
 - [ ] **MV-4** — `license_outcome`: share-of-DRM-type mode, three semantic series, legend outside the plot | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-review | SHA: —
 - [ ] **MV-5** — `stages`: funnel prototype in `scratch/`, no clipped labels, colour by meaning, step conversion, error-rate header | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:

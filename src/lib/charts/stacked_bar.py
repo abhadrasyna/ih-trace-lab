@@ -6,6 +6,8 @@ import logging
 import math
 from collections.abc import Mapping, Sequence
 
+from matplotlib.axes import Axes
+
 from src.lib.charts.axes import format_count, format_pct, format_value_axis, style_axes
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import new_figure, render_png
@@ -17,6 +19,32 @@ logger = logging.getLogger(__name__)
 COLOUR_TOKENS = ("ink", "muted", "faint", "green", "red", "amber")
 # A segment narrower than this share of the longest stack is too small to carry its own label.
 MIN_LABEL_SHARE = 0.05
+# A single-series bar shorter than this share of the longest is drawn at this height so it stays visible.
+MIN_BAR_SHARE = 0.02
+LEGEND_OPTIONS = ("auto", False)
+
+
+def require_legend_option(legend: object) -> None:
+    """Rejects anything but ``"auto"`` (legend only when a segment is too small to label) or ``False``."""
+    if legend != "auto" and legend is not False:
+        raise ChartError(f"legend must be one of {LEGEND_OPTIONS}, got {legend!r}")
+
+
+def require_bar_colours(bar_colours: Sequence[str] | None, labels: Sequence[str], n_series: int) -> None:
+    """Per-bar colours apply to single-series charts only and need one colour per label."""
+    if bar_colours is None:
+        return
+    if n_series != 1:
+        raise ChartError("bar_colours needs exactly one series")
+    if len(bar_colours) != len(labels):
+        raise ChartError(f"bar_colours has {len(bar_colours)} colours for {len(labels)} labels")
+
+
+def drawn_value(value: float, longest: float, single_series: bool) -> float:
+    """Height actually drawn: a single-series bar under ``MIN_BAR_SHARE`` of the longest is lifted to it."""
+    if single_series and 0 < value < MIN_BAR_SHARE * longest:
+        return MIN_BAR_SHARE * longest
+    return value
 
 
 def require_stacked_input(labels: Sequence[str], series: Mapping[str, Sequence[float]]) -> None:
@@ -67,16 +95,23 @@ def render_stacked_bar(
     subtitle: str = "",
     horizontal: bool = False,
     colours: Mapping[str, str] | None = None,
+    bar_colours: Sequence[str] | None = None,
     total: float | None = None,
+    legend: bool | str = "auto",
     theme: ChartTheme = DARK,
 ) -> bytes:
     """Renders stacked bars to PNG bytes; raises ``ChartError`` on bad input or any drawing failure.
 
     ``series`` maps a series name to one value per label. ``total`` adds each segment's share to its label.
-    A legend appears only when some segment is too small to be labelled directly.
+    ``legend="auto"`` draws a legend only for more than one series; ``False`` never does. ``bar_colours`` (single
+    series only) gives each bar its own colour. In a single-series chart a bar under ``MIN_LABEL_SHARE`` of the
+    longest is labelled above the bar, and one under ``MIN_BAR_SHARE`` is also lifted to that minimum height.
     """
     require_stacked_input(labels, series)
+    require_legend_option(legend)
+    require_bar_colours(bar_colours, labels, len(series))
     names = list(series)
+    single = len(names) == 1
     try:
         colour_list = series_colours(names, colours, theme)
         family = chart_font_family()
@@ -86,24 +121,26 @@ def render_stacked_bar(
         stack_totals = [sum(series[n][i] for n in names) for i in positions]
         longest = max(stack_totals) or 1.0
         base = [0.0] * len(labels)
-        skipped = False
         for name, colour in zip(names, colour_list, strict=True):
             values = list(series[name])
+            drawn = [drawn_value(v, longest, single) for v in values]
+            bar_colour = list(bar_colours) if bar_colours is not None else colour
             if horizontal:
-                ax.barh(positions, values, left=base, color=colour, height=0.65, label=name)
+                ax.barh(positions, drawn, left=base, color=bar_colour, height=0.65, label=name)
             else:
-                ax.bar(positions, values, bottom=base, color=colour, width=0.65, label=name)
+                ax.bar(positions, drawn, bottom=base, color=bar_colour, width=0.65, label=name)
             for i, v in enumerate(values):
                 if v <= 0:
                     continue
                 if v / longest < MIN_LABEL_SHARE:
-                    skipped = True
+                    if single:
+                        _label_above(ax, i, drawn[i], segment_label(v, total), horizontal, theme, family)
                     continue
                 mid = base[i] + v / 2
                 x, y = (mid, i) if horizontal else (i, mid)
                 ax.text(x, y, segment_label(v, total), ha="center", va="center", color=theme.bg,
                         fontsize=8.5, fontweight="bold", family=family)
-            base = [b + v for b, v in zip(base, values, strict=True)]
+            base = [b + v for b, v in zip(base, drawn, strict=True)]
         ticks = [str(label) for label in labels]
         if horizontal:
             ax.set_yticks(positions, ticks)
@@ -115,9 +152,14 @@ def render_stacked_bar(
         if horizontal:
             ax.yaxis.grid(False)
             ax.xaxis.grid(True, color=theme.faint, lw=0.6)
-        if skipped:
-            legend = ax.legend(frameon=False, labelcolor=theme.muted, prop={"family": family, "size": 8.5})
-            legend.set_zorder(10)
+        if single:
+            if horizontal:
+                ax.margins(x=0.12)
+            else:
+                ax.margins(y=0.12)
+        if legend == "auto" and not single:
+            key = ax.legend(frameon=False, labelcolor=theme.muted, prop={"family": family, "size": 8.5})
+            key.set_zorder(10)
         draw_title(fig, title, subtitle, theme, family)
         png = render_png(fig, theme)
     except ChartError:
@@ -126,3 +168,12 @@ def render_stacked_bar(
         raise ChartError(f"stacked bar render failed: {exc}") from exc
     logger.info("stacked bar rendered %d bytes", len(png))
     return png
+
+
+def _label_above(ax: Axes, index: int, end: float, text: str, horizontal: bool, theme: ChartTheme,
+                 family: str) -> None:
+    """Writes ``text`` just past the end of a bar too small to hold its own label."""
+    xy, offset, ha, va = ((end, index), (4, 0), "left", "center") if horizontal else (
+        (index, end), (0, 3), "center", "bottom")
+    ax.annotate(text, xy=xy, xytext=offset, textcoords="offset points", ha=ha, va=va, color=theme.ink,
+                fontsize=8.5, fontweight="bold", family=family)
