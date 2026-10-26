@@ -13,6 +13,8 @@ logic depends on.
 Story order is fixed — it is the row order of the **Stories** table in this folder's `README.md`. Keep this list identical to that table:
 
 1. `linear-session-coverage/` — make the ctap-smvod export, merge and reports cover linear sessions, not only VOD (defect fix, tenant-agnostic).
+2. `session-presence-funnel/` — daily report of sessions created in Lightstep and traced into Athena `unified_sessions` and debug states (works VOD-only now; the linear split appears once story 1's
+   LC-2 lands).
 
 Do not jump ahead even if a later story looks more urgent.
 

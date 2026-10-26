@@ -232,7 +232,9 @@
 - `docs/plan/session-trace-analysis/` — **epic** (2026-10-26): an analysis like `investigations/ctap-smvod/output/ZA/drm-analysis` that follows a `sessionId` from creation in `sm-vod` or `sm-linear`
   to where it fails. Its first story `linear-session-coverage/` (LC-1..LC-4, none started) fixes the defect that the ctap-smvod Lightstep export and merge were `sm-vod`-only, so linear sessions
   (confirmed in ZM and GH) showed up as `ctap_only` rows; it must stay tenant-agnostic (ids from `config/tenants.yaml`, session type from the `abr-vod-`/`abr-linear-` `sessionId` prefix) so ZA or any
-  future tenant works with no code change. Later stories (id-mapping spike, per-session timeline, first-failing-hop funnel) will be added to the epic's table as they are written.
+  future tenant works with no code change. Second story `session-presence-funnel/` (PF-1..PF-5, none started): a daily report counting Lightstep sessions and tracing the same `sessionId`s into Athena
+  `unified_sessions` and debug states, with ZA 2026-10-24 as the acceptance baseline (4,443 Lightstep sessions, 3,763 in `unified_sessions`, 3,901 in debug states, 542 in neither). Later stories
+  (id-mapping spike, per-session timeline, first-failing-hop funnel) will be added to the epic's table as they are written.
 
 ## Key Decisions
 

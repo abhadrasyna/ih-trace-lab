@@ -15,14 +15,15 @@ or are missing). That defect is the first story.
 - The first story fixes linear coverage and must be **tenant-agnostic**: no hardcoded tenant lists in code; tenant ids come from `config/tenants.yaml`. Linear is confirmed possible in Zambia (ZM) and
   Ghana (GH); South Africa (ZA) may adopt it later and must work without code changes (confirmed with the user, 2026-10-26).
 - `sessionId` prefix (`abr-vod-` / `abr-linear-`) is the session-type signal; `scripts/lib/drm_funnel.py::session_kind` is the existing helper.
-- Later stories (not yet created, to be added as the discussion continues): an id-mapping spike across hops (`sessionId` vs `fcId`, household/device, trace id), a per-session timeline builder, and a
-  first-failing-hop funnel report. They are listed here as intent only and will be added to the table below when written.
+- Later stories (not yet created, to be added as the discussion continues): an id-mapping spike across hops (`sessionId` vs `fcId`, household/device, trace id), a per-session timeline, and a
+  first-failing-hop funnel report. The `sessionId` key map (CTAP joins only via `lightstep.trace_id`; everything else via `sessionId`) is recorded in `session-presence-funnel/prompt.md`.
 
 ## Stories
 
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
 | `linear-session-coverage/` | Cover linear sessions in the ctap-smvod export, merge and reports (tenant-agnostic) | ⬜ Not started | — | — |
+| `session-presence-funnel/` | Daily count of Lightstep sessions and how many reach Athena `unified_sessions` and debug states | ⬜ Not started | — (linear split: LC-2) | — |
 
 Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.
 
@@ -39,3 +40,4 @@ Builds on the archived `ctap-smvod-multitenant` story (`docs/archive/ctap-smvod-
 ## Epic done when
 
 - **linear-session-coverage** — a re-exported day for every tenant with linear runs through the pipeline with linear sessions matched, typed, and reported, with no per-tenant code.
+- **session-presence-funnel** — one command produces the daily presence funnel for any tenant and date, reproduces the ZA 2026-10-24 baseline, and feeds a trend file checked every day.
