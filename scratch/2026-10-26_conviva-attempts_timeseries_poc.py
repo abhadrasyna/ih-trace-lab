@@ -91,7 +91,8 @@ def main() -> None:
         xs,
         ys,
         title=f"Attempts — {args.tenant}, {args.date}",
-        subtitle=f"{total:,} attempts (sum of points), per {args.interval} min, UTC; base: distinct sessionId with CREATE",
+        kpi=("Attempts (sum of points)", f"{total:,}"),
+        footer=f"Per {args.interval} min, UTC. Base: distinct sessionId with a CREATE event (Athena debug_states).",
     )
     out = write_chart_png(png, out_dir, args.tenant, f"{args.date}_attempts_{args.interval}min.png")
 

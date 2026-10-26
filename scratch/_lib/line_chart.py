@@ -10,9 +10,18 @@ import matplotlib.dates as mdates  # noqa: E402
 
 from src.lib.charts.axes import format_value_axis, padded_range, style_axes  # noqa: E402
 from src.lib.charts.errors import ChartError, require_series  # noqa: E402
-from src.lib.charts.fig import new_figure, render_png  # noqa: E402
+from src.lib.charts.fig import MARGIN_BOTTOM, TWO_ROW_HEIGHT, new_figure, render_png  # noqa: E402
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family  # noqa: E402
-from src.lib.charts.title import draw_title  # noqa: E402
+from src.lib.charts.title import TITLE_X, draw_title  # noqa: E402
+
+KPI_LABEL_Y = 0.915
+KPI_VALUE_Y = 0.89
+AXES_TOP_WITH_KPI = 0.80
+AXES_BOTTOM_WITH_FOOTER = 0.14
+FOOTER_Y = 0.02
+FOOTER_FONT_SIZE = 8.5
+KPI_LABEL_FONT_SIZE = 8.5
+KPI_VALUE_FONT_SIZE = 20
 
 
 def render_line(
@@ -20,18 +29,24 @@ def render_line(
     ys: Sequence[float],
     *,
     title: str,
-    subtitle: str = "",
+    kpi: tuple[str, str] | None = None,
+    footer: str = "",
     fill: bool = True,
     theme: ChartTheme = DARK,
 ) -> bytes:
     """Single neutral (unsigned) series as PNG bytes: ``series[0]`` line, optional light area fill.
 
     For counts, which carry no good/bad sign. ``xs`` may be datetimes (axis shows HH:MM). Zero baseline.
+    ``kpi`` is (label, value) drawn under the title; ``footer`` is small muted metadata at the bottom.
     """
     require_series(xs, ys)
     try:
         family = chart_font_family()
-        fig = new_figure(theme)
+        fig = new_figure(theme, TWO_ROW_HEIGHT if kpi else 4.9)
+        fig.subplots_adjust(
+            top=AXES_TOP_WITH_KPI if kpi else 0.88,
+            bottom=AXES_BOTTOM_WITH_FOOTER if footer else MARGIN_BOTTOM,
+        )
         ax = fig.add_subplot(111)
         colour = theme.series[0]
         ax.plot(xs, ys, color=colour, lw=1.8, solid_capstyle="round")
@@ -45,7 +60,13 @@ def render_line(
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
             for label in ax.get_xticklabels():
                 label.set_family(family)
-        draw_title(fig, title, subtitle, theme, family)
+        draw_title(fig, title, "", theme, family)
+        if kpi:
+            fig.text(TITLE_X, KPI_LABEL_Y, kpi[0], color=theme.muted, fontsize=KPI_LABEL_FONT_SIZE, family=family, va="top")
+            fig.text(TITLE_X, KPI_VALUE_Y, kpi[1], color=theme.ink, fontsize=KPI_VALUE_FONT_SIZE, family=family,
+                     fontweight="bold", va="top")
+        if footer:
+            fig.text(TITLE_X, FOOTER_Y, footer, color=theme.muted, fontsize=FOOTER_FONT_SIZE, family=family, alpha=0.8)
         return render_png(fig, theme)
     except Exception as exc:  # noqa: BLE001 - boundary: nothing but ChartError escapes
         raise ChartError(f"line render failed: {exc}") from exc
