@@ -1,7 +1,7 @@
 # Conviva Metrics Recreation — story-design discussion prompt
 
 > Reusable prompt for the next few sessions. Purpose: decide what stories to create and how, from POC evidence. Not a task list; the Discussion log at the bottom holds what has been decided so far
-> (attempts is done through the chart; no other metric has been studied yet).
+> (attempts POC is done: chart and supporting report; no other metric has been studied yet).
 
 Read `CONTEXT.md` and state `CONTEXT.md ✓` first. Then read `README.md` in this folder for the epic goal and scope decisions, and the "Discussion log" at the bottom of this file for decisions made in
 earlier sessions. This is a design discussion: do not create stories, tasks, or scripts unless the user explicitly says so in the current session.
@@ -11,10 +11,10 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 - **Goal:** recreate Conviva playback statistics (attempts, concurrent plays, VPF, VSF, EBVS, others to be decided) from local data, Lightstep and Athena.
 - **Method (decided by the user, 2026-10-26):** go through Conviva's documentation for each metric, then write a proof-of-concept `scratch/` script per metric to see how much can be achieved. What
   each metric needs, and how far the POC gets, shapes the stories — so stories are written after that evidence, not before.
-- **Status of existing stories (updated 2026-10-26):** `attempts/` is the first story written from POC evidence (see the log) and is in progress; its tasks CMR-ATT-1 to CMR-ATT-3 are done and
-  CMR-ATT-4 to CMR-ATT-7 are open. The other five sub-story folders (`metric-definitions-data-inventory/`, `attempts-concurrent-plays/`, `vpf-vsf/`, `ebvs/`, `scratch-validation/`) are still the
-  placeholder guess. They may be reshaped, merged, or deleted. Do not follow their tasks, and do not delete or rewrite them without an explicit go-ahead. `attempts-concurrent-plays/` is left as is and
-  now covers concurrent plays only.
+- **Status of existing stories (updated 2026-10-26):** `attempts/` is the first story written from POC evidence (see the log) and is in progress; its POC tasks CMR-ATT-1 to CMR-ATT-3 and CMR-ATT-8
+  (report) are done. Phase 2, the formal recreation of code and data, is open: CMR-ATT-4 to CMR-ATT-6, CMR-ATT-9 (linear/VOD and device data) and CMR-ATT-7 (graduation). The other five sub-story
+  folders (`metric-definitions-data-inventory/`, `attempts-concurrent-plays/`, `vpf-vsf/`, `ebvs/`, `scratch-validation/`) are still the placeholder guess. They may be reshaped, merged, or deleted. Do
+  not follow their tasks, and do not delete or rewrite them without an explicit go-ahead. `attempts-concurrent-plays/` is left as is and now covers concurrent plays only.
 - **Data order:** use local data first; fetch from Lightstep or Athena only when local data is not enough. Before any Lightstep/Matisse/Athena call, run `python scripts/resolve_tenant.py ...` and
   follow `docs/guides/tenant-resolution.md`.
 - **Reference data sources (user-provided, 2026-10-26; for reference only, not a limit):** `investigations/ctap-smvod/data/`, organised per opco, with subfolders `athena/`, `cdnReport/` and
@@ -25,6 +25,19 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 - **Generic by design:** the POC is narrow, but everything written from it must be generic. Stories, definitions and scripts must be opco/tenant-agnostic and date-agnostic: tenant and date are
   arguments (argparse), never hardcoded, and nothing may depend on ZA-specific fields without that being a documented, parameterised mapping. When a ZA finding might not hold for other opcos, record
   it as an assumption to verify, and extrapolate the design so the story can be run for any tenant and date.
+
+## Deliverable pattern for every metric
+
+Each metric ends up with a chart plus a supporting markdown report that helps a reader understand the data. Attempts is the reference (`attempts/`, the POC report for ZA, 2026-10-24). Per metric:
+
+- **Chart(s):** the main time series on the shared theme and `scratch/_lib/line_chart.py` (`render_line`); a second chart where a split explains the number (for attempts, linear vs VOD).
+- **Report sections:** definition and method (Conviva wording, counting rule, bucket, timezone); headline numbers (total, peak, sum-of-series check); top-10 content; device breakdown; source
+  reconciliation with deltas and reasons; known gaps and assumptions; reproduction (command, query slug, inputs).
+- **One data source per report:** use the source the chart uses (Athena for attempts) so the numbers reconcile. Show an "Unresolved" row for sessions missing the field, so tables add up to the total.
+- **Data gaps are tasks, not guesses:** when local data lacks a split (attempts: no linear marker, no device type), record it as a data-gap task and find the source with the user. Do not infer it.
+- **Two phases per story:** Phase 1 is the POC in `scratch/` (what is achievable, report format). Phase 2 formally recreates the code and the data: tested `scripts/dev/` and `src/lib/charts/` code,
+  catalogued queries and saved exports, generic for any tenant and date, with the user's separate go-ahead.
+- **Output location:** reports go to the metric's story folder as `<date>_<tenant>_<metric>-report.md`; charts stay in the gitignored `output/<TENANT>/charts/`, so decide how the image is shared.
 
 ## How to run a session
 
@@ -70,3 +83,13 @@ Append one dated entry per session: topic, decisions, open questions, next topic
 - **Open:** the 138-140 CREATE sessions missing from the Athena exports and the extra Lightstep sessions; the Conviva formula image and a reference number; UTC versus local day; auto-play and revived
   sessions; running for another tenant and date; graduation of the POC and `scratch/_lib/line_chart.py`.
 - **Next topic:** ask the user (gap investigation for attempts, or the next metric).
+
+### 2026-10-26 (later) — Attempts: supporting report and phase 2
+
+- **Decided:** every metric gets a chart plus a supporting markdown report (see "Deliverable pattern"). The attempts POC script now writes `attempts/<date>_<tenant>_attempts-report.md`: chart,
+  headline, and a top-10 content table from Athena `session.csv` only (same source family as the chart). ZA, 2026-10-24: 3,901 attempts; 3,763 match `session.csv`, 3,760 have a title, 141 unresolved.
+  Commit `01d0df6`. The attempts story is not closed: the POC only shows how; the story now also covers formally recreating all the code and the data (CMR-ATT-7), preceded by CMR-ATT-9.
+- **Data findings:** local ZA data is VOD-only (`abr-vod-` session ids, VOD URLs), so a linear vs VOD chart needs a new source; `session.csv` has no device model/OS, only a hashed `deviceId`.
+- **Open:** where linear sessions live (service or session prefix); where device type lives; content is a title not an asset ID; the chart PNG is gitignored, so the report image link only works
+  locally.
+- **Next topic:** ask the user (CMR-ATT-9 data scouting, CMR-ATT-4 gap probe, or the next metric).

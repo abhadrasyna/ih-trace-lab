@@ -35,6 +35,15 @@ and a `HeaderCell` header was tried and rejected by the user (the plain line was
 
 ---
 
+## CMR-ATT-8 — Supporting markdown report (done)
+
+**Files:** the POC script (`--report-dir`, `--top`); output `attempts/<date>_<tenant>_attempts-report.md`.
+
+**Delivered:** the report embeds the chart, states the headline (attempts, peak bucket) and a top-N content table (attempts, share of all attempts, unique households) from Athena `session.csv`, plus a
+"Not resolved" row so the table reconciles to the total. For ZA, 2026-10-24: 3,901 attempts, 141 without a title. The chart link points into the gitignored `output/`. **Commit:** `01d0df6`.
+
+---
+
 ## CMR-ATT-4 — Explain the gaps
 
 **Files:** a new `scratch/<date>_conviva-attempts_gap_probe.py` (registry stub per `scratch/SCRATCH.md`); findings in a `scratch/<date>_conviva-attempts_gap_findings.md` note.
@@ -73,17 +82,35 @@ assumption found, and record per-tenant mappings as parameters, never inline.
 
 ---
 
-## CMR-ATT-7 — Graduate (needs its own go-ahead)
+## CMR-ATT-9 — Close the data gaps for the report
 
-**Files:** `scripts/dev/` attempts script with tests; `src/lib/charts/` line renderer with tests; `SCRIPTS.md`; retire the scratch copies per `scratch/SCRATCH.md`.
+**Files:** a scratch probe and findings note; the POC script and report; later an Athena query in the catalog (`docs/guides/query-catalog.md`).
 
-**What to implement:** only after CMR-ATT-4 to CMR-ATT-6 are done and the user agrees. The renderer gets the same signature style and `ChartError` handling as the other `src/lib/charts` renderers, and
-the guide's module table gains the new module.
+**What to implement:**
+
+1. Find what marks a session as linear or VOD for ZA. Local data is VOD-only (`abr-vod-` session ids, VOD playback URLs); ask the user which service or session prefix carries linear.
+2. Find a device-type or app field. `session.csv` has only a hashed `deviceId`; the ctap Lightstep export has `http.user_agent` (browser/OS only).
+3. Fetch only what is missing (tenant resolved first, ZA and 2026-10-24) and save it where later sessions can reuse it.
+4. Add the second chart (linear vs VOD attempts, same renderer and theme) and a top-10 device table to the report. If a source does not exist, record it as a blocker, not a guess.
+
+**Commit:** `docs(conviva-metrics): cmr-att-9`
+
+---
+
+## CMR-ATT-7 — Formal recreation: graduate code and data (needs its own go-ahead)
+
+**Files:** `scripts/dev/` attempts script and report writer with tests; Athena query catalog entries and saved exports for every input the report needs; `src/lib/charts/` line renderer with tests;
+`SCRIPTS.md`; retire the scratch copies per `scratch/SCRATCH.md`.
+
+**What to implement:** only after CMR-ATT-4 to CMR-ATT-6 and CMR-ATT-9 are done and the user agrees. The renderer gets the same signature style and `ChartError` handling as the other `src/lib/charts`
+renderers, and the guide's module table gains the new module.
 
 **Tests (no network, no real external services):**
 - `test_attempts_bucketing_happy_path` — CREATE events land in the expected buckets and the sum equals the distinct session count.
 - `test_attempts_missing_create_events` — no CREATE rows for the date raises a clear error.
 - `test_render_line_png_magic` — output starts with `\x89PNG`.
+- `test_attempts_report_top_content` — the top-N table is sorted and its rows plus the unresolved row equal the attempts total.
+- `test_attempts_report_no_titles` — no resolved titles gives a table with only the unresolved row, no crash.
 - `test_render_line_empty_series` — empty input raises `ChartError`.
 
 **Commit:** `feat(conviva-metrics): graduate attempts poc`

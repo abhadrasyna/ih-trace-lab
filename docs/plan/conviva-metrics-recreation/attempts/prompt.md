@@ -12,6 +12,11 @@ documentation per metric and build a `scratch/` POC to see how far local data ge
 questions it left. It supersedes the attempts half of the placeholder `../attempts-concurrent-plays/`, which stays in place for concurrent plays and is left untouched. Part of the
 `conviva-metrics-recreation` epic; see `../README.md`.
 
+## Phases
+
+Phase 1 is the POC (done 2026-10-26): it proved attempts can be recreated from local Athena data and fixed the chart and report format. Phase 2 is the formal recreation of all the code and the data as
+tested production code and catalogued queries, generic for any tenant and date. The POC is evidence for how to do it, not the deliverable.
+
 ## Definition implemented
 
 Source: <https://docs.conviva.ai/sei/video/metric-dictionary/attempts/> (page updated 2026-09-02). Attempts counts the times viewers attempted to start playback in the interval. It is a "Started"-type
@@ -45,14 +50,16 @@ cannot close, after `python scripts/resolve_tenant.py ...` per `docs/guides/tena
 - **CMR-ATT-1** — Done: POC script, per-interval attempts from CREATE events with reconciliation counts
 - **CMR-ATT-2** — Done: chart on the shared theme, with the scratch line renderer
 - **CMR-ATT-3** — Done: chart header streamlined (title, KPI, footer); chart accepted as final
+- **CMR-ATT-8** — Done: supporting markdown report with the chart and top-10 content (Athena only)
 - **CMR-ATT-4** — Explain the 138-140 CREATE sessions missing from Athena exports and the extra Lightstep sessions
 - **CMR-ATT-5** — Settle the open definition points: formula, reference number, day boundary, auto-play and revived sessions
 - **CMR-ATT-6** — Prove the POC generalises: run it for another tenant and another date
-- **CMR-ATT-7** — Graduate the POC and the line renderer (separate go-ahead)
+- **CMR-ATT-9** — Close the data gaps: linear vs VOD source (second chart) and device type
+- **CMR-ATT-7** — Formal recreation: graduate the POC, renderer, report and data queries (separate go-ahead)
 
 ## Definition of done
 
-All of CMR-ATT-1 to CMR-ATT-7 are complete, and the attempts number for the reference tenant and day is either matched to Conviva or the gap is explained.
+All of CMR-ATT-1 to CMR-ATT-9 are complete, and the attempts number for the reference tenant and day is either matched to Conviva or the gap is explained.
 
 ## Perspectives not covered
 
