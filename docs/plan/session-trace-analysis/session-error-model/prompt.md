@@ -39,6 +39,24 @@ crossing midnight is split. This story fixes the definitions once, in pure code,
 report showed 3,803 / 1,188 / 2,086 / 215 and a residual of 314; the live residual is 316 (80 + 227 + 3 + 6). The difference is late-arriving rows, not a definition difference: rows for a day are
 ingested for days afterwards (10-05 rows were still being ingested on 10-25).
 
+## Evidence — first error code by outcome (ZA 2026-10-24, live Athena 2026-10-26)
+
+Attempts were 3,808 at this later check (VSF 2,091). All 3,808 have debug states; the debug side holds 3,948 sessions (137 debug-only, 3 unified without `REQUEST_VIEWING`). The first code is the first
+non-empty debug `errorcode` by `datetime`; mDRM sources were not included, so this is the debug half of the rule only.
+
+| Outcome | Sessions | First codes |
+|---|---|---|
+| VSF | 2,091 | 6001 1,891 (90.4%); 3016 105; 1003 27; 6002 20; 6006 9; 3015 7; 1002 7; E31012 6; 6007 6; 1001 5; 3014 3; 1006 3; 6008 2; none 0 |
+| VPF | 80 | E31012 38; 1003 36; 1001 3; 1006 2; 3014 1; none 0 |
+| VPT | 227 | none 217; E31012 5; 1003 5 |
+| EBVS | 214 | none 207; E31012 3; 1003 1; 6002 1; 1002 1; 6001 1 |
+| buffering_no_end | 3 | none 1; 1003 1; 1001 1 |
+| startup_no_followup | 6 | none 5; 1003 1 |
+| success | 1,187 | none 1,183; E31012 3; 1003 1 |
+
+Observations (not causes): VSF is dominated by one code; VPF always carries a code; VPT, EBVS and the no-end classes almost never carry one, so for them the `endreason` is the only signal; a few
+successful sessions still log an error code. The 217 VPT and 207 EBVS "none" sessions are unchecked against mDRM exports.
+
 ## Scope guard
 
 In bounds: pure helpers under `investigations/ctap-smvod/scripts/lib/`, one registered Athena query for the cross-day outcome, tests, docs. Out of bounds: changing the existing merge/outcome scripts
@@ -49,7 +67,8 @@ or adoption report producers (`src/pipelines/aws_access_cli/scripts/run_adoption
 - **EM-1** — Pure first-error library over the flat eventdata, mDRM failures and debug states.
 - **EM-2** — Cross-day outcome classifier plus the registered Athena query.
 - **EM-3** — Cross-check against the error report and the adoption report, with the late-ingest reconciliation line.
-- **EM-4** — Docs: `usage.md`, `CONTEXT.md`; unblock PF-8.
+- **EM-4** — Outcome × first-error-code report for all seven outcome classes.
+- **EM-5** — Docs: `usage.md`, `CONTEXT.md`; unblock PF-8.
 
 ## Open questions
 

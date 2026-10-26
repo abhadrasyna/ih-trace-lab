@@ -69,7 +69,27 @@ residual = attempts − the other three), print the difference per class and rec
 
 ---
 
-## EM-4 — Docs
+## EM-4 — Outcome × first-error-code report
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/lib/session_outcome.py` — pure `outcome_error_crosstab(outcomes, first_errors)` returning counts per (outcome, first_error_code) and per-class `with_code` share.
+- `investigations/ctap-smvod/scripts/analyze_outcome_error_codes.py` — argparse (`--tenant`, `--date`); joins the EM-2 per-session outcome export with the EM-1 first error and writes
+  `output/<TENANT>/session-presence/csv/<date>_outcome_error_codes.csv` plus a markdown table.
+- Matching tests in `tests/test_session_outcome.py`.
+
+**What to implement:** all seven classes, not only the failures; the success class is included to show that a code can occur in a session that still succeeded. A session with no code is `(none)`.
+Report the source of the first error (`mdrmfe`, `lrm`, `cdm`, `debug`) alongside the code, and flag a debug-only first error where mDRM exports for the date are absent, because the Athena figures in
+`prompt.md` are the debug half of the rule only.
+
+**Tests:** `test_crosstab_counts_per_class_and_code`, `test_none_bucket_for_sessions_without_code`, `test_success_with_code_counted`, `test_with_code_share`.
+
+**Baseline (ZA 2026-10-24, debug-only first code, live 2026-10-26):** see "Evidence — first error code by outcome" in `prompt.md`.
+
+**Commit:** `feat(ctap-smvod): report first error code by outcome class`
+
+---
+
+## EM-5 — Docs
 
 **Files to change:** `investigations/ctap-smvod/docs/usage.md`, `CONTEXT.md` (What Exists), `session-presence-funnel/stories.md` (PF-8 points here).
 

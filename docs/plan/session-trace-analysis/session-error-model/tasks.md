@@ -3,12 +3,13 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: EM-1, EM-2, EM-3, EM-4.**
+**Open: EM-1, EM-2, EM-3, EM-4, EM-5.**
 
 - [ ] **EM-1** — Pure first-error library over flat eventdata, mDRM failures and debug states | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **EM-2** — Cross-day outcome classifier and registered Athena query | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **EM-3** — Cross-check against the error and adoption reports, with the late-ingest reconciliation line | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **EM-4** — Docs and CONTEXT.md; unblock PF-8 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
+- [ ] **EM-4** — Outcome × first-error-code report for all seven outcome classes | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **EM-5** — Docs and CONTEXT.md; unblock PF-8 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 
 ## Story done when
 
@@ -18,7 +19,9 @@ spec.
   a catalogued query returns the per-session inputs for a date plus a look-ahead window.
 - **EM-3** — For ZA 2026-10-24 the per-session split reproduces the evidence in `prompt.md` within the late-ingest tolerance, and a reconciliation line against the adoption report is printed; the
   first error agrees with the existing error report for 1xxx/6xxx sessions.
-- **EM-4** — `usage.md` and `CONTEXT.md` describe the model; PF-8 points at it instead of defining its own rule.
+- **EM-4** — One command writes, for a tenant and date, a CSV and markdown table of session counts by outcome class and first error code (with `(none)` where no code was observed) and the share of
+  sessions in each class that carry any code; it reproduces the ZA 2026-10-24 tables in `prompt.md` within the late-ingest tolerance.
+- **EM-5** — `usage.md` and `CONTEXT.md` describe the model; PF-8 points at it instead of defining its own rule.
 
 ## After each task
 
