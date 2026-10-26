@@ -113,8 +113,8 @@ This file is a starting spec and will be appended to as findings come in. Constr
    debug-not-unified).
 2. Run for one other ZA date and for ZM (which has linear) and confirm clean output and a sensible VOD/linear split.
 3. Decide with a live Athena count whether local exports are complete; record the result.
-4. Answer the open questions in `prompt.md`, including the expected-population finding from PF-7 and the headline "present in Athena" definition (ask the user). Run PF-5 after PF-8 so the whole
-   report, including the trace matrix and charts, is validated.
+4. Answer the open questions in `prompt.md`, including the expected-population finding from PF-7 and the headline "present in Athena" definition (decided: present = in both tables; record it in the
+   report text). Run PF-5 after PF-8 so the whole report, including the trace matrix and charts, is validated.
 
 **Tests:** run the existing ctap-smvod suite; it must be green.
 
@@ -208,8 +208,8 @@ category). The matrix is built here, not in PF-1, so PF-1 stays a three-source l
 - Outputs under `output/<TENANT>/session-presence/`: `csv/<date>_session_trace_matrix.csv`, `csv/<date>_session_trace_patterns.csv`, `csv/<date>_session_trace_first_error.csv`, `charts/<date>_*.png`.
 
 **Matrix columns (one row per distinct Lightstep `sessionId`):** `session_type`; `in_lightstep`, `in_mdrmfe`, `in_lrm`, `in_cdm`, `in_debug`, `in_unified` (booleans, LRM/CDM via `fcid` from mdrmfe);
-`mdrmfe_status`; `pattern` (e.g. `mdrmfe+lrm+cdm|debug|-`); `bucket` (`observed`, `debug_not_unified`, `not_observed_in_athena`); `has_content_id`; `householdId`, `deviceId`, `session.clientIp`,
-`contentId`; `first_error_code`, `first_error_source`.
+`mdrmfe_status`; `pattern` (e.g. `mdrmfe+lrm+cdm|debug|-`); `bucket` (`present_in_both`, `debug_not_unified`, `not_observed_in_athena`; only `present_in_both` counts as present in the headline);
+`has_content_id`; `householdId`, `deviceId`, `session.clientIp`, `contentId`; `first_error_code`, `first_error_source`.
 
 **First-error rule (to finalise in the first session of this task, then documented in the report):** one error per session, taken by priority and then earliest time:
 1. failed setup (`http.status_code` != 2xx on `sm-vod`; blank-`sessionId` rows have no id and stay in the PF-2 setup-failed CSV);

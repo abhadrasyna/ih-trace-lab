@@ -75,7 +75,9 @@ For any tenant and date with local exports, one command produces the dated funne
   (all HTTP 201) and 351 of those also LRM and CDM records, against 46.3% for the 3,763 observed sessions (not like-for-like: DRM content only); 188 have no trace in any source. The 542 are on 266
   devices; 215 sessions are on devices that also had an observed session that day and 159 devices have every session unobserved, so the cause is mixed and not purely a broken device population. The
   top device has 51 sessions (9%) and the top five households 21%. Cause (telemetry never sent versus ingestion gap) is unproven.
-- Should "present in Athena" mean `unified_sessions`, debug states, or either (the report shows all three; the headline definition needs the user's call).
+- Should "present in Athena" mean `unified_sessions`, debug states, or either? **Decided 2026-10-26 (user): present = in both `unified_sessions` AND debug states; a session in only one of them is not
+  counted as present.** The report still shows all three counts, but the headline present figure is the "both" count (ZA 2026-10-24: 3,763 of 4,443; the other 680 = 138 in debug only + 542 in
+  neither). The "observed" wording elsewhere in this story means present in both.
 
 ## Perspectives not covered
 
