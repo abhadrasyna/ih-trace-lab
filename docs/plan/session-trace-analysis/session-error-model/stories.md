@@ -122,6 +122,7 @@ rates stay out of the report until several days are combined.
 **Files to change:** `investigations/ctap-smvod/docs/usage.md`, `CONTEXT.md` (What Exists), `session-presence-funnel/stories.md` (PF-8 points here).
 
 **What to implement:** document the scripts, the definitions and the late-ingest caveat; state that per-session counts are the headline and that adoption-report counts lag. Also document the
-`fcId`-prefix time proxy for the mDRM exports, the code-space rule (debug code against mDRM status), that the mDRM parts must be read by part, and that the wv split applies to 6001 only.
+`fcId`-prefix time proxy for the mDRM exports, the code-space rule (debug code against mDRM status), that the mDRM parts must be read by part, and that device attributes are reported generically per
+outcome (associations, not causes).
 
 **Commit:** `docs(ctap-smvod): document session error model`
