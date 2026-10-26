@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: PF-1, PF-2, PF-3, PF-4, PF-5, PF-6.**
+**Open: PF-1, PF-2, PF-3, PF-4, PF-5, PF-6, PF-7.**
 
 - [ ] **PF-1** — Pure library: setup-attempt/failed-setup stage first, then per-source session-id sets, funnel stages, overlaps, per-`session_type` split | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
@@ -14,6 +14,8 @@ spec.
 - [ ] **PF-5** — Validate on ZA 2026-10-24, extrapolate to another date and tenant, update docs and CONTEXT.md | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 - [ ] **PF-6** — Daily debug-not-unified report split by contentId missing/present, with the sessionId list and trend columns | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: —
+- [ ] **PF-7** — Lightstep forensics of sessions missing from both Athena tables: lifecycle query, manual review, household concentration | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none
+  | SHA: —
 
 ## Story done when
 
@@ -26,6 +28,8 @@ spec.
 - **PF-5** — The ZA 2026-10-24 run reproduces the baseline in `prompt.md`; one other date and one other tenant run clean; open questions are answered; `usage.md` and `CONTEXT.md` are current.
 - **PF-6** — For any tenant and date, one report lists the sessions in debug states but not `unified_sessions`, split by contentId missing/present with a sessionId CSV, and the trend file carries the
   daily counts.
+- **PF-7** — A catalogued Lightstep query and a dated findings doc classify every session in Lightstep but in neither Athena table by lifecycle outcome and show whether a few households account for
+  them; the ZA 2026-10-24 findings are recorded.
 
 ## After each task
 

@@ -46,6 +46,8 @@ only.
 - **PF-4** — Daily operation: `run_pipeline.py` step plus a trend CSV so the funnel can be checked every day.
 - **PF-6** — Daily debug-not-unified report: per day, the sessions present in debug states but absent from `unified_sessions`, split by whether `contentMetadata.contentId` is missing or present, with
   the sessionId list.
+- **PF-7** — Lightstep forensics of the sessions in Lightstep but in neither Athena table (542 on ZA 2026-10-24): a catalogued Lightstep query, a manual per-session lifecycle review, and a
+  household-concentration table.
 - **PF-5** — Validate on ZA 2026-10-24 against the baseline, extrapolate to another date and tenant, and update docs and `CONTEXT.md`.
 
 ## Definition of done
@@ -60,6 +62,9 @@ For any tenant and date with local exports, one command produces the dated funne
 - Why are 138 sessions in debug states but not `unified_sessions`: late arrival, or a genuinely different event population? Findings 2026-10-26 (ZA 2026-10-24): not a day-end effect (CREATE times span
   the whole day); 105 have only a CREATE event, 29 also have BUFFERING; a live Athena check found **137 of the 138 have a CREATE with `contentMetadata.contentId` and 1 does not**, so a missing
   contentId explains at most 1. The Clarissa Spark rule for creating a unified session is not yet confirmed (hypothesis: an event after CREATE is needed); PF-6 tracks the split every day.
+- Why are 542 Lightstep sessions in neither Athena table? Findings 2026-10-26 (ZA 2026-10-24): a live Athena week query (10-21..28) found only a handful of them, all dated 10-24, so the local exports
+  were slightly incomplete but the set is essentially absent. A 5-session Lightstep sample showed setup HTTP 200 in about 30-40 ms, 2 with a DELETE 204 at least 72 s later and 3 with no DELETE in the
+  following 1.5 hours; none was destroyed within 3 s. PF-7 extends this to the whole set and checks household concentration.
 - Should "present in Athena" mean `unified_sessions`, debug states, or either (the report shows all three; the headline definition needs the user's call).
 
 ## Perspectives not covered

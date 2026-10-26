@@ -144,3 +144,35 @@ This file is a starting spec and will be appended to as findings come in. Constr
 
 **Commit:** `feat(ctap-smvod): report debug sessions missing from unified`
 
+---
+
+## PF-7 — Lightstep forensics of sessions missing from both Athena tables
+
+Mostly a manual analysis in Lightstep, supported by one catalogued query and one small helper. The set is the sessions in the Lightstep export that are in neither `unified_sessions` nor debug states
+(the PF-2 "missing downstream" list; 542 on ZA 2026-10-24).
+
+**Files to change / create:**
+- `queries/lightstep/smvod-session-lifecycle.md` — UQL timeseries recipe (listed in `queries/lightstep/index.md`) that returns, per `sessionId` and for one household, the `sm-vod` operations (`POST`
+  setup, `GET`, `DELETE` destroy) with `http.status_code`; follow `docs/guides/query-catalog.md`.
+- `investigations/ctap-smvod/scripts/lib/session_presence.py` — pure `household_concentration(rows, key)` returning sessions per household/device/clientIp, sorted, with the share of the set.
+- `investigations/ctap-smvod/docs/session-trace/<tenant>_<date>_missing_sessions_lifecycle.md` — dated findings doc.
+
+**What to do:**
+
+1. Take the missing-downstream list from PF-2 (never a hardcoded id list) and tag each session with `householdId`, `deviceId` and `session.clientIp` from the Lightstep export.
+2. Household concentration: count missing sessions per `householdId`, `deviceId` and `session.clientIp`, and compare each household's missing share with its total session count. State whether a small
+   number of households (or one device model/IP range) accounts for a large part of the set, or whether it is spread out.
+3. Lifecycle review in Lightstep with the catalogued query. For a sample first (about 30 sessions, then all if the pattern is clear), record per session: setup status code and duration, whether a
+   `DELETE` exists and the gap from setup to `DELETE`, and any `404`/`5xx` on the session. Classify as **destroyed < 3 s**, **destroyed later**, **no destroy seen**, **setup error**. Time-series
+   buckets are 60 s wide, so report the gap as a lower bound unless a span-level time is available.
+4. Check the span coverage caveats: the Lightstep export window versus the Athena day (`timestamp_formatted`), and whether `sm-linear`, `ctap` or mDRM spans exist for the same session.
+5. Record the counts per class, the household table and conclusions in the findings doc, and answer the matching open question in `prompt.md`.
+
+**Baseline (ZA 2026-10-24, 5-session sample 2026-10-26):** setup HTTP 200 in about 30-40 ms for all 5; 2 had `DELETE` 204 at least 72 s later, 3 had no `DELETE` within 1.5 hours; none destroyed < 3 s.
+
+**Tests (no network, no real external services):**
+- `test_household_concentration_orders_by_count` — fixture with repeated households is sorted and carries the share.
+- `test_household_concentration_blank_key_ignored` — rows with a blank key are not counted as a household.
+
+**Commit:** `docs(ctap-smvod): lifecycle findings for sessions missing from Athena`
+
