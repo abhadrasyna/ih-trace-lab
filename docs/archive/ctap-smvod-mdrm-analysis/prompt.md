@@ -34,7 +34,7 @@ The funnel must run daily as a pipeline step, so it is a script plus a `run_pipe
 - `investigations/ctap-smvod/docs/lightstep-drm-exports.md` — file names, attribute names, the `brRef` note and the join.
 - `investigations/ctap-smvod/scripts/lib/drm_exports.py` — existing readers; `export_paths` reads a whole-day file plus all `_NN_` parts with no dedup.
 - `output/<OPCO>/<date>_setupsession_with_outcome.csv` and `output/<OPCO>/error_eventdata_flat/<date>_all.csv` — session list and downstream error inputs.
-- `docs/plan/ctap-smvod-3016-drm-device-link/` — the sibling story this one builds on.
+- `docs/archive/ctap-smvod-3016-drm-device-link/` — the sibling story this one builds on.
 
 ## Task overview
 

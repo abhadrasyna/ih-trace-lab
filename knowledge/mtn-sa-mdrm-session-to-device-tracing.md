@@ -40,5 +40,5 @@ L1, in the Widevine span). MTN SA volume over 24 h: Widevine ~2,211, FairPlay ~5
 
 - Hand-run guide and saved-export procedure: `investigations/ctap-smvod/docs/lightstep-drm-exports.md` (notebooks `MTN SA 3016 – mdrmfe license by session` and `MTN SA 3016 – mDRM license details by
   fcId`).
-- Planned local join into the 3016 events CSV: `docs/plan/ctap-smvod-3016-drm-device-link/`.
+- Planned local join into the 3016 events CSV: `docs/archive/ctap-smvod-3016-drm-device-link/`.
 - Full MCP rules: `/Users/abhadra/github_copilot/investigations/instructions/lightstep-mcp-tool-notes.md` (rules 14–17) and `drm-cross-region-investigation.md` (Step 2a).
