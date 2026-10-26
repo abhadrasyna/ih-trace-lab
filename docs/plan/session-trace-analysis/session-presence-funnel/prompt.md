@@ -11,6 +11,11 @@ task id) before writing any code. One task per session. Complete it fully. Stop.
 first question of any session-trace analysis is therefore: of the sessions Lightstep saw being created, how many show up downstream, and where do the rest disappear? Today that answer is only implicit
 in the `outcome_missing` count of `*_setupsession_with_outcome.csv`, which mixes real gaps with duplicate rows and blank-`sessionId` rows.
 
+**Stage 0 — failed before a session exists (added 2026-10-26).** The Lightstep export is a superset of attempts: 4,449 rows are 4,443 distinct sessions plus **6 rows with a blank `sessionId`**. A live
+Lightstep check showed all six are SetupSession spans that failed before a session was created (5 × HTTP 403, 1 × HTTP 500). The funnel therefore starts one step earlier than `sessionId`: setup
+attempts → sessions created → Athena. Identifying these needs the `http.status_code` column and `setup_failed` flag from `linear-session-coverage` (LC-1/LC-2); until that re-export they can only be
+counted as "blank `sessionId`", not classified.
+
 Baseline measured by hand on 2026-10-26 from the local exports (ZA, 2026-10-24, VOD only, no linear that day): Lightstep `smvod` 4,449 rows / **4,443** distinct sessions; Athena `unified_sessions`
 3,797 distinct; debug states 44,090 rows / 3,901 distinct. Of the 4,443: 3,763 in `unified_sessions`, 3,901 in debug states, 3,763 in both, **542 in neither**; 34 sessions are in `unified_sessions`
 but not Lightstep, and 138 are in debug states but not `unified_sessions`. These numbers are the acceptance check for this story and the reference the daily report must reproduce.
@@ -34,8 +39,8 @@ a report; changes no existing output. **Generic by design:** no tenant code or i
 
 ## Task overview
 
-- **PF-1** — Pure library: load session-id sets per source and compute the funnel stages, overlaps and per-`session_type` split.
-- **PF-2** — Report script: dated markdown + CSV for one tenant and date, including the list of sessions missing downstream.
+- **PF-1** — Pure library: load session-id sets per source and compute the funnel stages (starting with the setup-attempt/failed-setup stage), overlaps and per-`session_type` split.
+- **PF-2** — Report script: dated markdown + CSV for one tenant and date, including the setup-failure list (blank `sessionId`, by status code) and the list of sessions missing downstream.
 - **PF-3** — Characterize the missing sessions (device, OS, error codes, DRM activity) by joining existing files.
 - **PF-4** — Daily operation: `run_pipeline.py` step plus a trend CSV so the funnel can be checked every day.
 - **PF-5** — Validate on ZA 2026-10-24 against the baseline, extrapolate to another date and tenant, and update docs and `CONTEXT.md`.

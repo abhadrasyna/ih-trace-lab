@@ -16,7 +16,9 @@ This file is a starting spec and will be appended to as findings come in. Constr
 **What to implement:**
 
 1. Loaders that return the distinct non-blank `sessionId` set per source: Lightstep `smvod` (whole-day file or hourly `_NN_` parts, reusing the existing part-handling helper), Athena `session.csv`
-   (`unified_sessions`) and `debug_states.csv`. Also return row counts so duplicates are visible (rows vs distinct).
+   (`unified_sessions`) and `debug_states.csv`. Also return row counts so duplicates are visible (rows vs distinct). 1a. The Lightstep loader also returns the blank-`sessionId` rows (not just a
+   count), with `http.status_code` when the column exists. This is the **first funnel item**: setup attempts (rows) = sessions created (distinct non-blank) + failed setups (blank). ZA 2026-10-24:
+   4,449 = 4,443 + 6.
 2. `funnel_stages(lightstep, unified, debug)` returns: distinct per source, in-`unified`, in-`debug`, in-both, in-either, in-neither, and the Athena-only and debug-not-unified sets.
 3. `split_by_session_type(ids)` using `session_kind` from `scripts/lib/drm_funnel.py` (import, do not re-implement), so each stage is reported for `vod`, `linear` and `other`.
 4. Type hints on all public functions; fail loudly on a missing `sessionId` column.
@@ -26,6 +28,8 @@ This file is a starting spec and will be appended to as findings come in. Constr
 - `test_duplicate_and_blank_ids_counted_once` — duplicate rows and a blank `sessionId` do not inflate distinct counts.
 - `test_split_by_session_type` — vod, linear and unknown prefixes land in the right bucket.
 - `test_missing_session_id_column_raises` — a file without `sessionId` raises.
+- `test_failed_setup_rows_counted_by_status` — blank-`sessionId` rows with 403 and 500 are reported as failed setups by status code; attempts = created + failed.
+- `test_failed_setup_without_status_column` — an old export without `http.status_code` still counts the blank rows, with status "unknown".
 
 **Commit:** `feat(ctap-smvod): add session presence funnel library`
 
@@ -41,7 +45,9 @@ This file is a starting spec and will be appended to as findings come in. Constr
 **What to implement:**
 
 1. Write `output/<TENANT>/session-presence/<date>_session_presence.md` (stage table, overlap table, the per-`session_type` split) and `csv/<date>_session_presence.csv`, following the layout of
-   `output/<TENANT>/drm-analysis/`.
+   `output/<TENANT>/drm-analysis/`. 1a. The report opens with a **setup stage** table (attempts, sessions created, failed setups split by `http.status_code`, and by `session_type` where the id
+   exists), and `csv/<date>_session_presence_setup_failed.csv` lists the failed rows with `householdId`, `deviceId`, `session.clientIp`, `contentId`, `lightstep.trace_id`, `http.status_code`. Repeated
+   failures by one household/device are counted as retries.
 2. Write `csv/<date>_session_presence_missing.csv` listing Lightstep sessions found in neither Athena table, with `householdId`, `deviceId`, `contentId`, `start_time` when present in the merged file.
 3. Exit non-zero with a clear message if an input file is missing; never produce a partial report.
 

@@ -23,7 +23,7 @@ or are missing). That defect is the first story.
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
 | `linear-session-coverage/` | Cover linear sessions in the ctap-smvod export, merge and reports (tenant-agnostic) | ⬜ Not started | — | — |
-| `session-presence-funnel/` | Daily count of Lightstep sessions and how many reach Athena `unified_sessions` and debug states | ⬜ Not started | — (linear split: LC-2) | — |
+| `session-presence-funnel/` | Daily count of Lightstep sessions and how many reach Athena `unified_sessions` and debug states | ⬜ Not started | — (linear split, status codes: LC-2) | — |
 
 Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.
 
