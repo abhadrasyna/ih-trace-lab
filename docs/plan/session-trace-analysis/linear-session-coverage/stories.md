@@ -18,7 +18,9 @@ This file is a starting spec and will be appended to as findings come in.
 
 1. Resolve a tenant with `scripts/resolve_tenant.py --system lightstep_go --tenant <code>` (shown for ZM and GH) and record the project plus filter pattern in the doc.
 2. Give the matching smvod-ts (span-samples) query with `service in (sm-vod, sm-linear)`; the current ts export has no linear rows.
-3. State that old exports are VOD-only and that re-exporting is a manual step.
+3. State that old exports are VOD-only, lack `http.status_code`, and are not backfilled; re-exporting is a manual step done only after this story is implemented.
+4. Add `"http.status_code"` to the `group_by` of the smvod query. Reason: a SetupSession that fails before a session exists (ZA 2026-10-24: 5 rows HTTP 403, 1 row HTTP 500) has a blank `sessionId`,
+   `playbackURL` and `externalPackageId`, and the `error` tag stays `0`, so nothing in the CSV tells these failures apart from a bad export.
 
 **Tests:** docs only, none.
 
@@ -31,17 +33,20 @@ This file is a starting spec and will be appended to as findings come in.
 **Files to change / create:**
 - `investigations/ctap-smvod/scripts/merge_ctap_smvod_csv.py` — add a `session_type` output field derived from the `sessionId` prefix (`abr-vod-` / `abr-linear-`, else `unknown`); for linear, set a
   channel key from `playbackURL`/`contentId` instead of the blank `content_uuid`.
-- `investigations/ctap-smvod/tests/` — a merge test with a linear fixture row.
+- `investigations/ctap-smvod/tests/` — a merge test with a linear fixture row and the status-code fixtures below.
 
 **What to implement:**
 
 1. Reuse `session_kind` from `scripts/lib/drm_funnel.py` (import, do not re-implement) for the prefix rule.
-2. Add `session_type` to `OUTPUT_FIELDS` and populate it for every row.
+2. Add `session_type` to `OUTPUT_FIELDS` and populate it for every row. 2a. Add `http.status_code` to `SMVOD_FIELDS` as an optional input column: an old export without it merges unchanged with a blank
+   value, and no error is raised. Add a derived `setup_failed` flag (blank `sessionId` with a non-2xx status) so pre-session failures can be counted separately from real sessions.
 3. Make sure a linear smvod row with empty `externalPackageId` still matches its CTAP trace and is not emitted as `ctap_only`.
 
 **Tests (no network, no real external services):**
 - `test_linear_row_matches_ctap_and_has_session_type` — linear fixture is `matched` with `session_type == "linear"`.
 - `test_blank_external_package_id_not_error` — empty `externalPackageId` does not change the match status.
+- `test_status_code_column_carried` — a 403 row with blank `sessionId` keeps `http.status_code == "403"` and `setup_failed` set; a 200 row does not.
+- `test_old_export_without_status_column_merges` — an export without `http.status_code` merges with a blank value and no error.
 
 **Commit:** `feat(ctap-smvod): add session_type and linear key to merge`
 

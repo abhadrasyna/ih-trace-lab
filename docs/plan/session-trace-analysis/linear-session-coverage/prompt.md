@@ -23,7 +23,7 @@ The corrected export query (one run per tenant; `<busUnitId>` is the tenant's `g
 spans count
 | delta
 | filter (service == "sm-linear" || service == "sm-vod") && session.api == "SetupSession" && span.kind == "server" && busUnitId == "<busUnitId>"
-| group_by ["householdId", "deviceId", "session.clientIp", "sessionId", "contentId", "externalPackageId", "lightstep.trace_id", "playbackURL", "busUnitId"], sum
+| group_by ["householdId", "deviceId", "session.clientIp", "sessionId", "contentId", "externalPackageId", "lightstep.trace_id", "playbackURL", "http.status_code", "busUnitId"], sum
 ```
 
 This story is opened as the defect record and **will be appended to as the work progresses**; tasks and open questions below are the starting point, not the final list.
@@ -45,7 +45,7 @@ the merge and the reports; no schema/storage change. Re-exporting Lightstep data
 ## Task overview
 
 - **LC-1** — Update the documented Lightstep export queries (smvod and smvod-ts) to include `sm-linear`, as a per-tenant template (ZM and GH as worked examples).
-- **LC-2** — Merge: add `session_type` and a linear-safe content key; stop emitting linear as `ctap_only`.
+- **LC-2** — Merge: add `session_type`, a linear-safe content key and the optional `http.status_code` column; stop emitting linear as `ctap_only`.
 - **LC-3** — Audit and fix downstream scripts and pipeline summaries that assume VOD.
 - **LC-4** — Validate end to end on one day for ZM and GH, plus a ZA VOD-only day as the no-regression and no-hardcoding check; update docs and `CONTEXT.md`.
 
@@ -63,5 +63,6 @@ column, and every downstream report either handles linear or documents why it sk
 
 ## Perspectives not covered
 
-- Historical exports before this fix stay VOD-only; no backfill of past dates is planned here.
+- Historical exports before this fix stay VOD-only and lack `http.status_code`; no backfill of past dates is planned (decided 2026-10-26). The Lightstep query is updated only once this story is
+  implemented, and days exported afterwards carry the new column.
 - End-to-end session tracing from creation to failure (the broader goal that motivated this) is a separate story that builds on this one.
