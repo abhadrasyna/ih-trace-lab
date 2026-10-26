@@ -20,8 +20,8 @@ spec.
 - **EM-3** — For ZA 2026-10-24 the per-session split reproduces the evidence in `prompt.md` within the late-ingest tolerance, and a reconciliation line against the adoption report is printed; the
   first error agrees with the existing error report for 1xxx/6xxx sessions.
 - **EM-4** — One command writes, for a tenant and date, a CSV and markdown table of session counts by outcome class and first error code (with `(none)` where no code was observed) and the share of
-  sessions in each class that carry any code; it reproduces the ZA 2026-10-24 tables in `prompt.md` within the late-ingest tolerance. It also writes four PNG charts (attempts by outcome, first error
-  code per outcome, VSF top codes, code × outcome heatmap) to `output/<TENANT>/charts/`, each labelled with the first-error source.
+  sessions in each class that carry any code; it reproduces the ZA 2026-10-24 tables in `prompt.md` within the late-ingest tolerance. It also writes four PNG charts (attempts by outcome, first-error
+  source per outcome, mDRM reach per outcome, non-success rate by device attribute; none per error code) to `output/<TENANT>/charts/`, each labelled with the sources included.
 - **EM-5** — `usage.md` and `CONTEXT.md` describe the model; PF-8 points at it instead of defining its own rule.
 
 ## After each task

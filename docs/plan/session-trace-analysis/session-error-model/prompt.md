@@ -77,11 +77,12 @@ debug `CREATE` time on 1,793 sessions: median +2.3 s, p5 0.004 s, p95 13 s). LRM
   403/400), so merging them into one `first_error_code` would move these 5 sessions from 6007 to 403.
 - 6001 (1,891 sessions) has zero mdrmfe rows: those sessions never reach mDRM. 2,086 of 2,091 VSF sessions have no mDRM failure; 1,958 have no mdrmfe row at all.
 - VPT, EBVS, VPF and the two no-end classes have no mDRM failure, so the debug "none" is not contradicted by mDRM (subject to export completeness, unproven).
-- Device: `output/<T>/<date>_setupsession_with_outcome.csv` (`raw_user_agent`, `Platform`) covers 3,777 of the 3,808 attempts. The WebView (`; wv`) split matters for **6001 only**: 1,789 of 1,891
-  (94.6%) are wv, 84 non-wv, 18 not in the CSV. It is a correlation, not a proven cause; the 84 non-wv sessions are unexplained.
+- Device: `output/<T>/<date>_setupsession_with_outcome.csv` (`raw_user_agent`, `Platform`) covers 3,777 of the 3,808 attempts and agrees with the mdrmfe `http.user_agent` on 1,746 of 1,746 comparable
+  sessions. mDRM adds `drm_type` and CDM make/model/security level for the 1,747 attempts that reached mdrmfe (46%); the device attributes are reported generically per outcome (EM-4), as associations
+  only.
 
-Unproven: completeness of the mDRM exports (uneven part sizes, widevine ends 22:56, playready 8 rows); that the `fcId` time equals the failure time; the cause of 6001; why 1,958 VSF and 74 EBVS
-sessions have no mdrmfe row; the mDRM error body (for example 6211) is not exported.
+Unproven: completeness of the mDRM exports (uneven part sizes, widevine ends 22:56, playready 8 rows); that the `fcId` time equals the failure time; the cause of the largest VSF code group; why 1,958
+VSF and 74 EBVS sessions have no mdrmfe row; the mDRM error body is not exported.
 
 ## Scope guard
 

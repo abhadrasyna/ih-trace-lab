@@ -26,11 +26,15 @@ Constraint for every task: no tenant code or id hardcoded; no network in tests; 
 5. **mDRM time and join.** The mDRM exports have no timestamp column; the request time is the `fcId` hex prefix read as unix seconds (validated on ZA 2026-10-24, see `prompt.md`). Timestamps are
    compared with a 2 s tolerance. LRM and CDM rows join to a session through the mdrmfe `fcid`; count rows that do not join and report the count, never drop them silently. Read every part file
    (`export_paths`), because the pipeline does not combine the mDRM parts.
-6. **Code spaces.** An mDRM status (403, 400) and a player error code (6007) are different code spaces. `first_error_code` keeps the winning source's own value; never compare or merge codes across
-   sources. `first_debug_code` is what EM-4 groups on.
+6. **Code spaces.** An mDRM HTTP status and a player error code are different code spaces. `first_error_code` keeps the winning source's own value; never compare or merge codes across sources.
+   `first_debug_code` is the debug-side code that the crosstab keeps.
+7. **Device attributes per session** (generic, no code-specific logic): `is_wv`, `drm_type`, `cdm_make`, `cdm_model`, `cdm_security_level` and `device_source` (`setupsession`, `mdrmfe`, `none`).
+   `is_wv` and the user agent come from `raw_user_agent`/`Platform` in `output/<TENANT>/<date>_setupsession_with_outcome.csv` through `scripts/lib/webview.py::is_wv` (mdrmfe `http.user_agent` is the
+   fallback; the two agreed on 1,746 of 1,746 comparable ZA 2026-10-24 sessions). `drm_type` and the CDM fields come from mdrmfe and CDM via `fcid` and exist only for sessions that reached mDRM.
+   Unknown stays blank, never `false` or "unknown".
 
 **Tests:** `test_earliest_error_wins`, `test_mdrm_wins_on_equal_time`, `test_debug_only_session`, `test_no_error_is_none`, `test_all_codes_kept_in_time_order`, `test_missing_column_raises`,
-`test_code_spaces_not_mixed`, `test_fcid_prefix_time`, `test_lrm_cdm_join_via_mdrmfe_fcid`, `test_unjoined_rows_counted`.
+`test_code_spaces_not_mixed`, `test_fcid_prefix_time`, `test_lrm_cdm_join_via_mdrmfe_fcid`, `test_unjoined_rows_counted`, `test_unknown_device_stays_blank`, `test_device_falls_back_to_mdrmfe_ua`.
 
 **Commit:** `feat(ctap-smvod): add session first-error model`
 
@@ -85,33 +89,31 @@ residual = attempts − the other three), print the difference per class and rec
   `output/<TENANT>/session-presence/csv/<date>_outcome_error_codes.csv` plus a markdown table.
 - Matching tests in `tests/test_session_outcome.py`.
 - `investigations/ctap-smvod/scripts/chart_outcome_error_codes.py` — thin renderer over the CSV using `src/lib/charts/` (`render_stacked_bar`, `render_bar`, `output.write_chart_png`), following
-  `docs/guides/chart-guidelines.md`; flag `--skip-charts` on the analysis script. The heatmap needs a new shared `src/lib/charts/heatmap.py` (the layer has none today), so build it first, small, with
-  its own test.
+  `docs/guides/chart-guidelines.md`; flag `--skip-charts` on the analysis script. Only existing shared chart helpers are used (no new heatmap).
 - `investigations/ctap-smvod/tests/test_chart_outcome_error_codes.py`.
 
-**Charts** (PNG to `output/<TENANT>/charts/`, no network):
+**Charts** (PNG to `output/<TENANT>/charts/`, no network; none is specific to an error code):
 1. `<date>_outcome_attempts.png` — one stacked bar of attempts by the 7 classes, counts and %, green for success and red for failures, export time in the footnote.
-2. `<date>_outcome_first_error_code.png` — 100% stacked bar per outcome class split by first error code; codes under 1% grouped as `other`; `(none)` in grey so "no code observed" is not read as a
-   code.
-3. `<date>_vsf_top_codes.png` — horizontal bar of VSF first codes ranked by count (log axis option).
-4. `<date>_code_by_outcome_heatmap.png` — heatmap of code × outcome class. Every chart states "first error from debug events" unless mDRM exports for the date were included.
+2. `<date>_outcome_first_error_source.png` — 100% stacked bar per outcome class split by first-error source (`mdrmfe`, `lrm`, `cdm`, `debug`, `none`); `none` in grey so "no error observed" is not read
+   as a source.
+3. `<date>_outcome_mdrm_reach.png` — stacked bar per outcome class: no mdrmfe row, mdrmfe 2xx, mDRM non-2xx.
+4. `<date>_outcome_by_device.png` — non-success rate per device attribute (`is_wv`, DRM type, CDM security level), each with a `not available` bucket and the session count beside it. No heatmap and no
+   per-code chart. Every chart states which sources were included (debug only when mDRM exports for the date are absent).
 
-**What to implement:** all seven classes, not only the failures; the success class is included to show that a code can occur in a session that still succeeded. A session with no code is `(none)`.
-Group on `first_debug_code` (not on an mDRM status) and add an `mdrm_failure` column, so the 5 VSF/6007 sessions with mDRM 403/400 stay under 6007. Report the source of the first error (`mdrmfe`,
-`lrm`, `cdm`, `debug`) alongside the code, and flag a debug-only first error where mDRM exports for the date are absent. Also write the outcome × mDRM status table (sessions with an mdrmfe row,
-sessions with a non-2xx, statuses by source), as in `prompt.md`. "(none)" means no debug error and no mDRM non-2xx, with the export-completeness caveat stated in the markdown.
+**What to implement:** all seven classes, not only the failures. The crosstab of outcome × `first_debug_code` (`(none)` for no debug code) is written to the CSV and markdown only, not charted;
+`mdrm_failure` is a separate column so mDRM failures never move a session between code groups. Report the first-error source alongside the code and flag a debug-only first error where mDRM exports for
+the date are absent. Also write the outcome × mDRM status table (sessions with an mdrmfe row, sessions with a non-2xx, statuses by source) and the outcome × device-attribute tables, as in `prompt.md`.
+`(none)` means no debug error and no mDRM non-2xx, with the export-completeness caveat in the markdown. Device attributes come from EM-1 item 7; no split is specific to one code. Where the
+3014/3015/3016 `subcategory_events.csv` exists, an optional join may add `cdm_make`, `cdm_model` and `license_status` without recomputing it. Device rates show associations only, not causes; per-model
+rates stay out of the report until several days are combined.
 
-**WebView split for 6001 only.** For sessions whose first debug code is 6001, add counts of `wv`, `non-wv` and `not in device CSV`, with the device read from `raw_user_agent`/`Platform` in
-`output/<TENANT>/<date>_setupsession_with_outcome.csv` through `scripts/lib/webview.py::is_wv` (a missing row or user agent is its own bucket, never non-wv). No wv split for any other code or outcome.
-Baseline ZA 2026-10-24: 1,891 = wv 1,789 + non-wv 84 + not in CSV 18 (a correlation; cause unproven).
+**Tests:** `test_missing_device_is_own_bucket`, `test_mdrm_failure_does_not_change_debug_code_group`, `test_crosstab_counts_per_class_and_code`, `test_none_bucket_for_sessions_without_code`,
+`test_success_with_code_counted`, `test_with_code_share`, `test_first_error_source_counts`, `test_mdrm_reach_counts`, `test_device_rate_per_attribute`, `test_charts_write_nonempty_pngs`,
+`test_none_bucket_is_grey`.
 
-**Tests:** `test_wv_split_only_for_6001`, `test_missing_device_is_own_bucket`, `test_mdrm_failure_does_not_change_debug_code_group`, `test_crosstab_counts_per_class_and_code`,
-`test_none_bucket_for_sessions_without_code`, `test_success_with_code_counted`, `test_with_code_share`, `test_small_codes_grouped_as_other`, `test_charts_write_nonempty_pngs`,
-`test_none_bucket_is_grey`, `test_heatmap_missing_cell_is_zero`.
+**Baseline (ZA 2026-10-24, live 2026-10-26):** see "Evidence — first error code by outcome" and "Evidence — mDRM correlation" in `prompt.md`.
 
-**Baseline (ZA 2026-10-24, debug-only first code, live 2026-10-26):** see "Evidence — first error code by outcome" in `prompt.md`.
-
-**Commit:** `feat(ctap-smvod): report first error code by outcome class`
+**Commit:** `feat(ctap-smvod): report outcome by first error, mDRM reach and device`
 
 ---
 
