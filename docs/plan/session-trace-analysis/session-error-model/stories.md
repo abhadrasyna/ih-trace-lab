@@ -18,11 +18,19 @@ Constraint for every task: no tenant code or id hardcoded; no network in tests; 
 1. Candidates per session: (a) mDRM non-2xx rows (mdrmfe `http.status_code` on `drmAuthToken.sessionId`; LRM and CDM via `fcid`), reusing the readers in `scripts/lib/drm_exports.py` and the
    `mdrm_quality_failures` logic in `analyze_mdrm_quality.py` (import, do not copy); (b) the first non-empty `errorcode` in `debug_states.csv` (rows with `eventid = PLAYER_ERROR` have an EMPTY
    `state`), ordered by `datetime`; the flat error eventdata supplies the same code for cross-checking.
-2. Return one row per session: `first_error_code`, `first_error_source` (`mdrmfe`, `lrm`, `cdm`, `debug`, `none`), `first_error_time`, `all_error_codes` (every code seen, ordered by time).
-3. Rule: earliest by time; on equal time or one-source sessions use the priority mDRM, then debug, then none. Blank-`sessionId` failed setups are never returned (stage 0, handled by the funnel).
+2. Return one row per session: `first_error_code`, `first_error_source` (`mdrmfe`, `lrm`, `cdm`, `debug`, `none`), `first_error_time`, `all_error_codes` (every code seen, ordered by time), plus
+   `first_debug_code` (always the debug code, whatever the winner) and `mdrm_failure` (layers and statuses, for example `mdrmfe:403+lrm:400+cdm:400`, empty when none).
+3. Rule: earliest by time; on equal time (within 2 s, see 5) or one-source sessions use the priority mDRM, then debug, then none. Blank-`sessionId` failed setups are never returned (stage 0, handled
+   by the funnel).
 4. Fail loudly on a missing required column; no bare `except`.
+5. **mDRM time and join.** The mDRM exports have no timestamp column; the request time is the `fcId` hex prefix read as unix seconds (validated on ZA 2026-10-24, see `prompt.md`). Timestamps are
+   compared with a 2 s tolerance. LRM and CDM rows join to a session through the mdrmfe `fcid`; count rows that do not join and report the count, never drop them silently. Read every part file
+   (`export_paths`), because the pipeline does not combine the mDRM parts.
+6. **Code spaces.** An mDRM status (403, 400) and a player error code (6007) are different code spaces. `first_error_code` keeps the winning source's own value; never compare or merge codes across
+   sources. `first_debug_code` is what EM-4 groups on.
 
-**Tests:** `test_earliest_error_wins`, `test_mdrm_wins_on_equal_time`, `test_debug_only_session`, `test_no_error_is_none`, `test_all_codes_kept_in_time_order`, `test_missing_column_raises`.
+**Tests:** `test_earliest_error_wins`, `test_mdrm_wins_on_equal_time`, `test_debug_only_session`, `test_no_error_is_none`, `test_all_codes_kept_in_time_order`, `test_missing_column_raises`,
+`test_code_spaces_not_mixed`, `test_fcid_prefix_time`, `test_lrm_cdm_join_via_mdrmfe_fcid`, `test_unjoined_rows_counted`.
 
 **Commit:** `feat(ctap-smvod): add session first-error model`
 
@@ -89,11 +97,17 @@ residual = attempts − the other three), print the difference per class and rec
 4. `<date>_code_by_outcome_heatmap.png` — heatmap of code × outcome class. Every chart states "first error from debug events" unless mDRM exports for the date were included.
 
 **What to implement:** all seven classes, not only the failures; the success class is included to show that a code can occur in a session that still succeeded. A session with no code is `(none)`.
-Report the source of the first error (`mdrmfe`, `lrm`, `cdm`, `debug`) alongside the code, and flag a debug-only first error where mDRM exports for the date are absent, because the Athena figures in
-`prompt.md` are the debug half of the rule only.
+Group on `first_debug_code` (not on an mDRM status) and add an `mdrm_failure` column, so the 5 VSF/6007 sessions with mDRM 403/400 stay under 6007. Report the source of the first error (`mdrmfe`,
+`lrm`, `cdm`, `debug`) alongside the code, and flag a debug-only first error where mDRM exports for the date are absent. Also write the outcome × mDRM status table (sessions with an mdrmfe row,
+sessions with a non-2xx, statuses by source), as in `prompt.md`. "(none)" means no debug error and no mDRM non-2xx, with the export-completeness caveat stated in the markdown.
 
-**Tests:** `test_crosstab_counts_per_class_and_code`, `test_none_bucket_for_sessions_without_code`, `test_success_with_code_counted`, `test_with_code_share`, `test_small_codes_grouped_as_other`,
-`test_charts_write_nonempty_pngs`, `test_none_bucket_is_grey`, `test_heatmap_missing_cell_is_zero`.
+**WebView split for 6001 only.** For sessions whose first debug code is 6001, add counts of `wv`, `non-wv` and `not in device CSV`, with the device read from `raw_user_agent`/`Platform` in
+`output/<TENANT>/<date>_setupsession_with_outcome.csv` through `scripts/lib/webview.py::is_wv` (a missing row or user agent is its own bucket, never non-wv). No wv split for any other code or outcome.
+Baseline ZA 2026-10-24: 1,891 = wv 1,789 + non-wv 84 + not in CSV 18 (a correlation; cause unproven).
+
+**Tests:** `test_wv_split_only_for_6001`, `test_missing_device_is_own_bucket`, `test_mdrm_failure_does_not_change_debug_code_group`, `test_crosstab_counts_per_class_and_code`,
+`test_none_bucket_for_sessions_without_code`, `test_success_with_code_counted`, `test_with_code_share`, `test_small_codes_grouped_as_other`, `test_charts_write_nonempty_pngs`,
+`test_none_bucket_is_grey`, `test_heatmap_missing_cell_is_zero`.
 
 **Baseline (ZA 2026-10-24, debug-only first code, live 2026-10-26):** see "Evidence — first error code by outcome" in `prompt.md`.
 
@@ -105,6 +119,7 @@ Report the source of the first error (`mdrmfe`, `lrm`, `cdm`, `debug`) alongside
 
 **Files to change:** `investigations/ctap-smvod/docs/usage.md`, `CONTEXT.md` (What Exists), `session-presence-funnel/stories.md` (PF-8 points here).
 
-**What to implement:** document the scripts, the definitions and the late-ingest caveat; state that per-session counts are the headline and that adoption-report counts lag.
+**What to implement:** document the scripts, the definitions and the late-ingest caveat; state that per-session counts are the headline and that adoption-report counts lag. Also document the
+`fcId`-prefix time proxy for the mDRM exports, the code-space rule (debug code against mDRM status), that the mDRM parts must be read by part, and that the wv split applies to 6001 only.
 
 **Commit:** `docs(ctap-smvod): document session error model`

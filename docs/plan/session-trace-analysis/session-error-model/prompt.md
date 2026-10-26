@@ -55,7 +55,33 @@ non-empty debug `errorcode` by `datetime`; mDRM sources were not included, so th
 | success | 1,187 | none 1,183; E31012 3; 1003 1 |
 
 Observations (not causes): VSF is dominated by one code; VPF always carries a code; VPT, EBVS and the no-end classes almost never carry one, so for them the `endreason` is the only signal; a few
-successful sessions still log an error code. The 217 VPT and 207 EBVS "none" sessions are unchecked against mDRM exports.
+successful sessions still log an error code. The 217 VPT and 207 EBVS "none" sessions were checked against the mDRM exports (next section).
+
+## Evidence — mDRM correlation (ZA 2026-10-24, mDRM parts exported 2026-10-26 morning, Athena read 2026-10-26 afternoon)
+
+Data facts: the mDRM exports (mdrmfe, LRM, CDM) are aggregated timeseries with **no timestamp column**; request time can only be read from the `fcId` hex prefix (unix seconds; validated against the
+debug `CREATE` time on 1,793 sessions: median +2.3 s, p5 0.004 s, p95 13 s). LRM and CDM carry no `sessionId`; they join through the mdrmfe `fcid`. All 14 non-2xx rows joined (0 unjoined).
+
+| Outcome | Sessions | With an mdrmfe row | With mDRM non-2xx | Status by source |
+|---|---|---|---|---|
+| success | 1,187 | 1,166 | 0 | none |
+| VSF | 2,091 | 133 | 5 | mdrmfe 403 ×5, LRM 400 ×4, CDM 400 ×5 |
+| EBVS | 214 | 140 | 0 | none |
+| VPF | 80 | 79 | 0 | none |
+| VPT | 227 | 226 | 0 | none |
+| buffering_no_end | 3 | 2 | 0 | none |
+| startup_no_followup | 6 | 1 | 0 | none |
+
+- All 14 non-2xx rows belong to 5 VSF sessions, all debug first code 6007, in one burst 08:50–08:58 UTC. No error exists in mDRM that is absent from debug; no success session has an mDRM failure.
+- In all 5, the mDRM failure is 1–2 s earlier than the debug error, so the rule makes mDRM first for 5 of 3,808 sessions (0.13%). The two sources use different code spaces (debug 6007 against HTTP
+  403/400), so merging them into one `first_error_code` would move these 5 sessions from 6007 to 403.
+- 6001 (1,891 sessions) has zero mdrmfe rows: those sessions never reach mDRM. 2,086 of 2,091 VSF sessions have no mDRM failure; 1,958 have no mdrmfe row at all.
+- VPT, EBVS, VPF and the two no-end classes have no mDRM failure, so the debug "none" is not contradicted by mDRM (subject to export completeness, unproven).
+- Device: `output/<T>/<date>_setupsession_with_outcome.csv` (`raw_user_agent`, `Platform`) covers 3,777 of the 3,808 attempts. The WebView (`; wv`) split matters for **6001 only**: 1,789 of 1,891
+  (94.6%) are wv, 84 non-wv, 18 not in the CSV. It is a correlation, not a proven cause; the 84 non-wv sessions are unexplained.
+
+Unproven: completeness of the mDRM exports (uneven part sizes, widevine ends 22:56, playready 8 rows); that the `fcId` time equals the failure time; the cause of 6001; why 1,958 VSF and 74 EBVS
+sessions have no mdrmfe row; the mDRM error body (for example 6211) is not exported.
 
 ## Scope guard
 
@@ -74,3 +100,5 @@ or adoption report producers (`src/pipelines/aws_access_cli/scripts/run_adoption
 
 - Is the VSF label for a `PLAYER_ERROR`-only session (no `REQUEST_VIEWING` row; 21 on the ZA 2026-10-24 local export, in unified but not Lightstep or debug states) out of scope? Default: out of scope.
 - Final names for VPF/VPT and the two no-end classes are open to veto.
+- Is the 08:50–08:58 UTC mDRM 403/400 burst (5 sessions, debug 6007) a device-policy event? Unproven.
+- Should the mDRM exports gain a request time and `sessionId` on LRM/CDM (export change, manual Lightstep step)? Until then time is the `fcId` prefix.
