@@ -14,6 +14,9 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
   drafted as a placeholder guess. They may be reshaped, merged, or deleted. Do not follow their tasks, and do not delete or rewrite them without an explicit go-ahead.
 - **Data order:** use local data first; fetch from Lightstep or Athena only when local data is not enough. Before any Lightstep/Matisse/Athena call, run `python scripts/resolve_tenant.py ...` and
   follow `docs/guides/tenant-resolution.md`.
+- **Reference data sources (user-provided, 2026-10-26; for reference only, not a limit):** `investigations/ctap-smvod/data/`, organised per opco, with subfolders `athena/`, `cdnReport/` and
+  `lightstep/`. If this data lacks a detail or parameter a metric needs, we can enhance it (new Athena queries, extra Lightstep attributes, other exports). Do not restrict the design to these folders.
+  Inspect what is actually there before claiming a gap.
 
 ## How to run a session
 
