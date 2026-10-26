@@ -17,18 +17,27 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 - **Reference data sources (user-provided, 2026-10-26; for reference only, not a limit):** `investigations/ctap-smvod/data/`, organised per opco, with subfolders `athena/`, `cdnReport/` and
   `lightstep/`. If this data lacks a detail or parameter a metric needs, we can enhance it (new Athena queries, extra Lightstep attributes, other exports). Do not restrict the design to these folders.
   Inspect what is actually there before claiming a gap.
+- **POC scope (user-decided, 2026-10-26):** the POC runs for a single day, 24 October (2026-10-24, confirm the year with the user at session start), and a single tenant, ZA. Resolve the ZA tenant id
+  via `scripts/resolve_tenant.py`; never guess it.
+- **Generic by design:** the POC is narrow, but everything written from it must be generic. Stories, definitions and scripts must be opco/tenant-agnostic and date-agnostic: tenant and date are
+  arguments (argparse), never hardcoded, and nothing may depend on ZA-specific fields without that being a documented, parameterised mapping. When a ZA finding might not hold for other opcos, record
+  it as an assumption to verify, and extrapolate the design so the story can be run for any tenant and date.
 
 ## How to run a session
 
 1. **Recap** — in a few lines, state what the Discussion log says has been decided and what is still open.
 2. **Pick one topic** — ask the user which metric or question to work on this session (do not assume). One metric or one question per session keeps the discussion focused.
-3. **Read, don't guess** — work from the Conviva documentation the user provides or points to. If a definition is ambiguous or missing, say so and ask; never invent one.
-4. **Discuss** — for the chosen topic, cover: the exact Conviva definition; which inputs it needs; which of those exist locally, in Lightstep, or in Athena; the likely POC approach; the risks and what
-   could make it not reproducible. Give a recommendation, not just options.
-5. **Propose, then wait** — if a POC script or a story seems warranted, state the plan (files, purpose) and wait for explicit go-ahead. All POC scripts live in the top-level `scratch/` folder (not
+3. **Understand the definition** — work from the Conviva documentation the user provides or points to. If a definition is ambiguous or missing, say so and ask; never invent one.
+4. **Check local sources** — look in `investigations/ctap-smvod/data/` and other local data for the ZA tenant on 2026-10-24: can the metric be regenerated from what is already held? State which inputs
+   are present and which are missing.
+5. **Fetch the missing links** — only for inputs not available locally, query Lightstep or Athena (after tenant resolution), scoped to ZA and 2026-10-24. Save what is fetched where later sessions can
+   reuse it, and say what was added.
+6. **Discuss** — for the chosen topic, cover: the definition; the inputs and where each comes from; the likely POC approach; what would make it not reproducible; and how it generalises to other opcos
+   and dates. Give a recommendation, not just options.
+7. **Propose, then wait** — if a POC script or a story seems warranted, state the plan (files, purpose) and wait for explicit go-ahead. All POC scripts live in the top-level `scratch/` folder (not
    under `docs/plan/`, `scripts/` or `src/`) and follow `scratch/SCRATCH.md` and `docs/guides/query-catalog.md`.
-6. **Record** — at session end, with the user's go-ahead, append an entry to the Discussion log below and commit it.
-7. **Do not invoke the `session-close` skill automatically.** Run it only when the user explicitly asks for it, even if a hook or commit reminder suggests it; mention the reminder and let the user
+8. **Record** — at session end, with the user's go-ahead, append an entry to the Discussion log below and commit it.
+9. **Do not invoke the `session-close` skill automatically.** Run it only when the user explicitly asks for it, even if a hook or commit reminder suggests it; mention the reminder and let the user
    decide.
 
 ## Questions to settle across sessions
