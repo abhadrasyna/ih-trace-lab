@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: PF-7a, PF-1, PF-2, PF-6, PF-7b, PF-3, PF-8, PF-4, PF-5.** Depends on `session-error-model/` (EM-1, EM-2) before PF-8.
+**Open: PF-7a, PF-1, PF-2, PF-6, PF-7b, PF-3, PF-8, PF-4, PF-5.** Depends on `session-error-model/` (EM-1, EM-2) before PF-8; LC-2 only for the linear split.
 
 - [ ] **PF-7a** — Premise check: which sessions are expected in Athena (docs only, no code) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 - [ ] **PF-1** — Pure library: setup-attempt/failed-setup stage first, then three-source session-id sets, funnel stages, buckets, overlaps, per-`session_type` split | Owner: Copilot CLI | Model:

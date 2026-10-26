@@ -165,6 +165,11 @@ Decide which sessions are *expected* in Athena: which clients/content emit debug
 (prefetch/probe, very short, non-instrumented clients, day-edge sessions). Record the expected population and its size; without it "not observed" cannot be read as a loss. Uses existing exports and
 read-only live queries only; no code.
 
+Evidence to start from (ZA 2026-10-24, local exports of 2026-10-26; associations, not causes): `playbackURL` packaging marks which content expects a licence — `/dash-wv-pr/` 4,217, `/hls-mp4-fp/` 190,
+`/dash-clear/` 36, blank 6; none of the 36 clear sessions reach mdrmfe, as expected. `is_wv` (`scripts/lib/webview.py`) splits the attempts: 1,871 WebView attempts, 2 reach mdrmfe, 99.3% non-success;
+1,906 non-WebView attempts, 1,744 reach mdrmfe, 38.9% non-success. The 1,996 `dash-wv-pr` attempts without an mdrmfe row are all non-success (VSF 1,933, EBVS 63). The WebView pattern repeats on
+2026-10-21..23. Use packaging and `is_wv` to state which sessions are expected to request a licence before reading a missing mdrmfe row as a loss.
+
 **Commit:** `docs(ctap-smvod): expected Athena population for sm-vod sessions`
 
 ---
@@ -233,12 +238,14 @@ not observed in Athena can only get an mDRM error, so "no error observed" is not
 error-report CSV (`output/<T>/<date>_error_report_1xxx_6xxx.csv`) rather than recomputing 1xxx/6xxx logic.
 
 **Charts (existing `src/lib/charts` only; no new dependency — `matplotlib-venn` and `upsetplot` are not installed):**
-1. Stage funnel (`funnel_stages_chart.py`): Lightstep → mdrmfe → LRM → CDM → debug → unified, with the bucket split.
+1. Stage funnel (`funnel_stages_chart.py`) in time order: Lightstep setup (with CTAP) → debug CREATE → mdrmfe → LRM → CDM → unified record, with the bucket split. Setup and CREATE are effectively
+   simultaneous (median −0.07 s), and `unified_sessions` is derived from debug events, so it closes the funnel as a record, not a hop.
 2. Stacked bar of the pattern table (`render_stacked_bar`), `green`/`red` reserved for healthy/failed.
 3. A real Venn is only exact for 3 sets; use it only for Lightstep/debug/unified (3 sets). Anything with mDRM uses the pattern table and the stacked bar, which stay readable for 5-6 sources.
 
 **Extra detail worth carrying (cheap, from existing files):** hour of `CREATE`/setup per bucket (outage-window test), `Device Class`/`OS Family`/browser, `contentId` present/missing, DRM type
-(`drmAuthToken.drmType`), `ingest_timestamp` lag where present, household count per bucket.
+(`drmAuthToken.drmType`), `ingest_timestamp` lag where present, household count per bucket, `playback_packaging` (from `playbackURL`) and `is_wv`. Hop timestamps, latencies and the furthest hop are
+added on top of this matrix by SL-2 (`session-lifecycle-report/`), not here.
 
 **Tests (no network):** `test_pattern_counts_match_hand_fixture`, `test_first_error_and_outcome_come_from_error_model`, `test_blank_session_id_excluded`, `test_missing_source_file_raises`.
 

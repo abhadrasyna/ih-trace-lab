@@ -12,15 +12,16 @@ logic depends on.
 
 Story order is fixed — it is the row order of the **Stories** table in this folder's `README.md`. Keep this list identical to that table:
 
-1. `linear-session-coverage/` — make the ctap-smvod export, merge and reports cover linear sessions, not only VOD (defect fix, tenant-agnostic).
-2. `session-error-model/` — one first-error rule and one cross-day per-session outcome split, reused by the funnel and the reports (EM-1..EM-4).
-3. `session-presence-funnel/` — daily report of sessions created in Lightstep and traced into Athena `unified_sessions` and debug states (works VOD-only now; the linear split appears once story 1's
+1. `session-error-model/` — one first-error rule and one cross-day per-session outcome split, reused by the funnel and the reports (EM-1..EM-5).
+2. `linear-session-coverage/` — make the ctap-smvod export, merge and reports cover linear sessions, not only VOD (defect fix, tenant-agnostic; blocks GH/ZM only).
+3. `session-presence-funnel/` — daily report of sessions created in Lightstep and traced into Athena `unified_sessions` and debug states (works VOD-only now; the linear split appears once story 2's
    LC-2 lands).
+4. `session-lifecycle-report/` — daily per-tenant lifecycle summary (furthest hop, paths, hop timing, cohorts, export completeness) built on EM, PF-4 and PF-8.
 
 Do not jump ahead even if a later story looks more urgent.
 
-Open `linear-session-coverage/tasks.md`. If it has any unchecked `- [ ]` line, the first one (top to bottom) is your task — stop searching, go to Step 2. If every sub-story `tasks.md` is fully
-checked, the epic is complete — say so and stop; do not invent new work.
+Open `session-error-model/tasks.md`. If it has any unchecked `- [ ]` line, the first one (top to bottom) is your task — stop searching, go to Step 2. If every sub-story `tasks.md` is fully checked,
+the epic is complete — say so and stop; do not invent new work.
 
 ## Step 2 — confirm you are the right owner
 

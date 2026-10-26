@@ -55,7 +55,8 @@ outcome query and outputs stay unchanged.
 
 **Tests:** `test_each_outcome_class`, `test_vsf_not_counted_as_no_end`, `test_crossed_midnight_success_flagged`, `test_order_first_match_wins`, `test_missing_column_raises`.
 
-**Baseline (ZA 2026-10-24, live 2026-10-26, look-ahead 2 days):** 3,805 = success 1,187 + VSF 2,088 + EBVS 214 + VPF 80 + VPT 227 + buffering_no_end 3 + startup_no_followup 6.
+**Baseline (ZA 2026-10-24, live 2026-10-26, look-ahead 2 days):** 3,805 = success 1,187 + VSF 2,088 + EBVS 214 + VPF 80 + VPT 227 + buffering_no_end 3 + startup_no_followup 6. A later live pull (17:39
+IST) gave 3,808 (VSF 2,091, others unchanged); accept either within the late-ingest drift and record the export time.
 
 **Commit:** `feat(ctap-smvod): add cross-day session outcome classifier`
 

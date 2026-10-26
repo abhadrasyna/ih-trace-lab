@@ -37,7 +37,8 @@ crossing midnight is split. This story fixes the definitions once, in pure code,
 
 3,805 attempts (distinct `parent_session_id` with `REQUEST_VIEWING`): success 1,187 (2 crossed midnight), VSF 2,088, EBVS 214, VPF 80, VPT 227, buffering_no_end 3, startup_no_followup 6. The adoption
 report showed 3,803 / 1,188 / 2,086 / 215 and a residual of 314; the live residual is 316 (80 + 227 + 3 + 6). The difference is late-arriving rows, not a definition difference: rows for a day are
-ingested for days afterwards (10-05 rows were still being ingested on 10-25).
+ingested for days afterwards (10-05 rows were still being ingested on 10-25). A later live pull the same day (`data/athena/ZA/2026-10-24_outcome_first_debug.csv`, saved 17:39 IST) gave 3,808 with VSF
+2,091 and every other class unchanged; the +3 VSF is consistent with late ingest but not verified.
 
 ## Evidence — first error code by outcome (ZA 2026-10-24, live Athena 2026-10-26)
 
@@ -100,6 +101,8 @@ or adoption report producers (`src/pipelines/aws_access_cli/scripts/run_adoption
 ## Open questions
 
 - Is the VSF label for a `PLAYER_ERROR`-only session (no `REQUEST_VIEWING` row; 21 on the ZA 2026-10-24 local export, in unified but not Lightstep or debug states) out of scope? Default: out of scope.
+  A separate figure of 6 such sessions was also quoted on 2026-10-26; its source is not recorded, so reconcile 6 against 21 before EM-3.
+- The outcome rules are checked on ZA VOD only. Do they hold for linear sessions (GH, ZM)? Check after LC-2, as part of SL-6.
 - Final names for VPF/VPT and the two no-end classes are open to veto.
 - Is the 08:50–08:58 UTC mDRM 403/400 burst (5 sessions, debug 6007) a device-policy event? Unproven.
 - Should the mDRM exports gain a request time and `sessionId` on LRM/CDM (export change, manual Lightstep step)? Until then time is the `fcId` prefix.

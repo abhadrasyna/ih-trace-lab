@@ -15,7 +15,8 @@ spec.
 
 ## Story done when
 
-- **LC-1** — The export docs give the corrected query as a template parameterised by tenant `busUnitId`, for smvod and smvod-ts, with ZM and GH as worked examples.
+- **LC-1** — The export docs give the corrected query as a template parameterised by tenant `busUnitId`, for smvod and smvod-ts, with ZM and GH as worked examples, and document the `smvod-ts` and CDM
+  row caps with the split rule.
 - **LC-2** — Merged output has a `session_type` (vod/linear) column and linear rows match their CTAP trace; `http.status_code` is carried when present and `setup_failed` marks pre-session failures;
   tests cover a linear row, a blank `externalPackageId`, a 403 row and an old export.
 - **LC-3** — Each VOD-assuming script is either fixed or documented as VOD-only, and the pipeline summary reports counts per `session_type`.

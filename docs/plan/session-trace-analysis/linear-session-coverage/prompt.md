@@ -58,11 +58,13 @@ column, and every downstream report either handles linear or documents why it sk
 
 - Does the Athena `ctap-smvod-playback-outcome` query cover linear sessions?
 - Is the linear `playbackURL` host/path the right key for linear CDN correlation (`correlate_cdn_ips.py`)?
-- Which tenants have linear today beyond ZM and GH? ZA does not appear to yet; the code must not need to know (see Scope guard).
+- Which tenants have linear today beyond ZM and GH? ZA does not appear to yet; the code must not need to know (see Scope guard). **Answered 2026-10-26 (local mDRM exports 2026-10-21..24):** GH 1,767
+  and ZM 110 `abr-linear-` mdrmfe rows, all with channel-name `contentId`s (e.g. `afroland`, `france24eng`); ZA 0 (8,633 `abr-vod-` rows, all UUID content). The prefix and content shape never
+  disagree. NG has no mDRM tenant in `config/tenants.yaml` yet.
 - Should the `_smvod.csv` file name be kept (alias) or renamed once both types are handled?
 
 ## Perspectives not covered
 
 - Historical exports before this fix stay VOD-only and lack `http.status_code`; no backfill of past dates is planned (decided 2026-10-26). The Lightstep query is updated only once this story is
   implemented, and days exported afterwards carry the new column.
-- End-to-end session tracing from creation to failure (the broader goal that motivated this) is a separate story that builds on this one.
+- End-to-end session tracing from creation to failure (the broader goal that motivated this) is `session-lifecycle-report/` in this epic, which builds on this one for GH and ZM.

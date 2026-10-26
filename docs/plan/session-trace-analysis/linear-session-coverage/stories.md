@@ -21,6 +21,9 @@ This file is a starting spec and will be appended to as findings come in.
 3. State that old exports are VOD-only, lack `http.status_code`, and are not backfilled; re-exporting is a manual step done only after this story is implemented.
 4. Add `"http.status_code"` to the `group_by` of the smvod query. Reason: a SetupSession that fails before a session exists (ZA 2026-10-24: 5 rows HTTP 403, 1 row HTTP 500) has a blank `sessionId`,
    `playbackURL` and `externalPackageId`, and the `error` tag stays `0`, so nothing in the CSV tells these failures apart from a bad export.
+5. Document the export caps and the split rule: `smvod-ts` parts stop at ~499 rows (every ZA day 2026-10-21..24 hit it; ZA 2026-10-24 has setup times for 2,498 of 4,443 sessions) and CDM parts at
+   ~1,000 (ZA 2026-10-24 Widevine CDM parts of 969 and 983 rows end at 22:56). Adding `sm-linear` makes the `smvod-ts` cap worse, so split by time until no part reaches the cap; SL-1 flags any part
+   that still does.
 
 **Tests:** docs only, none.
 
@@ -82,8 +85,8 @@ This file is a starting spec and will be appended to as findings come in.
 1. Run `run_pipeline.py --tenant <code>` for each tenant with linear (ZM, GH) and for a VOD-only tenant day; confirm no linear `ctap_only` rows, sensible `session_type` counts, and identical VOD
    output.
 2. Grep scripts and tests for hardcoded tenant codes/ids introduced by this story; there must be none (fixtures use placeholder ids).
-2. Check Athena playback-outcome coverage of linear and record the result.
-3. Re-run a VOD-only date and confirm identical output to before.
+3. Check Athena playback-outcome coverage of linear and record the result.
+4. Re-run a VOD-only date and confirm identical output to before.
 
 **Tests:** run the existing ctap-smvod test suite; it must be green.
 
