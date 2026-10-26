@@ -20,9 +20,10 @@ discrepancies, and extend the metrics to cases Conviva does not cover. It is an 
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
 | `metric-definitions-data-inventory/` | Capture Conviva definitions and inventory local/Lightstep/Athena data per metric | ⬜ Not started | — | — |
-| `attempts-concurrent-plays/` | Recreate attempts and concurrent plays | ⬜ Not started | `metric-definitions-data-inventory` | — |
+| `attempts/` | Recreate attempts (POC and chart done on ZA, 2026-10-24; gaps and generalisation open) | 🔄 In progress | — | — |
+| `attempts-concurrent-plays/` | Placeholder; attempts moved to `attempts/`, concurrent plays remains here | ⬜ Not started | `metric-definitions-data-inventory` | — |
 | `vpf-vsf/` | Recreate VPF and VSF, including error classification | ⬜ Not started | `metric-definitions-data-inventory` | — |
-| `ebvs/` | Recreate EBVS (exits before video start) | ⬜ Not started | `attempts-concurrent-plays` | — |
+| `ebvs/` | Recreate EBVS (exits before video start) | ⬜ Not started | `attempts` | — |
 | `scratch-validation/` | Compare recomputed numbers against Conviva and record gaps | ⬜ Not started | `vpf-vsf`, `ebvs` | — |
 
 Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.

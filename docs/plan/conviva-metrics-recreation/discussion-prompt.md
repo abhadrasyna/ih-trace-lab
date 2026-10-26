@@ -57,3 +57,13 @@ Not tasks — prompts for the discussion. Cross them off in the log as they are 
 Append one dated entry per session: topic, decisions, open questions, next topic. Keep entries short. Newest last.
 
 _No sessions yet._
+
+### 2026-10-26 — Attempts (first topic)
+
+- **Decided:** attempts uses the Conviva definition "sum of all attempts"; the summary equals the sum of the time-series points. POC on ZA, 2026-10-24 (the year was never explicitly confirmed; the
+  user's data and approval used it), local Athena `debug_states` only, one attempt per distinct `sessionId` with a CREATE event, UTC buckets, 5-minute default. Chart finalised: title, large KPI under
+  it, metadata footer, plain line with flat fill (a moving-average variant was rejected). Story `attempts/` created; the placeholder `attempts-concurrent-plays/` is untouched.
+- **Result:** 3,901 attempts. Other sources: `session.csv` 3,797, `outcome_first_debug` 3,808, Lightstep smvod 4,443.
+- **Open:** the 138-140 CREATE sessions missing from the Athena exports and the extra Lightstep sessions; the Conviva formula image and a reference number; UTC versus local day; auto-play and revived
+  sessions; running for another tenant and date; graduation of the POC and `scratch/_lib/line_chart.py`.
+- **Next topic:** ask the user (gap investigation for attempts, or the next metric).

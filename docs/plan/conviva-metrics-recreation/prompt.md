@@ -13,10 +13,11 @@ logic depends on.
 Story order is fixed — it is the row order of the **Stories** table in this folder's `README.md`. Keep this list identical to that table:
 
 1. `metric-definitions-data-inventory/` — Conviva definitions and data inventory
-2. `attempts-concurrent-plays/` — attempts and concurrent plays (blocked by: `metric-definitions-data-inventory` complete)
-3. `vpf-vsf/` — VPF and VSF (blocked by: `metric-definitions-data-inventory` complete)
-4. `ebvs/` — exits before video start (blocked by: `attempts-concurrent-plays` complete)
-5. `scratch-validation/` — compare against Conviva (blocked by: `vpf-vsf` and `ebvs` complete)
+2. `attempts/` — attempts (POC and chart done; blocked by: nothing, started ahead of the definitions story by user decision)
+3. `attempts-concurrent-plays/` — placeholder, now concurrent plays only (blocked by: `metric-definitions-data-inventory` complete)
+4. `vpf-vsf/` — VPF and VSF (blocked by: `metric-definitions-data-inventory` complete)
+5. `ebvs/` — exits before video start (blocked by: `attempts` complete)
+6. `scratch-validation/` — compare against Conviva (blocked by: `vpf-vsf` and `ebvs` complete)
 
 Do not jump ahead even if a later story looks more urgent.
 
