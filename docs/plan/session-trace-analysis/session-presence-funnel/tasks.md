@@ -16,6 +16,8 @@ spec.
   SHA: —
 - [ ] **PF-7** — Lightstep forensics of sessions missing from both Athena tables: lifecycle query, manual review, household concentration | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none
   | SHA: —
+- [ ] **PF-8** — Per-session trace matrix CSV and funnel/overlap charts across Lightstep, mDRM, debug and unified, with a first-error sessionId list | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
+  Review: code-reviewer | SHA: —
 
 ## Story done when
 
