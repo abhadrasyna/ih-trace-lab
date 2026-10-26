@@ -229,6 +229,10 @@
   pytest-import-path/root-`pyproject.toml` gap noted above. An earlier `ruff check --fix` pass (run before this file existed) had also auto-unquoted `src/lib/auth/sso.py`'s `ensure_session(...) ->
   "boto3.Session"` annotation (UP037), which broke `test_ensure_session_does_not_construct_own_boto3_client` (an AST-based test enforcing SsoAuth never references `boto3` directly); re-quoted with `#
   noqa: UP037` and a pointer to the guarding test so future `--fix` runs don't regress it again.
+- `docs/plan/session-trace-analysis/` — **epic** (2026-10-26): an analysis like `investigations/ctap-smvod/output/ZA/drm-analysis` that follows a `sessionId` from creation in `sm-vod` or `sm-linear`
+  to where it fails. Its first story `linear-session-coverage/` (LC-1..LC-4, none started) fixes the defect that the ctap-smvod Lightstep export and merge were `sm-vod`-only, so linear sessions
+  (confirmed in ZM and GH) showed up as `ctap_only` rows; it must stay tenant-agnostic (ids from `config/tenants.yaml`, session type from the `abr-vod-`/`abr-linear-` `sessionId` prefix) so ZA or any
+  future tenant works with no code change. Later stories (id-mapping spike, per-session timeline, first-failing-hop funnel) will be added to the epic's table as they are written.
 
 ## Key Decisions
 

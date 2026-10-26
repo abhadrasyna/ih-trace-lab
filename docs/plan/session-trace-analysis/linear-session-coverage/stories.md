@@ -10,12 +10,13 @@ This file is a starting spec and will be appended to as findings come in.
 ## LC-1 — Updated Lightstep export queries
 
 **Files to change / create:**
-- `investigations/ctap-smvod/docs/lightstep-drm-exports.md` — add the corrected smvod query (the one in `prompt.md`) with `busUnitId` `dtunf6yo` (ZM) and `apbyfj9d` (GH).
+- `investigations/ctap-smvod/docs/lightstep-drm-exports.md` — add the corrected smvod query (the one in `prompt.md`) as a template with a `<busUnitId>` placeholder, plus a short table of known tenants
+  (ZM `dtunf6yo`, GH `apbyfj9d`) pointing at `config/tenants.yaml` as the source of truth; no tenant is special-cased.
 - `investigations/ctap-smvod/docs/usage.md` — note the export now carries both services and that the file keeps the `_smvod.csv` name for now.
 
 **What to implement:**
 
-1. Resolve each tenant with `scripts/resolve_tenant.py --system lightstep_go --tenant <ZM|GH>` and record project plus filter in the doc.
+1. Resolve a tenant with `scripts/resolve_tenant.py --system lightstep_go --tenant <code>` (shown for ZM and GH) and record the project plus filter pattern in the doc.
 2. Give the matching smvod-ts (span-samples) query with `service in (sm-vod, sm-linear)`; the current ts export has no linear rows.
 3. State that old exports are VOD-only and that re-exporting is a manual step.
 
@@ -68,12 +69,14 @@ This file is a starting spec and will be appended to as findings come in.
 ## LC-4 — Validate and close out
 
 **Files to change / create:**
-- `investigations/ctap-smvod/docs/` — a short validation note for one re-exported ZM day and one GH day; answers to the open questions in `prompt.md`.
+- `investigations/ctap-smvod/docs/` — a short validation note for re-exported ZM and GH days and a VOD-only day; answers to the open questions in `prompt.md`.
 - `CONTEXT.md` — "What Exists" entry for linear coverage.
 
 **What to implement:**
 
-1. Run `run_pipeline.py --tenant ZM` then `--tenant GH` on re-exported inputs; confirm no linear `ctap_only` rows and sensible `session_type` counts.
+1. Run `run_pipeline.py --tenant <code>` for each tenant with linear (ZM, GH) and for a VOD-only tenant day; confirm no linear `ctap_only` rows, sensible `session_type` counts, and identical VOD
+   output.
+2. Grep scripts and tests for hardcoded tenant codes/ids introduced by this story; there must be none (fixtures use placeholder ids).
 2. Check Athena playback-outcome coverage of linear and record the result.
 3. Re-run a VOD-only date and confirm identical output to before.
 
