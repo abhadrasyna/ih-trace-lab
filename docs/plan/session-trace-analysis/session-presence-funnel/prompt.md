@@ -20,13 +20,28 @@ Baseline measured by hand on 2026-10-26 from the local exports (ZA, 2026-10-24, 
 3,797 distinct; debug states 44,090 rows / 3,901 distinct. Of the 4,443: 3,763 in `unified_sessions`, 3,901 in debug states, 3,763 in both, **542 in neither**; 34 sessions are in `unified_sessions`
 but not Lightstep, and 138 are in debug states but not `unified_sessions`. These numbers are the acceptance check for this story and the reference the daily report must reproduce.
 
+**Late ingestion and the live re-check (added 2026-10-26).** Athena rows for a day keep arriving for days (rows for 10-05 were still ingested on 10-25), so every count is a snapshot. A live re-check
+on 2026-10-26, without a date filter on the Athena side, gave for ZA 2026-10-24: `present_in_both` 3,777, `debug_not_unified` 137, `not_observed_in_athena` 529 (the local export said 3,763 / 138 /
+542; 13 sessions arrived late), `unified_not_debug` 0. The baseline above is the local-export snapshot; PF-5 accepts the live figures within the late-ingest drift and records the export time.
+
+**Attempts stage.** The funnel's "attempts" stage in the adoption report is `VOD-Playback-Attempt-Sessions` (distinct `parent_session_id` with a `REQUEST_VIEWING` row dated by
+`date(timestamp_formatted)`; producer `src/pipelines/aws_access_cli/scripts/run_adoption_report.py`, session variant). The report showed 3,803 against 3,797 distinct sessions in the local unified
+export; the live value is 3,805 and the live count of all sessions is 3,811, so the gap is late ingestion into a stale export, not a definition difference. The per-session outcome split of those
+attempts is owned by `session-error-model/`.
+
+**The 34 sessions in Athena but not in the Lightstep export.** All 34 are in live debug states (the local `debug_states.csv` is Lightstep-scoped, which hid them). 30 of the 34 were created in the last
+1-2 minutes before 06:00, 09:00, 14:00, 18:00 or 24:00 UTC (the export part boundaries), 3 were created on 10-23 and a live Lightstep check of one sampled session found its setup span in the
+05:59-06:00 bucket, so the export missed it. The live count of `sm-vod` setup spans for the day is 4,487 against 4,449 exported (0.8% short). A seam gap in the export is the likely cause but is not
+proven; PF-2 flags every such session.
+
 **Terminology and validity (added 2026-10-26).** "Missing", "dropped" and "gap" in this story's file names and task titles mean only **not observed in the Athena export**; they make no claim about
 cause. It is unproven that every `sm-vod` session should appear in Athena: a setup call precedes any player telemetry, so prefetch/probe calls or an app closed early may legitimately never emit debug
 events. The first question for the 542 is therefore *which sessions are expected downstream*, and only then why some are absent. A DRM license (mdrmfe HTTP 201) shows a license was issued, not that
 playback happened. Every comparison of a not-observed set needs a control (the observed set) measured the same way, and DRM-based rates must be split by DRM versus no-DRM content because only DRM
 content reaches mdrmfe.
 
-The funnel covers Lightstep, mDRM (mdrmfe, LRM, CDM), debug states and `unified_sessions` (PF-7, PF-8); error stages beyond the first-error rule in PF-8 are out of scope.
+The funnel covers Lightstep, mDRM (mdrmfe, LRM, CDM), debug states and `unified_sessions` (PF-7b, PF-8); the first error and the outcome come from `session-error-model/`, and further error stages are
+out of scope.
 
 ## Scope guard
 
@@ -46,16 +61,18 @@ linear export exists (see `linear-session-coverage/`); until then it simply show
 
 ## Task overview
 
-- **PF-1** — Pure library: load session-id sets per source and compute the funnel stages (starting with the setup-attempt/failed-setup stage), overlaps and per-`session_type` split.
-- **PF-2** — Report script: dated markdown + CSV for one tenant and date, including the setup-failure list (blank `sessionId`, by status code) and the list of sessions missing downstream.
-- **PF-3** — Characterize the missing sessions (device, OS, error codes, DRM activity) by joining existing files.
-- **PF-4** — Daily operation: `run_pipeline.py` step plus a trend CSV so the funnel can be checked every day.
-- **PF-6** — Daily debug-not-unified report: per day, the sessions present in debug states but absent from `unified_sessions`, split by whether `contentMetadata.contentId` is missing or present, with
+- **PF-7a** — Premise check (docs only): which sessions are expected in Athena, before any cause is discussed. Runs first.
+- **PF-1** — Pure library: load session-id sets for the three sources and compute the funnel stages (starting with the setup-attempt/failed-setup stage), buckets, overlaps and per-`session_type`
+  split; reuses `compare_lightstep_athena_sessions.py` and `build_session_comparison_daily.py`.
+- **PF-2** — Report script: dated markdown + CSV for one tenant and date, including the setup-failure list (blank `sessionId`, by status code), the not-observed list and the `athena_only` list.
+- **PF-6** — Daily debug-not-unified report: per day, the sessions present in debug states but absent from `unified_sessions`, split by whether `contentmetadata.contentid` is missing or present, with
   the sessionId list.
-- **PF-7** — Lightstep forensics of the sessions in Lightstep but in neither Athena table (542 on ZA 2026-10-24): a catalogued Lightstep query, a manual per-session lifecycle review, and a
-  household-concentration table.
-- **PF-8** — Per-session trace matrix (Lightstep, mDRM, debug, unified, first error), pattern-count CSV and funnel charts; builds on PF-1 loaders and PF-7 findings.
-- **PF-5** — Validate on ZA 2026-10-24 against the baseline, extrapolate to another date and tenant, and update docs and `CONTEXT.md`. Run it after PF-8 so it validates the whole report.
+- **PF-7b** — Lightstep forensics of the sessions in Lightstep but not observed in Athena (529 live, 542 local export, ZA 2026-10-24): a catalogued Lightstep query, a manual per-session lifecycle
+  review, and a household-concentration table.
+- **PF-3** — Characterize the not-observed sessions (device, OS, hour, DRM activity; first error once PF-8 exists) by joining existing files.
+- **PF-8** — Per-session trace matrix (Lightstep, mDRM, debug, unified, first error and outcome from `session-error-model`), pattern-count CSV and funnel charts; builds on PF-1 loaders and PF-7b.
+- **PF-4** — Daily operation: `run_pipeline.py` step plus a trend CSV so the funnel can be checked every day.
+- **PF-5** — Validate on ZA 2026-10-24 against the baseline, extrapolate to another date and tenant, and update docs and `CONTEXT.md`. Run it last, after PF-8, so it validates the whole report.
 
 ## Definition of done
 
@@ -64,8 +81,12 @@ For any tenant and date with local exports, one command produces the dated funne
 
 ## Open questions (append answers here)
 
-- Day boundary: Athena filters on `timestamp_formatted = <date>` while the Lightstep export is bucketed by its own window; do the 34 Athena-only sessions come from that mismatch?
-- Are local Athena exports complete versus a live query (stale or partial exports)? PF-5 decides whether a live reconciliation is needed.
+- Day boundary: **answered 2026-10-26.** 30 of the 34 Athena-only sessions sit in the last 1-2 minutes before an export part boundary (06:00, 09:00, 14:00, 18:00, 24:00 UTC) and 3 were created on
+  10-23; one sampled session exists in Lightstep, so the export missed it. Seam gap likely, not proven.
+- Are local Athena exports complete versus a live query? **Answered 2026-10-26: no, they lag.** Rows keep arriving for days; 13 of the 542 and 14 of the 3,811 sessions arrived after the export. Every
+  report therefore records the export time and baselines carry a tolerance.
+- 10-21 step change (attempts 1,327 on 10-20 to 4,039 on 10-21; households 357 to 866, only 105 of the 866 seen on any earlier day since 10-10; about 4.4 sessions per household throughout): a new
+  population, not heavy users or late data. Cause unproven; 10-24 is typical only of the regime from 10-21.
 - Why are 138 sessions in debug states but not `unified_sessions`: late arrival, or a genuinely different event population? Findings 2026-10-26 (ZA 2026-10-24): not a day-end effect (CREATE times span
   the whole day); 105 have only a CREATE event, 29 also have BUFFERING; a live Athena check found **137 of the 138 have a CREATE with `contentMetadata.contentId` and 1 does not**, so a missing
   contentId explains at most 1. The Clarissa Spark rule for creating a unified session is not yet confirmed (hypothesis: an event after CREATE is needed); PF-6 tracks the split every day.

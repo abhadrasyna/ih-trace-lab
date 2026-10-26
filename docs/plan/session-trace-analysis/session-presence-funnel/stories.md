@@ -19,7 +19,9 @@ This file is a starting spec and will be appended to as findings come in. Constr
    (`unified_sessions`) and `debug_states.csv`. Also return row counts so duplicates are visible (rows vs distinct). 1a. The Lightstep loader also returns the blank-`sessionId` rows (not just a
    count), with `http.status_code` when the column exists. This is the **first funnel item**: setup attempts (rows) = sessions created (distinct non-blank) + failed setups (blank). ZA 2026-10-24:
    4,449 = 4,443 + 6.
-2. `funnel_stages(lightstep, unified, debug)` returns: distinct per source, in-`unified`, in-`debug`, in-both, in-either, in-neither, and the Athena-only and debug-not-unified sets.
+2. `funnel_stages(lightstep, unified, debug)` returns: distinct per source, in-`unified`, in-`debug`, in-both, in-either, in-neither, and the buckets `present_in_both`, `debug_not_unified`,
+   `unified_not_debug` and `not_observed_in_athena`, plus the Athena-only set (in either Athena table, not in Lightstep). Reuse the set-diff and file-level logic of
+   `compare_lightstep_athena_sessions.py` and `build_session_comparison_daily.py` (extract shared pure helpers; do not duplicate them).
 3. `split_by_session_type(ids)` using `session_kind` from `scripts/lib/drm_funnel.py` (import, do not re-implement), so each stage is reported for `vod`, `linear` and `other`.
 4. Type hints on all public functions; fail loudly on a missing `sessionId` column.
 
@@ -48,7 +50,10 @@ This file is a starting spec and will be appended to as findings come in. Constr
    `output/<TENANT>/drm-analysis/`. 1a. The report opens with a **setup stage** table (attempts, sessions created, failed setups split by `http.status_code`, and by `session_type` where the id
    exists), and `csv/<date>_session_presence_setup_failed.csv` lists the failed rows with `householdId`, `deviceId`, `session.clientIp`, `contentId`, `lightstep.trace_id`, `http.status_code`. Repeated
    failures by one household/device are counted as retries.
-2. Write `csv/<date>_session_presence_missing.csv` listing Lightstep sessions found in neither Athena table, with `householdId`, `deviceId`, `contentId`, `start_time` when present in the merged file.
+2. Write `csv/<date>_session_presence_missing.csv` listing Lightstep sessions not observed in Athena (in neither table), with `householdId`, `deviceId`, `contentId`, `start_time` when present in the
+   merged file. Write `csv/<date>_session_presence_athena_only.csv` for sessions in Athena but not in the Lightstep export: `sessionId`, which Athena tables, first event time, and `near_part_boundary`
+   (true when the first event lies within 2 minutes before a Lightstep export part boundary). The local debug-states file is Lightstep-scoped, so the Athena-only set needs the unscoped debug session
+   list (`run_athena_debug_sessions.py`). Print the export time (`max(ingest_timestamp)`) in the report header so a later re-run's differences read as late ingestion.
 3. Exit non-zero with a clear message if an input file is missing; never produce a partial report.
 
 **Tests (no network, no real external services):**
@@ -90,7 +95,8 @@ This file is a starting spec and will be appended to as findings come in. Constr
 
 **What to implement:**
 
-1. Upsert (not append) the daily row so a re-run replaces that date; columns: tenant, date, lightstep, unified, debug, both, neither, athena_only, plus the VOD/linear split.
+1. Upsert (not append) the daily row so a re-run replaces that date; columns: tenant, date, lightstep, unified, debug, both, neither, athena_only, unified_not_debug, `max_ingest_timestamp`, plus the
+   VOD/linear split.
 2. Run for every tenant the pipeline already iterates, with no per-tenant code.
 3. Document the one-line daily command in `docs/usage.md`.
 4. The trend row stays the Athena-presence counts; PF-8's pattern counts get their own `session_trace_patterns` file, so PF-4 needs no column change after PF-8.
@@ -109,11 +115,11 @@ This file is a starting spec and will be appended to as findings come in. Constr
 
 **What to implement:**
 
-1. Run for ZA 2026-10-24 and confirm the baseline in `prompt.md` (and the PF-6 split of 137 present / 1 missing contentId) (4,443 / 3,797 / 3,901 / 3,763 / 542 neither, 34 Athena-only, 138
-   debug-not-unified).
+1. Run for ZA 2026-10-24 and confirm the baseline in `prompt.md` within the late-ingest tolerance: local-export snapshot 4,443 / 3,797 / 3,901 / 3,763 / 542 neither, 34 Athena-only, 138
+   debug-not-unified (PF-6 split 137 present / 1 missing contentId); live 2026-10-26: 3,777 both / 137 / 529 neither. Record the export time next to the figures.
 2. Run for one other ZA date and for ZM (which has linear) and confirm clean output and a sensible VOD/linear split.
 3. Decide with a live Athena count whether local exports are complete; record the result.
-4. Answer the open questions in `prompt.md`, including the expected-population finding from PF-7 and the headline "present in Athena" definition (decided: present = in both tables; record it in the
+4. Answer the open questions in `prompt.md`, including the expected-population finding from PF-7a and the headline "present in Athena" definition (decided: present = in both tables; record it in the
    report text). Run PF-5 after PF-8 so the whole report, including the trace matrix and charts, is validated.
 
 **Tests:** run the existing ctap-smvod suite; it must be green.
@@ -151,10 +157,22 @@ This file is a starting spec and will be appended to as findings come in. Constr
 
 ---
 
-## PF-7 — Lightstep forensics of sessions missing from both Athena tables
+## PF-7a — Premise check (docs only)
+
+Step 0 of the old PF-7, split out so it runs first. **Files:** `investigations/ctap-smvod/docs/session-trace/<tenant>_<date>_expected_population.md`.
+
+Decide which sessions are *expected* in Athena: which clients/content emit debug telemetry (from the observed set), and whether the unobserved sessions look like a different population
+(prefetch/probe, very short, non-instrumented clients, day-edge sessions). Record the expected population and its size; without it "not observed" cannot be read as a loss. Uses existing exports and
+read-only live queries only; no code.
+
+**Commit:** `docs(ctap-smvod): expected Athena population for sm-vod sessions`
+
+---
+
+## PF-7b — Lightstep forensics of sessions not observed in Athena
 
 Mostly a manual analysis in Lightstep, supported by one catalogued query and one small helper. The set is the sessions in the Lightstep export that are in neither `unified_sessions` nor debug states
-(the PF-2 "missing downstream" list; 542 on ZA 2026-10-24).
+(the PF-2 "not observed" list; 542 in the local export, 529 live, ZA 2026-10-24). Runs after PF-2 and PF-6.
 
 **Files to change / create:**
 - `queries/lightstep/smvod-session-lifecycle.md` — UQL timeseries recipe (listed in `queries/lightstep/index.md`) that returns, per `sessionId` and for one household, the `sm-vod` operations (`POST`
@@ -164,9 +182,7 @@ Mostly a manual analysis in Lightstep, supported by one catalogued query and one
 
 **What to do:**
 
-0. **Validate the premise first.** Before explaining why sessions are absent, decide which sessions are *expected* in Athena: which clients/content emit debug telemetry (from the observed set), and
-   whether the unobserved sessions look like a different population (prefetch/probe, very short, non-instrumented clients, day-edge sessions). Record the expected population and its size in the
-   findings doc; without it "542 dropped" is not a supportable statement.
+0. Premise check: done in PF-7a; link its findings doc here and do not repeat it.
 1. Take the missing-downstream list from PF-2 (never a hardcoded id list) and tag each session with `householdId`, `deviceId` and `session.clientIp` from the Lightstep export.
 2. Household concentration: count missing sessions per `householdId`, `deviceId` and `session.clientIp`, and compare each household's missing share with its total session count. State whether a small
    number of households (or one device model/IP range) accounts for a large part of the set, or whether it is spread out.
@@ -198,25 +214,23 @@ devices have every session unobserved; top device 51 sessions (9%), top five hou
 
 ## PF-8 — Trace matrix and funnel charts (all sources)
 
-Pulls PF-1/PF-3/PF-6/PF-7 together: one row per session, one pattern table, one chart set. Depends on PF-1 (id-set loaders), PF-7 (mDRM join and the expected-population finding) and PF-6 (contentId
-category). The matrix is built here, not in PF-1, so PF-1 stays a three-source library. Naming: use `not_observed_in_athena`, never `dropped`, for the bucket and the report text.
+Pulls PF-1/PF-3/PF-6/PF-7b and `session-error-model` together: one row per session, one pattern table, one chart set. Depends on PF-1 (id-set loaders), PF-7b (mDRM join) and PF-6 (contentId category),
+plus EM-1/EM-2. The matrix is built here, not in PF-1, so PF-1 stays a three-source library. Naming: use `not_observed_in_athena`, never `dropped`, for the bucket and the report text.
 
 **Files to change / create:**
-- `investigations/ctap-smvod/scripts/lib/session_trace_matrix.py` — pure functions: `build_matrix(...)`, `pattern_counts(matrix)`, `first_error(...)`.
+- `investigations/ctap-smvod/scripts/lib/session_trace_matrix.py` — pure functions: `build_matrix(...)`, `pattern_counts(matrix)`.
 - `investigations/ctap-smvod/scripts/analyze_session_trace.py` — argparse (`--tenant`, `--date`), thin `main()`, `init_logging(...)`.
 - `investigations/ctap-smvod/tests/test_session_trace_matrix.py`.
 - Outputs under `output/<TENANT>/session-presence/`: `csv/<date>_session_trace_matrix.csv`, `csv/<date>_session_trace_patterns.csv`, `csv/<date>_session_trace_first_error.csv`, `charts/<date>_*.png`.
 
 **Matrix columns (one row per distinct Lightstep `sessionId`):** `session_type`; `in_lightstep`, `in_mdrmfe`, `in_lrm`, `in_cdm`, `in_debug`, `in_unified` (booleans, LRM/CDM via `fcid` from mdrmfe);
-`mdrmfe_status`; `pattern` (e.g. `mdrmfe+lrm+cdm|debug|-`); `bucket` (`present_in_both`, `debug_not_unified`, `not_observed_in_athena`; only `present_in_both` counts as present in the headline);
-`has_content_id`; `householdId`, `deviceId`, `session.clientIp`, `contentId`; `first_error_code`, `first_error_source`.
+`mdrmfe_status`; `pattern` (e.g. `mdrmfe+lrm+cdm|debug|-`); `bucket` (`present_in_both`, `debug_not_unified`, `unified_not_debug`, `not_observed_in_athena`; only `present_in_both` counts as present in
+the headline); `has_content_id`; `householdId`, `deviceId`, `session.clientIp`, `contentId`; `first_error_code`, `first_error_source`, `all_error_codes`, `outcome`.
 
-**First-error rule (to finalise in the first session of this task, then documented in the report):** one error per session, taken by priority and then earliest time:
-1. failed setup (`http.status_code` != 2xx on `sm-vod`; blank-`sessionId` rows have no id and stay in the PF-2 setup-failed CSV);
-2. non-2xx mDRM status (mdrmfe `http.status_code`; LRM by `fcid`);
-3. first `PLAYER_ERROR` in `debug_states.csv` (`errorcode`, ordered by `datetime`);
-4. no error observed. Sessions absent from Athena can only get 1 or 2, so state "no error observed" is not "no error" for the 542 in the report. Cross-check the code against
-   `<date>_error_eventdata.csv` and the existing error-report CSV (`output/<T>/<date>_error_report_1xxx_6xxx.csv`) rather than recomputing 1xxx/6xxx logic.
+**First error and outcome:** defined once in `session-error-model/` (EM-1 `first_error`, EM-2 `classify_outcome`); this task imports them and does not redefine them. Rule in short: earliest by
+datetime, all codes kept in `all_error_codes`, mDRM non-2xx before the first non-empty debug `errorcode`, then none observed; a failed setup is stage 0 and stays in the PF-2 setup-failed CSV. Sessions
+not observed in Athena can only get an mDRM error, so "no error observed" is not "no error" for them; say so in the report. Cross-check against `<date>_error_eventdata.csv` and the existing
+error-report CSV (`output/<T>/<date>_error_report_1xxx_6xxx.csv`) rather than recomputing 1xxx/6xxx logic.
 
 **Charts (existing `src/lib/charts` only; no new dependency — `matplotlib-venn` and `upsetplot` are not installed):**
 1. Stage funnel (`funnel_stages_chart.py`): Lightstep → mdrmfe → LRM → CDM → debug → unified, with the bucket split.
@@ -226,6 +240,6 @@ category). The matrix is built here, not in PF-1, so PF-1 stays a three-source l
 **Extra detail worth carrying (cheap, from existing files):** hour of `CREATE`/setup per bucket (outage-window test), `Device Class`/`OS Family`/browser, `contentId` present/missing, DRM type
 (`drmAuthToken.drmType`), `ingest_timestamp` lag where present, household count per bucket.
 
-**Tests (no network):** `test_pattern_counts_match_hand_fixture`, `test_first_error_priority_order`, `test_blank_session_id_excluded`, `test_missing_source_file_raises`.
+**Tests (no network):** `test_pattern_counts_match_hand_fixture`, `test_first_error_and_outcome_come_from_error_model`, `test_blank_session_id_excluded`, `test_missing_source_file_raises`.
 
 **Commit:** `feat(ctap-smvod): add session trace matrix and funnel charts`

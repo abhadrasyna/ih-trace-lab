@@ -23,11 +23,15 @@ or are missing). That defect is the first story.
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
 | `linear-session-coverage/` | Cover linear sessions in the ctap-smvod export, merge and reports (tenant-agnostic) | ⬜ Not started | — | — |
-| `session-presence-funnel/` | Daily count of Lightstep sessions and how many reach Athena `unified_sessions` and debug states | ⬜ Not started | — (linear split, status codes: LC-2) | — |
+| `session-error-model/` | One first-error rule and one cross-day per-session outcome split (VSF, EBVS, VPF, VPT, no-end classes) | ⬜ Not started | — | — |
+| `session-presence-funnel/` | Daily count of Lightstep sessions reaching Athena `unified_sessions` and debug states | ⬜ Not started | `session-error-model/`, LC-2 | — |
 
 Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.
 
 ## Cross-cutting constraints
+
+- Athena rows for a day keep arriving for days afterwards (10-05 rows were still ingested on 10-25), so any daily count is a snapshot; reports record the export time and baselines carry a tolerance.
+- "Missing" always means "not observed in the Athena export"; cause is unproven unless a story proves it.
 
 - Generic by default: tenant-specific values (busUnitId, project, filters) come from `config/tenants.yaml` via `scripts/resolve_tenant.py`; never hardcode a tenant code or id in a script.
 - VOD-only outputs must stay unchanged unless a story states otherwise.
@@ -40,4 +44,6 @@ Builds on the archived `ctap-smvod-multitenant` story (`docs/archive/ctap-smvod-
 ## Epic done when
 
 - **linear-session-coverage** — a re-exported day for every tenant with linear runs through the pipeline with linear sessions matched, typed, and reported, with no per-tenant code.
+- **session-error-model** — one pure first-error rule and one cross-day outcome classifier reproduce the ZA 2026-10-24 per-session split (3,805 attempts at the 2026-10-26 live check) and print a
+  reconciliation line against the adoption report.
 - **session-presence-funnel** — one command produces the daily presence funnel for any tenant and date, reproduces the ZA 2026-10-24 baseline, and feeds a trend file checked every day.
