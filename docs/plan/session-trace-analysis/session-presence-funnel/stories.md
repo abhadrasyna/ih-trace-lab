@@ -166,9 +166,17 @@ Mostly a manual analysis in Lightstep, supported by one catalogued query and one
    `DELETE` exists and the gap from setup to `DELETE`, and any `404`/`5xx` on the session. Classify as **destroyed < 3 s**, **destroyed later**, **no destroy seen**, **setup error**. Time-series
    buckets are 60 s wide, so report the gap as a lower bound unless a span-level time is available.
 4. Check the span coverage caveats: the Lightstep export window versus the Athena day (`timestamp_formatted`), and whether `sm-linear`, `ctap` or mDRM spans exist for the same session.
-5. Record the counts per class, the household table and conclusions in the findings doc, and answer the matching open question in `prompt.md`.
+5. Cross-check the missing set against the Lightstep mDRM exports (`<date>_NN_mdrmfe.csv`, joined on `drmAuthToken.sessionId`; `mdrm-lrm` and `mdrm-cdm-*` via `fcid`) using the existing
+   `scripts/lib/drm_exports.py` readers. Report, for the missing set and for the present set as a control, the share with an mdrmfe license (HTTP status), an LRM call and a CDM record. Content that is
+   not DRM-protected never reaches mdrmfe, so split the missing set into **DRM chain present** and **no DRM trace**, and compare against the same split of the present set.
+6. Record the counts per class, the household table and conclusions in the findings doc, and answer the matching open question in `prompt.md`.
 
 **Baseline (ZA 2026-10-24, 5-session sample 2026-10-26):** setup HTTP 200 in about 30-40 ms for all 5; 2 had `DELETE` 204 at least 72 s later, 3 had no `DELETE` within 1.5 hours; none destroyed < 3 s.
+
+**mDRM cross-check baseline (ZA 2026-10-24, 2026-10-26):** of the 542 missing sessions, 354 (65.3%) have an mdrmfe row (all HTTP 201) and 351 of those also have LRM and CDM records, so the DRM chain
+completed and playback was very likely attempted; 188 have no trace in any source. Control: 1,743 of 3,763 healthy sessions (46.3%) have mdrmfe, 1,711 with the full chain. The 138 debug-not-unified
+sessions: 50 (36.2%) have mdrmfe. Reading: the 354 point to an Athena ingestion/export gap rather than client failure; the 188 may be clear (non-DRM) content or very short sessions and need the
+lifecycle review in step 3.
 
 **Tests (no network, no real external services):**
 - `test_household_concentration_orders_by_count` — fixture with repeated households is sorted and carries the share.
