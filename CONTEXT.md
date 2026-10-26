@@ -30,10 +30,11 @@
   3-way) diffs Lightstep vs `unified_sessions` (vs debug) session sets, writing `output/<T>/<date>_lightstep_vs_athena_sessions.csv`; `build_session_comparison_daily.py` (`--from/--to`, `--tenants`,
   default all tenants) appends those counts, like the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). `run_3016_subcategory_report.py`
   (`--opco`, `--date` or `--from/--to`) reads the local flat error eventdata and writes `output/<OPCO>/subcategory_3016/<date>_subcategory_{summary,events}.csv`, splitting 3014/3015/3016 into the 5
-  triage sub-categories (rules in `classify_3016_subcategory.py`; documented in `docs/usage.md` §7d). `analyze_drm_funnel.py` (`--opco`, `--date`; `--drm-dir`) writes the daily session → DRM license →
-  error funnel from the saved mDRM Lightstep exports, `analyze_mdrm_quality.py` the license-chain quality report and `analyze_mdrm_devices.py` the device/`brRef` policy report (all in `docs/usage.md`
-  §7e; outputs go to `output/<OPCO>/drm-analysis/` with `csv/` and `charts/` subfolders via `scripts/lib/drm_output.py`; the `stages` chart is `scripts/lib/funnel_stages_chart.py`; `run_pipeline.py`
-  runs the three as Steps 6i-6k under one `--skip-drm-reports`; shared readers `scripts/lib/drm_*.py`). Constrained by `docs/refactor/`.
+  triage sub-categories (rules in `classify_3016_subcategory.py`; documented in `docs/usage.md` §7d; `--drm` adds mDRM device columns via `build_3016_drm_link.py` and writes
+  `<date>_subcategory_device_summary.csv` via `build_3016_drm_device_summary.py`). `analyze_drm_funnel.py` (`--opco`, `--date`; `--drm-dir`) writes the daily session → DRM license → error funnel from
+  the saved mDRM Lightstep exports, `analyze_mdrm_quality.py` the license-chain quality report and `analyze_mdrm_devices.py` the device/`brRef` policy report (all in `docs/usage.md` §7e; outputs go to
+  `output/<OPCO>/drm-analysis/` with `csv/` and `charts/` subfolders via `scripts/lib/drm_output.py`; the `stages` chart is `scripts/lib/funnel_stages_chart.py`; `run_pipeline.py` runs the three as
+  Steps 6i-6k under one `--skip-drm-reports`; shared readers `scripts/lib/drm_*.py`). Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.

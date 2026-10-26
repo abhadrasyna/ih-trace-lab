@@ -284,6 +284,32 @@ The events row count must equal the day's 3014/3015/3016 rows in the flat file, 
 
 No automatic pattern verdict is produced; analyse the events CSV. Segment URLs exist only on 3014/3015 events.
 
+### 3016 DRM device link (`--drm`)
+
+`--drm` links each event to the mDRM license request and CDM row. It reads the five hand-saved exports (mdrmfe, Widevine, PlayReady, FairPlay, LRM; see `docs/lightstep-drm-exports.md`) from
+`data/lightstep/<OPCO>/` (or `--drm-dir`), joins `sessionId` to `fcid` to the CDM row (`scripts/build_3016_drm_link.py`, readers in `scripts/lib/drm_exports.py`), and appends `fcid, drm_type, br_ref,
+cdm_make, cdm_model, platform, security_level, license_status, drm_join` to the events CSV (row count unchanged, otherwise the run raises). `scripts/build_3016_drm_device_summary.py` also writes
+`<date>_subcategory_device_summary.csv` (events, households and `license_ok` per sub-category and CDM model).
+
+```bash
+python3 run_3016_subcategory_report.py --opco ZA --date 2026-10-22 --drm
+```
+
+`drm_join` is one of `joined`, `no_license_request` or `no_cdm_row`; empty `sessionId`, `fcid` or `fcId` never join.
+
+ZA 2026-10-22 (43 events): 39 `joined`, 4 `no_license_request` (the 3 "No data / source not supported" events and 1 "MSE append failed"), 0 `no_cdm_row`. All 39 joined events have license status 200,
+so these errors are not license failures. Video decode error (32 events, 15 households), by device model:
+
+| Device model | Events | Households |
+|---|---|---|
+| Samsung dream2lte (Widevine L1) | 10 | 5 |
+| Samsung r8s (Widevine L1) | 9 | 2 |
+| Samsung a13 (Widevine L1) | 5 | 3 |
+| Samsung a5ulte (Widevine L1) | 3 | 1 |
+| Apple iPhone (FairPlay) | 2 | 2 |
+| Samsung a12s (Widevine L1) | 2 | 1 |
+| Samsung a04e (Widevine L1) | 1 | 1 |
+
 ## 7e. mDRM funnel and reports (`analyze_drm_funnel.py`, `analyze_mdrm_quality.py`, `analyze_mdrm_devices.py`)
 
 All three read the hand-saved mDRM exports (`docs/lightstep-drm-exports.md`) from `data/lightstep/<OPCO>/` (or `--drm-dir`) and write to `output/<OPCO>/drm-analysis/` (markdown reports at the top,
