@@ -39,6 +39,21 @@ Each metric ends up with a chart plus a supporting markdown report that helps a 
   catalogued queries and saved exports, generic for any tenant and date, with the user's separate go-ahead.
 - **Output location:** reports go to the metric's story folder as `<date>_<tenant>_<metric>-report.md`; charts stay in the gitignored `output/<TENANT>/charts/`, so decide how the image is shared.
 
+## How to turn a POC into a story
+
+The attempts POC exists to formalise how everything is created, not to be shipped. Once a metric's POC and its report are accepted, write its story the same way `attempts/` was written, only with the
+user's go-ahead:
+
+1. **Start from the template:** `cp -r docs/plan/_TEMPLATE/story docs/plan/conviva-metrics-recreation/<metric>` (the `prompt.md`, `stories.md` and `tasks.md` set; see `docs/plan/README.md`), and add
+   its row to the epic `README.md`.
+2. **`prompt.md`:** why the story exists, the Conviva definition with its doc link, the POC result table (sources, counts, deltas), the scope guard, and the task overview.
+3. **Tasks in two phases:** the POC tasks as done, each with its commit SHA (script, chart, report); then the formal-recreation tasks, in this order: explain the gaps, settle the definition points,
+   prove it generalises to another tenant and date, close the data gaps (splits the POC could not make), and finally graduate.
+4. **Graduate means all of it:** a tested `scripts/dev/` script and report writer, a `src/lib/charts/` renderer, Athena queries in the catalog (`docs/guides/query-catalog.md`), saved exports for every
+   input, registry updates, and the scratch copies retired. Tenant and date are arguments; per-tenant mappings are documented parameters.
+5. **Specify each task in `stories.md`:** files, what to implement, tests (happy path and error case, offline) and the commit message. One task per session, one commit per task.
+6. **Gate:** graduation needs its own go-ahead after the gap, definition and generalisation tasks are done. Markdown must pass the 200-character reflow hook.
+
 ## How to run a session
 
 1. **Recap** — in a few lines, state what the Discussion log says has been decided and what is still open.
