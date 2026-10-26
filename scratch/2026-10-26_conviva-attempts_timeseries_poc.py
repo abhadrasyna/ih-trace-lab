@@ -9,21 +9,23 @@ Conviva reference: https://docs.conviva.ai/sei/video/metric-dictionary/attempts/
 Args:
     --tenant    Tenant identifier (resolve via scripts/resolve_tenant.py first).
     --date      Date to analyse (YYYY-MM-DD).
-    --interval  Bucket size in whole minutes (default 1).
+    --interval  Bucket size in whole minutes (default 5).
+    --out-dir   Chart root (default output); PNG lands in <out-dir>/<tenant>/charts/.
 
 Assumption (to verify): one Attempt = one distinct sessionId with a PLAYER_SESSION_EVENT/CREATE
 event, bucketed by the CREATE timestamp (UTC). Conviva's formula image is not readable from the docs.
 """
 import argparse
 import csv
+import sys
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import matplotlib
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-matplotlib.use("Agg")  # headless backend must be set before pyplot import
-import matplotlib.pyplot as plt  # noqa: E402
+from _lib.line_chart import render_line  # noqa: E402
+from src.lib.charts.output import write_chart_png  # noqa: E402
 
 DATA = Path(__file__).resolve().parent.parent / "investigations/ctap-smvod/data"
 
@@ -54,28 +56,22 @@ def distinct_ids(path: Path, column: str) -> set[str]:
         return {r[column] for r in reader if r[column]}
 
 
-def plot(series: Counter, minutes: int, title: str, out: Path) -> None:
+def series_points(series: Counter, minutes: int) -> tuple[list[datetime], list[int]]:
+    """Zero-filled (bucket start, count) points from first to last bucket."""
     step = timedelta(minutes=minutes)
     xs, t = [], min(series)
     while t <= max(series):
         xs.append(t)
         t += step
-    fig, ax = plt.subplots(figsize=(14, 4))
-    ax.plot(xs, [series.get(x, 0) for x in xs], linewidth=1)
-    ax.set(title=title, xlabel="UTC time", ylabel=f"Attempts per {minutes} min")
-    ax.grid(alpha=0.3)
-    fig.tight_layout()
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=120)
-    plt.close(fig)
+    return xs, [series.get(x, 0) for x in xs]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--tenant", required=True)
     ap.add_argument("--date", required=True, help="YYYY-MM-DD")
-    ap.add_argument("--interval", type=int, default=1, help="bucket size in minutes")
-    ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--interval", type=int, default=5, help="bucket size in minutes")
+    ap.add_argument("--out-dir", type=Path, default=Path("output"), help="charts go to <out-dir>/<tenant>/charts/")
     args = ap.parse_args()
     if args.interval < 1:
         ap.error("--interval must be >= 1")
@@ -89,8 +85,15 @@ def main() -> None:
     series = bucket(list(creates.values()), args.interval)
     total = sum(series.values())
 
-    out = args.out or Path("tmp") / f"attempts_{args.tenant}_{args.date}.png"
-    plot(series, args.interval, f"Attempts {args.tenant} {args.date} (CREATE events)", out)
+    out_dir = args.out_dir
+    xs, ys = series_points(series, args.interval)
+    png = render_line(
+        xs,
+        ys,
+        title=f"Attempts — {args.tenant}, {args.date}",
+        subtitle=f"{total:,} attempts (sum of points), per {args.interval} min, UTC; base: distinct sessionId with CREATE",
+    )
+    out = write_chart_png(png, out_dir, args.tenant, f"{args.date}_attempts_{args.interval}min.png")
 
     sessions = distinct_ids(athena / f"{args.date}_session.csv", "sessionId")
     outcome = distinct_ids(athena / f"{args.date}_outcome_first_debug.csv", "sessionId")
