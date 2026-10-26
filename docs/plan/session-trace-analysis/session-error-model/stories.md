@@ -69,19 +69,31 @@ residual = attempts − the other three), print the difference per class and rec
 
 ---
 
-## EM-4 — Outcome × first-error-code report
+## EM-4 — Outcome × first-error-code report and charts
 
 **Files to change / create:**
 - `investigations/ctap-smvod/scripts/lib/session_outcome.py` — pure `outcome_error_crosstab(outcomes, first_errors)` returning counts per (outcome, first_error_code) and per-class `with_code` share.
 - `investigations/ctap-smvod/scripts/analyze_outcome_error_codes.py` — argparse (`--tenant`, `--date`); joins the EM-2 per-session outcome export with the EM-1 first error and writes
   `output/<TENANT>/session-presence/csv/<date>_outcome_error_codes.csv` plus a markdown table.
 - Matching tests in `tests/test_session_outcome.py`.
+- `investigations/ctap-smvod/scripts/chart_outcome_error_codes.py` — thin renderer over the CSV using `src/lib/charts/` (`render_stacked_bar`, `render_bar`, `output.write_chart_png`), following
+  `docs/guides/chart-guidelines.md`; flag `--skip-charts` on the analysis script. The heatmap needs a new shared `src/lib/charts/heatmap.py` (the layer has none today), so build it first, small, with
+  its own test.
+- `investigations/ctap-smvod/tests/test_chart_outcome_error_codes.py`.
+
+**Charts** (PNG to `output/<TENANT>/charts/`, no network):
+1. `<date>_outcome_attempts.png` — one stacked bar of attempts by the 7 classes, counts and %, green for success and red for failures, export time in the footnote.
+2. `<date>_outcome_first_error_code.png` — 100% stacked bar per outcome class split by first error code; codes under 1% grouped as `other`; `(none)` in grey so "no code observed" is not read as a
+   code.
+3. `<date>_vsf_top_codes.png` — horizontal bar of VSF first codes ranked by count (log axis option).
+4. `<date>_code_by_outcome_heatmap.png` — heatmap of code × outcome class. Every chart states "first error from debug events" unless mDRM exports for the date were included.
 
 **What to implement:** all seven classes, not only the failures; the success class is included to show that a code can occur in a session that still succeeded. A session with no code is `(none)`.
 Report the source of the first error (`mdrmfe`, `lrm`, `cdm`, `debug`) alongside the code, and flag a debug-only first error where mDRM exports for the date are absent, because the Athena figures in
 `prompt.md` are the debug half of the rule only.
 
-**Tests:** `test_crosstab_counts_per_class_and_code`, `test_none_bucket_for_sessions_without_code`, `test_success_with_code_counted`, `test_with_code_share`.
+**Tests:** `test_crosstab_counts_per_class_and_code`, `test_none_bucket_for_sessions_without_code`, `test_success_with_code_counted`, `test_with_code_share`, `test_small_codes_grouped_as_other`,
+`test_charts_write_nonempty_pngs`, `test_none_bucket_is_grey`, `test_heatmap_missing_cell_is_zero`.
 
 **Baseline (ZA 2026-10-24, debug-only first code, live 2026-10-26):** see "Evidence — first error code by outcome" in `prompt.md`.
 

@@ -67,7 +67,7 @@ or adoption report producers (`src/pipelines/aws_access_cli/scripts/run_adoption
 - **EM-1** — Pure first-error library over the flat eventdata, mDRM failures and debug states.
 - **EM-2** — Cross-day outcome classifier plus the registered Athena query.
 - **EM-3** — Cross-check against the error report and the adoption report, with the late-ingest reconciliation line.
-- **EM-4** — Outcome × first-error-code report for all seven outcome classes.
+- **EM-4** — Outcome × first-error-code report and charts for all seven outcome classes.
 - **EM-5** — Docs: `usage.md`, `CONTEXT.md`; unblock PF-8.
 
 ## Open questions
