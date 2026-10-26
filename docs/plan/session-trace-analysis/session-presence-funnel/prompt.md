@@ -20,16 +20,22 @@ Baseline measured by hand on 2026-10-26 from the local exports (ZA, 2026-10-24, 
 3,797 distinct; debug states 44,090 rows / 3,901 distinct. Of the 4,443: 3,763 in `unified_sessions`, 3,901 in debug states, 3,763 in both, **542 in neither**; 34 sessions are in `unified_sessions`
 but not Lightstep, and 138 are in debug states but not `unified_sessions`. These numbers are the acceptance check for this story and the reference the daily report must reproduce.
 
-This is the first stage of the epic's funnel; mDRM and error stages come later and are out of scope here.
+**Terminology and validity (added 2026-10-26).** "Missing", "dropped" and "gap" in this story's file names and task titles mean only **not observed in the Athena export**; they make no claim about
+cause. It is unproven that every `sm-vod` session should appear in Athena: a setup call precedes any player telemetry, so prefetch/probe calls or an app closed early may legitimately never emit debug
+events. The first question for the 542 is therefore *which sessions are expected downstream*, and only then why some are absent. A DRM license (mdrmfe HTTP 201) shows a license was issued, not that
+playback happened. Every comparison of a not-observed set needs a control (the observed set) measured the same way, and DRM-based rates must be split by DRM versus no-DRM content because only DRM
+content reaches mdrmfe.
+
+The funnel covers Lightstep, mDRM (mdrmfe, LRM, CDM), debug states and `unified_sessions` (PF-7, PF-8); error stages beyond the first-error rule in PF-8 are out of scope.
 
 ## Scope guard
 
 In bounds: new pure helpers in `investigations/ctap-smvod/scripts/lib/`, one new analysis script, its tests, an optional `run_pipeline.py` step, and docs. Out of bounds: changing the existing merge or
-outcome scripts, mDRM stages, and live Lightstep calls from scripts. Reads existing local exports only (`data/lightstep/<TENANT>/`, `data/athena/<TENANT>/`); no new Athena query is needed for PF-1 to
-PF-5. Exception: PF-6 adds one registered Athena query for the contentId category (the local debug states file has no `contentId`). Adds a report; changes no existing output. **Generic by design:** no
-tenant code or id hardcoded; `--tenant` and `--date` are arguments and paths follow the existing `<TENANT>/` layout. Session type (`abr-vod-` / `abr-linear-`) is derived from the `sessionId` prefix
-via `session_kind` in `scripts/lib/drm_funnel.py`, so the report splits VOD and linear automatically once the linear export exists (see `linear-session-coverage/`); until then it simply shows VOD
-only.
+outcome scripts and live Lightstep calls from scripts. Reads existing local exports only (`data/lightstep/<TENANT>/` including the mDRM parts, `data/athena/<TENANT>/`) through the existing readers in
+`scripts/lib/drm_exports.py`; no new Athena query is needed for PF-1 to PF-5, PF-7 and PF-8. Exception: PF-6 adds one registered Athena query for the contentId category (the local debug states file
+has no `contentId`). Adds a report; changes no existing output. **Generic by design:** no tenant code or id hardcoded; `--tenant` and `--date` are arguments and paths follow the existing `<TENANT>/`
+layout. Session type (`abr-vod-` / `abr-linear-`) is derived from the `sessionId` prefix via `session_kind` in `scripts/lib/drm_funnel.py`, so the report splits VOD and linear automatically once the
+linear export exists (see `linear-session-coverage/`); until then it simply shows VOD only.
 
 ## Session-start load hints
 
@@ -48,7 +54,8 @@ only.
   the sessionId list.
 - **PF-7** — Lightstep forensics of the sessions in Lightstep but in neither Athena table (542 on ZA 2026-10-24): a catalogued Lightstep query, a manual per-session lifecycle review, and a
   household-concentration table.
-- **PF-5** — Validate on ZA 2026-10-24 against the baseline, extrapolate to another date and tenant, and update docs and `CONTEXT.md`.
+- **PF-8** — Per-session trace matrix (Lightstep, mDRM, debug, unified, first error), pattern-count CSV and funnel charts; builds on PF-1 loaders and PF-7 findings.
+- **PF-5** — Validate on ZA 2026-10-24 against the baseline, extrapolate to another date and tenant, and update docs and `CONTEXT.md`. Run it after PF-8 so it validates the whole report.
 
 ## Definition of done
 
@@ -64,10 +71,13 @@ For any tenant and date with local exports, one command produces the dated funne
   contentId explains at most 1. The Clarissa Spark rule for creating a unified session is not yet confirmed (hypothesis: an event after CREATE is needed); PF-6 tracks the split every day.
 - Why are 542 Lightstep sessions in neither Athena table? Findings 2026-10-26 (ZA 2026-10-24): a live Athena week query (10-21..28) found only a handful of them, all dated 10-24, so the local exports
   were slightly incomplete but the set is essentially absent. A 5-session Lightstep sample showed setup HTTP 200 in about 30-40 ms, 2 with a DELETE 204 at least 72 s later and 3 with no DELETE in the
-  following 1.5 hours; none was destroyed within 3 s. PF-7 extends this to the whole set and checks household concentration.
+  following 1.5 hours; none was destroyed within 3 s. PF-7 extends this to the whole set and checks household concentration. Further findings 2026-10-26: 354 of the 542 (65.3%) have an mdrmfe license
+  (all HTTP 201) and 351 of those also LRM and CDM records, against 46.3% for the 3,763 observed sessions (not like-for-like: DRM content only); 188 have no trace in any source. The 542 are on 266
+  devices; 215 sessions are on devices that also had an observed session that day and 159 devices have every session unobserved, so the cause is mixed and not purely a broken device population. The
+  top device has 51 sessions (9%) and the top five households 21%. Cause (telemetry never sent versus ingestion gap) is unproven.
 - Should "present in Athena" mean `unified_sessions`, debug states, or either (the report shows all three; the headline definition needs the user's call).
 
 ## Perspectives not covered
 
-- No mDRM, CTAP or error stages yet; they are separate stories in this epic.
+- No CTAP stage and no error analysis beyond PF-8's first-error rule; those are separate stories in this epic.
 - Sessions that exist in Athena but never in Lightstep (the 34) are reported but not root-caused here.

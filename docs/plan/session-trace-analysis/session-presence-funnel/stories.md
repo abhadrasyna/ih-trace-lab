@@ -68,8 +68,10 @@ This file is a starting spec and will be appended to as findings come in. Constr
 
 **What to implement:**
 
-1. For the missing set, group by `Device Class`, `OS Family`, `Browser Name` and first error code, reading the existing merged `setupsession` file and (when present) the error and mDRM exports;
-   compare each rate against the present set so over-representation is visible.
+1. For the missing set, group by `Device Class`, `OS Family`, `Browser Name` and hour of day (UTC), reading the existing merged `setupsession` file; compare each rate against the observed set so
+   over-representation is visible. First error code is **not** computed here: PF-8 owns the single first-error rule, and PF-3 reuses it once PF-8 exists (until then omit the column and say so). Also
+   split by device level versus session level: sessions on devices that had an observed session that day versus devices with none (ZA 2026-10-24 baseline: 215 of 542 sessions versus 159 devices with
+   every session unobserved).
 2. State in the report when an enrichment source is absent for the date instead of silently omitting it.
 
 **Tests:** one happy-path and one edge-case (empty missing set, missing enrichment file) per new function.
@@ -91,6 +93,7 @@ This file is a starting spec and will be appended to as findings come in. Constr
 1. Upsert (not append) the daily row so a re-run replaces that date; columns: tenant, date, lightstep, unified, debug, both, neither, athena_only, plus the VOD/linear split.
 2. Run for every tenant the pipeline already iterates, with no per-tenant code.
 3. Document the one-line daily command in `docs/usage.md`.
+4. The trend row stays the Athena-presence counts; PF-8's pattern counts get their own `session_trace_patterns` file, so PF-4 needs no column change after PF-8.
 
 **Tests:** `test_trend_upsert_replaces_same_day` and `test_trend_row_added_for_new_day`.
 
@@ -110,6 +113,8 @@ This file is a starting spec and will be appended to as findings come in. Constr
    debug-not-unified).
 2. Run for one other ZA date and for ZM (which has linear) and confirm clean output and a sensible VOD/linear split.
 3. Decide with a live Athena count whether local exports are complete; record the result.
+4. Answer the open questions in `prompt.md`, including the expected-population finding from PF-7 and the headline "present in Athena" definition (ask the user). Run PF-5 after PF-8 so the whole
+   report, including the trace matrix and charts, is validated.
 
 **Tests:** run the existing ctap-smvod suite; it must be green.
 
@@ -159,6 +164,9 @@ Mostly a manual analysis in Lightstep, supported by one catalogued query and one
 
 **What to do:**
 
+0. **Validate the premise first.** Before explaining why sessions are absent, decide which sessions are *expected* in Athena: which clients/content emit debug telemetry (from the observed set), and
+   whether the unobserved sessions look like a different population (prefetch/probe, very short, non-instrumented clients, day-edge sessions). Record the expected population and its size in the
+   findings doc; without it "542 dropped" is not a supportable statement.
 1. Take the missing-downstream list from PF-2 (never a hardcoded id list) and tag each session with `householdId`, `deviceId` and `session.clientIp` from the Lightstep export.
 2. Household concentration: count missing sessions per `householdId`, `deviceId` and `session.clientIp`, and compare each household's missing share with its total session count. State whether a small
    number of households (or one device model/IP range) accounts for a large part of the set, or whether it is spread out.
@@ -173,10 +181,11 @@ Mostly a manual analysis in Lightstep, supported by one catalogued query and one
 
 **Baseline (ZA 2026-10-24, 5-session sample 2026-10-26):** setup HTTP 200 in about 30-40 ms for all 5; 2 had `DELETE` 204 at least 72 s later, 3 had no `DELETE` within 1.5 hours; none destroyed < 3 s.
 
-**mDRM cross-check baseline (ZA 2026-10-24, 2026-10-26):** of the 542 missing sessions, 354 (65.3%) have an mdrmfe row (all HTTP 201) and 351 of those also have LRM and CDM records, so the DRM chain
-completed and playback was very likely attempted; 188 have no trace in any source. Control: 1,743 of 3,763 healthy sessions (46.3%) have mdrmfe, 1,711 with the full chain. The 138 debug-not-unified
-sessions: 50 (36.2%) have mdrmfe. Reading: the 354 point to an Athena ingestion/export gap rather than client failure; the 188 may be clear (non-DRM) content or very short sessions and need the
-lifecycle review in step 3.
+**mDRM cross-check baseline (ZA 2026-10-24, 2026-10-26):** of the 542 missing sessions, 354 (65.3%) have an mdrmfe row (all HTTP 201) and 351 of those also have LRM and CDM records; 188 have no trace
+in any source. Control: 1,743 of 3,763 observed sessions (46.3%) have mdrmfe, 1,711 with the full chain. The 138 debug-not-unified sessions: 50 (36.2%) have mdrmfe. A 201 shows a license was issued,
+not that playback happened, and the rates are not like-for-like (DRM content only), so no cause is concluded: telemetry never sent versus an Athena ingestion gap stays open. The 188 may be clear
+(non-DRM) content or very short sessions and need the lifecycle review in step 3. Device baseline: the 542 are on 266 devices; 215 sessions are on devices with an observed session that day, 159
+devices have every session unobserved; top device 51 sessions (9%), top five households 21%.
 
 **Tests (no network, no real external services):**
 - `test_household_concentration_orders_by_count` — fixture with repeated households is sorted and carries the share.
@@ -189,7 +198,8 @@ lifecycle review in step 3.
 
 ## PF-8 — Trace matrix and funnel charts (all sources)
 
-Pulls PF-1/PF-3/PF-6/PF-7 together: one row per session, one pattern table, one chart set. Depends on PF-1 (presence matrix) and PF-7 (mDRM join).
+Pulls PF-1/PF-3/PF-6/PF-7 together: one row per session, one pattern table, one chart set. Depends on PF-1 (id-set loaders), PF-7 (mDRM join and the expected-population finding) and PF-6 (contentId
+category). The matrix is built here, not in PF-1, so PF-1 stays a three-source library. Naming: use `not_observed_in_athena`, never `dropped`, for the bucket and the report text.
 
 **Files to change / create:**
 - `investigations/ctap-smvod/scripts/lib/session_trace_matrix.py` — pure functions: `build_matrix(...)`, `pattern_counts(matrix)`, `first_error(...)`.
@@ -198,8 +208,8 @@ Pulls PF-1/PF-3/PF-6/PF-7 together: one row per session, one pattern table, one 
 - Outputs under `output/<TENANT>/session-presence/`: `csv/<date>_session_trace_matrix.csv`, `csv/<date>_session_trace_patterns.csv`, `csv/<date>_session_trace_first_error.csv`, `charts/<date>_*.png`.
 
 **Matrix columns (one row per distinct Lightstep `sessionId`):** `session_type`; `in_lightstep`, `in_mdrmfe`, `in_lrm`, `in_cdm`, `in_debug`, `in_unified` (booleans, LRM/CDM via `fcid` from mdrmfe);
-`mdrmfe_status`; `pattern` (e.g. `mdrmfe+lrm+cdm|debug|-`); `bucket` (`healthy`, `debug_not_unified`, `missing_both`); `has_content_id`; `householdId`, `deviceId`, `session.clientIp`, `contentId`;
-`first_error_code`, `first_error_source`.
+`mdrmfe_status`; `pattern` (e.g. `mdrmfe+lrm+cdm|debug|-`); `bucket` (`observed`, `debug_not_unified`, `not_observed_in_athena`); `has_content_id`; `householdId`, `deviceId`, `session.clientIp`,
+`contentId`; `first_error_code`, `first_error_source`.
 
 **First-error rule (to finalise in the first session of this task, then documented in the report):** one error per session, taken by priority and then earliest time:
 1. failed setup (`http.status_code` != 2xx on `sm-vod`; blank-`sessionId` rows have no id and stay in the PF-2 setup-failed CSV);

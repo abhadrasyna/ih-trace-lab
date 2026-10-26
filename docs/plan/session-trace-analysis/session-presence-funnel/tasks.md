@@ -14,7 +14,8 @@ spec.
 - [ ] **PF-5** — Validate on ZA 2026-10-24, extrapolate to another date and tenant, update docs and CONTEXT.md | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 - [ ] **PF-6** — Daily debug-not-unified report split by contentId missing/present, with the sessionId list and trend columns | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: —
-- [ ] **PF-7** — Lightstep forensics of sessions missing from both Athena tables: lifecycle query, manual review, household concentration | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none
+- [ ] **PF-7** — Lightstep forensics of sessions missing from both Athena tables: lifecycle query, manual review, household concentration | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
+  code-reviewer
   | SHA: —
 - [ ] **PF-8** — Per-session trace matrix CSV and funnel/overlap charts across Lightstep, mDRM, debug and unified, with a first-error sessionId list | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: code-reviewer | SHA: —
@@ -25,7 +26,8 @@ spec.
   failed setups by status code and the VOD/linear split.
 - **PF-2** — `analyze_session_presence.py --tenant <T> --date <D>` writes a dated markdown report and CSV, a CSV of failed setups (blank `sessionId`, by `http.status_code`) and a CSV of sessions
   missing downstream.
-- **PF-3** — The report breaks the missing sessions down by at least device class, OS and first error code, using existing local files only.
+- **PF-3** — The report breaks the unobserved sessions down by at least device class, OS, browser and hour, split by device-level versus session-level, with a control comparison; first error code is
+  added once PF-8 exists.
 - **PF-4** — `run_pipeline.py` runs the report as a step (with a skip flag) and a trend CSV gains one row per tenant and date without duplicating re-runs.
 - **PF-5** — The ZA 2026-10-24 run reproduces the baseline in `prompt.md`; one other date and one other tenant run clean; open questions are answered; `usage.md` and `CONTEXT.md` are current.
 - **PF-6** — For any tenant and date, one report lists the sessions in debug states but not `unified_sessions`, split by contentId missing/present with a sessionId CSV, and the trend file carries the
