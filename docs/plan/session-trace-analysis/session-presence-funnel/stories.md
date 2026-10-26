@@ -184,3 +184,38 @@ lifecycle review in step 3.
 
 **Commit:** `docs(ctap-smvod): lifecycle findings for sessions missing from Athena`
 
+
+---
+
+## PF-8 — Trace matrix and funnel charts (all sources)
+
+Pulls PF-1/PF-3/PF-6/PF-7 together: one row per session, one pattern table, one chart set. Depends on PF-1 (presence matrix) and PF-7 (mDRM join).
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/lib/session_trace_matrix.py` — pure functions: `build_matrix(...)`, `pattern_counts(matrix)`, `first_error(...)`.
+- `investigations/ctap-smvod/scripts/analyze_session_trace.py` — argparse (`--tenant`, `--date`), thin `main()`, `init_logging(...)`.
+- `investigations/ctap-smvod/tests/test_session_trace_matrix.py`.
+- Outputs under `output/<TENANT>/session-presence/`: `csv/<date>_session_trace_matrix.csv`, `csv/<date>_session_trace_patterns.csv`, `csv/<date>_session_trace_first_error.csv`, `charts/<date>_*.png`.
+
+**Matrix columns (one row per distinct Lightstep `sessionId`):** `session_type`; `in_lightstep`, `in_mdrmfe`, `in_lrm`, `in_cdm`, `in_debug`, `in_unified` (booleans, LRM/CDM via `fcid` from mdrmfe);
+`mdrmfe_status`; `pattern` (e.g. `mdrmfe+lrm+cdm|debug|-`); `bucket` (`healthy`, `debug_not_unified`, `missing_both`); `has_content_id`; `householdId`, `deviceId`, `session.clientIp`, `contentId`;
+`first_error_code`, `first_error_source`.
+
+**First-error rule (to finalise in the first session of this task, then documented in the report):** one error per session, taken by priority and then earliest time:
+1. failed setup (`http.status_code` != 2xx on `sm-vod`; blank-`sessionId` rows have no id and stay in the PF-2 setup-failed CSV);
+2. non-2xx mDRM status (mdrmfe `http.status_code`; LRM by `fcid`);
+3. first `PLAYER_ERROR` in `debug_states.csv` (`errorcode`, ordered by `datetime`);
+4. no error observed. Sessions absent from Athena can only get 1 or 2, so state "no error observed" is not "no error" for the 542 in the report. Cross-check the code against
+   `<date>_error_eventdata.csv` and the existing error-report CSV (`output/<T>/<date>_error_report_1xxx_6xxx.csv`) rather than recomputing 1xxx/6xxx logic.
+
+**Charts (existing `src/lib/charts` only; no new dependency — `matplotlib-venn` and `upsetplot` are not installed):**
+1. Stage funnel (`funnel_stages_chart.py`): Lightstep → mdrmfe → LRM → CDM → debug → unified, with the bucket split.
+2. Stacked bar of the pattern table (`render_stacked_bar`), `green`/`red` reserved for healthy/failed.
+3. A real Venn is only exact for 3 sets; use it only for Lightstep/debug/unified (3 sets). Anything with mDRM uses the pattern table and the stacked bar, which stay readable for 5-6 sources.
+
+**Extra detail worth carrying (cheap, from existing files):** hour of `CREATE`/setup per bucket (outage-window test), `Device Class`/`OS Family`/browser, `contentId` present/missing, DRM type
+(`drmAuthToken.drmType`), `ingest_timestamp` lag where present, household count per bucket.
+
+**Tests (no network):** `test_pattern_counts_match_hand_fixture`, `test_first_error_priority_order`, `test_blank_session_id_excluded`, `test_missing_source_file_raises`.
+
+**Commit:** `feat(ctap-smvod): add session trace matrix and funnel charts`

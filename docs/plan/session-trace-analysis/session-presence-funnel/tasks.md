@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: PF-1, PF-2, PF-3, PF-4, PF-5, PF-6, PF-7.**
+**Open: PF-1, PF-2, PF-3, PF-4, PF-5, PF-6, PF-7, PF-8.**
 
 - [ ] **PF-1** — Pure library: setup-attempt/failed-setup stage first, then per-source session-id sets, funnel stages, overlaps, per-`session_type` split | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
@@ -30,6 +30,8 @@ spec.
   daily counts.
 - **PF-7** — A catalogued Lightstep query and a dated findings doc classify every session in Lightstep but in neither Athena table by lifecycle outcome and show whether a few households account for
   them; the ZA 2026-10-24 findings are recorded.
+- **PF-8** — For any tenant and date, one CSV has a row per Lightstep session with presence flags for every source, the DRM license status and the first error with its source, plus a pattern-count CSV
+  and PNG charts that reproduce the ZA 2026-10-24 numbers; the first-error rule is documented.
 
 ## After each task
 
