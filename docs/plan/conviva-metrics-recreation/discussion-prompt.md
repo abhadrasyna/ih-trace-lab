@@ -22,9 +22,11 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 3. **Read, don't guess** — work from the Conviva documentation the user provides or points to. If a definition is ambiguous or missing, say so and ask; never invent one.
 4. **Discuss** — for the chosen topic, cover: the exact Conviva definition; which inputs it needs; which of those exist locally, in Lightstep, or in Athena; the likely POC approach; the risks and what
    could make it not reproducible. Give a recommendation, not just options.
-5. **Propose, then wait** — if a POC script or a story seems warranted, state the plan (files, purpose) and wait for explicit go-ahead. Scratch scripts follow `scratch/SCRATCH.md` and
-   `docs/guides/query-catalog.md`.
+5. **Propose, then wait** — if a POC script or a story seems warranted, state the plan (files, purpose) and wait for explicit go-ahead. All POC scripts live in the top-level `scratch/` folder (not
+   under `docs/plan/`, `scripts/` or `src/`) and follow `scratch/SCRATCH.md` and `docs/guides/query-catalog.md`.
 6. **Record** — at session end, with the user's go-ahead, append an entry to the Discussion log below and commit it.
+7. **Do not invoke the `session-close` skill automatically.** Run it only when the user explicitly asks for it, even if a hook or commit reminder suggests it; mention the reminder and let the user
+   decide.
 
 ## Questions to settle across sessions
 
