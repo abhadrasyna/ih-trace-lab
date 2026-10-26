@@ -1,0 +1,82 @@
+# Linear session coverage (ctap-smvod) — story specs
+
+> One task per session. Find the first unchecked item in `tasks.md`. That is your only task. Full implementation rules live in `AGENTS.md`. After each task: set `SHA:` on the task line + tick the box,
+> update the story status summary, add one line to your backlog/session-log file.
+
+This file is a starting spec and will be appended to as findings come in.
+
+---
+
+## LC-1 — Updated Lightstep export queries
+
+**Files to change / create:**
+- `investigations/ctap-smvod/docs/lightstep-drm-exports.md` — add the corrected smvod query (the one in `prompt.md`) with `busUnitId` `dtunf6yo` (ZM) and `apbyfj9d` (GH).
+- `investigations/ctap-smvod/docs/usage.md` — note the export now carries both services and that the file keeps the `_smvod.csv` name for now.
+
+**What to implement:**
+
+1. Resolve each tenant with `scripts/resolve_tenant.py --system lightstep_go --tenant <ZM|GH>` and record project plus filter in the doc.
+2. Give the matching smvod-ts (span-samples) query with `service in (sm-vod, sm-linear)`; the current ts export has no linear rows.
+3. State that old exports are VOD-only and that re-exporting is a manual step.
+
+**Tests:** docs only, none.
+
+**Commit:** `docs(ctap-smvod): include sm-linear in export queries`
+
+---
+
+## LC-2 — Merge: `session_type` and linear-safe content key
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/merge_ctap_smvod_csv.py` — add a `session_type` output field derived from the `sessionId` prefix (`abr-vod-` / `abr-linear-`, else `unknown`); for linear, set a
+  channel key from `playbackURL`/`contentId` instead of the blank `content_uuid`.
+- `investigations/ctap-smvod/tests/` — a merge test with a linear fixture row.
+
+**What to implement:**
+
+1. Reuse `session_kind` from `scripts/lib/drm_funnel.py` (import, do not re-implement) for the prefix rule.
+2. Add `session_type` to `OUTPUT_FIELDS` and populate it for every row.
+3. Make sure a linear smvod row with empty `externalPackageId` still matches its CTAP trace and is not emitted as `ctap_only`.
+
+**Tests (no network, no real external services):**
+- `test_linear_row_matches_ctap_and_has_session_type` — linear fixture is `matched` with `session_type == "linear"`.
+- `test_blank_external_package_id_not_error` — empty `externalPackageId` does not change the match status.
+
+**Commit:** `feat(ctap-smvod): add session_type and linear key to merge`
+
+---
+
+## LC-3 — Downstream audit and fixes
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/build_3016_subcategory_events.py`, `correlate_cdn_ips.py`, `extract_position_report.py`, `extract_error_report_1xxx_6xxx.py`, `run_pipeline.py`,
+  `summarize_pipeline_run.py` — audit each for VOD assumptions (`/vod[a-z]/` regexes, `content_uuid`, `externalPackageId`, the `smvod` naming).
+- Matching tests.
+
+**What to implement:**
+
+1. For each script, record in this file whether it is fixed or documented VOD-only (and why).
+2. Add per-`session_type` counts to `summarize_pipeline_run.py`.
+3. Keep VOD output unchanged (compare a VOD-only day before and after).
+
+**Tests:** one happy-path and one edge-case test per changed public function.
+
+**Commit:** `fix(ctap-smvod): handle linear sessions downstream`
+
+---
+
+## LC-4 — Validate and close out
+
+**Files to change / create:**
+- `investigations/ctap-smvod/docs/` — a short validation note for one re-exported ZM day and one GH day; answers to the open questions in `prompt.md`.
+- `CONTEXT.md` — "What Exists" entry for linear coverage.
+
+**What to implement:**
+
+1. Run `run_pipeline.py --tenant ZM` then `--tenant GH` on re-exported inputs; confirm no linear `ctap_only` rows and sensible `session_type` counts.
+2. Check Athena playback-outcome coverage of linear and record the result.
+3. Re-run a VOD-only date and confirm identical output to before.
+
+**Tests:** run the existing ctap-smvod test suite; it must be green.
+
+**Commit:** `docs(ctap-smvod): record linear coverage validation`
