@@ -106,10 +106,41 @@ This file is a starting spec and will be appended to as findings come in. Constr
 
 **What to implement:**
 
-1. Run for ZA 2026-10-24 and confirm the baseline in `prompt.md` (4,443 / 3,797 / 3,901 / 3,763 / 542 neither, 34 Athena-only, 138 debug-not-unified).
+1. Run for ZA 2026-10-24 and confirm the baseline in `prompt.md` (and the PF-6 split of 137 present / 1 missing contentId) (4,443 / 3,797 / 3,901 / 3,763 / 542 neither, 34 Athena-only, 138
+   debug-not-unified).
 2. Run for one other ZA date and for ZM (which has linear) and confirm clean output and a sensible VOD/linear split.
 3. Decide with a live Athena count whether local exports are complete; record the result.
 
 **Tests:** run the existing ctap-smvod suite; it must be green.
 
 **Commit:** `docs(ctap-smvod): record session presence validation`
+
+---
+
+## PF-6 — Daily debug-not-unified report (contentId category)
+
+**Files to change / create:**
+- `queries/athena/ctap-smvod-debug-session-content.sql` (catalog slug `ctap-smvod-debug-session-content`) — per `sessionId`, from `PLAYER_SESSION_EVENT` rows with `eventtype` in (`CREATE`,
+  `CONTENT_UPDATE`): CREATE count, first CREATE time and `contentmetadata.contentid`; follow `docs/guides/query-catalog.md`.
+- `investigations/ctap-smvod/scripts/run_athena_debug_session_content.py` — thin exporter to `data/athena/<TENANT>/<date>_debug_session_content.csv`.
+- `investigations/ctap-smvod/scripts/lib/session_presence.py` — pure `debug_not_unified(debug_ids, unified_ids, content_by_session)` returning the set and its split.
+- `investigations/ctap-smvod/scripts/analyze_session_presence.py` — add the section; matching tests.
+
+**What to implement:**
+
+1. For each tenant and day, take the sessions in debug states but not in `unified_sessions` and classify each: **contentId missing** (no CREATE/CONTENT_UPDATE with a non-empty
+   `contentMetadata.contentId`) or **contentId present**. Also report the observed last state per session (CREATE only, buffering, destroyed) as a second breakdown.
+2. Write `csv/<date>_debug_not_unified.csv` with one row per such `sessionId` (`sessionId`, `category`, `create_count`, `first_event`, `last_state`, `session_type`) so the list of affected sessions is
+   available, and a count table in the markdown report.
+3. Add the daily counts (total, contentId missing, contentId present) to the PF-4 trend row.
+4. Tenant-agnostic: `--tenant` and `--date` arguments, Athena database and table from the tenant registry; no ids hardcoded.
+
+**Baseline (ZA 2026-10-24, live Athena 2026-10-26):** 138 sessions = 137 contentId present + 1 contentId missing.
+
+**Tests (no network, no real external services):**
+- `test_debug_not_unified_split_by_content_id` — fixture with present, missing and blank contentId lands in the right category.
+- `test_session_without_create_event_is_missing` — a session with no CREATE row is classed as contentId missing, not dropped.
+- `test_no_debug_only_sessions_gives_empty_report` — empty set writes headers only.
+
+**Commit:** `feat(ctap-smvod): report debug sessions missing from unified`
+
