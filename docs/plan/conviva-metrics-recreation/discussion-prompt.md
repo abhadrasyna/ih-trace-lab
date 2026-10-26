@@ -1,6 +1,7 @@
 # Conviva Metrics Recreation — story-design discussion prompt
 
-> Reusable prompt for the next few sessions. Purpose: decide what stories to create and how, before any are written. Not a task list — nothing is prefilled.
+> Reusable prompt for the next few sessions. Purpose: decide what stories to create and how, from POC evidence. Not a task list; the Discussion log at the bottom holds what has been decided so far
+> (attempts is done through the chart; no other metric has been studied yet).
 
 Read `CONTEXT.md` and state `CONTEXT.md ✓` first. Then read `README.md` in this folder for the epic goal and scope decisions, and the "Discussion log" at the bottom of this file for decisions made in
 earlier sessions. This is a design discussion: do not create stories, tasks, or scripts unless the user explicitly says so in the current session.
@@ -10,8 +11,10 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 - **Goal:** recreate Conviva playback statistics (attempts, concurrent plays, VPF, VSF, EBVS, others to be decided) from local data, Lightstep and Athena.
 - **Method (decided by the user, 2026-10-26):** go through Conviva's documentation for each metric, then write a proof-of-concept `scratch/` script per metric to see how much can be achieved. What
   each metric needs, and how far the POC gets, shapes the stories — so stories are written after that evidence, not before.
-- **Status of existing stories:** the five sub-story folders under this epic (`metric-definitions-data-inventory/`, `attempts-concurrent-plays/`, `vpf-vsf/`, `ebvs/`, `scratch-validation/`) were
-  drafted as a placeholder guess. They may be reshaped, merged, or deleted. Do not follow their tasks, and do not delete or rewrite them without an explicit go-ahead.
+- **Status of existing stories (updated 2026-10-26):** `attempts/` is the first story written from POC evidence (see the log) and is in progress; its tasks CMR-ATT-1 to CMR-ATT-3 are done and
+  CMR-ATT-4 to CMR-ATT-7 are open. The other five sub-story folders (`metric-definitions-data-inventory/`, `attempts-concurrent-plays/`, `vpf-vsf/`, `ebvs/`, `scratch-validation/`) are still the
+  placeholder guess. They may be reshaped, merged, or deleted. Do not follow their tasks, and do not delete or rewrite them without an explicit go-ahead. `attempts-concurrent-plays/` is left as is and
+  now covers concurrent plays only.
 - **Data order:** use local data first; fetch from Lightstep or Athena only when local data is not enough. Before any Lightstep/Matisse/Athena call, run `python scripts/resolve_tenant.py ...` and
   follow `docs/guides/tenant-resolution.md`.
 - **Reference data sources (user-provided, 2026-10-26; for reference only, not a limit):** `investigations/ctap-smvod/data/`, organised per opco, with subfolders `athena/`, `cdnReport/` and
@@ -33,7 +36,7 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 5. **Fetch the missing links** — only for inputs not available locally, query Lightstep or Athena (after tenant resolution), scoped to ZA and 2026-10-24. Save what is fetched where later sessions can
    reuse it, and say what was added.
 6. **Discuss** — for the chosen topic, cover: the definition; the inputs and where each comes from; the likely POC approach; what would make it not reproducible; and how it generalises to other opcos
-   and dates. Give a recommendation, not just options.
+   and dates. Give a recommendation, not just options. For charts, follow `docs/guides/chart-guidelines.md` and reuse `scratch/_lib/line_chart.py` (`render_line`) before writing a new renderer.
 7. **Propose, then wait** — if a POC script or a story seems warranted, state the plan (files, purpose) and wait for explicit go-ahead. All POC scripts live in the top-level `scratch/` folder (not
    under `docs/plan/`, `scripts/` or `src/`) and follow `scratch/SCRATCH.md` and `docs/guides/query-catalog.md`.
 8. **Record** — at session end, with the user's go-ahead, append an entry to the Discussion log below and commit it.
@@ -44,19 +47,19 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 
 Not tasks — prompts for the discussion. Cross them off in the log as they are answered.
 
-- Which metrics are in scope beyond the initial set, and in what order do we study them?
-- Where do the Conviva definitions live (docs links, exports, sample reports), and who supplies them?
-- Which customer/tenant and time window do we use as the reference for comparing against Conviva numbers?
-- What local data already exists per metric, and what has to be fetched?
+- Which metrics are in scope beyond the initial set, and in what order do we study them? _Partly answered: attempts studied first (2026-10-26); order for the rest still open._
+- Where do the Conviva definitions live (docs links, exports, sample reports), and who supplies them? _Partly answered: docs.conviva.ai metric dictionary pages, supplied by the user per metric. The
+  formula images on those pages are not readable by us; ask the user for them._
+- Which customer/tenant and time window do we use as the reference for comparing against Conviva numbers? _Answered for the POC: ZA, 2026-10-24. Still open: a Conviva reference number for that day._
+- What local data already exists per metric, and what has to be fetched? _Answered for attempts: local Athena `debug_states` is enough for the count; the gaps to other sources are open (CMR-ATT-4)._
 - What does "good enough" mean per metric — exact match, or within a stated tolerance?
-- What shape should the stories take once the POCs show what is achievable — one per metric, one per data source, or something else?
-- When does a scratch POC graduate to `scripts/` or `src/`?
+- What shape should the stories take once the POCs show what is achievable — one per metric, one per data source, or something else? _Provisional: one story per metric (`attempts/` as the pattern:
+  done POC tasks, open gap/definition/generalisation tasks, a graduation task)._
+- When does a scratch POC graduate to `scripts/` or `src/`? _Provisional: after its gaps are explained and it runs for a second tenant and date, with the user's separate go-ahead (CMR-ATT-7)._
 
 ## Discussion log
 
 Append one dated entry per session: topic, decisions, open questions, next topic. Keep entries short. Newest last.
-
-_No sessions yet._
 
 ### 2026-10-26 — Attempts (first topic)
 
