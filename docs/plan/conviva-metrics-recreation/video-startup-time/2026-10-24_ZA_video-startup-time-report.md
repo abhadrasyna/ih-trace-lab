@@ -45,6 +45,40 @@ usable attempt time.
 | Masterminds | 25 | 7.71 |
 | Unresolved | 5 | 17.58 |
 
+## Top 10 households by mean VST
+
+Households with at least 3 plays (445 households overall, 2 plays without a household).
+
+| # | Household | Plays | Mean (s) | Median (s) | P90 (s) | Max (s) | % over 10 s | Top device |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 6utTNU6qJ9tsH6B7R--X7HFB_ry33HYcDLlnpcR-U1bDDPmyUiOP | 5 | 77.72 | 8.71 | 350.77 | 350.77 | 40% | Mobile / iOS / Safari |
+| 2 | h5p99w6PPEgfpwV7tc9GpotOkVOGt9sVRMEpc26GuoubddJxFw2W | 3 | 18.36 | 21.48 | 27.81 | 27.81 | 67% | Mobile / Android / Chrome |
+| 3 | 4KwLjKMUYKN3qfEy-9rXBDQ7deocF-xd-TriNHBiSFxTTagIv53F | 6 | 17.95 | 19.43 | 25.55 | 25.55 | 83% | Mobile / Android / Chrome |
+| 4 | I-LEiL3n3_dTCI_cUTztOZ4VoMlSy_lkOFEP7Pfhu4GPBWwPpGFz | 3 | 17.65 | 12.45 | 32.25 | 32.25 | 67% | Mobile / Android / Chrome |
+| 5 | KONsYK8lPUASRuM_zKagKwJEvi_hqcjJwkxb-3exL-fPDMPnuaaX | 7 | 17.22 | 15.92 | 29.46 | 29.46 | 71% | Mobile / iOS / Safari |
+| 6 | _En1_ypX-c0zmy2Q7qiKexQtGpOJt18mf2mVDDGp6mdPq1Z9MNBd | 4 | 17.06 | 15.80 | 31.93 | 31.93 | 75% | Mobile / Android / Chrome |
+| 7 | Vg_dvnz4T-pseoMtEbDZsS5Zj8c9hPRNdpGpDfhC5K3J4XM6YH_g | 32 | 16.14 | 10.85 | 33.11 | 47.02 | 56% | Mobile / Android / Chrome |
+| 8 | L1vZC7ZrQgRNjOF07qPVptW6uhNEXZeGG0qofaFeW933vnuPqe7q | 3 | 15.22 | 9.94 | 27.70 | 27.70 | 33% | Mobile / Android / Chrome |
+| 9 | EZvjcAMZ6hJdwyS_nHHIGBPAytOsz5-sDJpDXGj-694Mfk3xG5tF | 3 | 15.15 | 16.27 | 19.07 | 19.07 | 100% | Mobile / iOS / Safari |
+| 10 | yK3cA9Wt3P5HKXmcO3bthy66C44HCFBwxSHPquClcvffTHeDwyl2 | 4 | 15.10 | 7.32 | 42.21 | 42.21 | 25% | Mobile / Android / Chrome |
+
+## Top 10 households by worst single play
+
+Any number of plays; the single slowest play of each household.
+
+| # | Household | Plays | Mean (s) | Median (s) | P90 (s) | Max (s) | % over 10 s | Top device |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Srwj6pCnaG6G8xbe8vaYTRHSGgzyBwdT1Uq24te4GGGxXopvhyTB | 1 | 600.00 | 600.00 | 600.00 | 600.00 | 100% | Mobile / Android / Chrome |
+| 2 | 6utTNU6qJ9tsH6B7R--X7HFB_ry33HYcDLlnpcR-U1bDDPmyUiOP | 5 | 77.72 | 8.71 | 350.77 | 350.77 | 40% | Mobile / iOS / Safari |
+| 3 | DUyZ3yl9ePBrjtJiEmNLGArQbd6mX2uMga2RTvPykO_AozBaNP3d | 2 | 101.84 | 101.84 | 195.19 | 195.19 | 50% | Mobile / Android / Chrome |
+| 4 | s7R2iSXvNxXoLQB3gPL7KuVvj6inrViOzOOX1hQ4EFIXV9wJPWud | 1 | 87.33 | 87.33 | 87.33 | 87.33 | 100% | Mobile / Android / Chrome |
+| 5 | 3qjGGgN7bvx13HFgKWSJDsZoUBpEGT5X9SFhv57sI6vRSWSYGP_H | 1 | 65.40 | 65.40 | 65.40 | 65.40 | 100% | Mobile / iOS / Safari |
+| 6 | Vg_dvnz4T-pseoMtEbDZsS5Zj8c9hPRNdpGpDfhC5K3J4XM6YH_g | 32 | 16.14 | 10.85 | 33.11 | 47.02 | 56% | Mobile / Android / Chrome |
+| 7 | Fq0wFVCV00U7PajYXA8HTeszVzz13k9dLfAvG1U50k-xQpmcTRN5 | 2 | 33.63 | 33.63 | 42.43 | 42.43 | 100% | Mobile / Android / Chrome |
+| 8 | yK3cA9Wt3P5HKXmcO3bthy66C44HCFBwxSHPquClcvffTHeDwyl2 | 4 | 15.10 | 7.32 | 42.21 | 42.21 | 25% | Mobile / Android / Chrome |
+| 9 | hu06fmJa_AsZ6vfTAZaYAJo8r05yssPbTo8MxhYZbtHNDJL8eNtU | 9 | 14.99 | 7.64 | 41.60 | 41.60 | 33% | Mobile / Android / Chrome |
+| 10 | I-LEiL3n3_dTCI_cUTztOZ4VoMlSy_lkOFEP7Pfhu4GPBWwPpGFz | 3 | 17.65 | 12.45 | 32.25 | 32.25 | 67% | Mobile / Android / Chrome |
+
 ## Device breakdown
 
 | Device class / OS / browser | Plays | Avg VST (s) |

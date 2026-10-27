@@ -20,18 +20,21 @@ Args:
     --cap-seconds Per-play VST cap (default 600, the Conviva rule).
     --out-dir     Chart root (default output); PNG lands in <out-dir>/<tenant>/charts/.
     --report-dir  Where the markdown goes (default docs/plan/conviva-metrics-recreation/video-startup-time).
-    --top         Rows in the top-content table (default 10).
+    --top         Rows in the top-content and top-household tables (default 10).
+    --min-plays   Minimum plays for a household to be ranked by mean VST (default 3).
+    --slow-seconds  Threshold of the household "% over" column (default 10).
 
 Reuses the readers and tables of the concurrent plays POC (third use of this plumbing; share them when formalised).
 """
 import argparse
 import csv
 import importlib.util
+import math
 import os
 import re
 import statistics
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -96,6 +99,27 @@ def group_table(title: str, ids: dict[str, float], labels: dict[str, str], top: 
     return "\n".join(lines)
 
 
+def household_table(vst: dict[str, float], homes: dict[str, str], devices: dict[str, str], rank: str, top: int, min_plays: int, slow_s: float) -> str:
+    """Top households by mean or max VST, with per-household plays, mean, median, p90, max, share of slow plays and top device."""
+    by_home: dict[str, list[str]] = defaultdict(list)
+    for s in vst:
+        if homes.get(s):
+            by_home[homes[s]].append(s)
+    stats = []
+    for h, sids in by_home.items():
+        vs = sorted(vst[s] for s in sids)
+        if rank == "mean" and len(vs) < min_plays:
+            continue
+        dev = Counter(devices[s] for s in sids if devices.get(s)).most_common(1)
+        stats.append((h, len(vs), sum(vs) / len(vs), statistics.median(vs), vs[math.ceil(0.9 * len(vs)) - 1], vs[-1],
+                      sum(1 for v in vs if v > slow_s) / len(vs), dev[0][0] if dev else "?"))
+    key = (lambda r: (-r[2], -r[1], r[0])) if rank == "mean" else (lambda r: (-r[5], -r[1], r[0]))
+    lines = [f"| # | Household | Plays | Mean (s) | Median (s) | P90 (s) | Max (s) | % over {slow_s:g} s | Top device |", "|---|---|---|---|---|---|---|---|---|"]
+    for i, r in enumerate(sorted(stats, key=key)[:top], 1):
+        lines.append(f"| {i} | {r[0]} | {r[1]} | {r[2]:.2f} | {r[3]:.2f} | {r[4]:.2f} | {r[5]:.2f} | {r[6]:.0%} | {r[7].replace('|', '/')} |")
+    return "\n".join(lines)
+
+
 def render_report(a: argparse.Namespace, ctx: dict, chart_rel: str) -> str:
     dist = "\n".join(f"| {k} | {c:,} | {c / ctx['plays']:.1%} |" for k, c in ctx["dist"])
     return f"""# Video Startup Time — {a.tenant}, {a.date}
@@ -125,6 +149,18 @@ Of {ctx['sessions']:,} sessions, {ctx['never_played']:,} never played, {ctx['oth
 
 {ctx['top_table']}
 
+## Top {a.top} households by mean VST
+
+Households with at least {a.min_plays} plays ({ctx['hh_count']:,} households overall, {ctx['hh_unresolved']:,} plays without a household).
+
+{ctx['hh_mean']}
+
+## Top {a.top} households by worst single play
+
+Any number of plays; the single slowest play of each household.
+
+{ctx['hh_max']}
+
 ## Device breakdown
 
 {ctx['dev_ua']}
@@ -147,6 +183,8 @@ def main() -> None:
     ap.add_argument("--out-dir", type=Path, default=Path("output"))
     ap.add_argument("--report-dir", type=Path, default=Path("docs/plan/conviva-metrics-recreation/video-startup-time"))
     ap.add_argument("--top", type=int, default=10)
+    ap.add_argument("--min-plays", type=int, default=3, help="Minimum plays for a household to be ranked by mean (default 3)")
+    ap.add_argument("--slow-seconds", type=float, default=10, help="Threshold for the share-of-slow-plays column (default 10)")
     a = ap.parse_args()
     if a.interval < 1 or 1440 % a.interval:
         ap.error("--interval must divide 1440")
@@ -179,6 +217,7 @@ def main() -> None:
 
     info = cp.read_session_csv(athena / f"{a.date}_session.csv")
     titles = {s: info[s][0] for s in vst if s in info}
+    homes = {s: info[s][1] for s in vst if s in info}
     ua = cp.read_setup_devices(cp.DATA.parent / "output" / a.tenant / f"{a.date}_setupsession_with_outcome.csv")
     ua_labels = {s: " / ".join(x or "?" for x in (d[2], d[0], d[1])) for s, d in ua.items() if any(d)}
     drm_labels = cp.read_drm_device_types(sorted((cp.DATA / "lightstep" / a.tenant).glob(f"{a.date}_*mdrmfe.csv")))
@@ -198,6 +237,9 @@ def main() -> None:
     ctx = {
         "avg": avg, "median": statistics.median(values), "p90": values[int(0.9 * (len(values) - 1))], "plays": len(vst), "capped": capped,
         "sessions": len(events), "other_day": other_day, "never_played": never_played, "unusable": unusable, "dist": distribution(values),
+        "hh_count": len({h for h in homes.values() if h}), "hh_unresolved": sum(1 for s in vst if not homes.get(s)),
+        "hh_mean": household_table(vst, homes, ua_labels, "mean", a.top, a.min_plays, a.slow_seconds),
+        "hh_max": household_table(vst, homes, ua_labels, "max", a.top, a.min_plays, a.slow_seconds),
         "top_table": group_table("Content", vst, titles, a.top), "dev_ua": group_table("Device class / OS / browser", vst, ua_labels),
         "dev_drm": group_table("DRM device type", vst, drm_labels), "playback": group_table("Playback type", vst, playback),
     }
