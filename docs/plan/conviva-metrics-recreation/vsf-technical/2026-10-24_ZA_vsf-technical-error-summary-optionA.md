@@ -59,22 +59,22 @@ Preview for choosing the layout. VSF-T sessions only (2,101; 2,085 have a flat e
 
 ### 6001 (1,887 sessions)
 
-| Phase | % | Network | % | WebView | % | Est. bandwidth | % |
-|---|---|---|---|---|---|---|---|
-| LOADING | 100.0% | 4g | 99.6% | true | 94.3% | no data | 100.0% |
-| | | 3g | 0.4% | false | 5.7% | | |
+| Phase | % | | Network | % | | WebView | % | | Est. bandwidth | % |
+|---|---|---|---|---|---|---|---|---|---|---|
+| LOADING | 100.0% | | 4g | 99.6% | | true | 94.3% | | no data | 100.0% |
+| | | | 3g | 0.4% | | false | 5.7% | | | |
 
 Shaka error: `DRM.REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE` for 100.0% of sessions.
 
 ### 3016 (104 sessions)
 
-| Phase | % | Network | % | Pipeline status | % | Est. bandwidth | % |
-|---|---|---|---|---|---|---|---|
-| SEEKING | 96.2% | 4g | 64.4% | `PIPELINE_ERROR_DECODE` (merged) | 99.0% | under 1 Mbps | 13.5% |
-| BUFFERING | 1.9% | 3g | 33.7% | `Media failed to decode` | 1.0% | 1 to 3 Mbps | 36.5% |
-| STALLED | 1.0% | (blank) | 1.0% | | | 3 to 10 Mbps | 33.7% |
-| LOADED_METADATA | 1.0% | slow-2g | 1.0% | | | over 10 Mbps | 15.4% |
-| | | | | | | no data | 1.0% |
+| Phase | % | | Network | % | | Pipeline status | % | | Est. bandwidth | % |
+|---|---|---|---|---|---|---|---|---|---|---|
+| SEEKING | 96.2% | | 4g | 64.4% | | `PIPELINE_ERROR_DECODE` (merged) | 99.0% | | under 1 Mbps | 13.5% |
+| BUFFERING | 1.9% | | 3g | 33.7% | | `Media failed to decode` | 1.0% | | 1 to 3 Mbps | 36.5% |
+| STALLED | 1.0% | | (blank) | 1.0% | | | | | 3 to 10 Mbps | 33.7% |
+| LOADED_METADATA | 1.0% | | slow-2g | 1.0% | | | | | over 10 Mbps | 15.4% |
+| | | | | | | | | | no data | 1.0% |
 
 Estimated bandwidth p50 2.9 / p90 14.0 Mbps (n=103).
 
@@ -82,24 +82,24 @@ The merged `PIPELINE_ERROR_DECODE` group is 76 + 17 + 10 sessions (three spellin
 
 ### 1003 (29 sessions)
 
-| Phase | % | Network | % | Host | % | Est. bandwidth | % |
-|---|---|---|---|---|---|---|---|
-| LOADING | 62.1% | 4g | 72.4% | SSAI (`vod-dai-ott-eu2.ssai.iris.synamedia.com`) | 58.6% | under 1 Mbps | 13.8% |
-| WAITING | 17.2% | 3g | 27.6% | MTN CDN (`sa-vod.cdn.yellotv.mtn.com`) | 41.4% | 1 to 3 Mbps | 3.4% |
-| LOADED_METADATA | 6.9% | | | | | 3 to 10 Mbps | 6.9% |
-| BUFFERING | 6.9% | | | | | over 10 Mbps | 13.8% |
-| SEEKING | 6.9% | | | | | no data | 62.1% |
+| Phase | % | | Network | % | | Host | % | | Est. bandwidth | % |
+|---|---|---|---|---|---|---|---|---|---|---|
+| LOADING | 62.1% | | 4g | 72.4% | | SSAI (`vod-dai-ott-eu2.ssai.iris.synamedia.com`) | 58.6% | | under 1 Mbps | 13.8% |
+| WAITING | 17.2% | | 3g | 27.6% | | MTN CDN (`sa-vod.cdn.yellotv.mtn.com`) | 41.4% | | 1 to 3 Mbps | 3.4% |
+| LOADED_METADATA | 6.9% | | | | | | | | 3 to 10 Mbps | 6.9% |
+| BUFFERING | 6.9% | | | | | | | | over 10 Mbps | 13.8% |
+| SEEKING | 6.9% | | | | | | | | no data | 62.1% |
 
 Estimated bandwidth p50 6.4 / p90 25.6 Mbps (n=11 only).
 
 ### E31012 (7 sessions)
 
-| Phase | % | Network | % | Est. bandwidth | % |
-|---|---|---|---|---|---|
-| SEEKING | 57.1% | 3g | 57.1% | under 1 Mbps | 28.6% |
-| LOADING | 28.6% | 4g | 42.9% | 1 to 3 Mbps | 14.3% |
-| BUFFERING | 14.3% | | | 3 to 10 Mbps | 14.3% |
-| | | | | over 10 Mbps | 14.3% |
-| | | | | no data | 28.6% |
+| Phase | % | | Network | % | | Est. bandwidth | % |
+|---|---|---|---|---|---|---|---|
+| SEEKING | 57.1% | | 3g | 57.1% | | under 1 Mbps | 28.6% |
+| LOADING | 28.6% | | 4g | 42.9% | | 1 to 3 Mbps | 14.3% |
+| BUFFERING | 14.3% | | | | | 3 to 10 Mbps | 14.3% |
+| | | | | | | over 10 Mbps | 14.3% |
+| | | | | | | no data | 28.6% |
 
 Estimated bandwidth p50 1.3 / p90 16.8 Mbps (n=5 only).
