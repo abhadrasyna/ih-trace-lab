@@ -1,56 +1,42 @@
-# VSF-T error summary, option A (long form) — ZA, 2026-10-24
+# VSF-T error summary, option A (parallel detail tables) — ZA, 2026-10-24
 
 Preview for choosing the layout. VSF-T sessions only (2,101; 2,085 have a flat error row), grouped by each session's first error, from the flattened raw `PLAYER_ERROR` eventdata. `is_wv` is shown for
 6001 only.
 
 ## 6001 (1,887 sessions)
 
-| Field | Value | Sessions | % |
-|---|---|---|---|
-| shaka_error_name | `DRM.REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE` | 1,887 | 100.0% |
-| is_wv | true | 1,780 | 94.3% |
-| is_wv | false | 107 | 5.7% |
-| player_phase | LOADING | 1,887 | 100.0% |
-| net_effectivetype | 4g | 1,879 | 99.6% |
-| net_effectivetype | 3g | 8 | 0.4% |
+| Phase | % | Network | % | WebView | % |
+|---|---|---|---|---|---|
+| LOADING | 100.0% | 4g | 99.6% | true | 94.3% |
+| | | 3g | 0.4% | false | 5.7% |
+
+Shaka error: `DRM.REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE` for 100.0% of sessions.
 
 ## 3016 (104 sessions)
 
-| Field | Value | Sessions | % |
-|---|---|---|---|
-| pipeline_status | `PipelineStatus::PIPELINE_ERROR_DECODE` | 76 | 73.1% |
-| pipeline_status | `PIPELINE_ERROR_DECODE` | 17 | 16.3% |
-| pipeline_status | `PIPELINE_ERROR_DECODE: video decoder reinitialization failed` | 10 | 9.6% |
-| pipeline_status | `Media failed to decode` | 1 | 1.0% |
-| player_phase | SEEKING | 100 | 96.2% |
-| player_phase | BUFFERING | 2 | 1.9% |
-| player_phase | STALLED | 1 | 1.0% |
-| player_phase | LOADED_METADATA | 1 | 1.0% |
-| net_effectivetype | 4g | 67 | 64.4% |
-| net_effectivetype | 3g | 35 | 33.7% |
-| net_effectivetype | (blank) | 1 | 1.0% |
-| net_effectivetype | slow-2g | 1 | 1.0% |
+| Phase | % | Network | % | Pipeline status | % |
+|---|---|---|---|---|---|
+| SEEKING | 96.2% | 4g | 64.4% | `PIPELINE_ERROR_DECODE` (merged) | 99.0% |
+| BUFFERING | 1.9% | 3g | 33.7% | `Media failed to decode` | 1.0% |
+| STALLED | 1.0% | (blank) | 1.0% | | |
+| LOADED_METADATA | 1.0% | slow-2g | 1.0% | | |
+
+The merged `PIPELINE_ERROR_DECODE` group is 76 + 17 + 10 sessions (three spellings, one with "video decoder reinitialization failed").
 
 ## 1003 (29 sessions)
 
-| Field | Value | Sessions | % |
-|---|---|---|---|
-| shaka_url_host | `vod-dai-ott-eu2.ssai.iris.synamedia.com` | 17 | 58.6% |
-| shaka_url_host | `sa-vod.cdn.yellotv.mtn.com` | 12 | 41.4% |
-| player_phase | LOADING | 18 | 62.1% |
-| player_phase | WAITING | 5 | 17.2% |
-| player_phase | LOADED_METADATA | 2 | 6.9% |
-| player_phase | BUFFERING | 2 | 6.9% |
-| player_phase | SEEKING | 2 | 6.9% |
-| net_effectivetype | 4g | 21 | 72.4% |
-| net_effectivetype | 3g | 8 | 27.6% |
+| Phase | % | Network | % | Host | % |
+|---|---|---|---|---|---|
+| LOADING | 62.1% | 4g | 72.4% | SSAI (`vod-dai-ott-eu2.ssai.iris.synamedia.com`) | 58.6% |
+| WAITING | 17.2% | 3g | 27.6% | MTN CDN (`sa-vod.cdn.yellotv.mtn.com`) | 41.4% |
+| LOADED_METADATA | 6.9% | | | | |
+| BUFFERING | 6.9% | | | | |
+| SEEKING | 6.9% | | | | |
 
 ## E31012 (7 sessions)
 
-| Field | Value | Sessions | % |
+| Phase | % | Network | % |
 |---|---|---|---|
-| player_phase | SEEKING | 4 | 57.1% |
-| player_phase | LOADING | 2 | 28.6% |
-| player_phase | BUFFERING | 1 | 14.3% |
-| net_effectivetype | 3g | 4 | 57.1% |
-| net_effectivetype | 4g | 3 | 42.9% |
+| SEEKING | 57.1% | 3g | 57.1% |
+| LOADING | 28.6% | 4g | 42.9% |
+| BUFFERING | 14.3% | | |
