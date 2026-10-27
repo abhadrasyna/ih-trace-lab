@@ -209,7 +209,8 @@ Append one dated entry per session: topic, decisions, open questions, next topic
 - **Decided:** definition from the Conviva VSF-T page: a start failure is a `PLAYER_ERROR` before the first `PLAYING`, counted at the first error as a share of attempts. Everything is VSF-T until the
   business-error list (MEC-27) exists; `--business-codes` carries it. POC on ZA, 2026-10-24, local `debug_all_events.csv` plus the flattened error eventdata: **2,101 of 3,954 attempts, 53.1%**, about
   90% of them error 6001. The user chose the option A report layout (chart, headline, extended error-codes table with households, top content, playback type, per-code detail tables with bandwidth
-  bands and spacer columns) as the final form; option B is not built. Story `vsf-technical/` created.
-- **Open:** the business-error list and the multi-code rule, late errors (90 s), the bandwidth bands, chart sharing, the 3,954 against 3,901 attempts mismatch, the 10 extra sessions against
-  `outcome_first_debug.csv`, a Conviva reference figure and timezone (CMR-VSFT-1 to CMR-VSFT-4).
+  bands and spacer columns) as the final form; option B is not built. Story `vsf-technical/` created, then restructured the same day at the user's request: build-first tasks (CMR-VSFT-2 to 6, one
+  tested piece each, then CMR-VSFT-7 to generalise) instead of "explain the missing sessions" tasks followed by one large graduation task.
+- **Open:** the business-error list and the multi-code rule, late errors (90 s), the bandwidth bands, chart sharing, a Conviva reference figure and timezone (CMR-VSFT-1). The 3,954 against 3,901
+  attempts and 10-session differences are recorded as a note in CMR-VSFT-2, not chased.
 - **Next topic:** CMR-VSFT-1 (settle the open definition points), or the next metric.

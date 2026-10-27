@@ -99,8 +99,8 @@ Out of bounds: the other metrics' stories and the placeholder sub-stories (the `
 `../concurrent-plays/` already owns. Read-only on Athena; resolve the tenant with `python scripts/resolve_tenant.py ...` first (`docs/guides/tenant-resolution.md`). Everything stays tenant- and
 date-agnostic: arguments, with per-tenant state names as the documented mapping CMR-CP-6 defines.
 
-**Execution order:** CMR-VSFT-1 needs no data and can run now. CMR-VSFT-2 reads the local ZA export. CMR-VSFT-3 and the data side of CMR-VSFT-4 need `../concurrent-plays/` CMR-CP-2 (raw export for any
-tenant and date). CMR-VSFT-5 (graduation) needs CMR-CP-6 (shared helpers) and its own go-ahead.
+**Execution order:** CMR-VSFT-1 needs no data and can run now. CMR-VSFT-2, 3 and 5 are pure, tested modules and CMR-VSFT-4 is a runner; none waits on another story. CMR-VSFT-6 (report and script,
+retiring the scratch POCs) needs `../concurrent-plays/` CMR-CP-6 (shared helpers) and its own go-ahead. CMR-VSFT-7 needs CMR-CP-2 (raw export for any tenant and date).
 
 ## Session-start load hints
 
@@ -111,15 +111,16 @@ tenant and date). CMR-VSFT-5 (graduation) needs CMR-CP-6 (shared helpers) and it
 ## Task overview
 
 - **CMR-VSFT-1** — Settle the open definition points and the report content (a discussion session with the user)
-- **CMR-VSFT-2** — Explain the number: attempts 3,954 against 3,901, the 10 extra sessions against `outcome_first_debug.csv`, the 16 sessions with no flat error row, multi-code sessions and the 6001
-  repeat households
-- **CMR-VSFT-3** — Prove the POC generalises: run it for another tenant and another date
-- **CMR-VSFT-4** — Close the data gaps: the business-error list, a saved flat error export per tenant and date, bandwidth for 6001, device and playback type
-- **CMR-VSFT-5** — Formal recreation: graduate the POCs into tested code and the option A report (separate go-ahead)
+- **CMR-VSFT-2** — Build the VSF-T core: start-failure detection, VSF-T/VSF-B classification and bucketing (pure, tested)
+- **CMR-VSFT-3** — Build the error-codes table: shares, households, sessions per household, first and last seen (pure, tested)
+- **CMR-VSFT-4** — Build the flat error eventdata export: catalogued query, runner and saved export (tested)
+- **CMR-VSFT-5** — Build the per-code detail tables: first-error grouping, bandwidth bands, percentiles, spacer columns (pure, tested)
+- **CMR-VSFT-6** — Build the option A report and the script (on demand and daily), add device and playback type, retire the scratch POCs (separate go-ahead)
+- **CMR-VSFT-7** — Prove it generalises: run for another tenant and another date
 
 ## Definition of done
 
-All of CMR-VSFT-1 to CMR-VSFT-5 are complete, and the VSF-T number for the reference tenant and day is either matched to Conviva or the gap is explained.
+All of CMR-VSFT-1 to CMR-VSFT-7 are complete, and the VSF-T number for the reference tenant and day is either matched to Conviva or the gap is explained.
 
 ## Perspectives not covered
 
