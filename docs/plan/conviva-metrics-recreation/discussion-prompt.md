@@ -51,12 +51,14 @@ recreated; do not repeat that. Run the steps in order, and stop for the user's e
 Each metric ends up with a chart plus a supporting markdown report that helps a reader understand the data. Attempts is the reference (`attempts/`, the POC report for ZA, 2026-10-24). Per metric:
 
 - **Chart(s):** the main time series on the shared theme and `scratch/_lib/line_chart.py` (`render_line`); a second chart where a split explains the number (for attempts, linear vs VOD).
-- **Report sections:** definition and method (Conviva wording, counting rule, bucket, timezone); headline numbers (total, peak, sum-of-series check); top-10 content; device breakdown; source
-  reconciliation with deltas and reasons; known gaps and assumptions; reproduction (command, query slug, inputs).
+- **Report format (user, 2026-10-27):** short. Tables and the chart with a 1-2 line summary each; no long prose. Sections: definition (a few lines), headline with the chart, top-10 content, device
+  breakdown, playback type (VOD/linear). **Not wanted:** sensitivity analysis, "Reconciliation with other sources", "Known gaps", local file paths (other than the chart image link). Open questions and
+  assumptions go to the story, not the report.
 - **One data source per report:** use the source the chart uses (Athena for attempts) so the numbers reconcile. Show an "Unresolved" row for sessions missing the field, so tables add up to the total.
 - **Data gaps are tasks, not guesses:** when local data lacks a split (attempts: no linear marker, no device type), record it as a data-gap task and find the source with the user. Do not infer it.
 - **POC first, story second:** the POC in `scratch/` is not a story deliverable; it only produces the accepted chart and report. The story is written afterwards and describes the formal build: tested
   code (investigation-specific in its scripts, shared functionality in `src/lib/`), catalogued queries and saved exports, generic for any tenant and date, with the user's separate go-ahead.
+- **Reference figure:** if Conviva gives no reference number, say so and claim no match or tolerance.
 - **Output location:** reports go to the metric's story folder as `<date>_<tenant>_<metric>-report.md`; charts stay in the gitignored `output/<TENANT>/charts/`, so decide how the image is shared.
 
 ## How to turn a POC into a story
@@ -73,6 +75,14 @@ user's go-ahead:
    input, registry updates, and the scratch copies retired. Tenant and date are arguments; per-tenant mappings are documented parameters.
 5. **Specify each task in `stories.md`:** files, what to implement, tests (happy path and error case, offline) and the commit message. One task per session, one commit per task.
 6. **Gate:** graduation needs its own go-ahead after the gap, definition and generalisation tasks are done. Markdown must pass the 200-character reflow hook.
+7. **Settle before specifying:** walk the definition points with the user (rule edge cases, tie order, timezone and bucket alignment, reference figure, report content). Record each decision in the
+   story `prompt.md` and a "Settled" block in `stories.md` before tasks are written; tick the POC task with its commit SHA.
+8. **Build rule (user, 2026-10-27):** the POC and scratch scripts only validate feasibility. Every formal script and helper is built and tested while working the story tasks, never through MCP and
+   never deferred to the end. Before specifying a task, read the existing runners and helpers (`investigations/<slug>/scripts/`, `lib/`, `scripts/lib/`) and reuse or enhance them; move shared logic
+   (for example `day_bounds`) into the shared helper instead of copying it. Each recurring data pull (for example raw debug events) gets its own task with a catalogued query, a runner with
+   `--date/--tenant/--dry-run/--force`, a saved export, offline tests, and a registry update.
+9. **Report data source:** the graduated report generator should read the formal saved exports, not the POC's parsed CSVs; note any inference the POC made (for example playback type from the
+   session-id prefix) as a task to replace it with the raw field.
 
 ## How to run a session
 
