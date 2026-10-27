@@ -25,6 +25,7 @@ discrepancies, and extend the metrics to cases Conviva does not cover. It is an 
 | `concurrent-plays/` | Recreate concurrent plays (POC, chart and report accepted on ZA, 2026-10-24: peak 16; CMR-CP-1 done; raw export, gaps and formal recreation open) | 🔄 In progress | — | — |
 | `cir-related-exits/` | Recreate CIR Related Exits (POC accepted, ZA 2026-10-24: 19.40%; formal recreation open) | 🔄 In progress | `concurrent-plays` (CMR-CP-2, CMR-CP-6) | — |
 | `video-startup-time/` | Recreate Video Startup Time (POC accepted, ZA 2026-10-24: 8.33 s, 1,510 plays; formal recreation open) | 🔄 In progress | `concurrent-plays` (CMR-CP-2, CMR-CP-6) | — |
+| `vsf-technical/` | Recreate VSF Technical (POC and report accepted, ZA 2026-10-24: 2,101 of 3,954 attempts, 53.1%; formal build open) | 🔄 In progress | `concurrent-plays` (CMR-CP-2, CMR-CP-6) | — |
 | `vpf-vsf/` | Recreate VPF and VSF, including error classification | ⬜ Not started | `metric-definitions-data-inventory` | — |
 | `ebvs/` | Recreate EBVS (exits before video start) | ⬜ Not started | `attempts` | — |
 | `scratch-validation/` | Compare recomputed numbers against Conviva and record gaps | ⬜ Not started | `vpf-vsf`, `ebvs` | — |
