@@ -38,8 +38,25 @@ The chart is `output/ZA/charts/<date>_attempts_5min.png` (gitignored), produced 
 
 ## Scope guard
 
-Scratch scripts only, under `scratch/`, until the graduation task (CMR-ATT-7), which needs its own go-ahead. Read-only, local data first; fetch from Lightstep or Athena only for a gap local data
-cannot close, after `python scripts/resolve_tenant.py ...` per `docs/guides/tenant-resolution.md`. Everything must stay tenant- and date-agnostic (argparse arguments, documented mappings).
+**In bounds:**
+
+- Tested formal code and catalogued queries for attempts (tasks CMR-ATT-4 to CMR-ATT-9), with the POC as blueprint only.
+- Enhancing existing runners and helpers (`run_athena_debug_sessions.py`, `chart_playback_attempts.py`, `lib/`) before adding new ones.
+- Local data first; Lightstep or Athena only for a gap, after `python scripts/resolve_tenant.py ...` per `docs/guides/tenant-resolution.md`.
+- Tenant and date as argparse arguments, per-tenant mappings as documented parameters.
+
+**Out of bounds:**
+
+- Graduation (CMR-ATT-7) without its own go-ahead, after ATT-4 to ATT-6 and ATT-9 are done.
+- Concurrent plays (own story `../concurrent-plays/`) and the placeholder `../attempts-concurrent-plays/`.
+- Cross-source reconciliation (`outcome_first_debug.csv`, Lightstep) and any unverified inference; a missing source is a data-gap task.
+- Hardcoded tenant, date or ZA-only fields.
+
+## Existing code to reconcile (found 2026-10-27)
+
+`investigations/ctap-smvod/scripts/chart_playback_attempts.py` already charts attempts per bucket for any tenant and date on `src/lib/charts`, with the same Conviva definition. It counts one distinct
+`sessionId` from `<date>_setupsession_with_outcome.csv` at its earliest `start_time` (or ingest time), whereas the POC counts CREATE events from `debug_states`. CMR-ATT-5 settles which definition is
+the attempts number; CMR-ATT-7 then enhances this script instead of adding a second attempts script.
 
 ## Session-start load hints
 

@@ -28,7 +28,8 @@ spec.
 - **CMR-ATT-3** — The chart header is accepted by the user as final.
 - **CMR-ATT-8** — The report for ZA, 2026-10-24 shows the chart and a top-10 content table that reconciles to the attempts total, from Athena only.
 - **CMR-ATT-4** — A tested runner fetches the CREATE times and the title and household per session for any tenant and date from catalogued Athena queries; the POC's inputs are all covered.
-- **CMR-ATT-5** — The definition, day boundary and edge-case rules are written down, with Conviva's reference number if one exists.
+- **CMR-ATT-5** — The definition, day boundary and edge-case rules are written down, with Conviva's reference number if one exists, and one source is chosen between the CREATE rule and
+  `chart_playback_attempts.py`.
 - **CMR-ATT-6** — The POC runs for a second tenant and a second date with only arguments changed; any per-tenant mapping is documented.
 - **CMR-ATT-9** — Linear and VOD attempts are separated in a second chart and the device and playback-type tables are in the report in the short format, or the missing source is documented as a
   blocker.
