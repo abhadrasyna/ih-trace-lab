@@ -6,6 +6,11 @@
 Tests: scratch work is exempt from the test gate until graduation (CMR-CP-6); verify by running on the saved data and recording the output. Confirm scope and plan with the user before creating or
 editing anything (project Steps 2-3).
 
+**Build rule (user, 2026-10-27):** the scratch POC only validates that the metric is possible. Every formal script and helper the story needs is built while working the tasks, as tested code, not left
+for the end and not run through MCP. Before writing anything new, check for an existing script or helper to enhance (for example `run_athena_debug_sessions.py`, `scripts/lib/runtime.py`,
+`flatten_debug_events.py`, `scripts/lib/debug_event_parser.py`); move shared logic into a helper instead of copying it. When the story is done the full set of scripts, helpers, queries and tests
+exists. CMR-CP-6 then graduates the POC logic, report writer and renderer.
+
 ---
 
 ## CMR-CP-1 — Settle the definition points and decide the report content
@@ -38,19 +43,28 @@ Discussion log.
 
 ## CMR-CP-2 — Download the full-day raw debug events
 
-**Files:** a new `queries/athena/ctap-smvod-debug-events-raw.sql` and its row in `queries/athena/index.md` (check the index first, per `docs/guides/query-catalog.md`); a scratch runner
-`scratch/<date>_conviva-concurrent-plays_raw_export.py` with its registry stub; the saved export `investigations/ctap-smvod/data/athena/<TENANT>/<date>_debug_events_raw.csv` (gitignored).
+**Files:** a new `queries/athena/ctap-smvod-debug-events-raw.sql` and its row in `queries/athena/index.md` (check the index first, per `docs/guides/query-catalog.md`); a formal runner
+`investigations/ctap-smvod/scripts/run_athena_debug_events_raw.py` modelled on `run_athena_debug_sessions.py` (not a scratch script: this export runs every day, so it is a tested CLI from the start);
+`day_bounds()` moved from `run_athena_debug_sessions.py` into a shared helper (`scripts/lib/runtime.py`) and imported by both; the existing `scripts/flatten_debug_events.py` and
+`scripts/lib/debug_event_parser.py` reused and, where they miss `PLAYER_EOF`, `PLAYER_BUFFER_LEVEL` or `contentmetadata` (content ID, `contenttype`), extended; `docs/usage.md`; the scripts registry;
+and the saved export `investigations/ctap-smvod/data/athena/<TENANT>/<date>_debug_events_raw.csv` (gitignored).
 
 **What to implement:**
 
 1. Resolve the tenant (`python scripts/resolve_tenant.py --system athena --tenant ZA`) and use its debug-events table; parameters are `database`, `debug_events_table`, `datetime_start`,
-   `datetime_end`.
-2. Select `datetime`, `eventid` and the raw `eventdata` JSON string, unmodified, for every session event of the UTC day, ordered by `datetime`, with no sessionid filter and no event-id filter. Keep
-   the event ids documented from `2026-10-24_debug_eventid_inventory.csv`.
-3. Make a second, flat parse step that is separate from the download, so the raw file stays the source of truth.
-4. Rebuild the POC from the raw export and confirm it still gives 16 at 07:53 UTC for ZA, 2026-10-24. Record the row count and the Athena bytes scanned.
+   `datetime_end`. Tenant and date are arguments (`--tenant`, `--date`, plus `--dry-run` and `--force` as in the existing runners).
+2. Select `datetime`, `messageid`, `clibversion`, `clientid`, `eventclass`, `eventid` and the raw `eventdata` JSON string, unmodified (the columns `flatten_debug_events.py` expects), for every session
+   event of the UTC day, ordered by `datetime`, with no sessionid filter and no event-id filter. Keep the event ids documented from `2026-10-24_debug_eventid_inventory.csv`.
+3. Keep the flat parse step separate from the download (reuse `flatten_debug_events.py`), so the raw file stays the source of truth.
+4. Rebuild the POC from the raw export and confirm it still gives 16 at 07:53 UTC for ZA, 2026-10-24. Record the row count and the Athena bytes scanned in the commit body or the story notes.
 
-**Commit:** `chore(conviva-metrics): cmr-cp-2`
+**Tests (no network, no real external services):**
+- `test_day_bounds_happy_path` — a date gives the UTC day start and next-day start.
+- `test_day_bounds_invalid_date` — a malformed date raises a clear error.
+- `test_output_path` — the saved file is `<date>_debug_events_raw.csv` under the tenant folder.
+- `test_flatten_player_eof_and_content` — if the parser is extended, a `PLAYER_EOF` row and a CREATE row with `contentmetadata` flatten to the expected columns.
+
+**Commit:** `feat(conviva-metrics): cmr-cp-2`
 
 ---
 

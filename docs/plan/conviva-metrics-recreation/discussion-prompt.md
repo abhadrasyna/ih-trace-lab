@@ -159,3 +159,10 @@ Append one dated entry per session: topic, decisions, open questions, next topic
   reconciliation, gaps or file references. Playback type currently from the session-id prefix; raw `contenttype` to be verified in CMR-CP-5.
 - **Open:** none for CMR-CP-1 (done). Next: CMR-CP-2.
 - **Next topic:** CMR-CP-2, the raw debug-events export.
+
+### 2026-10-27 (later) — Build rule for formal scripts
+
+- **Decided:** scratch and POC scripts only validate feasibility; every formal script and helper is built, tested, while working the story tasks (not through MCP, not left to the end), reusing or
+  enhancing existing scripts and helpers first. CMR-CP-2 is now the formal raw debug-events runner (catalogued query, `run_athena_debug_events_raw.py`, shared `day_bounds`, reuse of
+  `flatten_debug_events.py` and `debug_event_parser.py`). Recorded in `concurrent-plays/stories.md`.
+- **Next topic:** CMR-CP-2.

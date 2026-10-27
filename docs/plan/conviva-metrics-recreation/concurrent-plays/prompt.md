@@ -64,7 +64,7 @@ and `design-principles.md`; `docs/guides/project-taxonomy.md`; the POC script's 
 ## Task overview
 
 - **CMR-CP-1** — Settle the definition points and decide the report content (a discussion session with the user)
-- **CMR-CP-2** — Download the full-day raw debug events (with `eventdata` as stored) through a catalogued query
+- **CMR-CP-2** — Build the formal full-day raw debug-events download (catalogued query, tested runner, reuse of existing helpers)
 - **CMR-CP-3** — Explain the differences: open playing intervals, sessions outside `session.csv`, playing versus alive
 - **CMR-CP-4** — Prove the POC generalises: run it for another tenant and another date
 - **CMR-CP-5** — Close the data gaps: device type and linear versus VOD
