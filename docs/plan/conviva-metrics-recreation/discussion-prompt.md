@@ -148,3 +148,12 @@ Append one dated entry per session: topic, decisions, open questions, next topic
 - **Open:** Conviva's inactivity limit and a reference number for that day; the report sections; raw `eventdata` export through a catalogued query (CMR-CP-2); the gaps in CMR-CP-3; generalisation;
   device and linear/VOD sources.
 - **Next topic:** CMR-CP-1 (settle the definition points and decide the report content).
+
+### 2026-10-27 (CMR-CP-1, part 1) — Concurrent Plays definition points
+
+- **Decided:** open intervals end at the session's last event, with the timeout as an argument (300 s as the sensitivity check); `PLAYER_SEEK`, `PLAYER_EOF` and `PLAYER_ERROR` close playing time and
+  closing events sort before `PLAYING` on equal timestamps; UTC day with minute buckets from 00:00 UTC (Conviva's reporting timezone is an assumption to verify). Recorded in
+  `concurrent-plays/prompt.md`.
+- **No Conviva reference figure exists**, so no match can be claimed and the tolerance stays open; the report must state this.
+- **Open:** the report sections (point 5), so CMR-CP-1 stays unticked until they are agreed.
+- **Next topic:** CMR-CP-1 point 5, the report content.

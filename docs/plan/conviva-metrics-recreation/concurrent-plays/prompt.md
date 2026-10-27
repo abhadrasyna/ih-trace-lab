@@ -23,8 +23,14 @@ Rules from the page: a session counts only after its video has started playing; 
 previous 60 seconds; an hourly interval has 60 buckets and a daily one 1,440; aggregated time-series points are 15-minute maxima; the summary is the maximum over the period. Conviva notes 1-2%
 variance between minute, hourly and daily granularities. The page does not state the inactivity limit for stale sessions.
 
-Working rule in the POC, to confirm in CMR-CP-1: a session is playing from a `PLAYER_STATE_CHANGE`/`PLAYING` event until the next `BUFFERING`, `PAUSED`, `STOPPED` or `DESTROY` state, or a
-`PLAYER_SEEK`, `PLAYER_EOF` or `PLAYER_ERROR` event. It counts in every UTC minute that overlaps its playing time. An interval still open at the session's last event ends at that event.
+Rule settled with the user in CMR-CP-1 (2026-10-27): a session is playing from a `PLAYER_STATE_CHANGE`/`PLAYING` event until the next `BUFFERING`, `PAUSED`, `STOPPED` or `DESTROY` state, or a
+`PLAYER_SEEK`, `PLAYER_EOF` or `PLAYER_ERROR` event. It counts in every UTC minute that overlaps its playing time.
+
+- **Open intervals:** an interval still open at the session's last event ends at that event (default). The timeout is an argument; 300 s is the sensitivity check, since Conviva's inactivity limit is
+  not published.
+- **Ties:** on equal timestamps, closing events sort before `PLAYING`.
+- **Day and buckets:** UTC day, minute buckets from 00:00 UTC. Assumption to verify: Conviva's reporting timezone for the customer.
+- **Reference figure:** none is held, so no match with Conviva can be claimed and the match tolerance stays open until a figure exists. The report must say so.
 
 ## Result so far (ZA, 2026-10-24, Athena debug events)
 
