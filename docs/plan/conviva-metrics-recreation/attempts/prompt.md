@@ -51,7 +51,7 @@ cannot close, after `python scripts/resolve_tenant.py ...` per `docs/guides/tena
 - **CMR-ATT-2** — Done: chart on the shared theme, with the scratch line renderer
 - **CMR-ATT-3** — Done: chart header streamlined (title, KPI, footer); chart accepted as final
 - **CMR-ATT-8** — Done: supporting markdown report with the chart and top-10 content (Athena only)
-- **CMR-ATT-4** — Explain the 138-140 CREATE sessions missing from Athena exports and the extra Lightstep sessions
+- **CMR-ATT-4** — Formal fetch of the attempts inputs (CREATE time, title, household), derived from the POC
 - **CMR-ATT-5** — Settle the open definition points: formula, reference number, day boundary, auto-play and revived sessions
 - **CMR-ATT-6** — Prove the POC generalises: run it for another tenant and another date
 - **CMR-ATT-9** — Close the data gaps: linear vs VOD source (second chart) and device type

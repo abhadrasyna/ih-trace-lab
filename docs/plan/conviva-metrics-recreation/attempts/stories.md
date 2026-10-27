@@ -53,19 +53,36 @@ and a `HeaderCell` header was tried and rejected by the user (the plain line was
 
 ---
 
-## CMR-ATT-4 — Explain the gaps
+## CMR-ATT-4 — Formal fetch of the attempts inputs
 
-**Files:** a new `scratch/<date>_conviva-attempts_gap_probe.py` (registry stub per `scratch/SCRATCH.md`); findings in a `scratch/<date>_conviva-attempts_gap_findings.md` note.
+**Reference:** `scratch/2026-10-26_conviva-attempts_timeseries_poc.py` is a guideline only. Cross-source reconciliation (`outcome_first_debug.csv`, Lightstep) is dropped: the Athena data for the day
+is the reference, so the 138-140 "missing session" investigation is no longer a task.
+
+**What the POC reads (derive the formal inputs from this):**
+
+| POC input | Used for | Formal source |
+|---|---|---|
+| `<date>_debug_states.csv`, CREATE rows | attempt = distinct `sessionId`, CREATE time for the bucket | CREATE events in the CMR-CP-2 raw export, or the `ctap-smvod-debug-states` query |
+| `<date>_session.csv` title, `householdId` | top-10 content, Households | `contentmetadata.contenttitle` from the CREATE `eventdata` if it matches; otherwise a catalogued session query |
+
+**Files:** catalogued query or queries under `queries/athena/`; a runner in `investigations/ctap-smvod/scripts/` modelled on `run_athena_debug_sessions.py` (`--date/--tenant/--dry-run/--force`,
+`day_bounds()` from the shared helper) unless the CMR-CP-2 export already covers it; a loader helper in the shared lib; the registry and `docs/usage.md`.
 
 **What to implement:**
 
-1. List the 138 CREATE sessions missing from `session.csv` and the 140 missing from `outcome_first_debug.csv`; classify them by events present (no state change, error only, session shorter than the
-   export window, CREATE at the day edge).
-2. List the 34 `session.csv` sessions with no CREATE on the date and check whether their CREATE falls on the previous UTC day.
-3. For the Lightstep extras, check what they are (span or session scope, retries, other days) before calling them overcount.
-4. State, per category, whether it belongs in Attempts under the Conviva definition.
+1. List every column the POC reads and trace each to the script and query that produced the local CSV today (for example `run_athena_debug_sessions.py`, `ctap-smvod-debug-states.sql`). Find where
+   `session.csv` and `householdId` come from.
+2. Prefer one raw export for the whole day over several parsed ones: check that the CREATE `eventdata` (title, content type) reproduces the POC's attempts count and titles for ZA, 2026-10-24, and
+   reuse the CMR-CP-2 export if it does. Enhance an existing runner or helper rather than add a parallel one.
+3. If household is not in `eventdata`, add a catalogued query for it. Record any field that only a local file provides as a task, not a guess.
+4. Fetch for any tenant and date, never hardcoded, and save the export where the report reads it.
 
-**Commit:** `docs(conviva-metrics): cmr-att-4`
+**Tests (offline):**
+- `test_attempts_inputs_happy_path` — fixture rows give the expected distinct CREATE sessions with title and household.
+- `test_attempts_inputs_no_create` — no CREATE rows for the date raises a clear error.
+- `test_attempts_runner_dry_run` — `--dry-run` renders the query for a tenant and date and runs nothing.
+
+**Commit:** `feat(conviva-metrics): cmr-att-4`
 
 ---
 
