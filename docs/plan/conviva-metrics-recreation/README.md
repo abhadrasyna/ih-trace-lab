@@ -20,7 +20,7 @@ discrepancies, and extend the metrics to cases Conviva does not cover. It is an 
 | Story | Purpose | Status | Depends on | Closing SHA |
 |---|---|---|---|---|
 | `metric-definitions-data-inventory/` | Capture Conviva definitions and inventory local/Lightstep/Athena data per metric | ⬜ Not started | — | — |
-| `attempts/` | Recreate attempts (POC, chart and report done on ZA, 2026-10-24; gaps, linear/VOD, device, generalisation and formal recreation open) | 🔄 In progress | — | — |
+| `attempts/` | Recreate attempts (POC done on ZA, 2026-10-24; formal recreation open, runs after `concurrent-plays/`) | 🔄 In progress | `concurrent-plays` (CMR-CP-2, CMR-CP-6) | — |
 | `attempts-concurrent-plays/` | Placeholder; attempts moved to `attempts/` and concurrent plays to `concurrent-plays/` (left untouched) | ⬜ Not started | `metric-definitions-data-inventory` | — |
 | `concurrent-plays/` | Recreate concurrent plays (POC, chart and report accepted on ZA, 2026-10-24: peak 16; CMR-CP-1 done; raw export, gaps and formal recreation open) | 🔄 In progress | — | — |
 | `vpf-vsf/` | Recreate VPF and VSF, including error classification | ⬜ Not started | `metric-definitions-data-inventory` | — |

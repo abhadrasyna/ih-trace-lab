@@ -89,8 +89,8 @@ user's go-ahead:
 3. **Tasks are the formal build only:** the POC is referenced as evidence (commit SHAs), not listed as deliverable tasks. Order: explain the gaps, settle the definition points, prove it generalises to
    another tenant and date, close the data gaps (splits the POC could not make), and finally graduate. Shape the tasks with `docs/refactor/` and the design guidelines.
 4. **Graduate means finishing the scratch script:** the formal metric script is the scratch script completed, not a rewrite from scratch. It runs on demand with `--tenant` and `--date` and in a daily
-   run. Graduation delivers: a tested `scripts/dev/` script and report writer, a `src/lib/charts/` renderer, Athena queries in the catalog (`docs/guides/query-catalog.md`), saved exports for every
-   input, registry updates, and the scratch copies retired. Tenant and date are arguments; per-tenant mappings are documented parameters.
+   run. Graduation delivers: a tested script and report writer in `investigations/conviva-metrics/scripts/`, a `src/lib/charts/` renderer, Athena queries in the catalog
+   (`docs/guides/query-catalog.md`), saved exports for every input, registry updates, and the scratch copies retired. Tenant and date are arguments; per-tenant mappings are documented parameters.
 5. **Specify each task in `stories.md`:** files, what to implement, tests (happy path and error case, offline) and the commit message. One task per session, one commit per task.
 6. **Gate:** graduation needs its own go-ahead after the gap, definition and generalisation tasks are done. Markdown must pass the 200-character reflow hook.
 7. **Settle before specifying:** walk the definition points with the user (rule edge cases, tie order, timezone and bucket alignment, reference figure, report content). Record each decision in the

@@ -5,6 +5,8 @@ spec.
 
 **The POC (commit `1bcb06e`) is evidence, not a task. All tasks below are the formal build.**
 
+**Execution order:** this story is executed before `../attempts/` (CMR-CP-2 gives attempts its raw export; CMR-CP-6 builds the renderer, breakdown helper and report writer attempts reuses).
+
 - [x] **CMR-CP-1** — Settle the definition points and decide the report content with the user | Owner: Copilot CLI | Model: n/a | Review: none | SHA: —
 - [ ] **CMR-CP-2** — Build the formal full-day raw debug-events download (catalogued query, tested runner, shared `day_bounds`, reuse or extend the existing flatten helpers) | Owner: Copilot CLI |
   Model: n/a | Review: code-reviewer | SHA: —
@@ -22,7 +24,8 @@ spec.
 - **CMR-CP-3** — Each difference has a stated cause backed by sample sessions, and the report says whether it belongs in the Conviva definition.
 - **CMR-CP-4** — The POC runs for a second tenant and a second date with only arguments changed; any per-tenant mapping is documented.
 - **CMR-CP-5** — Device and linear/VOD splits are in the report, or the missing source is documented as a blocker.
-- **CMR-CP-6** — Tested `scripts/dev/` and `src/lib/charts/` versions exist, the report and its queries are in the catalog and run for any tenant and date, and the scratch copies are retired.
+- **CMR-CP-6** — Tested `investigations/conviva-metrics/scripts/` and `src/lib/` (charts, breakdown, report) versions exist, the report and its queries are in the catalog and run for any tenant and
+  date, and the scratch copies are retired.
 
 ## After each task
 

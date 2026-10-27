@@ -52,8 +52,14 @@ drops `PLAYER_SEEK`, `PLAYER_EOF` and `PLAYER_BUFFER_LEVEL`.
 
 ## Scope guard
 
-In bounds: the story folder, `scratch/` until graduation, the new catalog query and its saved exports, and (at CMR-CP-6 only) `scripts/dev/` and `src/lib/charts/`. Out of bounds: `investigations/`
-scripts such as `compute_concurrent_playback.py` (a different, whole-session view; do not edit), and the placeholder sub-stories. Read-only on Athena; resolve the tenant with `python
+In bounds: the story folder, `scratch/` until graduation, the new catalog query and its saved exports, the new `investigations/conviva-metrics/` folder (scaffolded at CMR-CP-2 with
+`scripts/scaffold_investigation.py`; it holds code and data specific to the Conviva metrics, such as runners, the metric script and the report writer), and shared code in `src/lib/` (the
+`day_bounds()` helper from CMR-CP-2, the line renderer and shared breakdown helpers from CMR-CP-6). Small, tested edits to `investigations/ctap-smvod/scripts/` are allowed only to import the moved
+`day_bounds()` and to extend `flatten_debug_events.py` and `debug_event_parser.py`. Out of bounds: other `investigations/ctap-smvod/` scripts such as `compute_concurrent_playback.py` (a different,
+whole-session view; do not edit), and the placeholder sub-stories.
+
+**Execution order (user, 2026-10-27):** this story runs first and `attempts/` waits. CMR-CP-2 produces the raw export that CMR-ATT-4 and CMR-ATT-9 reuse, and CMR-CP-6 builds the shared line renderer,
+breakdown helper and report writer that CMR-ATT-7 reuses. `attempts/` may only do CMR-ATT-5 (discussion, no code) before CMR-CP-2 is done. Read-only on Athena; resolve the tenant with `python
 scripts/resolve_tenant.py ...` first (`docs/guides/tenant-resolution.md`). Everything stays tenant- and date-agnostic: arguments, with per-tenant state names as a documented mapping.
 
 ## Session-start load hints

@@ -27,6 +27,9 @@ Working assumption, to verify (CMR-ATT-5): one attempt is one distinct `sessionI
 
 ## Result so far (ZA, 2026-10-24, local data only)
 
+Historical POC output. The Lightstep and `outcome_first_debug.csv` rows were used for reconciliation, which is now out of bounds (see the scope guard); they are kept as the record of what the POC
+found.
+
 | Source | Sessions |
 |---|---|
 | `athena/ZA/2026-10-24_debug_states.csv`, CREATE events (the chart) | 3,901 |
@@ -56,7 +59,12 @@ The chart is `output/ZA/charts/<date>_attempts_5min.png` (gitignored), produced 
 
 `investigations/ctap-smvod/scripts/chart_playback_attempts.py` already charts attempts per bucket for any tenant and date on `src/lib/charts`, with the same Conviva definition. It counts one distinct
 `sessionId` from `<date>_setupsession_with_outcome.csv` at its earliest `start_time` (or ingest time), whereas the POC counts CREATE events from `debug_states`. CMR-ATT-5 settles which definition is
-the attempts number; CMR-ATT-7 then enhances this script instead of adding a second attempts script.
+the attempts number; CMR-ATT-7 then shares its logic through `src/lib/` instead of keeping two copies.
+
+## Execution order
+
+Decided 2026-10-27: `../concurrent-plays/` runs first. Its CMR-CP-2 creates `investigations/conviva-metrics/` and the raw debug-events export, and its CMR-CP-6 builds the shared line renderer,
+breakdown helper and report writer. Here, CMR-ATT-5 (discussion) goes first, then CMR-ATT-4, CMR-ATT-6 and CMR-ATT-9 once CMR-CP-2 is done, and CMR-ATT-7 once CMR-CP-6 is done.
 
 ## Session-start load hints
 

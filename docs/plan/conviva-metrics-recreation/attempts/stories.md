@@ -5,7 +5,8 @@
 
 **Build rule (user, 2026-10-27):** scratch and POC scripts only validate feasibility. Formal scripts and helpers are built and tested while working these tasks (CMR-ATT-4 to CMR-ATT-9), never through
 MCP and never deferred to the end. Read the existing runners and helpers first and reuse or enhance them (`run_athena_debug_sessions.py`, `lib/runtime.py`, `flatten_debug_events.py`); shared logic
-such as `day_bounds()` lives in one shared helper, also used by the `concurrent-plays/` story (CMR-CP-2). The report writer's top-content and breakdown helpers are shared with the concurrent-plays
+such as `day_bounds()` lives in one shared helper in `src/lib/`, built by the `concurrent-plays/` story (CMR-CP-2), which is executed first. Code specific to the Conviva metrics lives in
+`investigations/conviva-metrics/` (created in CMR-CP-2), common code in `src/lib/` (user, 2026-10-27). The report writer's top-content and breakdown helpers are shared with the concurrent-plays
 report.
 
 **Final report format (user, 2026-10-27):** short, tables and the chart with a 1-2 line summary each. Sections: definition (few lines), headline with the chart, top-10 content, device breakdown,
@@ -30,9 +31,9 @@ the investigation script, and each piece gets a pure function with a thin `main(
 | `read_create_times` | loader over the CMR-CP-2 raw export (shared CSV/event loader) |
 | `bucket`, `series_points` | one shared time-series helper, also used by concurrent plays |
 | `read_content_by_session`, `top_content` | shared breakdown helper, shared with the concurrent-plays report |
-| `render_line` | `src/lib/charts/` line renderer raising `ChartError` |
+| `render_line` | `src/lib/charts/` line renderer raising `ChartError` (built in CMR-CP-6, reused here) |
 | `render_report` | `src/lib/report_render/` writer behind a `Protocol` |
-| `main` | thin `scripts/dev/` or investigation script: argparse, wiring, `--dry-run` |
+| `main` | thin script in `investigations/conviva-metrics/scripts/`: argparse, wiring, `--dry-run` |
 | `day_bounds` | shared helper (moved from `run_athena_debug_sessions.py`) |
 
 Tests: scratch scripts are exempt from the test gate until graduation (CMR-ATT-7); verify by running on local data and recording the output. Confirm scope and plan with the user before creating or
@@ -89,7 +90,7 @@ is the reference, so the 138-140 "missing session" investigation is no longer a 
 | `session.csv` title, `householdId` | top-10 content, Households | CREATE `eventdata` `contenttitle`, else a catalogued query | **new** if `eventdata` lacks them |
 | `setupsession_with_outcome.csv` (not in POC) | input of `chart_playback_attempts.py` | formal runner output | **reused**; compare in CMR-ATT-5 |
 
-**Files:** catalogued query or queries under `queries/athena/`; a runner in `investigations/ctap-smvod/scripts/` modelled on `run_athena_debug_sessions.py` (`--date/--tenant/--dry-run/--force`,
+**Files:** catalogued query or queries under `queries/athena/`; a runner in `investigations/conviva-metrics/scripts/` modelled on `run_athena_debug_sessions.py` (`--date/--tenant/--dry-run/--force`,
 `day_bounds()` from the shared helper) unless the CMR-CP-2 export already covers it; a loader helper in the shared lib; the registry and `docs/usage.md`.
 
 **What to implement:**
@@ -154,14 +155,16 @@ assumption found, and record per-tenant mappings as parameters, never inline.
 
 ## CMR-ATT-7 — Formal recreation: graduate code and data (needs its own go-ahead)
 
-**Files:** `scripts/dev/` attempts script and report writer with tests; Athena query catalog entries and saved exports for every input the report needs; `src/lib/charts/` line renderer with tests;
+**Files:** the attempts script and report wiring with tests in `investigations/conviva-metrics/scripts/`; Athena query catalog entries and saved exports for every input the report needs; the
+`src/lib/charts/` line renderer, breakdown helper and `src/lib/report_render/` writer are built and tested in CMR-CP-6 and only reused here (add tests here only for attempts-specific use);
 `SCRIPTS.md`; retire the scratch copies per `scratch/SCRATCH.md`.
 
 **Formal build (see the Build rule):** a catalogued attempts query and a runner with `--date/--tenant/--dry-run/--force` modelled on `run_athena_debug_sessions.py`, with `day_bounds()` imported from
 the shared helper; saved exports for every input; the report reads these exports, not the POC's parsed CSVs. The top-content and breakdown helpers are shared with the concurrent-plays report.
 
-**Existing script:** enhance `investigations/ctap-smvod/scripts/chart_playback_attempts.py` rather than add a parallel attempts script; the definition it uses is settled in CMR-ATT-5. Follow the
-design map in "Settled" above.
+**Existing script:** `investigations/ctap-smvod/scripts/chart_playback_attempts.py` is the reference for the definition settled in CMR-ATT-5. Per the 2026-10-27 decision, the formal attempts script
+lives in `investigations/conviva-metrics/scripts/`; if ATT-5 keeps the `setupsession_with_outcome` definition, extract its shared logic into `src/lib/` and have both scripts import it instead of
+keeping two copies. Follow the design map in "Settled" above.
 
 **What to implement:** only after CMR-ATT-4 to CMR-ATT-6 and CMR-ATT-9 are done and the user agrees. The renderer gets the same signature style and `ChartError` handling as the other `src/lib/charts`
 renderers, and the guide's module table gains the new module.
