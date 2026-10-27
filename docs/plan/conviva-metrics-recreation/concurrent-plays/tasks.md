@@ -5,7 +5,7 @@ spec.
 
 **The POC (commit `1bcb06e`) is evidence, not a task. All tasks below are the formal build.**
 
-- [ ] **CMR-CP-1** — Settle the definition points and decide the report content with the user | Owner: Copilot CLI | Model: n/a | Review: none | SHA: —
+- [x] **CMR-CP-1** — Settle the definition points and decide the report content with the user | Owner: Copilot CLI | Model: n/a | Review: none | SHA: —
 - [ ] **CMR-CP-2** — Download the full-day raw debug events with `eventdata` as stored, through a catalogued Athena query | Owner: Copilot CLI | Model: n/a | Review: code-reviewer | SHA: —
 - [ ] **CMR-CP-3** — Explain the differences: open playing intervals, sessions outside `session.csv`, playing versus alive | Owner: Copilot CLI | Model: n/a | Review: code-reviewer | SHA: —
 - [ ] **CMR-CP-4** — Prove the POC generalises: run it for another tenant and another date | Owner: Copilot CLI | Model: n/a | Review: code-reviewer | SHA: —

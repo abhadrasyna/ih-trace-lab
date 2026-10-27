@@ -21,6 +21,17 @@ Discussion log.
 4. UTC versus local day boundary, and the bucket alignment (minute buckets from 00:00 UTC).
 5. The sections the supporting report must contain. The user said this is decided in the next session; do not assume the POC sections are final.
 
+**Settled (2026-10-27, with the user):**
+
+1. Open intervals end at the session's last event; the timeout is an argument (300 s as a check).
+2. `PLAYER_SEEK`, `PLAYER_EOF` and `PLAYER_ERROR` close playing time; closing events sort before `PLAYING` on equal timestamps.
+3. No Conviva reference figure exists, so no match is claimed and no tolerance is set.
+4. UTC day, minute buckets from 00:00 UTC (Conviva's reporting timezone stays an assumption).
+5. Report content, accepted on the ZA 2026-10-24 output, kept short: tables and the chart with a one- or two-line summary, no local file references. Sections: definition; headline with the chart; top
+   10 content by played sessions (columns Content, Played sessions, % of played, Households, plus a Not resolved row); device breakdown at the peak minute (device class / OS / browser from the parsed
+   user agent, DRM device type, each with an Unresolved row); playback type at the peak minute. Sensitivity, reconciliation, known gaps and reproduction are not in the report. Playback type is
+   currently taken from the session-id prefix (`abr-vod-`); the raw `contenttype` in `eventdata` is the proper source (CMR-CP-5).
+
 **Commit:** `docs(conviva-metrics): cmr-cp-1`
 
 ---
@@ -73,8 +84,9 @@ changed. Fix any hardcoded assumption (state names, `abr-vod-` prefix, table suf
 
 **Files:** a scratch probe and findings note; the POC script and report; later an Athena query in the catalog.
 
-**What to implement:** find the device type or app field (`session.csv` has only a hashed `deviceId`) and what marks a linear session (local ZA data is VOD-only). Ask the user which field or service
-carries them; fetch only what is missing and save it for reuse. Add a device table and, if linear exists, a linear versus VOD split to the report. If a source does not exist, record a blocker.
+**What to implement:** the device table already exists in the report (user agent from the setup span and DRM device type, covering only sessions in those exports). Remaining: the application version
+(not in any local ZA export for the day; `clibversion` exists only for error sessions) and a verified playback-type source (raw `contenttype` in `eventdata`, checked on linear sessions; local ZA data
+is VOD-only). Ask the user which field or service carries them; fetch only what is missing and save it for reuse. If a source does not exist, record a blocker.
 
 **Commit:** `docs(conviva-metrics): cmr-cp-5`
 
@@ -96,6 +108,6 @@ saved exports for every input; `src/lib/charts/` line renderer with tests (share
 - `test_equal_timestamp_order` — shuffled rows with equal timestamps give the same peak.
 - `test_interval_max_equals_summary` — the summary equals the maximum of the series points.
 - `test_no_playing_sessions_error` — no playing sessions on the date raises a clear error.
-- `test_report_content_reconciles` — the content table plus the unresolved row equals the sessions at the peak minute.
+- `test_report_content_reconciles` — the content table plus the unresolved row equals the sessions that played during the day.
 
 **Commit:** `feat(conviva-metrics): graduate concurrent plays poc`

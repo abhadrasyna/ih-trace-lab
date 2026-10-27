@@ -44,7 +44,7 @@ POC commit `1bcb06e`, script `scratch/2026-10-27_conviva-concurrent-plays_timese
 | Whole session alive (first to last event), for comparison only | 24 | 17:36 |
 
 Of 3,961 sessions in the full-day export, 1,511 reached `PLAYING`, 2,450 never played and are excluded, and 142 played sessions end with the playing interval still open. At the peak minute 7 of the 16
-sessions were one title. No Conviva reference number is held yet. The first report is `2026-10-24_ZA_concurrent-plays-report.md`; its content is to be decided in CMR-CP-1.
+sessions were one title. No Conviva reference number is held yet. The report is `2026-10-24_ZA_concurrent-plays-report.md`; its content was settled in CMR-CP-1 (see `stories.md`).
 
 Data inventory for the day: `data/athena/ZA/2026-10-24_debug_eventid_inventory.csv` (event ids and states with counts). The Athena table `unified_e6auj7k7.e6auj7k7_ccl_debug_events` has a raw JSON
 `eventdata` column (for example `{"state":"PLAYING","position":0,"sessionid":"abr-vod-..."}`); the catalog query `ctap-smvod-debug-states` extracts only a few fields and filters five event ids, so it

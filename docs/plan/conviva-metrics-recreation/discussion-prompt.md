@@ -155,5 +155,7 @@ Append one dated entry per session: topic, decisions, open questions, next topic
   closing events sort before `PLAYING` on equal timestamps; UTC day with minute buckets from 00:00 UTC (Conviva's reporting timezone is an assumption to verify). Recorded in
   `concurrent-plays/prompt.md`.
 - **No Conviva reference figure exists**, so no match can be claimed and the tolerance stays open; the report must state this.
-- **Open:** the report sections (point 5), so CMR-CP-1 stays unticked until they are agreed.
-- **Next topic:** CMR-CP-1 point 5, the report content.
+- **Report content decided:** short report (definition, headline with chart, top 10 content by played sessions with households, device and playback-type breakdowns at the peak minute); no sensitivity,
+  reconciliation, gaps or file references. Playback type currently from the session-id prefix; raw `contenttype` to be verified in CMR-CP-5.
+- **Open:** none for CMR-CP-1 (done). Next: CMR-CP-2.
+- **Next topic:** CMR-CP-2, the raw debug-events export.
