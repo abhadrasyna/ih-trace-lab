@@ -8,8 +8,9 @@ earlier sessions. This is a design discussion: do not create stories, tasks, or 
 
 ## Required flow (every metric, in this order)
 
-The scratch POC is **not a deliverable**. It is the way we learn enough to write the story. In the attempts work the story and tasks were first written as if the POC were the deliverable and had to be
-recreated; do not repeat that. Run the steps in order, and stop for the user's explicit go-ahead at each transition.
+The scratch POC is **not shipped as is**; it is the blueprint. It is how we learn which sources exist and what the metric needs, and its structure becomes the formal code (see "Scratch as the
+blueprint"). It is the way we learn enough to write the story. In the attempts work the story and tasks were first written as if the POC were the deliverable and had to be recreated; do not repeat
+that. Run the steps in order, and stop for the user's explicit go-ahead at each transition.
 
 1. **Learn the metric from Conviva** — work from the documentation the user supplies (docs.conviva.ai metric dictionary). Record the definition, counting rule, bucket and timezone. If a definition is
    ambiguous or the formula image is unreadable, ask; never invent one.
@@ -21,7 +22,7 @@ recreated; do not repeat that. Run the steps in order, and stop for the user's e
 5. **Finalise the output** — the user reviews the graph and the markdown. Iterate in scratch until both are accepted (attempts went through several chart revisions). Nothing is formalised before this.
 6. **Create the story from the finalised output** — only with the user's go-ahead, and using `docs/refactor/` (especially `planning-protocol.md`, `design-principles.md` and
    `code-deduplication-and-taxonomy.md`) and the design guidelines in `docs/guides/` (`project-taxonomy.md`, `functional-code-taxonomy.md`). The accepted graph and report are the specification; the
-   POC code is reference only and is retired afterwards. Tasks describe the formal build, not the POC.
+   The POC code is the blueprint for the formal code, which replaces it when the story completes. Tasks describe the formal build, not the POC.
 7. **Epic outcome** — once the POCs are finalised, the epic produces a complete `investigations/<slug>/` folder (docs, scripts, outputs, retention per `docs/guides/project-taxonomy.md`) with the
    required code. Anything specific to one investigation goes in its scripts; every common functionality goes in `src/lib/`. Where a piece lives depends on how it is used.
 
@@ -61,6 +62,22 @@ Each metric ends up with a chart plus a supporting markdown report that helps a 
 - **Reference figure:** if Conviva gives no reference number, say so and claim no match or tolerance.
 - **Output location:** reports go to the metric's story folder as `<date>_<tenant>_<metric>-report.md`; charts stay in the gitignored `output/<TENANT>/charts/`, so decide how the image is shared.
 
+## Scratch as the blueprint for the formal metric code
+
+For every new metric the scratch script does four jobs, in this order, and each one maps to a formal piece:
+
+| Scratch job | Learn from the POC | Formal piece in the story |
+|---|---|---|
+| 1. **Find sources** | which local files carry the fields the metric needs, and which columns it reads | a loader helper per source; reuse of existing exports and runners |
+| 2. **Fetch the gaps** | which Athena or Lightstep pull filled what local data lacked | a catalogued query, a runner with a saved export, or an enhanced existing runner |
+| 3. **Compute** | the counting rule, bucket and timezone that reproduce the number | a pure, tested function with tenant, date and interval as arguments |
+| 4. **Render** | the accepted chart and the short markdown summary | a report writer and a `src/lib/charts/` renderer |
+
+When the chart and the summary are accepted, record the POC's inventory in the story `prompt.md`: for each input, whether it is **reused** (already local or already produced by a formal runner),
+**enhanced** (an existing script or helper extended) or **new** (new query and runner). The story's tasks then reuse the local data where it exists and write new fetch code only for the rest, and the
+final task turns the scratch script into the finished, formal metric script: tested, generic for any tenant and date, runnable **on demand** (arguments) and **daily** (a scheduled or batch run for a
+date), reading the saved exports and writing the chart and summary. The scratch copy is retired only after that script reproduces the accepted output.
+
 ## How to turn a POC into a story
 
 The attempts POC exists to formalise how everything is created, not to be shipped. Once a metric's POC and its report are accepted, write its story the same way `attempts/` was written, only with the
@@ -71,7 +88,8 @@ user's go-ahead:
 2. **`prompt.md`:** why the story exists, the Conviva definition with its doc link, the POC result table (sources, counts, deltas), the scope guard, and the task overview.
 3. **Tasks are the formal build only:** the POC is referenced as evidence (commit SHAs), not listed as deliverable tasks. Order: explain the gaps, settle the definition points, prove it generalises to
    another tenant and date, close the data gaps (splits the POC could not make), and finally graduate. Shape the tasks with `docs/refactor/` and the design guidelines.
-4. **Graduate means all of it:** a tested `scripts/dev/` script and report writer, a `src/lib/charts/` renderer, Athena queries in the catalog (`docs/guides/query-catalog.md`), saved exports for every
+4. **Graduate means finishing the scratch script:** the formal metric script is the scratch script completed, not a rewrite from scratch. It runs on demand with `--tenant` and `--date` and in a daily
+   run. Graduation delivers: a tested `scripts/dev/` script and report writer, a `src/lib/charts/` renderer, Athena queries in the catalog (`docs/guides/query-catalog.md`), saved exports for every
    input, registry updates, and the scratch copies retired. Tenant and date are arguments; per-tenant mappings are documented parameters.
 5. **Specify each task in `stories.md`:** files, what to implement, tests (happy path and error case, offline) and the commit message. One task per session, one commit per task.
 6. **Gate:** graduation needs its own go-ahead after the gap, definition and generalisation tasks are done. Markdown must pass the 200-character reflow hook.
