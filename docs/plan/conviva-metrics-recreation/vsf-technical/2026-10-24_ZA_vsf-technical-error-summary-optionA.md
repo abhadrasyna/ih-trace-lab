@@ -12,20 +12,21 @@ player error before playing, counted at the first error, UTC, 5-minute buckets. 
 
 ## Error codes
 
-A session can carry several codes, so rows do not add up to VSF-T.
+A session can carry several codes, so rows do not add up to VSF-T. Households are distinct `householdId` values (865 across all attempts; 22 VSF-T sessions have none). Times are the first and last
+failure in UTC.
 
-| Code | VSF-T sessions | % of VSF-T |
-|---|---|---|
-| 6001 | 1,898 | 90.3% |
-| 3016 | 105 | 5.0% |
-| 1003 | 29 | 1.4% |
-| 6002 | 20 | 1.0% |
-| 6006 | 9 | 0.4% |
-| 3015 | 7 | 0.3% |
-| E31012 | 7 | 0.3% |
-| 1002 | 7 | 0.3% |
-| 6007 | 6 | 0.3% |
-| 1001 | 5 | 0.2% |
+| Code | VSF-T sessions | % of VSF-T | % of attempts | Impacted HHs | % of all HHs | Sessions per HH | First seen | Last seen |
+|---|---|---|---|---|---|---|---|---|
+| 6001 | 1,898 | 90.3% | 48.00% | 358 | 41.39% | 5.3 | 00:30 | 23:55 |
+| 3016 | 105 | 5.0% | 2.66% | 25 | 2.89% | 4.2 | 04:51 | 21:41 |
+| 1003 | 29 | 1.4% | 0.73% | 21 | 2.43% | 1.4 | 05:35 | 22:33 |
+| 6002 | 20 | 1.0% | 0.51% | 7 | 0.81% | 2.9 | 04:42 | 18:08 |
+| 6006 | 9 | 0.4% | 0.23% | 2 | 0.23% | 4.5 | 17:43 | 19:48 |
+| 3015 | 7 | 0.3% | 0.18% | 2 | 0.23% | 3.5 | 18:21 | 18:50 |
+| E31012 | 7 | 0.3% | 0.18% | 6 | 0.69% | 1.2 | 09:20 | 21:37 |
+| 1002 | 7 | 0.3% | 0.18% | 6 | 0.69% | 1.2 | 03:13 | 18:02 |
+| 6007 | 6 | 0.3% | 0.15% | 2 | 0.23% | 3.0 | 08:50 | 13:59 |
+| 1001 | 5 | 0.2% | 0.13% | 4 | 0.46% | 1.2 | 04:44 | 21:53 |
 
 ## Top 10 content by VSF-T
 
