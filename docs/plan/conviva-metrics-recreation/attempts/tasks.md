@@ -14,10 +14,11 @@ spec.
 - [ ] **CMR-ATT-4** — Explain the 138-140 CREATE sessions missing from Athena exports and the extra Lightstep sessions | Owner: Copilot CLI | Model: n/a | Review: code-reviewer | SHA: —
 - [ ] **CMR-ATT-5** — Settle the open definition points: formula, reference number, day boundary, auto-play and revived sessions | Owner: Copilot CLI | Model: n/a | Review: none | SHA: —
 - [ ] **CMR-ATT-6** — Prove the POC generalises: run it for another tenant and another date | Owner: Copilot CLI | Model: n/a | Review: code-reviewer | SHA: —
-- [ ] **CMR-ATT-9** — Close the data gaps for the report: find the source for linear vs VOD and for device type, then add the second chart and the device table
+- [ ] **CMR-ATT-9** — Close the data gaps for the report: find the source for linear vs VOD and for device type, then add the second chart and the device and playback-type tables (short report format;
+  shared join helper)
   | Owner: Copilot CLI | Model: n/a | Review: code-reviewer | SHA: —
-- [ ] **CMR-ATT-7** — Formal recreation: graduate the POC, the renderer, the report and the data queries into tested production code (separate go-ahead) | Owner: Copilot CLI | Model: n/a | Review:
-  code-reviewer | SHA: —
+- [ ] **CMR-ATT-7** — Formal recreation: graduate the POC, the renderer, the report and the data queries into tested production code, reusing and extending existing runners and shared helpers
+  (separate go-ahead) | Owner: Copilot CLI | Model: n/a | Review: code-reviewer | SHA: —
 
 ## Story done when
 
@@ -28,8 +29,10 @@ spec.
 - **CMR-ATT-4** — Each gap category has a stated cause, backed by sample sessions.
 - **CMR-ATT-5** — The definition, day boundary and edge-case rules are written down, with Conviva's reference number if one exists.
 - **CMR-ATT-6** — The POC runs for a second tenant and a second date with only arguments changed; any per-tenant mapping is documented.
-- **CMR-ATT-9** — Linear and VOD attempts are separated in a second chart and the device breakdown is in the report, or the missing source is documented as a blocker.
-- **CMR-ATT-7** — Tested `scripts/dev/` and `src/lib/charts/` versions exist, the report and its Athena queries are in the catalog and run for any tenant and date, and the scratch copies are retired.
+- **CMR-ATT-9** — Linear and VOD attempts are separated in a second chart and the device and playback-type tables are in the report in the short format, or the missing source is documented as a
+  blocker.
+- **CMR-ATT-7** — Tested `scripts/dev/` and `src/lib/charts/` versions exist, the report and its Athena queries are in the catalog and run for any tenant and date, the report reads the saved exports,
+  and the scratch copies are retired.
 
 ## After each task
 
