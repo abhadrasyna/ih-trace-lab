@@ -194,3 +194,12 @@ Append one dated entry per session: topic, decisions, open questions, next topic
   enhancing existing scripts and helpers first. CMR-CP-2 is now the formal raw debug-events runner (catalogued query, `run_athena_debug_events_raw.py`, shared `day_bounds`, reuse of
   `flatten_debug_events.py` and `debug_event_parser.py`). Recorded in `concurrent-plays/stories.md`.
 - **Next topic:** CMR-CP-2.
+
+### 2026-10-27 (later) — CIR Related Exits (third topic)
+
+- **Decided:** definition from the Conviva page and its decoded formula images: a session is a CIR related exit when an ended play has CIR within 5 s of its end; the metric is exits over ended plays.
+  Rules settled with the user: 10 s seek grace (from the CIRR page), error-ended plays count, startup buffering is not a stall, UTC day bucketed by session end. POC on ZA, 2026-10-24, local
+  `debug_all_events.csv` only (no fetch needed): **258 of 1,330 ended plays, 19.40%** (POC commit `38d767c`). The user accepted the chart and report; story `cir-related-exits/` created.
+- **Open:** the stall end rule (`PAUSED`), seek reference point, 181 played sessions with no end event, impact period and CIR-time distribution, the noisy 5-minute chart interval, backgrounding as a
+  session end, a Conviva reference figure and timezone (CMR-CIR-1 to CMR-CIR-4).
+- **Next topic:** CMR-CIR-1 (settle the open definition points), or the next metric.
