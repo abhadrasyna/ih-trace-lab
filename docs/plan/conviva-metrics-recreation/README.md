@@ -21,7 +21,8 @@ discrepancies, and extend the metrics to cases Conviva does not cover. It is an 
 |---|---|---|---|---|
 | `metric-definitions-data-inventory/` | Capture Conviva definitions and inventory local/Lightstep/Athena data per metric | ⬜ Not started | — | — |
 | `attempts/` | Recreate attempts (POC, chart and report done on ZA, 2026-10-24; gaps, linear/VOD, device, generalisation and formal recreation open) | 🔄 In progress | — | — |
-| `attempts-concurrent-plays/` | Placeholder; attempts moved to `attempts/`, concurrent plays remains here | ⬜ Not started | `metric-definitions-data-inventory` | — |
+| `attempts-concurrent-plays/` | Placeholder; attempts moved to `attempts/` and concurrent plays to `concurrent-plays/` (left untouched) | ⬜ Not started | `metric-definitions-data-inventory` | — |
+| `concurrent-plays/` | Recreate concurrent plays (POC and chart accepted on ZA, 2026-10-24: peak 16; definition, report, raw export, gaps and formal recreation open) | 🔄 In progress | — | — |
 | `vpf-vsf/` | Recreate VPF and VSF, including error classification | ⬜ Not started | `metric-definitions-data-inventory` | — |
 | `ebvs/` | Recreate EBVS (exits before video start) | ⬜ Not started | `attempts` | — |
 | `scratch-validation/` | Compare recomputed numbers against Conviva and record gaps | ⬜ Not started | `vpf-vsf`, `ebvs` | — |

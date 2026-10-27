@@ -33,8 +33,8 @@ recreated; do not repeat that. Run the steps in order, and stop for the user's e
 - **Status of existing stories (updated 2026-10-26):** `attempts/` is the first story written from POC evidence (see the log) and is in progress; its POC tasks CMR-ATT-1 to CMR-ATT-3 and CMR-ATT-8
   (report) are done. Phase 2, the formal recreation of code and data, is open: CMR-ATT-4 to CMR-ATT-6, CMR-ATT-9 (linear/VOD and device data) and CMR-ATT-7 (graduation). The other five sub-story
   folders (`metric-definitions-data-inventory/`, `attempts-concurrent-plays/`, `vpf-vsf/`, `ebvs/`, `scratch-validation/`) are placeholder guesses, superseded by the POC-first flow above: each metric
-  gets its story only after its POC output is accepted. Do not follow their tasks, and do not delete or rewrite them without an explicit go-ahead. `attempts-concurrent-plays/` is left as is and now
-  covers concurrent plays only.
+  gets its story only after its POC output is accepted. Do not follow their tasks, and do not delete or rewrite them without an explicit go-ahead. `attempts-concurrent-plays/` is left as is;
+  concurrent plays now has its own story, `concurrent-plays/` (created 2026-10-27).
 - **Data order:** use local data first; fetch from Lightstep or Athena only when local data is not enough. Before any Lightstep/Matisse/Athena call, run `python scripts/resolve_tenant.py ...` and
   follow `docs/guides/tenant-resolution.md`.
 - **Reference data sources (user-provided, 2026-10-26; for reference only, not a limit):** `investigations/ctap-smvod/data/`, organised per opco, with subfolders `athena/`, `cdnReport/` and
@@ -135,3 +135,16 @@ Append one dated entry per session: topic, decisions, open questions, next topic
   from Lightstep or Athena only for gaps, produce a graph and a markdown summary in a scratch script, finalise with the user, then create the story from `docs/refactor/` and the design guidelines. The
   epic ends in a complete `investigations/<slug>/` folder; common code goes in `src/lib/`, investigation-specific code stays in its scripts. Each transition needs an explicit go-ahead. The five
   placeholder sub-stories are marked superseded, not deleted.
+
+### 2026-10-27 (later) — Concurrent Plays (second topic)
+
+- **Decided:** definition from the Conviva page plus the user's formula images: per 60-second bucket, sessions with at least one video frame; the metric is the maximum over the interval (15-minute
+  points, daily summary). POC on ZA, 2026-10-24, Athena debug events, UTC minute buckets: **peak 16 at 07:53 UTC**. A session plays from `PLAYING` until `BUFFERING`, `PAUSED`, `STOPPED`, `DESTROY`,
+  `PLAYER_SEEK`, `PLAYER_EOF` or `PLAYER_ERROR`; failed attempts (2,450 of 3,961 sessions) are excluded. The end of 142 open intervals is estimated at the last event; the peak is 16 with a 300 s
+  extension too, so the rule is an assumption, not a blocker. The user accepted the chart; the report content is deliberately left for the next session. The story `concurrent-plays/` was created from
+  the finalised output (POC commit `1bcb06e`).
+- **Data findings:** local `debug_states.csv` misses only `PLAYER_BUFFER_LEVEL`, `PLAYER_SEEK` and `PLAYER_EOF` (the catalog query filters event ids) and gives the same peak. The Athena `eventdata`
+  column is raw JSON. Saved `data/athena/ZA/2026-10-24_debug_eventid_inventory.csv` and `2026-10-24_debug_all_events.csv` (gitignored). Seek is available as `PLAYER_SEEK`.
+- **Open:** Conviva's inactivity limit and a reference number for that day; the report sections; raw `eventdata` export through a catalogued query (CMR-CP-2); the gaps in CMR-CP-3; generalisation;
+  device and linear/VOD sources.
+- **Next topic:** CMR-CP-1 (settle the definition points and decide the report content).
