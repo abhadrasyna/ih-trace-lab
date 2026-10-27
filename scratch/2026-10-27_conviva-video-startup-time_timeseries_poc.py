@@ -1,4 +1,4 @@
-"""POC: Conviva Video Startup Time (VST) metric from local Athena debug events; compares with session.csv startup_time_ms.
+"""POC: Conviva Video Startup Time (VST) metric from local Athena debug events.
 
 Conviva reference: https://docs.conviva.ai/sei/video/metric-dictionary/video-startup-time/
     VST(session) = timestamp(playStart) - timestamp(attempt)   (minus pre-roll ad time when there is one)
