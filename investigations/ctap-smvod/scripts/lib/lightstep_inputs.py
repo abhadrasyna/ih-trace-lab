@@ -278,9 +278,37 @@ def has_failures(findings: list[Finding]) -> bool:
     return any(f.level == FAIL for f in findings)
 
 
+_COLUMNS = {
+    "presence": "Presence", "parts": "Parts", "part-set": "Parts", "combined-from": "Parts",
+    "schema": "Schema", "rows": "Schema", "tenant": "Tenant",
+    "coverage": "Coverage", "gap": "Coverage", "overlap": "Coverage", "row-cap": "Coverage",
+}
+_HEADERS = ("Artifact", "Files", "Presence", "Parts", "Schema", "Tenant", "Coverage", "Result")
+_SEVERITY = {PASS: 0, WARN: 1, FAIL: 2}
+
+
+def _worst(levels: list[str]) -> str:
+    return max(levels, key=_SEVERITY.__getitem__) if levels else "-"
+
+
 def format_report(tenant: str, findings: list[Finding]) -> str:
+    """One table per tenant (artifact x check, worst level per cell), then the WARN/FAIL details."""
+    kinds = list(dict.fromkeys(f.subject for f in findings))
+    rows = []
+    for kind in kinds:
+        mine = [f for f in findings if f.subject == kind]
+        cells = [_worst([f.level for f in mine if _COLUMNS[f.check] == column]) for column in _HEADERS[2:7]]
+        files = next((f.detail for f in mine if f.check == "presence" and f.level == PASS), "-")
+        rows.append([kind, files, *cells, _worst([f.level for f in mine])])
+    table = [list(_HEADERS), *rows]
+    widths = [max(len(str(r[i])) for r in table) for i in range(len(_HEADERS))]
     lines = [f"[{tenant}]"]
-    lines += [f"  {f.level:<4}  {f.check:<13} {f.subject:<20} {f.detail}" for f in findings]
+    for index, row in enumerate(table):
+        lines.append("  " + " | ".join(str(c).ljust(w) for c, w in zip(row, widths)))
+        if index == 0:
+            lines.append("  " + "-+-".join("-" * w for w in widths))
+    issues = [f for f in findings if f.level != PASS]
+    lines += [f"  {f.level} {f.subject} ({f.check}): {f.detail}" for f in issues]
     return "\n".join(lines)
 
 

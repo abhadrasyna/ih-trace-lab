@@ -189,6 +189,18 @@ def test_non_numeric_timestamp_fails_loudly(tmp_path: Path) -> None:
     assert ("coverage", "smvod-ts") in _levels(findings)
 
 
+def test_report_is_a_table_with_issue_details(tmp_path: Path) -> None:
+    _day(tmp_path)
+    _smvod_ts(tmp_path / f"{DATE}_smvod-ts.csv", (5, 47), (23, 55))
+
+    report = li.format_report("ZM", li.validate_tenant(tmp_path, DATE, _context(), SETTINGS))
+
+    lines = report.splitlines()
+    assert lines[1].split(" | ")[0].strip() == "Artifact"
+    assert next(line for line in lines if line.strip().startswith("smvod-ts ")).rstrip().endswith("FAIL")
+    assert any(line.strip().startswith("FAIL smvod-ts (coverage)") for line in lines)
+
+
 def test_drm_exports_required_only_with_include_drm(tmp_path: Path) -> None:
     _day(tmp_path)
 
