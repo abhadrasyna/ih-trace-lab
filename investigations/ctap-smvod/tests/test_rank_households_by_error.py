@@ -32,7 +32,7 @@ def test_csv_input_ranks_and_writes(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["x", "--csv", str(c), "--top", "2"])
     mod.main()
     assert (tmp_path / "2026-10-20_error_report_1xxx_household_ranking.csv").exists()
-    assert "h1\t2\t1\t1\t1001,1003" in capsys.readouterr().out
+    assert "h1\t2\t1\t1\td1\t1001,1003" in capsys.readouterr().out
 
 
 def test_csv_missing_column_fails(tmp_path, monkeypatch):
