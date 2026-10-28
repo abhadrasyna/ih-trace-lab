@@ -9,7 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 EPIC = ROOT / "docs/plan/conviva-metrics-recreation"
 MARKER = ".mkdocs-poc-output"
-REPORT_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_([A-Za-z]+)_(.+)-report\.md$")
+REPORT_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_([A-Za-z]+)_(.+?)(-report|-error-summary-optionA)\.md$")
+LOCAL_IMG_RE = re.compile(r"\]\(([^)/:]+\.png)\)")
 IMG_RE = re.compile(r"\]\((?:\.\./)+output/[^)/]+/charts/([^)]+)\)")
 
 MKDOCS_YML = """site_name: Conviva metrics recreation
@@ -28,10 +29,17 @@ nav:
 
 
 def collect(epic: Path, tenant: str | None, date: str | None):
-    for path in sorted(epic.glob("*/*-report.md")):
+    for path in sorted(epic.glob("*/*.md")):
         m = REPORT_RE.match(path.name)
         if m and (not date or m[1] == date) and (not tenant or m[2] == tenant):
-            yield path, m[1], m[2], m[3]
+            variant = " option A" if m[4] != "-report" else ""
+            yield path, m[1], m[2], m[3], variant
+
+
+def copy_chart(src: Path, dst: Path) -> None:
+    if dst.exists() and dst.read_bytes() != src.read_bytes():
+        sys.exit(f"chart name clash: {src} vs existing {dst.name}")
+    shutil.copy(src, dst)
 
 
 def main() -> int:
@@ -55,23 +63,29 @@ def main() -> int:
     (out / MARKER).write_text("created by 2026-10-28_mkdocs-reports-site_poc.py\n")
 
     pages, rows = [], []
-    for path, date, tenant, metric in collect(EPIC, args.tenant, args.date):
+    for path, date, tenant, metric, variant in collect(EPIC, args.tenant, args.date):
         raw = path.read_text()
         text = IMG_RE.sub(rf"](../charts/{tenant}/\1)", raw)
+        text = LOCAL_IMG_RE.sub(rf"](../charts/{tenant}/\1)", text)
         (docs / "charts" / tenant).mkdir(parents=True, exist_ok=True)
         for png in IMG_RE.findall(raw):
             src = ROOT / "output" / tenant / "charts" / png
             if src.exists():
-                shutil.copy(src, docs / "charts" / tenant / png)
+                copy_chart(src, docs / "charts" / tenant / png)
             else:
                 print(f"missing chart: {src}", file=sys.stderr)
-        rel = Path(metric) / f"{date}_{tenant}.md"
+        for png in LOCAL_IMG_RE.findall(raw):
+            if (path.parent / png).exists():
+                copy_chart(path.parent / png, docs / "charts" / tenant / png)
+            else:
+                print(f"missing chart: {path.parent / png}", file=sys.stderr)
+        rel = Path(metric) / f"{date}_{tenant}{variant.replace(' ', '_')}.md"
         if (docs / rel).exists():
             sys.exit(f"duplicate report for {rel}: {path}")
         (docs / rel).parent.mkdir(exist_ok=True)
         (docs / rel).write_text(text)
-        pages.append((metric, rel))
-        rows.append(f"| {metric} | {tenant} | {date} | [report]({rel}) |")
+        pages.append((metric + variant, rel))
+        rows.append(f"| {metric}{variant} | {tenant} | {date} | [report]({rel}) |")
 
     if not pages:
         sys.exit("no reports matched the --tenant/--date filters")
