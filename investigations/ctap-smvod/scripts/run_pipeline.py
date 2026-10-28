@@ -4,6 +4,8 @@ Orchestrator for the CTAP/SM-VOD pipeline (BLUEPRINT.md Steps 2-6b), one
 command per date instead of copy-pasting the "Quick reference" block by
 hand. Runs, in order:
 
+    Step 0  check_lightstep_inputs.py      -- validate the manual Lightstep CSVs for every tenant: presence, numbered
+                                              parts, schema, tenant, UTC-day coverage (--skip-input-check to bypass)
     Step 1b combine_lightstep_parts.py     -- combine split _01/_02... Lightstep CSV parts, if any
     Step 2  merge_ctap_smvod_csv.py       -- base 3-way merge
     Step 3  run_athena_playback_outcome.py -- Athena playback outcome (optional, --skip-step3)
@@ -86,8 +88,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from check_lightstep_inputs import run_checks
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.drm_exports import LRM, MDRMFE, export_paths
+from lib.lightstep_inputs import Settings
 from lib.runtime import investigation_data_dir, investigation_output_dir, snapshot_output_path
 from lib.tenant_context import discover_tenants, require_lightstep_dir, resolve_tenant_context
 from src.lib.logging.bootstrap import init_logging
@@ -367,6 +371,8 @@ def main():
              "on-by-default --only-not-moved filter -- needed if you'll run Step 6c/7 "
              "(filter_error_code_report.py/correlate_cdn_ips.py) afterward, which both "
              "expect the full session set")
+    ap.add_argument("--skip-input-check", action="store_true",
+                     help="Skip Step 0 (validation of the manual Lightstep CSVs: presence, parts, schema, tenant, UTC coverage)")
     ap.add_argument("--profile", default=None, help="AWS SSO profile, passed through to Steps 3/4")
     ap.add_argument("--skip-auth-check", action="store_true", help="Passed through to Steps 3/4")
     ap.add_argument(
@@ -398,6 +404,15 @@ def main():
                 print(" ".join(command))
         LOGGER.info("Completed run_pipeline dry_run date=%s tenants=%s", args.date, ",".join(tenants))
         return
+
+    if not args.skip_input_check:
+        print("==> Step 0 - validate manual Lightstep CSVs (check_lightstep_inputs.py)", file=sys.stderr)
+        report, inputs_ok = run_checks(
+            tenants, date_iso, Settings(include_drm=args.drm), Path(args.drm_dir) if args.drm_dir else None)
+        print(report, file=sys.stderr)
+        if not inputs_ok:
+            print("\nSTEP 0 FAILED: fix the FAIL lines above (or re-run with --skip-input-check).", file=sys.stderr)
+            sys.exit(1)
 
     failures: dict[str, str] = {}
     for tenant in tenants:

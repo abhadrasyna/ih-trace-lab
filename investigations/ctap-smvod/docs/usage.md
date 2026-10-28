@@ -43,7 +43,13 @@ Step 2 (`merge_ctap_smvod_csv.py`) fails loudly if any row is blank, mismatched,
 python3 run_pipeline.py --date 06102026
 ```
 
-Prerequisite: the Lightstep exports for the date already sit in `data/lightstep/` (`YYYY-MM-DD_ctap.csv`, `YYYY-MM-DD_smvod.csv`, optional `YYYY-MM-DD_smvod-ts.csv`). Step 1 is manual.
+Prerequisite: the Lightstep exports for the date already sit in `data/lightstep/<TENANT>/` (`YYYY-MM-DD_ctap.csv`, `YYYY-MM-DD_smvod.csv`, `YYYY-MM-DD_smvod-ts.csv`, or numbered `_NN_` parts of each).
+Step 1 is manual.
+
+Step 0 (`check_lightstep_inputs.py`, runs first for every tenant, bypass with `--skip-input-check`) fails the whole run before any step starts when: a required file is absent; numbered parts have a
+gap or differ between `ctap`/`smvod`/`smvod-ts`; a combined file was built from a deleted part; a file lacks required columns or rows; rows belong to another tenant; or `smvod-ts` (the only export
+with timestamps) starts or ends more than 15 minutes from 00:00/24:00 UTC or leaves a gap over 15 minutes between parts. A last part at the 500-row cap, and mDRM part-numbering gaps, only warn. Run it
+alone with `python3 check_lightstep_inputs.py --date DDMMYYYY [--tenant T] [--drm]`; new artifacts are added in the registries at the top of `scripts/lib/lightstep_inputs.py`.
 
 | Step | Script | Writes |
 |---|---|---|

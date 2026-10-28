@@ -153,7 +153,21 @@ def _run_main(monkeypatch: pytest.MonkeyPatch, *argv: str) -> None:
     run_pipeline.main()
 
 
-_SKIPS = ("--skip-step3", "--skip-step4", "--skip-step6b", "--skip-step6d", "--skip-step6e", "--skip-error-eventdata")
+_SKIPS = ("--skip-input-check", "--skip-step3", "--skip-step4", "--skip-step6b", "--skip-step6d", "--skip-step6e", "--skip-error-eventdata")
+
+
+def test_step0_failure_blocks_every_step(
+    tenant_root: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(run_pipeline, "discover_tenants", lambda date_iso: ["ZM"])
+    monkeypatch.setattr(run_pipeline, "run_checks", lambda *args, **kwargs: ("[ZM]\n  FAIL  coverage", False))
+    monkeypatch.setattr(run_pipeline.subprocess, "run", lambda *a, **k: pytest.fail("no step may run"))
+
+    with pytest.raises(SystemExit) as exc_info:
+        _run_main(monkeypatch, *_SKIPS[1:])
+
+    assert exc_info.value.code == 1
+    assert "STEP 0 FAILED" in capsys.readouterr().err
 
 
 def test_main_validates_inputs_after_step1b_not_before(
