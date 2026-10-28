@@ -201,6 +201,12 @@ def test_report_is_a_table_with_issue_details(tmp_path: Path) -> None:
     assert any(line.strip().startswith("FAIL smvod-ts (coverage)") for line in lines)
 
 
+def test_legend_explains_every_table_column() -> None:
+    legend = li.format_legend()
+
+    assert all(header in legend for header in li._HEADERS)
+
+
 def test_drm_exports_required_only_with_include_drm(tmp_path: Path) -> None:
     _day(tmp_path)
 

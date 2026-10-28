@@ -18,7 +18,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
-from lib.lightstep_inputs import Settings, format_report, has_failures, validate_tenant
+from lib.lightstep_inputs import Settings, format_legend, format_report, has_failures, validate_tenant
 from lib.runtime import ddmmyyyy_to_iso
 from lib.tenant_context import discover_tenants, lightstep_dir, require_lightstep_dir, resolve_tenant_context
 from src.lib.logging.bootstrap import init_logging
@@ -35,7 +35,7 @@ def run_checks(
         findings = validate_tenant(lightstep_dir(code), date_iso, resolve_tenant_context(code), settings, drm_dir)
         blocks.append(format_report(code, findings))
         ok = ok and not has_failures(findings)
-    return "\n".join(blocks), ok
+    return "\n".join(blocks + [format_legend()]), ok
 
 
 def select_tenants(requested: str | None, date_iso: str) -> list[str]:

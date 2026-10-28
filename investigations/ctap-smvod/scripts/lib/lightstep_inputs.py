@@ -291,6 +291,25 @@ def _worst(levels: list[str]) -> str:
     return max(levels, key=_SEVERITY.__getitem__) if levels else "-"
 
 
+_LEGEND = (
+    ("Artifact", "Lightstep export type: ctap, smvod, smvod-ts (core, always required) and the mDRM exports."),
+    ("Files", "What is on disk for the date: a whole-day file or N numbered _NN_ parts."),
+    ("Presence", "FAIL if a required artifact has neither a whole-day file nor parts (mDRM required only with --drm)."),
+    ("Parts", "Part numbers run 01..N with no gap (FAIL for core, WARN for mDRM); core artifacts have the same parts; "
+              "a combined file's recorded parts still exist."),
+    ("Schema", "Required columns are present and the file has data rows."),
+    ("Tenant", "Rows belong to the tenant folder (shared Lightstep projects only); '-' for mDRM and dedicated projects."),
+    ("Coverage", "smvod-ts only, the sole export with timestamps: first/last span within the tolerance of 00:00/24:00 UTC, "
+                 "no gap between parts; WARN if the last part hit the row cap."),
+    ("Result", "Worst level in the row. PASS ok, WARN review but does not block, FAIL blocks the pipeline; '-' not applicable."),
+)
+
+
+def format_legend() -> str:
+    width = max(len(name) for name, _ in _LEGEND)
+    return "\n".join(["Columns:", *(f"  {name.ljust(width)}  {text}" for name, text in _LEGEND)])
+
+
 def format_report(tenant: str, findings: list[Finding]) -> str:
     """One table per tenant (artifact x check, worst level per cell), then the WARN/FAIL details."""
     kinds = list(dict.fromkeys(f.subject for f in findings))
