@@ -22,7 +22,7 @@ from src.lib.logging.bootstrap import init_logging
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.rank_households_by_error")
 
 REQUIRED = ("householdId", "sessionId", "deviceId", "error_codes")
-COLUMNS = ["rank", "householdId", "sessions", "days", "devices", "error_codes"]
+COLUMNS = ["rank", "householdId", "sessions", "days", "devices", "deviceIds", "error_codes"]
 
 
 def load_rows(path: str) -> list[dict]:
@@ -75,7 +75,7 @@ def rank_households(rows: list[dict]) -> list[dict]:
         a["codes"].update(c.strip() for c in re.split(r"[,;]", str(r.get("error_codes") or "")) if c.strip())
     ranked = sorted(acc.items(), key=lambda kv: (-len(kv[1]["sessions"]), kv[0]))
     return [{"rank": i, "householdId": hh, "sessions": len(a["sessions"]), "days": len(a["days"]),
-             "devices": len(a["devices"]), "error_codes": ",".join(sorted(a["codes"]))}
+             "devices": len(a["devices"]), "deviceIds": ";".join(sorted(a["devices"])), "error_codes": ",".join(sorted(a["codes"]))}
             for i, (hh, a) in enumerate(ranked, 1)]
 
 

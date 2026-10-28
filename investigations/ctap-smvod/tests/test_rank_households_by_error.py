@@ -51,7 +51,7 @@ def test_rank_counts_sessions_days_devices(tmp_path, monkeypatch, capsys):
         "2026-10-02": [["h1", "d1", "s4", "1001"], ["h1", "d1", "s4", "1001"]],
     })
     ranking = mod.rank_households(mod.load_rows(str(x)))
-    assert ranking[0] == {"rank": 1, "householdId": "h1", "sessions": 3, "days": 2, "devices": 2, "error_codes": "1001,1002"}
+    assert ranking[0] == {"rank": 1, "householdId": "h1", "sessions": 3, "days": 2, "devices": 2, "deviceIds": "d1;d2", "error_codes": "1001,1002"}
     assert ranking[1]["householdId"] == "h2" and ranking[1]["sessions"] == 1
 
     monkeypatch.setattr(sys, "argv", ["x", "--xlsx", str(x), "--top", "1"])
