@@ -49,8 +49,9 @@ def test_one_workbook_per_code_with_own_columns(tmp_path, monkeypatch) -> None:
     f1003 = tmp_path / "error_code" / "1003" / "all_dates_error_1003_by_opco.xlsx"
     assert load_workbook(f6007).sheetnames == ["GH", "ZM"]
     assert load_workbook(f1003).sheetnames == ["GH"]
-    assert _sheet(f6007, "GH")[0] == ["date", "sessionId", "errorcode"]
-    assert _sheet(f1003, "GH") == [["date", "sessionId", "errorcode", "extra"], ["2026-10-09", "b", "1003", "x"]]
+    assert _sheet(f6007, "GH")[0] == ["date", "sessionId", "errorcode", "content_title"]
+    assert _sheet(f1003, "GH") == [["date", "sessionId", "errorcode", "extra", "content_title"],
+                                   ["2026-10-09", "b", "1003", "x", "(unmatched)"]]
     assert _sheet(f6007, "ZM")[1][0] == "2026-10-11"
 
 
@@ -60,8 +61,20 @@ def test_date_range_and_codes_filter(tmp_path, monkeypatch) -> None:
     _flat(tmp_path, "GH", "2026-10-08_1003.csv", ["sessionId"], [["skip"]])
     _run(monkeypatch, "--output-dir", str(tmp_path), "--from", "08102026", "--to", "11102026", "--codes", "6007")
     out = tmp_path / "error_code" / "6007" / "2026-10-08_2026-10-11_error_6007_by_opco.xlsx"
-    assert _sheet(out, "GH") == [["date", "sessionId"], ["2026-10-08", "in"]]
+    assert _sheet(out, "GH") == [["date", "sessionId", "content_title"], ["2026-10-08", "in", "(unmatched)"]]
     assert not (tmp_path / "error_code" / "1003").exists()
+
+
+def test_content_title_joined_by_session_id(tmp_path, monkeypatch) -> None:
+    _flat(tmp_path, "GH", "2026-10-08_6007.csv", ["sessionId"], [["s1"], ["s2"]])
+    with open(tmp_path / "GH" / "2026-10-08_setupsession_with_outcome.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["sessionId", "content"])
+        w.writerows([["s1", ""], ["s1", "Movie A"]])
+    _run(monkeypatch, "--output-dir", str(tmp_path))
+    out = tmp_path / "error_code" / "6007" / "all_dates_error_6007_by_opco.xlsx"
+    assert _sheet(out, "GH") == [["date", "sessionId", "content_title"],
+                                 ["2026-10-08", "s1", "Movie A"], ["2026-10-08", "s2", "(unmatched)"]]
 
 
 def test_no_matching_files_fails(tmp_path, monkeypatch) -> None:

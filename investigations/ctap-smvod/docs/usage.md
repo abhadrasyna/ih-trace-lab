@@ -121,8 +121,9 @@ devices (count plus `;`-separated `deviceIds`) and error codes per household and
 ### Combine per-error-code files across opcos (`combine_error_code_by_opco.py`)
 
 Merges the `output/<TENANT>/error_eventdata_flat/<date>_<errorcode>.csv` files (the `_all.csv` files are ignored) into **one XLSX per error code** (flattened columns differ by code, so codes are never
-mixed): one sheet per opco, all dates stacked, with a leading `date` column. An opco with no rows for a code gets no sheet. Tenants are auto-discovered; the date range and `--codes` are optional (omit
-them for every date and code found). Reads existing files only.
+mixed): one sheet per opco, all dates stacked, with a leading `date` column and a trailing `content_title` column (joined by `sessionId` from `output/<TENANT>/*_setupsession_with_outcome.csv`,
+`(unmatched)` if not found). An opco with no rows for a code gets no sheet. Tenants are auto-discovered; the date range and `--codes` are optional (omit them for every date and code found). Reads
+existing files only.
 
 ```bash
 python3 combine_error_code_by_opco.py --from 08102026 --to 11102026   # -> output/error_code/<code>/2026-10-08_2026-10-11_error_<code>_by_opco.xlsx per code

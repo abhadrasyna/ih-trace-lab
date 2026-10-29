@@ -4,7 +4,8 @@ Combine the per-error-code flat files (output/<TENANT>/error_eventdata_flat/
 <date>_<errorcode>.csv, written by flatten_error_eventdata.py
 --split-by-errorcode) from all opcos into ONE .xlsx PER ERROR CODE (flattened
 columns differ by code, so codes are never mixed): one sheet per opco, rows from
-all dates stacked, with a leading `date` column. An opco with no rows for a
+all dates stacked, with a leading `date` column and a trailing `content_title` column (joined by
+sessionId from <TENANT>/*_setupsession_with_outcome.csv `content`; `(unmatched)` when not found). An opco with no rows for a
 code gets no sheet in that code's file. The `<date>_all.csv` files are ignored.
 
 Tenants are every sub-folder of the output dir that has an error_eventdata_flat
@@ -33,6 +34,9 @@ LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.combine_error_code
 
 FLAT_DIR = "error_eventdata_flat"
 CODE_DIR = "error_code"
+SESSION_OUTCOME_SUFFIX = "_setupsession_with_outcome.csv"
+TITLE_COL = "content_title"
+UNMATCHED = "(unmatched)"
 FILE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_(?!all\.csv$)(.+)\.csv$")
 
 
@@ -64,8 +68,22 @@ def read_rows(path: str) -> list[dict]:
         return list(csv.DictReader(f))
 
 
-def combine_tenant(files: list[tuple[str, str, str]]) -> tuple[list[str], list[dict]]:
-    """Stack rows of all files, prefixing a `date` column; columns are the ordered union."""
+def load_titles(tenant_dir: str) -> dict[str, str]:
+    """sessionId -> content title from <tenant>/*_setupsession_with_outcome.csv (first non-blank title wins)."""
+    titles: dict[str, str] = {}
+    for name in sorted(os.listdir(tenant_dir)):
+        if not name.endswith(SESSION_OUTCOME_SUFFIX):
+            continue
+        for r in read_rows(os.path.join(tenant_dir, name)):
+            title = (r.get("content") or "").strip()
+            if title and r.get("sessionId"):
+                titles.setdefault(r["sessionId"], title)
+    return titles
+
+
+def combine_tenant(files: list[tuple[str, str, str]], titles: dict[str, str] | None = None) -> tuple[list[str], list[dict]]:
+    """Stack rows of all files, prefixing a `date` column and appending `content_title` (by sessionId)."""
+    titles = titles or {}
     columns: list[str] = ["date"]
     rows: list[dict] = []
     for iso, _code, path in files:
@@ -73,8 +91,10 @@ def combine_tenant(files: list[tuple[str, str, str]]) -> tuple[list[str], list[d
             for c in r:
                 if c not in columns:
                     columns.append(c)
-            rows.append({"date": iso, **r})
-    return columns, rows
+            rows.append({"date": iso, **r, TITLE_COL: titles.get(r.get("sessionId", ""), UNMATCHED)})
+    if TITLE_COL in columns:
+        columns.remove(TITLE_COL)
+    return columns + [TITLE_COL], rows
 
 
 def write_xlsx(path: str, sheets: dict[str, tuple[list[str], list[dict]]]) -> None:
@@ -144,8 +164,12 @@ def main():
     for missing in sorted((wanted or set()) - set(codes)):
         LOGGER.warning("No files found for requested code %s", missing)
 
+    titles = {t: load_titles(os.path.join(out_dir, t)) for t in tenants}
+    for t, tt in titles.items():
+        if not tt:
+            LOGGER.warning("No %s files with content titles for %s; content_title will be %s", SESSION_OUTCOME_SUFFIX, t, UNMATCHED)
     for code in codes:
-        sheets = {t: combine_tenant(g[code]) for t, g in by_tenant.items() if code in g}
+        sheets = {t: combine_tenant(g[code], titles[t]) for t, g in by_tenant.items() if code in g}
         out_path = os.path.join(out_dir, CODE_DIR, code, default_out_name(code, start, end))
         write_xlsx(out_path, sheets)
         summary = ", ".join(f"{t}={len(r)}" for t, (_c, r) in sheets.items())
