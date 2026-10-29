@@ -331,6 +331,21 @@ python3 analyze_mdrm_devices.py --opco ZA --date 2026-10-23 [--min-volume 5]  # 
 `run_pipeline.py` runs all three as Steps 6i-6k, together: one `--skip-drm-reports` flag (alias `--skip-drm-funnel`) skips them and `--drm-dir` applies to all; they are also skipped when the mdrmfe or
 LRM export is missing for the date. The funnel needs `<date>_setupsession_with_outcome.csv` (Step 5) in `output/<OPCO>/`.
 
+## 7f. Bandwidth vs playback failure (`run_athena_session_bandwidth.py`, `analyze_bandwidth_vs_failure.py`, `chart_bandwidth_vs_failure.py`)
+
+Tests whether low bandwidth explains failures, per `sessionid`, from the tenant's debug events (catalog slug `ctap-smvod-session-bandwidth`). Shaka's `estimatedbandwidth` is only logged on
+`PLAYER_ERROR`, so healthy sessions only have the ABR bitrate (`PLAYER_TRACK_CHANGE`); the stats and their plain-language meaning are in `docs/2026-10-29_ZA_bandwidth-vs-playback-failure.md`. Not part
+of `run_pipeline.py`.
+
+```bash
+cd investigations/ctap-smvod/scripts
+python3 run_athena_session_bandwidth.py --date 2026-10-24 --tenant ZA   # data/athena/ZA/<date>_session_bandwidth.csv, one row per session (--dry-run, --force)
+python3 analyze_bandwidth_vs_failure.py --date 2026-10-24 --tenant ZA    # output/ZA/bandwidth/<date>_{bandwidth_by_errorcode,abr_failure_rate,bandwidth_stats,effectivetype_by_errorcode}.csv
+python3 chart_bandwidth_vs_failure.py --date 2026-10-24 --tenant ZA      # output/ZA/charts/<date>_{bw_spread_by_errorcode,bw_coverage_by_errorcode,buffering_vs_healthy,...}.png (5 PNGs)
+```
+
+Statistics logic is in `scripts/lib/bandwidth_stats.py` (pure functions: percentiles, Spearman, Mann-Whitney, ABR-bucket failure rate); tests in `tests/test_bandwidth_vs_failure.py`.
+
 ## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
 
 `extract_session_ids.py`, `extract_session_timeline.py`, `flatten_debug_events.py`, `build_debug_completeness_query.py`, `parse_debug_user_agents.py`, `analyze_debug_sample.py`,
