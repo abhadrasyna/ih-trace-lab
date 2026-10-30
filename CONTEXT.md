@@ -18,25 +18,26 @@
   them. `extract_household_error_eventdata.py --report-csv <error-report csv> --tenant ZA` pulls the local `*_error_eventdata.csv` rows for a report's sessions (matched on the eventdata `sessionid`,
   householdId/deviceId joined back). `run_athena_household_debug_events.py --report-csv <csv> --tenant ZA --from/--to YYYY-MM-DD` live-queries EVERY debug event for the report's `clientid`
   (`deviceId:householdId`) pairs (catalog slug `ctap-smvod-household-debug-events`). `run_athena_session_bandwidth.py` + `analyze_bandwidth_vs_failure.py` + `chart_bandwidth_vs_failure.py` (usage §7f,
-  findings in `docs/2026-10-29_ZA_bandwidth-vs-playback-failure.md`) test bandwidth vs failure per sessionid. `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default ZA,GH,ZM)
-  exports the 1xxx-only error sessions (not limited to position_not_moved) for several tenants at once, one CSV/XLSX per tenant in `output/<TENANT>/`. `rank_households_by_error.py --xlsx` ranks
-  households by distinct error sessions in such an xlsx. `combine_error_code_by_opco.py` (optional `--from/--to`, `--codes`) merges the per-code flat files from all opcos into one XLSX per error code
-  (sheet per opco, `date` column) in `output/error_code/<code>/`. `summarize_tenant_status.py --date DDMMYYYY` (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to
-  `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one `docs/2026-10-08-tenant-status-summary.md`). `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant.
-  `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default ZA)
-  counts 6xxx sessions and unique households per content (per code + `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe
-  as supported in the flattened eventdata (a device capability, not the content's codec). `compute_concurrent_playback.py` (`--date`, `--tenants`) writes per-minute concurrent sessions per UTC day
-  from the CSV and Athena exports (three views, last debug event as an estimated end) and `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). `run_athena_session_ingest.py`
-  (catalog `ctap-smvod-session-ingest`) exports per-session `ingest_timestamp` from `unified_sessions` and `chart_playback_attempts.py --time-field ingest` charts attempts by when rows landed in
-  Athena; `run_athena_debug_sessions.py` (catalog `ctap-smvod-debug-sessions`) exports the distinct debug-events sessions for a day, and `compare_lightstep_athena_sessions.py` (`--debug` for the
-  3-way) diffs Lightstep vs `unified_sessions` (vs debug) session sets, writing `output/<T>/<date>_lightstep_vs_athena_sessions.csv`; `build_session_comparison_daily.py` (`--from/--to`, `--tenants`,
-  default all tenants) appends those counts, like the adoption reports, into `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). `run_3016_subcategory_report.py`
-  (`--opco`, `--date` or `--from/--to`) reads the local flat error eventdata and writes `output/<OPCO>/subcategory_3016/<date>_subcategory_{summary,events}.csv`, splitting 3014/3015/3016 into the 5
-  triage sub-categories (rules in `classify_3016_subcategory.py`; documented in `docs/usage.md` §7d; `--drm` adds mDRM device columns via `build_3016_drm_link.py` and writes
-  `<date>_subcategory_device_summary.csv` via `build_3016_drm_device_summary.py`). `analyze_drm_funnel.py` (`--opco`, `--date`; `--drm-dir`) writes the daily session → DRM license → error funnel from
-  the saved mDRM Lightstep exports, `analyze_mdrm_quality.py` the license-chain quality report and `analyze_mdrm_devices.py` the device/`brRef` policy report (all in `docs/usage.md` §7e; outputs go to
-  `output/<OPCO>/drm-analysis/` with `csv/` and `charts/` subfolders via `scripts/lib/drm_output.py`; the `stages` chart is `scripts/lib/funnel_stages_chart.py`; `run_pipeline.py` runs the three as
-  Steps 6i-6k under one `--skip-drm-reports`; shared readers `scripts/lib/drm_*.py`). Constrained by `docs/refactor/`.
+  findings in `docs/2026-10-29_ZA_bandwidth-vs-playback-failure.md` for 24 Oct, and `docs/2026-10-30_ZA_bandwidth-vs-playback-failure_data-{28,29}Oct.md`) test bandwidth vs failure per sessionid.
+  `extract_error_report_1xxx.py` (`--date` or `--from/--to`, `--tenants`, default ZA,GH,ZM) exports the 1xxx-only error sessions (not limited to position_not_moved) for several tenants at once, one
+  CSV/XLSX per tenant in `output/<TENANT>/`. `rank_households_by_error.py --xlsx` ranks households by distinct error sessions in such an xlsx. `combine_error_code_by_opco.py` (optional `--from/--to`,
+  `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet per opco, `date` column) in `output/error_code/<code>/`. `summarize_tenant_status.py --date DDMMYYYY`
+  (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one `docs/2026-10-08-tenant-status-summary.md`).
+  `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant. `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not
+  allowed"). `count_error_by_content.py` (`--from/--to`, `--tenants`, default ZA) counts 6xxx sessions and unique households per content (per code + `_rollup`); `find_codec_support_content.py`
+  (`--codec ec-3`) lists the content of error sessions whose device reports a codec probe as supported in the flattened eventdata (a device capability, not the content's codec).
+  `compute_concurrent_playback.py` (`--date`, `--tenants`) writes per-minute concurrent sessions per UTC day from the CSV and Athena exports (three views, last debug event as an estimated end) and
+  `chart_concurrent_playback.py` plots it via `src/lib/charts` (CH-6 pilot). `run_athena_session_ingest.py` (catalog `ctap-smvod-session-ingest`) exports per-session `ingest_timestamp` from
+  `unified_sessions` and `chart_playback_attempts.py --time-field ingest` charts attempts by when rows landed in Athena; `run_athena_debug_sessions.py` (catalog `ctap-smvod-debug-sessions`) exports
+  the distinct debug-events sessions for a day, and `compare_lightstep_athena_sessions.py` (`--debug` for the 3-way) diffs Lightstep vs `unified_sessions` (vs debug) session sets, writing
+  `output/<T>/<date>_lightstep_vs_athena_sessions.csv`; `build_session_comparison_daily.py` (`--from/--to`, `--tenants`, default all tenants) appends those counts, like the adoption reports, into
+  `output/<OPCO>/daily/<YYYY-MM>_session-comparison.csv` (one row per `session_date`). `run_3016_subcategory_report.py` (`--opco`, `--date` or `--from/--to`) reads the local flat error eventdata and
+  writes `output/<OPCO>/subcategory_3016/<date>_subcategory_{summary,events}.csv`, splitting 3014/3015/3016 into the 5 triage sub-categories (rules in `classify_3016_subcategory.py`; documented in
+  `docs/usage.md` §7d; `--drm` adds mDRM device columns via `build_3016_drm_link.py` and writes `<date>_subcategory_device_summary.csv` via `build_3016_drm_device_summary.py`). `analyze_drm_funnel.py`
+  (`--opco`, `--date`; `--drm-dir`) writes the daily session → DRM license → error funnel from the saved mDRM Lightstep exports, `analyze_mdrm_quality.py` the license-chain quality report and
+  `analyze_mdrm_devices.py` the device/`brRef` policy report (all in `docs/usage.md` §7e; outputs go to `output/<OPCO>/drm-analysis/` with `csv/` and `charts/` subfolders via
+  `scripts/lib/drm_output.py`; the `stages` chart is `scripts/lib/funnel_stages_chart.py`; `run_pipeline.py` runs the three as Steps 6i-6k under one `--skip-drm-reports`; shared readers
+  `scripts/lib/drm_*.py`). Constrained by `docs/refactor/`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
