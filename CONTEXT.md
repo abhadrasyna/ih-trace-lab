@@ -49,6 +49,8 @@
   determined by `request.api`, not by service or `sessionInfo.guestMode` (which only correlates, 89%/67% split, not a clean predictor); backing `query_timeseries` queries + per-API/per-guestMode
   counts live in `data/lightstep/ctap-household-device-field-naming-by-api.csv` and `data/lightstep/ctap-household-field-naming-by-guestmode.csv`. `docs/mtn-sa-span-attribute-audit-notes.md` is the
   investigation's still-TBD running-notes file.
+- `src/lib/token_gen/` (Tool, README inside; tests in `tests/lib/token_gen/`) — `python -m src.lib.token_gen.cli <householdID> [--expires-in 3600]` runs the two-step Synamedia flow (client-credentials
+  token at `auth.synamedia.com`, then `silent-login/create-token`) with stdlib `urllib`; `SYNAMEDIA_CLIENT_ID`/`SYNAMEDIA_CLIENT_SECRET` come from the environment or the gitignored root `.env`.
 - `docs/refactor/` — a generic (Python-scoped) refactor playbook (`README.md` index + `design-principles.md`, `code-deduplication-and-taxonomy.md`, `planning-protocol.md`,
   `logging-and-correlation-id.md`, `process-discipline.md`, `python-hygiene-and-automation.md`, `architecture-diagrams.md`, `code-review-checklist.md`) distilling this repo's own `docs/archive/`,
   `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable method for refactoring a different ad hoc Python legacy tree later. No project-specific names (entities, tenants, repos) appear in it by
