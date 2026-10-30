@@ -36,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("household_id", help="householdID used as the token subject")
     parser.add_argument("--expires-in", type=int, default=3600, help="token lifetime in seconds")
     parser.add_argument("--env-file", type=Path, default=Path(".env"), help="file holding the credentials")
+    parser.add_argument("--json", action="store_true", dest="as_json", help="print the full JSON response")
     return parser
 
 
@@ -50,7 +51,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     except TokenError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps(result, indent=2))
+    if args.as_json:
+        print(json.dumps(result, indent=2))
+        return 0
+    token = result.get("token")
+    if not token:
+        print(f"error: response has no 'token' field; use --json to inspect it: {result}", file=sys.stderr)
+        return 1
+    print(token)
     return 0
 
 

@@ -14,7 +14,8 @@ SYNAMEDIA_CLIENT_SECRET=<client secret>
 ## Usage
 
 ```
-python -m src.lib.token_gen.cli <householdID> [--expires-in 3600] [--env-file .env]
+python -m src.lib.token_gen.cli <householdID> [--expires-in 3600] [--env-file .env] [--json]
 ```
 
-Prints the create-token JSON response; exits 1 with a message on stderr for missing credentials, HTTP errors or a response without `access_token`. Uses only the standard library (`urllib`).
+Prints just the `token` value; `--json` prints the full create-token response instead. Exits 1 with a message on stderr for missing credentials, HTTP errors, a response without `access_token`, or
+(without `--json`) without `token`. Uses only the standard library (`urllib`).

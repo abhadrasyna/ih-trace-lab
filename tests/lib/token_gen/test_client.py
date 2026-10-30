@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.lib.token_gen import client
+from src.lib.token_gen import cli, client
 from src.lib.token_gen.cli import load_env_file, main
 
 
@@ -49,6 +49,27 @@ def test_load_env_file_parses_and_tolerates_missing(tmp_path: Path) -> None:
     env.write_text("# c\nSYNAMEDIA_CLIENT_ID='a'\nexport SYNAMEDIA_CLIENT_SECRET=b\n")
     assert load_env_file(env) == {"SYNAMEDIA_CLIENT_ID": "a", "SYNAMEDIA_CLIENT_SECRET": "b"}
     assert load_env_file(tmp_path / "nope") == {}
+
+
+def test_main_prints_token_or_full_json(tmp_path: Path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("SYNAMEDIA_CLIENT_ID", "id")
+    monkeypatch.setenv("SYNAMEDIA_CLIENT_SECRET", "secret")
+    monkeypatch.setattr(cli, "get_access_token", lambda *_: "bearer")
+    monkeypatch.setattr(cli, "create_silent_login_token", lambda *_: {"token": "silent", "x": 1})
+    args = ["hh-1", "--env-file", str(tmp_path / "none")]
+    assert main(args) == 0
+    assert capsys.readouterr().out == "silent\n"
+    assert main([*args, "--json"]) == 0
+    assert '"x": 1' in capsys.readouterr().out
+
+
+def test_main_errors_when_token_field_missing(tmp_path: Path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("SYNAMEDIA_CLIENT_ID", "id")
+    monkeypatch.setenv("SYNAMEDIA_CLIENT_SECRET", "secret")
+    monkeypatch.setattr(cli, "get_access_token", lambda *_: "bearer")
+    monkeypatch.setattr(cli, "create_silent_login_token", lambda *_: {"other": 1})
+    assert main(["hh-1", "--env-file", str(tmp_path / "none")]) == 1
+    assert "no 'token' field" in capsys.readouterr().err
 
 
 def test_main_reports_missing_credentials(tmp_path: Path, monkeypatch, capsys) -> None:
