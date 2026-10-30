@@ -5,6 +5,9 @@
 
 ## What Exists
 
+- `investigations/incident-summaries/` holds one Markdown summary per incident (from Teams Copilot), named `YYYY-MM-DD_<ticket>_<slug>.md`; its `README.md` has the Copilot prompt and an index,
+  `_TEMPLATE.md` the headings. First entry: INC0256822.
+
 - `investigations/mtn-monthly-error-code-analysis/` is a recurring Athena-only monthly error-code campaign across all MTN OpCos (scripts so far: `profile_error_code.py` and
   `summarize_error_devices.py`, counts-only evidence for the MEC-27 business/technical question, helpers in `scripts/mec_lib/`): local `data/athena/` (gitignored) and `output/`, `RETENTION.md`, and
   `docs/{README,usage}.md` where `usage.md` documents every script as it is added. `docs/conviva-metrics-reference.md` lists the Conviva QoE metric definitions (2026-10-11) and which are computable
