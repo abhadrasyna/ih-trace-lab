@@ -40,9 +40,13 @@ Ghana/Zambia app, Web UI or OpsHub. Search displayed **“no result”**. South 
 
 ### Incorrect episode/main-title mapping
 
-- **Evidence for:** Episode title was used as the main title.
-- **Evidence against:** Correcting and republishing it did not restore Search.
-- **Final status:** Rejected as root cause, but confirmed as a metadata-quality issue
+- **Evidence for:** The VOD asset had the episode title populated as the main title. The expected structure is the series title as the main title, with the episode name stored separately. This
+  mattered because Search is expected to search against the main title, not the separate episode-title field.
+- **Evidence against:** Stan Pendyk corrected the Ghana asset so the main title matched the series title, "100 Reasons to Stay Single in Lagos", and the content was re-ingested. The corrected asset
+  was present afterwards, but Search still returned no results.
+- **Final status:** Confirmed metadata issue, rejected as root cause.
+- **One-line summary:** The episode title had been used as the main title instead of the series title, but correcting and re-ingesting the metadata did not restore Search, so this mismatch was not the
+  underlying cause of INC0256822.
 
 ### Wrong catalogue/filter tags
 
