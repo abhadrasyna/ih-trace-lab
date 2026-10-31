@@ -240,3 +240,36 @@ For the shared-project tenants (ZM, GH), `ctap` adds `&& sessionInfo.busUnitId =
 **Tests (no network, no real external services):** none — documentation and a recorded parity run.
 
 **Commit:** `docs(lightstep): document daily export command and parity run`
+
+---
+
+## LX-7 — Cron-ready daily pipeline wrapper
+
+Added 2026-10-31. Once the export works, the downstream commands for the same day must also run from cron, in this order (dates are `DDMMYYYY`; example 29102026 = 2026-10-29):
+
+```
+python3 scripts/check_lightstep_inputs.py --date 29102026 --drm
+python scripts/run_pipeline.py --date 29102026 --drm --skip-input-check
+python scripts/extract_error_report_1xxx.py --date 29102026
+for t in ZA GH ZM; do python scripts/rank_households_by_error.py --csv output/$t/2026-10-29_error_report_1xxx.csv --top 10; done
+```
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/run_daily_pipeline.py` — thin `main()` that runs export, input check, `run_pipeline`, error-report extraction and per-tenant ranking for one UTC date.
+- `tests/` — orchestration test with a fake step runner.
+
+**What to implement:**
+
+1. Arguments via `argparse`: `--date` (default yesterday UTC), `--tenants` (default ZA,GH,ZM), `--skip-export`; `init_logging("run-daily-pipeline")` once, one FCID for the whole run.
+2. Run each step as a subprocess with an argument list (no `shell=True`), passing the FCID through the environment (cross-process propagation is flagged as deferred in the logging doc; this is its
+   first consumer). Log step start, duration and exit code once each.
+3. Stop at the first failed step except the per-tenant ranking, which continues for the remaining tenants; exit non-zero if any step failed. Verify each expected output CSV exists afterwards.
+4. Known risk: `run_pipeline.py` steps 3 and 4 use Athena through AWS SSO, which expires; cron needs a non-interactive credential path or a clear fail-fast on an expired SSO session. Resolve this in
+   the task, do not assume.
+5. Document the crontab line in `docs/usage.md`.
+
+**Tests (no network, no real external services):**
+- `test_steps_run_in_order_with_date_argument` and `test_failed_step_stops_pipeline_and_exits_nonzero`.
+- `test_ranking_continues_across_tenants_after_one_failure`.
+
+**Commit:** `feat(ctap-smvod): add cron-ready daily pipeline wrapper`

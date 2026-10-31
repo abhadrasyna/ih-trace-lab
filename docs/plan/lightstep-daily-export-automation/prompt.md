@@ -45,6 +45,7 @@ any change to `check_lightstep_inputs.py` behaviour — the new files must pass 
 - **LX-4** — UI-format CSV writer and part-file naming.
 - **LX-5** — `export_lightstep_day.py` CLI that pulls all eight kinds for a tenant and date and runs the input check.
 - **LX-6** — docs, `SCRIPTS.md` entry, and a parity run against a day that was exported by hand.
+- **LX-7** — cron-ready wrapper that runs the input check, `run_pipeline`, error report and household ranking after the export.
 
 ## Definition of done
 
