@@ -97,6 +97,15 @@ For the shared-project tenants (ZM, GH), `ctap` adds `&& sessionInfo.busUnitId =
   `duration_millis`) may not be reachable through `query_timeseries`; LX-1 must test this first and mark `smvod-ts` go or no-go.
 - **Safety check kept for shared tenants:** if the resolver says the tenant is shared and the output lacks the `busUnitId` column, or has more than one distinct value, the script fails instead of
   writing the file.
+- **Window (2026-10-31):** one full UTC day per run, `<date>T00:00:00Z` to `<date>T23:59:59Z` (e.g. 2026-10-29 00:00 to 23:59 UTC). The earlier 12:00-to-11:59 wording is superseded.
+- **Cron-ready:** unattended, non-interactive, no prompts, token from the environment or root `.env`; exit code 0 only on full success and non-zero on any failure, so cron can alert. It supports a
+  default date of "yesterday UTC" when `--date` is omitted, and `--force` for reruns; reruns are idempotent (existing files are skipped without `--force`).
+- **Logging contract (`docs/refactor/logging-and-correlation-id.md`):** `init_logging("export-lightstep-day")` once at the entry point (one FCID per run, minted nowhere else, logs to the project logs
+  directory). Run start `INFO` with tenant, date and kinds; external-call start `DEBUG` with a query fingerprint and `redact_params` (never the token or raw query text); success `INFO` with
+  `duration_ms`, row count and slice count; failure logged once via `logger.exception` in the layer that first catches it; run end `INFO` with a per-kind success/failure summary.
+- **Design rules (`docs/refactor/`):** the HTTP client is injected (DIP) as a `Protocol` so tests use a fake with no network; the kind registry is a plain `dict` (no Factory class); the client,
+  slicer, CSV writer and CLI are separate single-responsibility modules; a small per-module exception hierarchy (no `None` for failure, no broad `except`); type hints on all public functions,
+  keyword-only args beyond three, `ruff`/`mypy` clean, no `Any` outside the JSON boundary.
 - **Why the first attempts returned nothing:** `busUnitId == "dtunf6yo"` was applied on the dedicated ZA project, where that attribute does not exist.
 
 ---
@@ -199,12 +208,15 @@ For the shared-project tenants (ZM, GH), `ctap` adds `&& sessionInfo.busUnitId =
 
 **What to implement:**
 
-1. Arguments via `argparse`: `--tenant`, `--date`, `--kinds` (default all eight), `--output-dir`, `--force`; no hardcoded ids or paths.
-2. Resolve the tenant, compute the UTC-day window (00:00–24:00), fetch and write each kind, and log per-kind row counts and slice counts with `setup_logging()`.
-3. Finish by running the existing input check for the tenant/date and exit non-zero on any FAIL.
-4. Skip kinds that need an unregistered mDRM tenant with a clear message instead of guessing.
+1. Arguments via `argparse`: `--tenant`, `--date` (default yesterday UTC), `--kinds` (default all eight), `--output-dir`, `--force`; no hardcoded ids or paths.
+2. Call `init_logging()` once, resolve the tenant, compute the UTC-day window (00:00:00Z to 23:59:59Z), fetch and write each kind, and follow the logging contract in the Decisions section.
+3. Continue with the remaining kinds if one fails, then finish by running the existing input check for the tenant/date; exit non-zero if any kind or the check failed.
+4. Document a sample crontab line in `docs/usage.md` (absolute paths, `.env` loading, log location) in LX-6.
+5. Skip kinds that need an unregistered mDRM tenant with a clear message instead of guessing.
 
 **Tests (no network, no real external services):**
+- `test_default_date_is_yesterday_utc` and `test_one_failed_kind_continues_and_exits_nonzero`.
+- `test_log_lines_carry_one_fcid_and_no_token` — captured logs share one FCID and never contain the token.
 - `test_all_kinds_written_for_tenant_date` — fake client yields eight files.
 - `test_failed_input_check_exits_nonzero` — a FAIL finding sets the exit code.
 
