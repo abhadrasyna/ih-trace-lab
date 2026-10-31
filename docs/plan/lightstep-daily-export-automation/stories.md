@@ -10,11 +10,94 @@ The eight kinds and their sources (from `investigations/ctap-smvod/docs/lightste
 | `ctap` | GO project, EU | `lightstep_go` | Columns `http.user_agent`, `lightstep.trace_id`, `min/max/avg/sum/value`; `sessionInfo.busUnitId` filter on shared projects. |
 | `smvod` | GO project, EU | `lightstep_go` | `householdId`, `deviceId`, `sessionId`, `lightstep.trace_id`; `busUnitId` filter on shared projects. |
 | `smvod-ts` | GO project, EU | `lightstep_go` | `sessionId`, `oldest_micros`, `youngest_micros`; must cover the whole UTC day. |
-| `mdrmfe` | GO project, EU | `lightstep_go` | `go-mdrmfe` license by session; `span.kind == "server"`. |
-| `mdrm-cdm-widevine`, `mdrm-cdm-fairplay`, `mdrm-cdm-playready`, `mdrm-lrm` | `mcs-mdrm-production`, US | `lightstep_mdrm` | Filtered to the mDRM-internal tenant id; needs the US API token. |
+| `mdrmfe` | GO project, EU | `lightstep_go` | `go-mdrmfe` license by session; `span.kind == "server"`; always filtered on `request.tenant` (the tenant's `go_id`), even on a dedicated project. |
+| `mdrm-cdm-widevine`, `-fairplay`, `-playready`, `mdrm-lrm` | `mcs-mdrm-production`, US | `lightstep_mdrm` | Always filtered on `tenantId` (the mDRM-internal id); needs the US API token. |
 
-Auth: org API token from `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (environment or gitignored `.env`). Endpoint verified 2026-10-31: `POST
-https://api.<region>.lightstep.com/public/v0.2/<org>/projects/<project>/telemetry/query_timeseries`.
+Auth: org API token from `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (environment, else the gitignored root `.env`). Both tokens were verified read-only on 2026-10-31 (HTTP 200, expiry in 2027):
+
+| Region | Base URL | Org | Projects confirmed visible |
+|---|---|---|---|
+| EU | `https://api.eu.lightstep.com/public/v0.2` | `Synamedia-EU` | `mcs-go-prod-iye9omdf-eu` (ZA), `mcs-go-prod-mtn-1-eu` (shared ZM/GH) |
+| US | `https://api.lightstep.com/public/v0.2` | `Synamedia` | `mcs-mdrm-production` |
+
+Endpoint verified 2026-10-31: `POST <base>/<org>/projects/<project>/telemetry/query_timeseries`.
+
+## Known queries (2026-10-31)
+
+Three EU queries produce four files; four US queries, one per chart, produce the DRM files. The US queries come from the notebooks `N866YJ6f` (ZA), `HwL92dMR` (ZM) and `5fF1fM0S` (GH), fetched
+read-only through the API.
+
+| Kind | Chart / notebook | Query shape |
+|---|---|---|
+| `ctap` | [VOD-Trace-Join] CTAP CreatePlaySession — User-Agent | `filter http.route == "/ctap/:uxApiVersion/devices/me/playsessions"`; `group_by ["http.user_agent","lightstep.trace_id"], sum` |
+| `smvod` + `smvod-ts` | [VOD-Trace-Join] SM-VOD SetupSession — Session Identity | `filter service in (sm-linear, sm-vod) && session.api == "SetupSession" && span.kind == "server"`; 8 labels |
+| `mdrmfe` | [ZA] MTN 3016 – mdrmfe license by session | `filter service == "go-mdrmfe" && request.tenant == "<go_id>" && span.kind == "server"`; 11 labels |
+| `mdrm-cdm-widevine` | CDM – Widevine | `tenantId`, `service == "widevine-license-generator"`, `operation == "/wvpl/:version/GetLicense"` |
+| `mdrm-cdm-fairplay` | CDM – FairPlay | `tenantId`, `service == "fairplay-license-generator"`, `operation == "/MDRM/FPLS/:version/GetLicense"` |
+| `mdrm-cdm-playready` | CDM – PlayReady | `tenantId`, `service == "playready"`, `operation == "/playready/rightsmanager.asmx"` |
+| `mdrm-lrm` | License chain status – LRM | `tenantId`, `service == "license-request-manager"`; `group_by ["fcId","deviceId","http.status_code"], sum` |
+
+Verbatim queries as run on 2026-10-31 (`<id>` is the tenant value from `resolve_tenant.py`; LX-2 turns the literals into placeholders):
+
+```
+# ctap  (EU, project from the resolver)
+spans count | delta
+| filter http.route == "/ctap/:uxApiVersion/devices/me/playsessions"
+| group_by ["http.user_agent", "lightstep.trace_id"], sum
+
+# smvod + smvod-ts  (EU)
+spans count | delta
+| filter (service == "sm-linear" || service == "sm-vod")
+    && session.api == "SetupSession" && span.kind == "server"
+| group_by ["householdId", "deviceId", "session.clientIp", "sessionId", "contentId",
+            "externalPackageId", "lightstep.trace_id", "playbackURL"], sum
+
+# mdrmfe  (EU)
+spans count | delta
+| filter service == "go-mdrmfe" && request.tenant == "<go_id>" && span.kind == "server"
+| group_by ["drmAuthToken.sessionId", "fcid", "drmAuthToken.householdId", "drmAuthToken.deviceId",
+            "drmAuthToken.deviceType", "drmAuthToken.drmType", "drmAuthToken.brRef",
+            "request.contentId", "http.status_code", "http.user_agent", "http.client_ip"], sum
+
+# mdrm-cdm-widevine  (US)
+spans count | delta
+| filter ("tenantId" == "<id>") && ("service" == "widevine-license-generator")
+    && (operation == "/wvpl/:version/GetLicense")
+| group_by ["fcId", "http.status_code", "drmInfo.DeviceType", "drmInfo.Make", "drmInfo.Model",
+            "drmInfo.Platform", "drmInfo.SecurityLevel"], sum
+
+# mdrm-cdm-fairplay  (US)
+spans count | delta
+| filter ("tenantId" == "<id>") && ("service" == "fairplay-license-generator")
+    && (operation == "/MDRM/FPLS/:version/GetLicense")
+| group_by ["fcId", "http.status_code", "FP_SPC_contents"], sum
+
+# mdrm-cdm-playready  (US)
+spans count | delta
+| filter ("tenantId" == "<id>") && ("service" == "playready")
+    && (operation == "/playready/rightsmanager.asmx")
+| group_by ["fcId", "http.status_code", "drmInfo.deviceType", "drmInfo.manufacturerName",
+            "drmInfo.modelName"], sum
+
+# mdrm-lrm  (US)
+spans count | delta
+| filter ("tenantId" == "<id>") && ("service" == "license-request-manager")
+| group_by ["fcId", "deviceId", "http.status_code"], sum
+```
+
+For the shared-project tenants (ZM, GH), `ctap` adds `&& sessionInfo.busUnitId == "<go_id>"` and the same attribute in the `group_by`; `smvod` does the same with plain `busUnitId`.
+
+## Decisions (2026-10-31)
+
+- **Tenant attribute is per kind, in the registry:** `ctap` uses `sessionInfo.busUnitId` and `smvod` uses `busUnitId`, both only when `shared_project` is true (ZM, GH). ZA is a dedicated project and
+  gets neither the clause nor the column. `mdrmfe` always filters `request.tenant`; the mDRM kinds always filter `tenantId`. Values come from `resolve_tenant.py`, never from the script.
+- **GH CDM queries:** the GH notebook's Widevine, FairPlay and PlayReady charts lack the `operation == ...` clause that ZA and ZM have. Owner decision: GH must use the same `operation` filter as ZA
+  and ZM, so there is one template per kind and no per-tenant override. The GH notebook itself is out of date; fixing it is optional and not part of this story.
+- **`smvod` and `smvod-ts` come from one chart:** the aggregates table gives `smvod.csv` and the span-samples table gives `smvod-ts.csv`. The span samples (with `oldest_micros`, `youngest_micros`,
+  `duration_millis`) may not be reachable through `query_timeseries`; LX-1 must test this first and mark `smvod-ts` go or no-go.
+- **Safety check kept for shared tenants:** if the resolver says the tenant is shared and the output lacks the `busUnitId` column, or has more than one distinct value, the script fails instead of
+  writing the file.
+- **Why the first attempts returned nothing:** `busUnitId == "dtunf6yo"` was applied on the dedicated ZA project, where that attribute does not exist.
 
 ---
 
@@ -26,7 +109,8 @@ https://api.<region>.lightstep.com/public/v0.2/<org>/projects/<project>/telemetr
 
 **What to implement:**
 
-1. For one hand-exported day (ZA, 2026-10-29), pick the saved UQL/notebook chart for each of the eight kinds and run it through the API for the same UTC day, sliced to stay under the 50-series cap.
+1. For one hand-exported day (ZA, 2026-10-29), run each of the eight kinds from "Known queries" through the API for the same UTC day, sliced to stay under the 50-series cap. Start with the `smvod-ts`
+   span samples: if they cannot be reached through `query_timeseries` (or another public endpoint), mark `smvod-ts` no-go before doing anything else.
 2. Per kind, diff the API result against the hand file: row count, column set, key coverage. Note whether table-style charts (all attribute columns, e.g. `playbackURL`) can be reproduced with
    `group_by`.
 3. Measure request latency, rate limiting and the largest slice that does not truncate for each kind.
@@ -48,13 +132,17 @@ https://api.<region>.lightstep.com/public/v0.2/<org>/projects/<project>/telemetr
 
 **What to implement:**
 
-1. Add the eight templates using the UQL proven in LX-1; no literal ids, dates or tenants.
-2. Build the registry as data, not branching code, so a ninth kind is one new entry.
+1. Add the eight templates using the UQL proven in LX-1; no literal ids, dates or tenants. `smvod` and `smvod-ts` share one template and differ only in the output (aggregates vs span samples).
+2. Build the registry as data, not branching code, so a ninth kind is one new entry. Each entry names its tenant attribute and whether it applies always or only on a shared project.
 3. Resolve the project and shared-project filter through the `resolve_tenant.py` logic, never hardcoded.
+4. Use the ZA/ZM `operation` filter for the three CDM kinds for every tenant, including GH.
 
 **Tests (no network, no real external services):**
 - `test_registry_covers_all_eight_kinds` — every kind has template, system and suffix.
 - `test_unknown_kind_raises` — a missing kind fails loudly.
+- `test_dedicated_tenant_has_no_busunitid` — the expanded ctap and smvod queries for ZA contain no `busUnitId` text.
+- `test_shared_tenant_uses_kind_specific_attribute` — ZM/GH ctap uses `sessionInfo.busUnitId` and smvod uses `busUnitId`.
+- `test_cdm_queries_identical_across_tenants` — apart from the tenant id, GH's CDM queries equal ZA's.
 
 **Commit:** `feat(lightstep): add export query templates and kind registry`
 
@@ -68,7 +156,7 @@ https://api.<region>.lightstep.com/public/v0.2/<org>/projects/<project>/telemetr
 
 **What to implement:**
 
-1. Read the token from the environment only; fail with a clear message if missing; never log it.
+1. Read the token from `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` in the environment, falling back to the gitignored root `.env`; fail with a clear message if missing; never log it.
 2. Slice a window into fixed-size sub-windows; when a response reports `series_returned == 50` and `series_total > 50`, halve that slice and retry until it fits or hits a minimum width, then fail.
 3. Retry transient errors (429/5xx) with backoff; surface everything else.
 4. Deduplicate a series seen in adjacent slices by label set and timestamp, and verify the merged count against each slice's `series_total`.

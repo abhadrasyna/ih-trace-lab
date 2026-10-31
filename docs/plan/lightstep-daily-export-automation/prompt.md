@@ -15,6 +15,13 @@ Feasibility was confirmed on 2026-10-31: `POST /public/v0.2/Synamedia-EU/project
 10-minute slice of the ctap playsessions query. A script can therefore slice a UTC day into windows that stay under the 50-series cap, merge the slices, and write the CSVs in the exact format the
 pipeline already reads (UTF-8 BOM, every field quoted, columns as exported by the UI).
 
+## Update 2026-10-31 — decisions from the design discussion
+
+The full queries, token names, base URLs and decisions are in `stories.md` ("Known queries" and "Decisions"). In short: the tokens live in the root `.env` as `LIGHTSTEP_API_KEY_EU` and
+`LIGHTSTEP_API_KEY_US` (both verified read-only); three EU queries produce `ctap`, `smvod`/`smvod-ts` and `mdrmfe`, and four US notebook charts (one template per kind, tenant id substituted) produce
+the DRM files; the tenant filter attribute is per kind (`busUnitId` only on shared projects, `request.tenant` and `tenantId` always); GH's CDM queries use the same `operation` filter as ZA and ZM; and
+the `smvod-ts` span samples are the main feasibility risk for LX-1.
+
 ## Scope guard
 
 In bounds: a new export script and shared helpers under `scripts/`/`scripts/lib/` (or the ctap-smvod equivalents), parameterised query templates in `queries/lightstep/`, docs
