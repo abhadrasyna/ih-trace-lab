@@ -7,7 +7,8 @@ Steps, in order (each a subprocess run from ``investigations/ctap-smvod/``, one 
   4. ``extract_error_report_1xxx.py --date DDMMYYYY --tenants ...``
   5. ``rank_households_by_error.py --csv output/T/YYYY-MM-DD_error_report_1xxx.csv --top N`` per tenant
 
-The first failed step stops the run; ranking continues across tenants. Exit code is non-zero if any step failed or an expected
+The first failed step stops the run, except: an export whose CSVs were all written (e.g. only the input check failed), the advisory
+input-check step, and the per-tenant ranking all let the run continue; the final exit is still non-zero. Exit code is non-zero if any step failed or an expected
 output CSV is missing. Steps 3/4 of ``run_pipeline.py`` need AWS SSO: its pre-flight refreshes through ``aws-sso`` and fails fast
 (non-zero exit, logged here) when the session cannot be refreshed non-interactively.
 
@@ -35,6 +36,7 @@ from pathlib import Path
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 
+from scripts.lib.lightstep_export_kinds import KINDS, output_file_name
 from src.lib.logging.bootstrap import init_logging
 from src.lib.logging.context import current_fcid
 
@@ -58,6 +60,7 @@ class Step:
     argv: tuple[str, ...]
     outputs: tuple[Path, ...] = ()
     continue_on_failure: bool = False
+    continue_if_outputs_exist: bool = False
 
 
 @dataclass(frozen=True)
@@ -90,10 +93,14 @@ def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: in
     steps: list[Step] = []
     if not skip_export:
         extra = ("--workers", str(workers)) if workers is not None else ()
-        steps += [Step(f"export {t}", (python, str(scripts / "export_lightstep_day.py"), "--tenant", t, "--date", iso, *extra)) for t in tenants]
+        steps += [
+            Step(f"export {t}", (python, str(scripts / "export_lightstep_day.py"), "--tenant", t, "--date", iso, *extra),
+                 outputs=tuple(investigation_dir / "data" / "lightstep" / t / output_file_name(k, iso) for k in KINDS), continue_if_outputs_exist=True)
+            for t in tenants
+        ]
     reports = {t: investigation_dir / "output" / t / f"{iso}_error_report_1xxx.csv" for t in tenants}
     steps += [
-        Step("check inputs", (python, str(scripts / "check_lightstep_inputs.py"), "--date", ddmmyyyy, "--drm")),
+        Step("check inputs", (python, str(scripts / "check_lightstep_inputs.py"), "--date", ddmmyyyy, "--drm"), continue_on_failure=True),
         Step("run_pipeline", (python, str(scripts / "run_pipeline.py"), "--date", ddmmyyyy, "--drm", "--skip-input-check")),
         Step("error report 1xxx", (python, str(scripts / "extract_error_report_1xxx.py"), "--date", ddmmyyyy, "--tenants", ",".join(tenants)),
              outputs=tuple(reports.values())),
@@ -138,7 +145,10 @@ def run_steps(steps: Sequence[Step], run: StepRunner, *, cwd: Path, env: dict[st
         LOGGER.log(logging.INFO if ok else logging.ERROR, "step end: %s exit=%d duration=%.1fs%s", step.name, code, seconds,
                    f" missing output(s): {', '.join(map(str, missing))}" if missing else "")
         results.append(StepResult(step.name, ok, seconds))
-        if not ok and not step.continue_on_failure:
+        keep_going = step.continue_on_failure or (step.continue_if_outputs_exist and all(p.is_file() for p in step.outputs))
+        if not ok and keep_going:
+            LOGGER.warning("step %r failed but the run continues (outputs present or step is advisory); final exit will be non-zero", step.name)
+        if not ok and not keep_going:
             LOGGER.error("stopping: step %r failed", step.name)
             break
     return results

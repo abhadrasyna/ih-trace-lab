@@ -20,6 +20,9 @@ def _touch_reports(tmp_path: Path) -> None:
     for t in ("ZA", "GH"):
         (tmp_path / "output" / t).mkdir(parents=True, exist_ok=True)
         (tmp_path / "output" / t / "2026-10-29_error_report_1xxx.csv").write_text("x")
+        (tmp_path / "data" / "lightstep" / t).mkdir(parents=True, exist_ok=True)
+        for kind in mod.KINDS:
+            (tmp_path / "data" / "lightstep" / t / mod.output_file_name(kind, "2026-10-29")).write_text("x")
 
 
 def test_steps_run_in_order_with_date_argument(tmp_path):
@@ -86,3 +89,16 @@ def test_main_runs_with_fake_runner_and_writes_dated_log(tmp_path, monkeypatch):
 def test_runner_times_out_hung_step():
     code, out = mod.make_subprocess_runner(0.2)(["python3", "-c", "import time; time.sleep(5)"], Path("."), {})
     assert code == 124 and "timed out" in out
+
+
+def test_failed_export_with_all_files_written_continues_but_exits_nonzero(tmp_path):
+    steps = _steps(tmp_path)
+    _touch_reports(tmp_path)
+    runner = lambda argv, cwd, env: (1, "input check failed") if "--tenant" in argv and argv[argv.index("--tenant") + 1] == "ZA" else (0, "")  # noqa: E731
+    results = mod.run_steps(steps, runner, cwd=tmp_path, env={})
+    assert len(results) == len(steps) and [r.ok for r in results].count(False) == 1
+
+
+def test_failed_export_with_missing_files_still_stops(tmp_path):
+    results = mod.run_steps(_steps(tmp_path), lambda *a: (1, "no files"), cwd=tmp_path, env={})
+    assert len(results) == 1 and not results[0].ok
