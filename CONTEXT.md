@@ -101,7 +101,8 @@
 - `docs/plan/lightstep-daily-export-automation/` — story in progress (LX-1 done, LX-2..LX-7 open): replace the hand-exported daily Lightstep CSVs with an API pull. LX-1 findings are in its
   `stories.md` (seven kinds reproduce via `query_timeseries`; `smvod-ts` derived approximately; ~7-day Lightstep retention). Probes: `scratch/2026-11-01_lightstep_export_api_feasibility_probe.py`
   (per-kind full-day key-set diff against hand CSVs) and `scratch/2026-11-01_lightstep_smvod-ts_derive_probe.py` (derives `smvod-ts` from `smvod` points). LX-9a added `scripts/lib/lightstep_stitch.py`
-  (pure merge of per-window series or CSV rows) and `read_rows` in `scripts/lib/lightstep_csv.py`; LX-9b-d are open.
+  (pure merge of per-window series or CSV rows) and `read_rows` in `scripts/lib/lightstep_csv.py`; LX-9b added `scripts/lib/lightstep_parts.py` (JSON part store with manifest, verified resume) and the
+  `--part-hours`/`--fresh` flags; LX-9c-d are open.
 - `docs/archive/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
   `scripts/dev/promote_scratch_scripts.py` provides manual promotion with registry refresh; `scratch/SCRATCH.md`, `AGENTS.md`, and the repo-local `.github/skills/session-close/SKILL.md` enforce the
   delegated duplicate-check and close-out regeneration workflow; `tests/dev/` covers both CLIs.

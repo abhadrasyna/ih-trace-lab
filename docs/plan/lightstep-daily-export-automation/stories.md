@@ -317,6 +317,10 @@ the single source of truth; each sub-task implements the items listed here, and 
 
 Tests listed at the end of the spec belong to the sub-task that implements the behaviour; the worker-side FCID/no-token test belongs to LX-9d.
 
+**LX-9b design decision (2026-11-01):** part files hold the raw fetched series as JSON (`scripts/lib/lightstep_parts.py`, `<kind>_<NN>.json` plus `<kind>_<NN>.manifest.json`), not UI-format CSV.
+Points are kept, so `stitch_series` is exact (no count sidecar or approximate `avg` needed) and `smvod-ts` can be derived after stitching. The runner already stitches the parts into the output file;
+LX-9c adds the sanity checks and cleanup, and the CSV-row stitch from LX-9a stays available for those checks.
+
 **Files to change / create:**
 - `scripts/lib/lightstep_export_runner.py` — fetch per window into part files, resume, stitch.
 - `scripts/lib/lightstep_stitch.py` (new) — pure merge of part series; recomputes `min/max/avg/sum` across parts.

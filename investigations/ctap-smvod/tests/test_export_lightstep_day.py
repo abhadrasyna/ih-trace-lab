@@ -41,6 +41,11 @@ class FakeTransport:
         return 200, json.dumps({"data": {"attributes": {"series": series}}}).encode()
 
 
+@pytest.fixture(autouse=True)
+def _isolated_parts_root(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "DEFAULT_PARTS_ROOT", tmp_path.with_name(tmp_path.name + "_parts"))
+
+
 def _run(tmp_path, monkeypatch, *, kinds=ALL_KINDS, transport=None, check=None, force=False, tenant="ZA"):
     monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
     monkeypatch.setenv("LIGHTSTEP_API_KEY_US", TOKEN)
@@ -132,3 +137,92 @@ def test_new_registry_entry_needs_no_cli_change(tmp_path, monkeypatch):
     other = tmp_path / "zm"
     assert _run(other, monkeypatch, kinds=["extra"], tenant="ZM") == 0
     assert not other.exists()
+
+
+class FailingAfter(FakeTransport):
+    """Fails (non-retryable 400) from call number ``fail_from`` on, so earlier windows succeed."""
+
+    def __init__(self, fail_from: int | None) -> None:
+        super().__init__()
+        self.fail_from = fail_from
+
+    def post(self, url, headers, body, timeout):
+        if self.fail_from is not None and self.calls + 1 >= self.fail_from:
+            self.calls += 1
+            return 400, b"boom"
+        return super().post(url, headers, body, timeout)
+
+
+def _parts_dir(tmp_path):
+    return tmp_path.with_name(tmp_path.name + "_parts") / f"ZA_{DAY}"
+
+
+def test_failure_at_part_n_keeps_earlier_parts_and_rerun_fetches_only_rest(tmp_path, monkeypatch):
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=FailingAfter(fail_from=6)) == 1
+    assert sorted(p.name for p in _parts_dir(tmp_path).glob("ctap_*.json") if "manifest" not in p.name) == [f"ctap_{i:02d}.json" for i in range(1, 6)]
+    resumed = FakeTransport()
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=resumed) == 0
+    assert resumed.calls == 24 - 5 and (tmp_path / f"{DAY}_ctap.csv").exists()
+
+
+def test_corrupted_part_is_refetched_on_resume(tmp_path, monkeypatch):
+    _run(tmp_path, monkeypatch, kinds=["ctap"])
+    (tmp_path / f"{DAY}_ctap.csv").unlink()
+    (_parts_dir(tmp_path) / "ctap_03.json").write_text("[]", encoding="utf-8")
+    again = FakeTransport()
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=again) == 0
+    assert again.calls == 1
+
+
+def test_fresh_ignores_all_parts(tmp_path, monkeypatch):
+    _run(tmp_path, monkeypatch, kinds=["ctap"])
+    (tmp_path / f"{DAY}_ctap.csv").unlink()
+    fresh = FakeTransport()
+    monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
+    deps = runner.Dependencies(
+        transport=fresh, tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
+        input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+    )
+    request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False, fresh=True)
+    assert runner.run_export(request, deps) == 0 and fresh.calls == 24
+
+
+def test_part_hours_sets_window_count(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
+    transport = FakeTransport()
+    deps = runner.Dependencies(
+        transport=transport, tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
+        input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+    )
+    request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=6)
+    assert runner.run_export(request, deps) == 0
+    assert len(list(_parts_dir(tmp_path).glob("ctap_*.manifest.json"))) == 4
+
+
+def test_part_log_lines_carry_no_token(tmp_path, monkeypatch, caplog):
+    caplog.set_level(logging.DEBUG)
+    _run(tmp_path, monkeypatch, kinds=["ctap"])
+    assert "parts total=24 reused=0 remaining=24" in caplog.text and TOKEN not in caplog.text
+
+
+def test_part_hours_argument_is_validated():
+    with pytest.raises(SystemExit):
+        cli.parse_args(["--tenant", "ZA", "--part-hours", "0"])
+    assert cli.parse_args(["--tenant", "ZA", "--fresh", "--part-hours", "6"]).part_hours == 6
+
+
+def test_window_inside_ingestion_lag_is_not_cached(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
+    today = datetime.now(timezone.utc).date().isoformat()
+    deps = runner.Dependencies(
+        transport=FakeTransport(), tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
+        input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+    )
+    request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=today, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=24)
+    assert runner.run_export(request, deps) == 0
+    assert not (tmp_path.with_name(tmp_path.name + "_parts") / f"ZA_{today}").exists()
+
+
+def test_export_request_rejects_invalid_part_hours(tmp_path):
+    with pytest.raises(ValueError):
+        runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=0)

@@ -10,7 +10,8 @@ import hashlib
 import logging
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Protocol
 
@@ -24,6 +25,8 @@ from scripts.lib.lightstep_api import (
     split_window,
     utc_day_window,
 )
+from scripts.lib.lightstep_stitch import stitch_series
+from scripts.lib.lightstep_parts import PartStore, query_fingerprint
 from scripts.lib.lightstep_csv import FileExistsRefused, write_rows
 from scripts.lib.lightstep_export_kinds import (
     SHARED_ONLY,
@@ -43,6 +46,8 @@ ENDPOINTS = {
     "US": ("https://api.lightstep.com/public/v0.2", "Synamedia"),
 }
 CORE_KINDS = ("ctap", "smvod", "smvod-ts")
+DEFAULT_PARTS_ROOT = Path(__file__).resolve().parents[2] / "tmp" / "lightstep-export"
+INGEST_LAG = timedelta(hours=1)  # windows ending later than now minus this may still be filling, so they are never cached
 DRM_REQUIRED = ("mdrmfe", "mdrm-lrm")
 InputCheck = Callable[[Path, bool], tuple[str, bool]]
 TargetResolver = Callable[[str, TenantConfig], ExportTarget]
@@ -85,6 +90,17 @@ class ExportRequest:
     kinds: Sequence[str]
     out_dir: Path
     force: bool
+    part_hours: int = 1
+    fresh: bool = False
+    parts_root: Path = field(default_factory=lambda: DEFAULT_PARTS_ROOT)
+
+    def __post_init__(self) -> None:
+        if not 1 <= self.part_hours <= 24:
+            raise ValueError("part_hours must be between 1 and 24")
+
+    @property
+    def parts_dir(self) -> Path:
+        return self.parts_root / f"{self.tenant.code}_{self.day}"
 
 
 @dataclass(frozen=True)
@@ -122,16 +138,37 @@ def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: D
     base_url, org = ENDPOINTS[target.region.upper()]
     oldest, youngest = utc_day_window(request.day)
     uql = expand_query(spec.query_kind, request.tenant)
+    project = Project(base_url, org, target.project)
     LOGGER.debug(
         "lightstep query start %s",
         redact_params({"kind": spec.kind, "project": target.project, "region": target.region,
                        "query_fingerprint": hashlib.sha256(uql.encode()).hexdigest()[:12], "uql": uql},
                       {"kind", "project", "region", "query_fingerprint"}),
     )
-    series = fetch_all_series(
-        deps.transport, project=Project(base_url, org, target.project), token=deps.tokens.token(target.region), uql=uql,
-        oldest=oldest, youngest=youngest, output_period=spec.output_period_s,
-    )
+    store = PartStore(request.parts_dir)
+    windows = split_window(oldest, youngest, timedelta(hours=request.part_hours))
+    prints = [
+        query_fingerprint(uql=uql, project=target.project, region=target.region, period=spec.output_period_s,
+                          kind=spec.kind, window=[w[0].isoformat(), w[1].isoformat()])
+        for w in windows
+    ]
+    parts = [store.load(spec.kind, i, w, prints[i - 1]) for i, w in enumerate(windows, start=1)]
+    missing = [i for i, part in enumerate(parts) if part is None]
+    LOGGER.info("kind=%s parts total=%d reused=%d remaining=%d", spec.kind, len(windows), len(windows) - len(missing), len(missing))
+    for i in missing:
+        started = time.monotonic()
+        fetched = fetch_all_series(
+            deps.transport, project=project, token=deps.tokens.token(target.region), uql=uql,
+            oldest=windows[i][0], youngest=windows[i][1], output_period=spec.output_period_s,
+        )
+        if windows[i][1] <= datetime.now(timezone.utc) - INGEST_LAG:
+            store.save(spec.kind, i + 1, windows[i], prints[i], fetched)
+        else:
+            LOGGER.info("part %d/%d kind=%s ends within the ingestion lag; not cached", i + 1, len(windows), spec.kind)
+        parts[i] = fetched
+        LOGGER.info("part %d/%d kind=%s series=%d duration_ms=%d", i + 1, len(windows), spec.kind, len(fetched),
+                    int((time.monotonic() - started) * 1000))
+    series = stitch_series([part or [] for part in parts])
     if not series:
         raise LightstepError(f"{spec.kind}: no series returned for {request.day}; is it older than the ~7 day retention?")
     return series
@@ -181,6 +218,9 @@ def drm_expected(kinds: Sequence[str], results: Sequence[KindResult]) -> bool:
 def run_export(request: ExportRequest, deps: Dependencies) -> int:
     """Exports every kind (continuing past failures), runs the input check when applicable, and returns the exit code."""
     LOGGER.info("run start tenant=%s date=%s kinds=%s output_dir=%s", request.tenant.code, request.day, ",".join(request.kinds), request.out_dir)
+    if request.fresh:
+        PartStore(request.parts_dir).discard()
+        LOGGER.info("fresh run: discarded parts folder %s", request.parts_dir)
     results = [export_kind(kind, request, deps) for kind in request.kinds]
     ok = not any(r.status == "failed" for r in results)
     report: str | None = None

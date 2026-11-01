@@ -2,6 +2,8 @@
 
 Writes ``<date>_<kind>.csv`` in the UI export format into ``data/lightstep/<TENANT>/`` (or ``--output-dir``),
 then runs the Step 0 input check on that folder. Existing files are skipped unless ``--force`` is given.
+Each kind is fetched in ``--part-hours`` windows saved under ``tmp/lightstep-export/<TENANT>_<date>/``; a rerun
+after a failure reuses the verified parts (``--resume``, the default) and ``--fresh`` discards them first.
 Lightstep keeps about 7 days, so run within a week of the UTC day. Tokens come from ``LIGHTSTEP_API_KEY_EU`` /
 ``LIGHTSTEP_API_KEY_US`` in the environment or the gitignored root ``.env``.
 
@@ -60,6 +62,10 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap.add_argument("--kinds", nargs="+", default=list(KINDS), choices=list(KINDS), help="Kinds to export (default: all eight)")
     ap.add_argument("--output-dir", type=Path, default=None, help="Folder for the CSVs and the input check (default: data/lightstep/<TENANT>)")
     ap.add_argument("--force", action="store_true", help="Overwrite existing files instead of skipping them")
+    ap.add_argument("--part-hours", type=int, default=1, choices=range(1, 25), metavar="1-24", help="Hours per part file (default: 1)")
+    resume = ap.add_mutually_exclusive_group()
+    resume.add_argument("--resume", action="store_true", help="Reuse verified parts from an earlier run (default)")
+    resume.add_argument("--fresh", action="store_true", help="Discard this tenant/date's parts folder and fetch everything again")
     return ap.parse_args(argv)
 
 
@@ -78,7 +84,9 @@ def main(argv: Sequence[str] | None = None, transport: Transport | None = None, 
         transport=transport or UrllibTransport(), tokens=EnvTokenProvider(), resolve_target=resolve_target,
         input_check=input_check or make_input_check(tenant.code, day), report=print_report,
     )
-    request = ExportRequest(tenant=tenant, day=day, kinds=args.kinds, out_dir=args.output_dir or lightstep_dir(tenant.code), force=args.force)
+    request = ExportRequest(tenant=tenant, day=day, kinds=args.kinds, out_dir=args.output_dir or lightstep_dir(tenant.code), force=args.force,
+        part_hours=args.part_hours, fresh=args.fresh,
+    )
     return run_export(request, deps)
 
 
