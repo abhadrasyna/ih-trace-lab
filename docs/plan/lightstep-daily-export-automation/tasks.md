@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LX-9c, LX-9d, LX-10, LX-6, LX-7** (do LX-9a to LX-9d, then LX-10, before the LX-6/LX-7 docs and wrapper; "LX-9" in other text means all four sub-tasks).
+**Open: LX-9d, LX-10, LX-6, LX-7** (do LX-9a to LX-9d, then LX-10, before the LX-6/LX-7 docs and wrapper; "LX-9" in other text means all four sub-tasks).
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
