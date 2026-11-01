@@ -3,14 +3,14 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LX-8, LX-9, LX-10, LX-6, LX-7** (do LX-8, LX-9 and LX-10 before the LX-6/LX-7 docs and wrapper; the numbers are kept so existing references stay valid).
+**Open: LX-9, LX-10, LX-6, LX-7** (do LX-9 and LX-10 before the LX-6/LX-7 docs and wrapper; the numbers are kept so existing references stay valid).
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
 - [x] **LX-3** — Lightstep API client: auth, slicing, truncation-driven auto-split, retries | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 1795278
 - [x] **LX-4** — UI-format CSV writer and part-file naming | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: ea2f728
 - [x] **LX-5** — `export_lightstep_day.py` CLI for all eight kinds, with input check | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: eb2e43e
-- [ ] **LX-8** — SOLID refactor of the export CLI per `docs/refactor` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **LX-8** — SOLID refactor of the export CLI per `docs/refactor` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 661b424
 - [ ] **LX-9** — Incremental export: part files in `tmp/`, verified resume after failure, stitching, pre-cleanup sanity check, `smvod-ts` from stitched parts, per-step logging, per-date log files kept
   7 days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-10** — Parallel fetch of part windows with bounded workers, FCID kept in worker threads | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
