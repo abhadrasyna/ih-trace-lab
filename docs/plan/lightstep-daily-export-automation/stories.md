@@ -267,6 +267,72 @@ Per kind, full UTC day, 1 h slices halved on >=50 series, keyed on the group-by 
 
 ---
 
+## LX-8 — SOLID refactor of the export CLI
+
+Added 2026-11-01. Must be done before LX-9, LX-6 and LX-7. Review of LX-5 against `docs/refactor/design-principles.md` and `code-review-checklist.md` found these violations; fix all of them with no
+behaviour change.
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/export_lightstep_day.py` — keep only argument parsing and wiring in `main()`.
+- `scripts/lib/lightstep_export_kinds.py` — add a row-builder field to `KindSpec`.
+- `scripts/lib/lightstep_export_runner.py` (new) — the per-kind pipeline and the run loop, with injected dependencies.
+- `scripts/lib/lightstep_csv.py` — make `parse_labels` public; `lightstep_smvod_ts.py` imports it.
+- `investigations/ctap-smvod/tests/test_export_lightstep_day.py` and `tests/lib/` — update tests.
+
+**What to implement (one finding each):**
+
+1. **S:** split `export_kind` into small steps (skip check, fetch, tenant safety check, build rows, write) and keep it as orchestration only.
+2. **O:** the registry entry names its row builder (`build_rows` or `derive_rows`); the CLI has no `derived_from` branch.
+3. **O:** the "tenant has no mDRM id" skip rule moves from the CLI into the registry (a per-kind `is_available(tenant)` rule), so a new kind or rule needs no CLI edit.
+4. **D:** inject a `TokenProvider` (a `Protocol` with one method per region) in place of `load_token` and the shared `tokens` dict; inject the target resolver the same way.
+5. **D:** `main()` is the only composition root; remove the `transport or ...` and `input_check or ...` fallbacks from the callable signatures, and give tests their own wiring.
+6. **S:** separate result reporting (console lines) and the "does the input check apply" policy from the run loop.
+7. **Coupling:** no cross-module import of a private name.
+
+**Tests (no network):** the existing CLI tests keep passing unchanged in behaviour; add one test that a new registry entry with its own row builder and availability rule works with no CLI change.
+
+**Commit:** `refactor(ctap-smvod): split Lightstep export CLI per design principles`
+
+---
+
+## LX-9 — Incremental export: part files, stitching, per-step logging, parallel fetch
+
+Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6-20 minutes per kind with no output until the kind ends, and a failure late in a kind loses everything.
+
+**Files to change / create:**
+- `scripts/lib/lightstep_export_runner.py` — fetch per window into part files, resume, stitch.
+- `scripts/lib/lightstep_stitch.py` (new) — pure merge of part series; recomputes `min/max/avg/sum` across parts.
+- `scripts/lib/lightstep_csv.py` — read a part file back into rows.
+- `investigations/ctap-smvod/scripts/export_lightstep_day.py` — new flags only.
+- Tests in `tests/lib/` and `investigations/ctap-smvod/tests/`.
+
+**What to implement:**
+
+1. **Part files:** fetch fixed windows (`--part-hours`, default 1) and write each to its own file as soon as it is fetched (atomic writer). Parts go in
+   `/Users/abhadra/myWork/myOffice/ih-trace-lab/tmp/lightstep-export/<TENANT>_<date>/` (a subfolder, relative to the repo root; `tmp/` itself holds a tracked `README.md` and is never deleted).
+2. **Resume:** an existing part is not fetched again unless `--force`; a rerun after a failure fetches only the missing windows.
+3. **Stitch:** when every part of a kind exists, merge them into `<output-dir>/<date>_<kind>.csv` (deduplicated by label set, stats recomputed across parts).
+4. **`smvod-ts` is derived from the stitched `smvod` parts** (first and last non-zero point per session across the whole day), not per part; its own parts are fetched at the 1 s period, then stitched
+   before deriving.
+5. **Cleanup:** after a successful stitch of all requested kinds, delete the `tmp/lightstep-export/<TENANT>_<date>/` subfolder; keep it on any failure so the rerun can resume.
+6. **Logging (`docs/refactor/logging-and-correlation-id.md`):** one INFO line per step, all under the single FCID: `part 3/24 window=... series=... calls=... duration_ms=...`, `stitching kind=...
+   parts=24 rows=...`, `kind done elapsed=...`, an ETA estimate per kind, and `cleanup tmp=...`.
+7. **Parallel fetch (threads):** fetch windows concurrently with a `ThreadPoolExecutor` (`--workers`, default 4, hard cap 8). Each worker runs the call inside `contextvars.copy_context()` so the FCID
+   is kept (checklist section 4); retries and backoff stay per call. A shared lock-free counter for progress is avoided; progress is logged from the collecting thread. LX-1 measured no throttling at
+   six parallel kinds, so 4 workers is the starting point.
+
+**Tests (no network):**
+- A failure at part N leaves parts 1 to N-1 and a rerun fetches only the rest.
+- Stitched output equals the one-shot output for the same fake data.
+- Derived `smvod-ts` from stitched parts equals the one-shot derivation.
+- Parts are deleted after success and kept after failure; `tmp/README.md` is never touched.
+- Worker-side log lines carry the FCID and never the token (explicit test per the checklist).
+- Parallel run returns the same rows as `--workers 1`.
+
+**Commit:** `feat(lightstep): export in resumable part files with parallel fetch`
+
+---
+
 ## LX-6 — Docs, registry and parity run
 
 **Files to change / create:**
