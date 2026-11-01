@@ -148,16 +148,19 @@ def query_timeseries(
     uql: str,
     oldest: datetime,
     youngest: datetime,
+    output_period: int | None = None,
     max_retries: int = MAX_RETRIES,
     sleep: Callable[[float], None] = time.sleep,
 ) -> list[Series]:
     """POSTs one ``query_timeseries`` call and returns its ``series`` (empty list when the key is absent).
 
+    ``output_period`` (seconds) sets the point spacing; the default is one point spanning the whole window.
+
     Retries 429/5xx and network errors with exponential backoff up to ``max_retries`` retries.
     """
     url = f"{project.base_url}/{project.org}/projects/{project.project}/telemetry/query_timeseries"
     headers = {"Authorization": f"bearer {token}", "Content-Type": "application/json", "Accept": "application/json"}
-    period = max(1, int((youngest - oldest).total_seconds()))
+    period = output_period or max(1, int((youngest - oldest).total_seconds()))
     attributes = {
         "query": uql,
         "query-type": "default",
@@ -250,6 +253,7 @@ def fetch_all_series(
     slice_width: timedelta = DEFAULT_SLICE,
     min_width: timedelta = MIN_SLICE,
     cap: int = SERIES_CAP,
+    output_period: int | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> list[Series]:
     """Returns every series for ``[oldest, youngest)``, halving any slice that reaches ``cap`` series.
@@ -258,7 +262,10 @@ def fetch_all_series(
     """
 
     def call(window: Window) -> list[Series]:
-        return query_timeseries(transport, project=project, token=token, uql=uql, oldest=window[0], youngest=window[1], sleep=sleep)
+        return query_timeseries(
+            transport, project=project, token=token, uql=uql, oldest=window[0], youngest=window[1],
+            output_period=output_period, sleep=sleep,
+        )
 
     counter = [0]
     collected: list[Series] = []
