@@ -299,6 +299,24 @@ behaviour change.
 
 Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6-20 minutes per kind with no output until the kind ends, and a failure late in a kind loses everything.
 
+**Split into four sub-tasks (2026-11-01)** because the combined diff was about 900 lines. Do them in order, one commit each; 9a and 9b leave the CLI behaving as today. The numbered spec below stays
+the single source of truth; each sub-task implements the items listed here, and "LX-9" elsewhere means all four.
+
+- **LX-9a** — the pure merge and part reader that item 3 relies on: dedupe by label set, recompute `min/max/avg/sum` across parts, read a part file back into rows.
+  - Files: `scripts/lib/lightstep_stitch.py` (new), `scripts/lib/lightstep_csv.py`, tests in `tests/lib/`.
+  - Commit: `feat(lightstep): add part-series stitch and part reader`
+- **LX-9b** — items 1 and 2: per-window part files, manifest (window, kind, fingerprint, row count, sha256), verified resume, `--fresh`, `--part-hours`, reused/remaining log line.
+  - Files: `scripts/lib/lightstep_export_runner.py`, `export_lightstep_day.py`, tests.
+  - Commit: `feat(lightstep): write resumable part files`
+- **LX-9c** — items 3, 4 and 5: stitch per kind, `smvod-ts` from stitched `smvod` parts, sanity checks (a)-(d), delete only the `<TENANT>_<date>/` subfolder.
+  - Files: runner, tests.
+  - Commit: `feat(lightstep): stitch parts and clean up after checks`
+- **LX-9d** — item 6: per-step INFO lines with ETA under one FCID, opt-in `init_logging(..., log_dir=, file_prefix=, date=, keep_days=)`, `--log-dir`, 7-day prune of own files only.
+  - Files: `src/lib/logging/bootstrap.py`, runner, CLI, tests.
+  - Commit: `feat(logging): per-date export log files with pruning`
+
+Tests listed at the end of the spec belong to the sub-task that implements the behaviour; the worker-side FCID/no-token test belongs to LX-9d.
+
 **Files to change / create:**
 - `scripts/lib/lightstep_export_runner.py` — fetch per window into part files, resume, stitch.
 - `scripts/lib/lightstep_stitch.py` (new) — pure merge of part series; recomputes `min/max/avg/sum` across parts.
