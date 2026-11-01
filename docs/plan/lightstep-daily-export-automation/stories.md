@@ -129,6 +129,37 @@ For the shared-project tenants (ZM, GH), `ctap` adds `&& sessionInfo.busUnitId =
 
 **Commit:** `docs(lightstep): record export API feasibility spike`
 
+### LX-1 findings (2026-11-01, ZA 2026-10-29, probe `scratch/2026-11-01_lightstep_export_api_feasibility_probe.py`)
+
+Request body: `{"data":{"attributes":{"query":<UQL>,"query-type":"default","oldest-time":<RFC3339 Z>,"youngest-time":<RFC3339 Z>,"output-period":<seconds = window>,"include-exemplars":false}}}`;
+response `data.attributes.series[]` with `group-labels` (`"name=value"` strings) and `points`. An empty window returns no `series` key. Auth header `Authorization: bearer <token>`.
+
+Per kind, full UTC day, 1 h slices halved on >=50 series, keyed on the group-by columns (min/max/avg/sum/value ignored). `both` = keys present in API and hand files:
+
+| Kind | API keys | Hand keys | Both | Only API | Only hand | Calls | Verdict |
+|---|---|---|---|---|---|---|---|
+| ctap | 5865 | 5829 | 5829 | 36 | 0 | 322 | **GO** (superset) |
+| smvod | 5864 | 5830 | 5719 | 145 | 111 | 320 | **GO** (see quirks) |
+| mdrmfe | 3684 | 3656 | 3593 | 91 | 63 | 204 | **GO** (see quirks) |
+| mdrm-cdm-widevine | 2962 | 2979 | 2941 | 21 | 38 | 148 | **GO** (see quirks) |
+| mdrm-cdm-fairplay | 514 | 563 | 511 | 3 | 52 | 26 | **GO** (see quirks) |
+| mdrm-cdm-playready | 117 | 114 | 114 | 3 | 0 | 24 | **GO** (superset) |
+| mdrm-lrm | 3595 | 3656 | 3567 | 28 | 89 | 202 | **GO** (see quirks) |
+| smvod-ts | — | — | — | — | — | — | **NO-GO via public API as-is** |
+
+- **`smvod-ts`:** `query_spans`, `query_span_samples`, `spans/query`, `query_traces` under `/telemetry/` (and `/spans/query`) all return HTTP 403 with an empty body, so the public API exposes no
+  span-sample endpoint to this token. The hand file is a 500-row sample per hour part, not a complete set. Fallback to decide in LX-2: derive `sessionId`, `oldest_micros`, `youngest_micros` and
+  `duration_millis` from the `smvod` series' point timestamps (needs a fine `output-period`), keeping the validator's UTC-day coverage satisfied; or keep `smvod-ts` manual. Needs user decision.
+- **Differences are small (about 1-3 % of keys) and explained by:** (1) the UI export prefixes values that start with `-` with an apostrophe (`'-QSn81...`, in `householdId`; 13 rows in one smvod part)
+  — the writer must reproduce or the diff must normalise it; (2) the hand exports were taken at a different time than the API run, so late-arriving spans and hour-boundary assignment differ; (3) blank
+  vs missing attribute values (`drmInfo.Make=` empty in hand rows). Exact normalisation is LX-6's parity-run job, not a blocker.
+- **Latency / limits:** p50 1.0-1.3 s, max 3.5 s per call; no 429 or 5xx in ~1,250 calls, run with six kinds in parallel. One `IncompleteRead` on a large smvod response, so the client needs retries on
+  network errors. Full-day cost: ctap 322 calls, smvod 320, mdrmfe 204, widevine 148, lrm 202, fairplay 26, playready 24 (about 20 minutes of wall time per kind sequentially for the heaviest).
+- **Largest slice:** 1 h always fit under the cap after halving; `ctap`, `smvod` and `mdrmfe` need halving down to a few minutes at peak hours because `lightstep.trace_id`/`sessionId` make each span
+  its own series. Start slices at 1 h and rely on auto-split.
+- **`mdrmfe` tenant value:** `request.tenant` for ZA equals the GO project id fragment `iye9omdf`; LX-2 must take it from the resolver/`config/tenants.yaml`, not parse the project name.
+- **Table-style charts:** all attribute columns (including `playbackURL`, `FP_SPC_contents`) are reproducible with `group_by`.
+
 ---
 
 ## LX-2 — Query templates and per-kind registry
