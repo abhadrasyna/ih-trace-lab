@@ -7,9 +7,12 @@ from ``src.tenant_registry`` (``config/tenants.yaml``) and are never hardcoded h
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from scripts.lib.lightstep_csv import build_rows
+from scripts.lib.lightstep_smvod_ts import derive_rows
 from src.tenant_registry import LightstepGoQueryTarget, LightstepMdrmQueryTarget, QueryTarget, TenantConfig
 
 QUERIES_DIR = Path(__file__).resolve().parents[2] / "queries" / "lightstep"
@@ -31,6 +34,21 @@ class TemplateError(ValueError):
     """Raised when a template file is missing its query block or an expansion leaves placeholders."""
 
 
+RowBuilder = Callable[[Sequence[dict[str, object]], Sequence[str]], list[list[str]]]
+AvailabilityRule = Callable[[TenantConfig], str | None]
+
+
+def always_available(tenant: TenantConfig) -> str | None:
+    return None
+
+
+def needs_mdrm_tenant(tenant: TenantConfig) -> str | None:
+    """Returns the reason an mDRM kind cannot run for ``tenant``, or None when it can."""
+    if tenant.mdrm_tenant_id and tenant.mdrm_project:
+        return None
+    return f"tenant {tenant.code} has no registered mDRM tenant id"
+
+
 @dataclass(frozen=True)
 class KindSpec:
     """One export kind.
@@ -38,7 +56,9 @@ class KindSpec:
     ``tenant_scope`` says when the tenant clause applies (``always``, ``shared_only`` or ``none``);
     ``tenant_attribute`` is the span attribute it filters on and ``tenant_value`` the ``TenantConfig`` field
     holding the value. ``derived_from`` marks a kind built from another kind's query (``smvod-ts``), in which
-    case ``placeholder_columns`` are written empty.
+    case ``placeholder_columns`` are written empty and ``output_period_s`` sets the query's output period.
+    ``row_builder`` turns the fetched series into CSV rows; ``availability`` returns why the kind cannot run
+    for a tenant (None when it can).
     """
 
     kind: str
@@ -51,6 +71,17 @@ class KindSpec:
     tenant_value: str = "go_id"
     derived_from: str | None = None
     placeholder_columns: tuple[str, ...] = ()
+    output_period_s: int | None = None
+    row_builder: RowBuilder = build_rows
+    availability: AvailabilityRule = always_available
+
+    @property
+    def query_kind(self) -> str:
+        """The kind whose template is expanded to fetch this kind's data."""
+        return self.derived_from or self.kind
+
+    def unavailable_reason(self, tenant: TenantConfig) -> str | None:
+        return self.availability(tenant)
 
 
 @dataclass(frozen=True)
@@ -79,6 +110,7 @@ KINDS: dict[str, KindSpec] = {
             "smvod-ts", "lightstep-export-smvod", GO, "smvod-ts",
             (*_SMVOD_TS_PLACEHOLDERS, *_SMVOD_COLUMNS, "oldest_micros", "youngest_micros"),
             "busUnitId", SHARED_ONLY, derived_from="smvod", placeholder_columns=_SMVOD_TS_PLACEHOLDERS,
+            output_period_s=1, row_builder=derive_rows,
         ),
         KindSpec(
             "mdrmfe", "lightstep-export-mdrmfe", GO, "mdrmfe",
@@ -91,17 +123,19 @@ KINDS: dict[str, KindSpec] = {
             "mdrm-cdm-widevine", "lightstep-export-mdrm-cdm-widevine", MDRM, "mdrm-cdm-widevine",
             ("fcId", "http.status_code", "drmInfo.DeviceType", "drmInfo.Make", "drmInfo.Model",
              "drmInfo.Platform", "drmInfo.SecurityLevel"),
-            "tenantId", ALWAYS, "mdrm_tenant_id",
+            "tenantId", ALWAYS, "mdrm_tenant_id", availability=needs_mdrm_tenant,
         ),
         KindSpec("mdrm-cdm-fairplay", "lightstep-export-mdrm-cdm-fairplay", MDRM, "mdrm-cdm-fairplay",
-                 ("fcId", "http.status_code", "FP_SPC_contents"), "tenantId", ALWAYS, "mdrm_tenant_id"),
+                 ("fcId", "http.status_code", "FP_SPC_contents"), "tenantId", ALWAYS, "mdrm_tenant_id",
+                 availability=needs_mdrm_tenant),
         KindSpec(
             "mdrm-cdm-playready", "lightstep-export-mdrm-cdm-playready", MDRM, "mdrm-cdm-playready",
             ("fcId", "http.status_code", "drmInfo.deviceType", "drmInfo.manufacturerName", "drmInfo.modelName"),
-            "tenantId", ALWAYS, "mdrm_tenant_id",
+            "tenantId", ALWAYS, "mdrm_tenant_id", availability=needs_mdrm_tenant,
         ),
         KindSpec("mdrm-lrm", "lightstep-export-mdrm-lrm", MDRM, "mdrm-lrm",
-                 ("fcId", "deviceId", "http.status_code"), "tenantId", ALWAYS, "mdrm_tenant_id"),
+                 ("fcId", "deviceId", "http.status_code"), "tenantId", ALWAYS, "mdrm_tenant_id",
+                 availability=needs_mdrm_tenant),
     )
 }
 

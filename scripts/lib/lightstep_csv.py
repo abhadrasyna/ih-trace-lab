@@ -39,7 +39,8 @@ def _point_value(point: object) -> float | None:
     return None if raw is None else float(raw)  # type: ignore[arg-type]
 
 
-def _parse_labels(labels: Sequence[object]) -> dict[str, str]:
+def parse_labels(labels: Sequence[object]) -> dict[str, str]:
+    """Splits ``name=value`` group labels into a dict; raises ``ValueError`` for a label without ``=``."""
     parsed: dict[str, str] = {}
     for label in labels:
         name, separator, value = str(label).partition("=")
@@ -51,7 +52,7 @@ def _parse_labels(labels: Sequence[object]) -> dict[str, str]:
 
 def series_to_row(series: dict[str, object], group_columns: Sequence[str]) -> list[str]:
     """Maps one series to ``group_columns`` values followed by ``min, max, avg, sum`` and an empty ``value``."""
-    labels = _parse_labels(series.get("group-labels", []))  # type: ignore[arg-type]
+    labels = parse_labels(series.get("group-labels", []))  # type: ignore[arg-type]
     unknown = set(labels) - set(group_columns)
     if unknown:
         raise ValueError(f"series has labels not in the column set: {sorted(unknown)}")

@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import datetime, timezone
 
-from scripts.lib.lightstep_csv import _parse_labels
+from scripts.lib.lightstep_csv import parse_labels
 
 Series = dict[str, object]
 
@@ -42,6 +42,6 @@ def derive_rows(series: Sequence[Series], columns: Sequence[str]) -> list[list[s
         bounds = point_bounds(item)
         if bounds is None:
             continue
-        values = {**_parse_labels(item.get("group-labels", [])), "oldest_micros": str(bounds[0]), "youngest_micros": str(bounds[1])}  # type: ignore[arg-type]
+        values = {**parse_labels(item.get("group-labels", [])), "oldest_micros": str(bounds[0]), "youngest_micros": str(bounds[1])}  # type: ignore[arg-type]
         rows.append([values.get(column, "") for column in columns])
     return rows
