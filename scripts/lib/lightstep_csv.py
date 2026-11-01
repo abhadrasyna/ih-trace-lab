@@ -30,7 +30,7 @@ def part_file_name(date: str, suffix: str, part: int | None = None) -> str:
     return f"{date}_{part:02d}_{suffix}.csv"
 
 
-def _format_number(value: float) -> str:
+def format_number(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else repr(float(value))
 
 
@@ -59,7 +59,7 @@ def series_to_row(series: dict[str, object], group_columns: Sequence[str]) -> li
     values = [v for v in map(_point_value, series.get("points", [])) if v is not None]  # type: ignore[arg-type]
     if values:
         total = sum(values)
-        stats = [_format_number(x) for x in (min(values), max(values), total / len(values), total)]
+        stats = [format_number(x) for x in (min(values), max(values), total / len(values), total)]
     else:
         stats = ["", "", "", ""]
     return [*(labels.get(column, "") for column in group_columns), *stats, ""]
@@ -106,6 +106,24 @@ def write_rows(path: Path, rows: Sequence[Sequence[str]], *, force: bool = False
     except BaseException:
         Path(temp_name).unlink(missing_ok=True)
         raise
+
+
+def read_rows(path: Path) -> list[list[str]]:
+    """Reads a UI-format CSV (as written by ``write_rows``) back into rows, header first.
+
+    Raises ``ValueError`` when the file has no BOM, is empty, or has a row whose width differs from the header.
+    """
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith(_BOM):
+        raise ValueError(f"{path} has no UTF-8 BOM; not a UI-format export")
+    rows = list(csv.reader(io.StringIO(text.removeprefix(_BOM), newline="")))
+    if not rows:
+        raise ValueError(f"{path} is empty")
+    width = len(rows[0])
+    for number, row in enumerate(rows[1:], start=2):
+        if len(row) != width:
+            raise ValueError(f"{path} row {number} has {len(row)} fields, header has {width}")
+    return rows
 
 
 def write_series_csv(
