@@ -5,34 +5,40 @@
 
 | Count | Slug | Suggestion | Category | First seen | Last seen |
 |---|---|---|---|---|---|
-| 65 | update-context-for-new-files | Update CONTEXT.md before commit whenever a session adds a new persistent repo file. | protocol-compliance | 2026-09-27 | 2026-10-25 |
-| 42 | state-plan-before-editing | State the one-sentence plan before the first edit, even when the next task seems obvious from story order. | protocol-compliance | 2026-09-30 | 2026-10-25 |
-| 37 | avoid-mid-session-rereads | Reuse already-loaded file context instead of re-reading the same file mid-session unless it changed. | token-efficiency | 2026-09-27 | 2026-10-25 |
-| 34 | edit-tool-over-inline-python-rewrite | Use the `edit` tool, not inline python rewrites; reflow can break string asserts. | protocol-compliance | 2026-10-07 | 2026-10-25 |
-| 33 | re-read-context-on-resumed-task-segments | On each resumed autopilot segment, re-open CONTEXT.md and state `CONTEXT.md ✓`. | protocol-compliance | 2026-10-02 | 2026-10-25 |
-| 30 | prefer-scoped-file-reads-over-full-cat-dumps | Prefer `view_range`/`sed -n`/`grep`/summaries over full `cat` dumps once target section is known. | token-efficiency | 2026-09-29 | 2026-10-25 |
-| 29 | wait-for-explicit-go-ahead-before-editing | Wait for explicit reply after stating the plan, before creating/committing when approval required. | protocol-compliance | 2026-09-27 | 2026-10-25 |
-| 26 | use-edit-tool-not-sed-i | Use the edit tool for file changes, not `sed -i` or `cat >>` heredocs via bash. | protocol-compliance | 2026-10-10 | 2026-10-25 |
-| 23 | state-context-md-checkmark-explicitly | State `CONTEXT.md ✓` verbatim in the first response, not just read the file silently before coding. | protocol-compliance | 2026-09-28 | 2026-10-25 |
-| 19 | avoid-broad-filesystem-finds | Use repo-local `glob`/known paths, not broad `find`/repo-wide `grep -r` probes. | token-efficiency | 2026-09-27 | 2026-10-25 |
+| 85 | update-context-for-new-files | Update CONTEXT.md before commit whenever a session adds a new persistent repo file. | protocol-compliance | 2026-09-27 | 2026-11-01 |
+| 49 | state-plan-before-editing | State the one-sentence plan before the first edit, even when the next task seems obvious from story order. | protocol-compliance | 2026-09-30 | 2026-10-30 |
+| 46 | avoid-mid-session-rereads | Reuse already-loaded file context instead of re-reading the same file mid-session unless it changed. | token-efficiency | 2026-09-27 | 2026-10-30 |
+| 45 | edit-tool-over-inline-python-rewrite | Use the `edit` tool, not inline python rewrites; reflow can break string asserts. | protocol-compliance | 2026-10-07 | 2026-11-01 |
+| 36 | re-read-context-on-resumed-task-segments | On each resumed autopilot segment, re-open CONTEXT.md and state `CONTEXT.md ✓`. | protocol-compliance | 2026-10-02 | 2026-10-30 |
+| 35 | use-edit-tool-not-sed-i | Use the edit tool for file changes, not `sed -i` or `cat >>` heredocs via bash. | protocol-compliance | 2026-10-10 | 2026-10-28 |
+| 31 | prefer-scoped-file-reads-over-full-cat-dumps | Prefer `view_range`/`sed -n`/`grep`/summaries over full `cat` dumps once target section is known. | token-efficiency | 2026-09-29 | 2026-10-27 |
+| 30 | wait-for-explicit-go-ahead-before-editing | Wait for explicit reply after stating the plan, before creating/committing when approval required. | protocol-compliance | 2026-09-27 | 2026-10-28 |
+| 27 | read-context-md-in-full | Read CONTEXT.md in full with `view` at session start, not `head -c`, so later sections are not missed. | protocol-compliance | 2026-10-17 | 2026-11-01 |
+| 27 | state-context-md-checkmark-explicitly | State `CONTEXT.md ✓` verbatim in the first response, not just read the file silently before coding. | protocol-compliance | 2026-09-28 | 2026-10-30 |
+| 26 | reflow-md-before-commit | Run `python -m scripts.dev.reflow_md` on edited markdown before `git commit` so md-line-length pre-commit does not fail. | commit-hygiene | 2026-10-07 | 2026-10-30 |
+| 22 | avoid-broad-filesystem-finds | Use repo-local `glob`/known paths, not broad `find`/repo-wide `grep -r` probes. | token-efficiency | 2026-09-27 | 2026-10-29 |
 | 19 | confirm-target-files-before-starting | When destination files aren't named, confirm which files change before creating new modules/tests. | protocol-compliance | 2026-09-29 | 2026-10-04 |
-| 18 | reflow-md-before-commit | Run `python -m scripts.dev.reflow_md` on edited markdown before `git commit` so md-line-length pre-commit does not fail. | commit-hygiene | 2026-10-07 | 2026-10-25 |
-| 12 | read-context-md-in-full | Read CONTEXT.md in full with `view` at session start, not `head -c`, so later sections are not missed. | protocol-compliance | 2026-10-17 | 2026-10-25 |
+| 16 | no-inline-python-for-data-analysis | Put CSV analysis in a permanent scripts/ file (check SCRIPTS.md first), not inline python. | protocol-compliance | 2026-10-10 | 2026-10-31 |
+| 10 | capture-hook-output-once-per-commit | Save pre-commit hook output to a repo-local log on the first attempt; don't re-run `git commit` to read it. | token-efficiency | 2026-10-13 | 2026-11-01 |
+| 7 | read-context-md-fully-before-acknowledging | Don't state `CONTEXT.md ✓` before the read succeeded; use `view`, not a truncated `head -c`. | protocol-compliance | 2026-10-16 | 2026-10-29 |
 | 7 | write-and-run-tests-before-commit | Add happy-path/edge-case tests for new public fns, run green before commit; missing harness isn't a stop. | protocol-compliance | 2026-09-29 | 2026-10-17 |
-| 6 | no-inline-python-for-data-analysis | Put CSV analysis in a permanent scripts/ file (check SCRIPTS.md first), not inline python. | protocol-compliance | 2026-10-10 | 2026-10-22 |
-| 5 | read-context-md-fully-before-acknowledging | Don't state `CONTEXT.md ✓` before the read succeeded; use `view`, not a truncated `head -c`. | protocol-compliance | 2026-10-16 | 2026-10-25 |
+| 5 | no-placeholder-message-or-no-verify-amend | Never probe the pre-commit hook with a placeholder message or amend with `--no-verify`; re-run the hook. | commit-hygiene | 2026-10-09 | 2026-11-01 |
+| 5 | avoid-tmp-for-command-output-logs | Redirect long-run command output to a repo path (e.g. logs/), never /tmp. | protocol-compliance | 2026-10-07 | 2026-10-31 |
+| 5 | no-row-level-ids-in-head-output | Inspect CSV headers only (`head -1`); never print data rows with deviceId/messageid. | token-efficiency | 2026-10-11 | 2026-10-29 |
+| 5 | avoid-tmp-for-commit-message-workaround | Never use `/tmp` to work around heredoc quoting for commit messages; fix quoting or use a repo path. | protocol-compliance | 2026-10-06 | 2026-10-26 |
 | 5 | confirm-commit-sha-after-commit | After each commit, surface the resulting SHA in the user-facing summary instead of relying on git log output alone. | commit-hygiene | 2026-09-29 | 2026-10-02 |
-| 4 | no-row-level-ids-in-head-output | Inspect CSV headers only (`head -1`); never print data rows with deviceId/messageid. | token-efficiency | 2026-10-11 | 2026-10-24 |
-| 4 | capture-hook-output-once-per-commit | Save pre-commit hook output to a repo-local log on the first attempt; don't re-run `git commit` to read it. | token-efficiency | 2026-10-13 | 2026-10-24 |
-| 4 | no-placeholder-message-or-no-verify-amend | Never probe the pre-commit hook with a placeholder message or amend with `--no-verify`; re-run the hook. | commit-hygiene | 2026-10-09 | 2026-10-22 |
-| 4 | avoid-tmp-for-command-output-logs | Redirect long-run command output to a repo path (e.g. logs/), never /tmp. | protocol-compliance | 2026-10-07 | 2026-10-17 |
-| 3 | avoid-tmp-for-commit-message-workaround | Never use `/tmp` to work around heredoc quoting for commit messages; fix quoting or use a repo path. | protocol-compliance | 2026-10-06 | 2026-10-07 |
+| 3 | pipe-masks-test-failure-before-commit | Never gate `git commit` on a piped pytest; the pipe hides its exit code. Use `pipefail`. | commit-hygiene | 2026-10-25 | 2026-10-28 |
 | 3 | context-md-not-read-on-query-sessions | Read and acknowledge CONTEXT.md at session start even for pure Q&A sessions with no code touched. | protocol-compliance | 2026-09-30 | 2026-10-04 |
+| 2 | reflow-md-and-avoid-gnu-timeout-before-commit | Run `scripts/dev/reflow_md.py` after the last markdown edit; no GNU `timeout` on macOS. | commit-hygiene | 2026-10-09 | 2026-10-27 |
+| 2 | check-reflow-exit-before-commit | Do not silence `reflow_md.py` with `>/dev/null 2>&1; git add`; check its exit status before committing. | commit-hygiene | 2026-10-26 | 2026-10-27 |
 | 2 | review-staged-files-before-commit | Run `git diff --cached --stat` before commit and tell the user about pre-staged files that will be swept in. | commit-hygiene | 2026-10-12 | 2026-10-24 |
 | 2 | search-repo-tooling-before-live-athena-query | Before a live Athena/Lightstep query, grep `src/pipelines/` and `config/` for helpers. | protocol-compliance | 2026-10-08 | 2026-10-10 |
 | 2 | avoid-repeated-read-agent-polling | After launching a sub-agent, wait for completion instead of polling `read_agent` for status-only updates. | token-efficiency | 2026-10-04 | 2026-10-04 |
-| 1 | pipe-masks-test-failure-before-commit | Never gate `git commit` on a piped pytest; the pipe hides its exit code. Use `pipefail`. | commit-hygiene | 2026-10-25 | 2026-10-25 |
+| 1 | call-init-logging-in-new-cli-entrypoints | Call `init_logging()` in every new CLI `main()` before committing; the pre-commit hook blocks otherwise. | commit-hygiene | 2026-10-30 | 2026-10-30 |
+| 1 | shorten-md-table-rows-before-commit | Run the md line-length check (<=200 chars, incl. table rows) before `git commit`; reflow_md.py skips tables. | commit-hygiene | 2026-10-27 | 2026-10-27 |
+| 1 | avoid-dumping-large-id-lists-to-stdout | Write large id lists to a file and read only counts or slices; do not print 20KB+ lists. | token-efficiency | 2026-10-26 | 2026-10-26 |
 | 1 | scope-ruff-fix-to-changed-files | Run `ruff check --fix` only on files you changed (explicit paths), then check `git status` for stray rewrites. | commit-hygiene | 2026-10-25 | 2026-10-25 |
+| 1 | read-script-before-running-repo-tooling | Read a dev script's docstring/--help before running it; harvest/sync scripts can delete tracked files. | protocol-compliance | 2026-10-25 | 2026-10-25 |
 | 1 | no-tmp-for-mcp-id-conversions | Do not `tee /tmp/...` for trace-id hex/decimal conversions; print to stdout or use a project `scripts/` helper. | token-efficiency | 2026-10-24 | 2026-10-24 |
 | 1 | derive-summary-counts-from-script-output | Compute headline counts in the script and quote its output, not mental tallies. | token-efficiency | 2026-10-22 | 2026-10-22 |
 | 1 | script-backed-stats-for-pasted-logs | When a pasted log needs medians/counts/ratios, use a scripts/ helper or label figures approximate. | protocol-compliance | 2026-10-22 | 2026-10-22 |
@@ -40,7 +46,6 @@
 | 1 | no-truncated-listings-for-completeness-claims | Never truncate a file listing when concluding "X is missing"; list per-tenant or count instead. | token-efficiency | 2026-10-15 | 2026-10-15 |
 | 1 | re-view-section-after-reflow-before-edit | After reflowing markdown, re-view target lines before editing; reflow breaks old_str. | token-efficiency | 2026-10-10 | 2026-10-10 |
 | 1 | verify-edit-boundaries-after-markdown-edit | After an `edit` touching headings, view the edited region so dropped headings are caught at once. | commit-hygiene | 2026-10-10 | 2026-10-10 |
-| 1 | reflow-md-and-avoid-gnu-timeout-before-commit | Run `scripts/dev/reflow_md.py` after the last markdown edit; no GNU `timeout` on macOS. | commit-hygiene | 2026-10-09 | 2026-10-09 |
 | 1 | athena-mcp-resolve-overrides-before-first-call | Before the first run_athena_sql, look up tenant overrides (config/tenants.yaml) and pass them. | protocol-compliance | 2026-10-08 | 2026-10-08 |
 | 1 | verify-doc-examples-by-running-help | Run each documented command with `--help` or a dry run before committing usage examples. | protocol-compliance | 2026-10-07 | 2026-10-07 |
 | 1 | state-context-md-ack-in-first-response | After reading CONTEXT.md, put the literal `CONTEXT.md ✓` in the first user-facing text. | protocol-compliance | 2026-10-07 | 2026-10-07 |
