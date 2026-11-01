@@ -322,11 +322,13 @@ Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6
    was written and re-read successfully; (d) for the core kinds the Step 0 input check passes on the output folder. Then delete only the `tmp/lightstep-export/<TENANT>_<date>/` subfolder, and log what
    was deleted.
 6. **Logging (`docs/refactor/logging-and-correlation-id.md`):** one INFO line per step, all under the single FCID: `part 3/24 window=... series=... calls=... duration_ms=...`, `stitching kind=...
-   parts=24 rows=...`, `kind done elapsed=...`, an ETA estimate per kind, and `cleanup tmp=...`. 6b. **Log files:** by default this command writes its log to
-   `investigations/ctap-smvod/logs/export-lightstep-day_<YYYY-MM-DD>.log`, one file per run date (the day the command runs, not the `--date` data day), and on start deletes its own
-   `export-lightstep-day_*.log` files older than the last 7 days (only files matching that name, never the pipeline's `DDMMYYYY.txt` files). It is opt-in on the shared bootstrap (`init_logging(...,
-   log_dir=, file_prefix=, keep_days=)`), so no other entry point changes; the shared `logs/app.log` default is untouched. Console (stderr) output stays on, and `--log-dir` overrides the folder. Tests
-   use a temp folder: a new file per date, files older than 7 days are pruned, newer and unrelated files are kept, and a second run on the same date appends.
+   parts=24 rows=...`, `kind done elapsed=...`, an ETA estimate per kind, and `cleanup tmp=...`.
+   - **Log files:** by default this command writes its log to `investigations/ctap-smvod/logs/export-lightstep-day_<YYYY-MM-DD>.log`, where the date is the `--date` data day (arguments are parsed
+     before logging starts). On start it deletes its own `export-lightstep-day_*.log` files whose filename date is more than 7 days before today, never the current run's file and never other files
+     (such as the pipeline's `DDMMYYYY.txt`). It is opt-in on the shared bootstrap (`init_logging(..., log_dir=, file_prefix=, date=, keep_days=)`), so no other entry point changes; the shared
+     `logs/app.log` default is untouched. Console (stderr) output stays on, and `--log-dir` overrides the folder.
+   - **Tests** use a temp folder: the file is named by the `--date` day, files older than 7 days are pruned, newer and unrelated files and the current file are kept, and a second run for the same date
+     appends.
 7. **Parallel fetch (threads):** fetch windows concurrently with a `ThreadPoolExecutor` (`--workers`, default 4, hard cap 8). Each worker runs the call inside `contextvars.copy_context()` so the FCID
    is kept (checklist section 4); retries and backoff stay per call. A shared lock-free counter for progress is avoided; progress is logged from the collecting thread. LX-1 measured no throttling at
    six parallel kinds, so 4 workers is the starting point.
