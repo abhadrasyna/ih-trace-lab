@@ -11,6 +11,7 @@ import logging
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from functools import partial
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Protocol
@@ -25,6 +26,7 @@ from scripts.lib.lightstep_api import (
     split_window,
     utc_day_window,
 )
+from scripts.lib.lightstep_parallel import JobRunner, ThreadJobRunner
 from scripts.lib.lightstep_stitch import stitch_series
 from scripts.lib.lightstep_export_checks import check_output, check_parts_complete
 from scripts.lib.lightstep_parts import PartStore, Window, query_fingerprint
@@ -86,6 +88,7 @@ class Dependencies:
     resolve_target: TargetResolver
     input_check: InputCheck
     report: Callable[[Sequence["KindResult"], str | None], None]
+    job_runner: JobRunner = field(default_factory=ThreadJobRunner)
 
 
 @dataclass(frozen=True)
@@ -168,8 +171,7 @@ def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: D
     parts = [store.load(spec.kind, i, w, prints[i - 1]) for i, w in enumerate(windows, start=1)]
     missing = [i for i, part in enumerate(parts) if part is None]
     LOGGER.info("kind=%s parts total=%d reused=%d remaining=%d", spec.kind, len(windows), len(windows) - len(missing), len(missing))
-    kind_started = time.monotonic()
-    for done, i in enumerate(missing, start=1):
+    def fetch_part(i: int) -> tuple[list[Series], int]:
         started = time.monotonic()
         fetched = fetch_all_series(
             deps.transport, project=project, token=deps.tokens.token(target.region), uql=uql,
@@ -179,11 +181,21 @@ def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: D
             store.save(spec.kind, i + 1, windows[i], prints[i], fetched)
         else:
             LOGGER.info("part %d/%d kind=%s ends within the ingestion lag; not cached", i + 1, len(windows), spec.kind)
+        return fetched, int((time.monotonic() - started) * 1000)
+
+    kind_started = time.monotonic()
+    finished = 0
+
+    def collect(position: int, result: tuple[list[Series], int]) -> None:
+        nonlocal finished
+        finished += 1
+        i, (fetched, duration_ms) = missing[position], result
         parts[i] = fetched
-        elapsed = time.monotonic() - kind_started
-        eta_s = int(elapsed / done * (len(missing) - done))
+        eta_s = int((time.monotonic() - kind_started) / finished * (len(missing) - finished))
         LOGGER.info("part %d/%d kind=%s window=%s..%s series=%d duration_ms=%d eta_s=%d", i + 1, len(windows), spec.kind,
-                    windows[i][0].isoformat(), windows[i][1].isoformat(), len(fetched), int((time.monotonic() - started) * 1000), eta_s)
+                    windows[i][0].isoformat(), windows[i][1].isoformat(), len(fetched), duration_ms, eta_s)
+
+    deps.job_runner.run([partial(fetch_part, i) for i in missing], collect)
     series = stitch_series([part or [] for part in parts])
     LOGGER.info("stitching kind=%s parts=%d series=%d", spec.kind, len(windows), len(series))
     if not series:

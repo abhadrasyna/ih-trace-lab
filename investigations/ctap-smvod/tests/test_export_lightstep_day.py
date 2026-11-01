@@ -15,6 +15,7 @@ cli = load_script("export_lightstep_day.py")
 from scripts.lib import lightstep_export_kinds as kinds_mod  # noqa: E402
 from scripts.lib import lightstep_export_runner as runner  # noqa: E402
 from scripts.lib.lightstep_csv import build_rows  # noqa: E402
+from scripts.lib.lightstep_parallel import SerialJobRunner, ThreadJobRunner  # noqa: E402
 from src.lib.logging.context import FcidLogFilter, bind_fcid  # noqa: E402
 from src.tenant_registry import TenantRegistry  # noqa: E402
 
@@ -46,14 +47,15 @@ def _isolated_parts_root(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "DEFAULT_PARTS_ROOT", tmp_path.with_name(tmp_path.name + "_parts"))
 
 
-def _run(tmp_path, monkeypatch, *, kinds=ALL_KINDS, transport=None, check=None, force=False, tenant="ZA"):
+def _run(tmp_path, monkeypatch, *, kinds=ALL_KINDS, transport=None, check=None, force=False, tenant="ZA", workers=1, out=None):
     monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
     monkeypatch.setenv("LIGHTSTEP_API_KEY_US", TOKEN)
     deps = runner.Dependencies(
         transport=transport or FakeTransport(), tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
         input_check=check or (lambda directory, drm: ("ok", True)), report=runner.print_report,
+        job_runner=ThreadJobRunner(workers),
     )
-    request = runner.ExportRequest(tenant=TenantRegistry().get(tenant), day=DAY, kinds=kinds, out_dir=tmp_path, force=force)
+    request = runner.ExportRequest(tenant=TenantRegistry().get(tenant), day=DAY, kinds=kinds, out_dir=out or tmp_path, force=force)
     return runner.run_export(request, deps)
 
 
@@ -208,6 +210,7 @@ def test_fresh_ignores_all_parts(tmp_path, monkeypatch):
     deps = runner.Dependencies(
         transport=fresh, tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
         input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+        job_runner=SerialJobRunner(),
     )
     request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False, fresh=True)
     assert runner.run_export(request, deps) == 0 and fresh.calls == 24
@@ -220,6 +223,7 @@ def test_part_hours_sets_window_count(tmp_path, monkeypatch):
     deps = runner.Dependencies(
         transport=transport, tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
         input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+        job_runner=SerialJobRunner(),
     )
     request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=6)
     assert runner.run_export(request, deps) == 0
@@ -244,6 +248,7 @@ def test_window_inside_ingestion_lag_is_not_cached(tmp_path, monkeypatch):
     deps = runner.Dependencies(
         transport=FakeTransport(), tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
         input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+        job_runner=SerialJobRunner(),
     )
     request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=today, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=24)
     assert runner.run_export(request, deps) == 0
@@ -296,6 +301,7 @@ def test_uncached_window_is_a_gap_and_keeps_run_ok(tmp_path, monkeypatch, caplog
     deps = runner.Dependencies(
         transport=FakeTransport(), tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
         input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+        job_runner=SerialJobRunner(),
     )
     request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=today, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=24)
     assert runner.run_export(request, deps) == 0
@@ -310,3 +316,62 @@ def test_resume_skipping_verified_existing_output_still_cleans_up(tmp_path, monk
     assert _parts_dir(tmp_path).exists()
     assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=FakeTransport()) == 0
     assert not _parts_dir(tmp_path).exists()
+
+
+def test_parallel_run_writes_same_files_as_serial(tmp_path, monkeypatch):
+    serial, parallel = tmp_path / "serial", tmp_path / "parallel"
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], out=serial, workers=1) == 0
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], out=parallel, workers=4) == 0
+    name = f"{DAY}_ctap.csv"
+    assert (serial / name).read_bytes() == (parallel / name).read_bytes()
+
+
+def test_worker_logs_carry_fcid_and_no_token(tmp_path, monkeypatch, caplog):
+    caplog.set_level(logging.DEBUG)
+    api_logger = logging.getLogger("scripts.lib.lightstep_api")
+    api_logger.addFilter(FcidLogFilter())
+    bind_fcid("worker-fcid-test")
+    seen_fcids: list[str | None] = []
+
+    class LoggingTransport(FakeTransport):
+        def post(self, url, headers, body, timeout):
+            from src.lib.logging.context import current_fcid
+            seen_fcids.append(current_fcid())
+            return super().post(url, headers, body, timeout)
+
+    try:
+        assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=LoggingTransport(), workers=4) == 0
+    finally:
+        api_logger.filters.clear()
+    assert seen_fcids and set(seen_fcids) == {"worker-fcid-test"}
+    assert TOKEN not in caplog.text
+
+
+def test_parallel_failure_stops_new_windows_keeps_parts_and_rerun_resumes(tmp_path, monkeypatch):
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=FailingAfter(fail_from=6), workers=3) == 1
+    kept = [p for p in _parts_dir(tmp_path).glob("ctap_*.json") if "manifest" not in p.name]
+    assert 5 <= len(kept) < 24
+    resumed = FakeTransport()
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=resumed, workers=3) == 0
+    assert resumed.calls == 24 - len(kept)
+
+
+def test_workers_outside_bounds_rejected():
+    for bad in ("0", "9"):
+        with pytest.raises(SystemExit):
+            cli.parse_args(["--tenant", "ZA", "--workers", bad])
+    assert cli.parse_args(["--tenant", "ZA", "--workers", "8"]).workers == 8
+    with pytest.raises(ValueError):
+        ThreadJobRunner(0)
+
+
+def test_runner_works_with_injected_serial_runner(tmp_path, monkeypatch):
+    import threading
+    before = threading.active_count()
+    monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
+    deps = runner.Dependencies(
+        transport=FakeTransport(), tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
+        input_check=lambda directory, drm: ("ok", True), report=runner.print_report, job_runner=SerialJobRunner(),
+    )
+    request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False)
+    assert runner.run_export(request, deps) == 0 and threading.active_count() == before

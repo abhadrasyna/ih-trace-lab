@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LX-9d, LX-10, LX-6, LX-7** (do LX-9a to LX-9d, then LX-10, before the LX-6/LX-7 docs and wrapper; "LX-9" in other text means all four sub-tasks).
+**Open: LX-6, LX-7** (LX-9a to LX-9d and LX-10 are done; they come before the LX-6/LX-7 docs and wrapper; "LX-9" in other text means all four sub-tasks).
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -15,7 +15,7 @@ spec.
 - [x] **LX-9b** — Runner writes part files with a manifest, verified resume, `--fresh`, `--part-hours` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: c9c0920
 - [x] **LX-9c** — Stitch per kind, `smvod-ts` from stitched parts, pre-cleanup sanity check and cleanup | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 96f58f1
 - [x] **LX-9d** — Per-step logging with ETA and opt-in per-date log files pruned after 7 days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 850d079
-- [ ] **LX-10** — Parallel fetch of part windows with bounded workers, FCID kept in worker threads | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **LX-10** — Parallel fetch of part windows with bounded workers, FCID kept in worker threads | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: pending
 - [ ] **LX-6** — Docs, `SCRIPTS.md` entry and parity run against a hand-exported day | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [ ] **LX-7** — Cron-ready wrapper: export, input check, pipeline, error report, household ranking | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 

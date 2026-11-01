@@ -2,7 +2,7 @@
 
 Writes ``<date>_<kind>.csv`` in the UI export format into ``data/lightstep/<TENANT>/`` (or ``--output-dir``),
 then runs the Step 0 input check on that folder. Existing files are skipped unless ``--force`` is given.
-Each kind is fetched in ``--part-hours`` windows saved under ``tmp/lightstep-export/<TENANT>_<date>/``; a rerun
+Each kind is fetched in ``--part-hours`` windows (up to ``--workers`` in parallel) saved under ``tmp/lightstep-export/<TENANT>_<date>/``; a rerun
 after a failure reuses the verified parts (``--resume``, the default) and ``--fresh`` discards them first.
 Lightstep keeps about 7 days, so run within a week of the UTC day. Tokens come from ``LIGHTSTEP_API_KEY_EU`` /
 ``LIGHTSTEP_API_KEY_US`` in the environment or the gitignored root ``.env``.
@@ -27,6 +27,7 @@ from lib.tenant_context import lightstep_dir, resolve_tenant_context
 
 from scripts.lib.lightstep_api import Transport, UrllibTransport
 from scripts.lib.lightstep_export_kinds import KINDS, resolve_target
+from scripts.lib.lightstep_parallel import DEFAULT_WORKERS, MAX_WORKERS, ThreadJobRunner
 from scripts.lib.lightstep_export_runner import (
     Dependencies,
     EnvTokenProvider,
@@ -67,6 +68,8 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap.add_argument("--output-dir", type=Path, default=None, help="Folder for the CSVs and the input check (default: data/lightstep/<TENANT>)")
     ap.add_argument("--force", action="store_true", help="Overwrite existing files instead of skipping them")
     ap.add_argument("--part-hours", type=int, default=1, choices=range(1, 25), metavar="1-24", help="Hours per part file (default: 1)")
+    ap.add_argument("--workers", type=int, default=DEFAULT_WORKERS, choices=range(1, MAX_WORKERS + 1), metavar=f"1-{MAX_WORKERS}",
+                    help=f"Part windows fetched in parallel (default: {DEFAULT_WORKERS}; 1 = serial; lower it if Lightstep throttles with 429)")
     resume = ap.add_mutually_exclusive_group()
     resume.add_argument("--resume", action="store_true", help="Reuse verified parts from an earlier run (default)")
     resume.add_argument("--fresh", action="store_true", help="Discard this tenant/date's parts folder and fetch everything again")
@@ -92,6 +95,7 @@ def main(argv: Sequence[str] | None = None, transport: Transport | None = None, 
     deps = Dependencies(
         transport=transport or UrllibTransport(), tokens=EnvTokenProvider(), resolve_target=resolve_target,
         input_check=input_check or make_input_check(tenant.code, day), report=print_report,
+        job_runner=ThreadJobRunner(args.workers),
     )
     request = ExportRequest(tenant=tenant, day=day, kinds=args.kinds, out_dir=args.output_dir or lightstep_dir(tenant.code), force=args.force,
         part_hours=args.part_hours, fresh=args.fresh,
