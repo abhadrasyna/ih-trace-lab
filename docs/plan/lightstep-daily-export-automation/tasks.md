@@ -11,8 +11,8 @@ spec.
 - [x] **LX-4** — UI-format CSV writer and part-file naming | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: ea2f728
 - [x] **LX-5** — `export_lightstep_day.py` CLI for all eight kinds, with input check | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: eb2e43e
 - [ ] **LX-8** — SOLID refactor of the export CLI per `docs/refactor` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **LX-9** — Incremental export: part files in `tmp/`, verified resume after failure, stitching, pre-cleanup sanity check, `smvod-ts` from stitched parts, per-step logging, parallel fetch | Owner:
-  Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-9** — Incremental export: part files in `tmp/`, verified resume after failure, stitching, pre-cleanup sanity check, `smvod-ts` from stitched parts, per-step logging, per-date log files kept
+  7 days, parallel fetch | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-6** — Docs, `SCRIPTS.md` entry and parity run against a hand-exported day | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [ ] **LX-7** — Cron-ready wrapper: export, input check, pipeline, error report, household ranking | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 
