@@ -102,7 +102,8 @@
   `stories.md` (seven kinds reproduce via `query_timeseries`; `smvod-ts` derived approximately; ~7-day Lightstep retention). Probes: `scratch/2026-11-01_lightstep_export_api_feasibility_probe.py`
   (per-kind full-day key-set diff against hand CSVs) and `scratch/2026-11-01_lightstep_smvod-ts_derive_probe.py` (derives `smvod-ts` from `smvod` points). LX-9a added `scripts/lib/lightstep_stitch.py`
   (pure merge of per-window series or CSV rows) and `read_rows` in `scripts/lib/lightstep_csv.py`; LX-9b added `scripts/lib/lightstep_parts.py` (JSON part store with manifest, verified resume) and the
-  `--part-hours`/`--fresh` flags; LX-9c-d are open.
+  `--part-hours`/`--fresh` flags; LX-9c added `scripts/lib/lightstep_export_checks.py` (sanity checks (a)-(c) per kind; a broken output fails the kind, a missing part is only logged) and the runner's
+  `cleanup_parts`, which deletes `tmp/lightstep-export/<TENANT>_<date>/` only when every kind is ok, no foreign-kind parts remain and the input check passed; LX-9d is open.
 - `docs/archive/scratch-script-registry/` — story complete: root `SCRIPTS.md` is now generated from the live `scripts/` + `scratch/` tree via `scripts/dev/generate_scripts_registry.py`;
   `scripts/dev/promote_scratch_scripts.py` provides manual promotion with registry refresh; `scratch/SCRATCH.md`, `AGENTS.md`, and the repo-local `.github/skills/session-close/SKILL.md` enforce the
   delegated duplicate-check and close-out regeneration workflow; `tests/dev/` covers both CLIs.

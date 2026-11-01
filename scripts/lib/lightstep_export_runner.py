@@ -26,7 +26,8 @@ from scripts.lib.lightstep_api import (
     utc_day_window,
 )
 from scripts.lib.lightstep_stitch import stitch_series
-from scripts.lib.lightstep_parts import PartStore, query_fingerprint
+from scripts.lib.lightstep_export_checks import check_output, check_parts_complete
+from scripts.lib.lightstep_parts import PartStore, Window, query_fingerprint
 from scripts.lib.lightstep_csv import FileExistsRefused, write_rows
 from scripts.lib.lightstep_export_kinds import (
     SHARED_ONLY,
@@ -55,6 +56,10 @@ TargetResolver = Callable[[str, TenantConfig], ExportTarget]
 
 class TenantSafetyError(ValueError):
     """A shared-project export does not contain exactly the requested tenant."""
+
+
+class SanityCheckError(ValueError):
+    """A written export does not match its parts (header, BOM or row count)."""
 
 
 class TokenProvider(Protocol):
@@ -108,6 +113,8 @@ class KindResult:
     kind: str
     status: str  # "ok", "skipped" or "failed"
     detail: str
+    problems: tuple[str, ...] = ()  # sanity-check findings (a)-(c); any finding keeps the parts folder
+    verified: bool = False  # a skipped kind with nothing pending (not applicable, or output matches its parts); does not block cleanup
 
 
 def check_single_tenant(series: Sequence[Series], spec: KindSpec, tenant: TenantConfig) -> None:
@@ -134,10 +141,22 @@ def _skip_reason(spec: KindSpec, request: ExportRequest, path: Path) -> str | No
     return None
 
 
-def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: Dependencies) -> list[Series]:
-    base_url, org = ENDPOINTS[target.region.upper()]
+def _plan(spec: KindSpec, request: ExportRequest, target: ExportTarget) -> tuple[str, list[Window], list[str]]:
+    """The query text, the part windows and each window's fingerprint."""
     oldest, youngest = utc_day_window(request.day)
     uql = expand_query(spec.query_kind, request.tenant)
+    windows = split_window(oldest, youngest, timedelta(hours=request.part_hours))
+    prints = [
+        query_fingerprint(uql=uql, project=target.project, region=target.region, period=spec.output_period_s,
+                          kind=spec.kind, window=[w[0].isoformat(), w[1].isoformat()])
+        for w in windows
+    ]
+    return uql, windows, prints
+
+
+def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: Dependencies) -> list[Series]:
+    base_url, org = ENDPOINTS[target.region.upper()]
+    uql, windows, prints = _plan(spec, request, target)
     project = Project(base_url, org, target.project)
     LOGGER.debug(
         "lightstep query start %s",
@@ -146,12 +165,6 @@ def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: D
                       {"kind", "project", "region", "query_fingerprint"}),
     )
     store = PartStore(request.parts_dir)
-    windows = split_window(oldest, youngest, timedelta(hours=request.part_hours))
-    prints = [
-        query_fingerprint(uql=uql, project=target.project, region=target.region, period=spec.output_period_s,
-                          kind=spec.kind, window=[w[0].isoformat(), w[1].isoformat()])
-        for w in windows
-    ]
     parts = [store.load(spec.kind, i, w, prints[i - 1]) for i, w in enumerate(windows, start=1)]
     missing = [i for i, part in enumerate(parts) if part is None]
     LOGGER.info("kind=%s parts total=%d reused=%d remaining=%d", spec.kind, len(windows), len(windows) - len(missing), len(missing))
@@ -181,6 +194,35 @@ def _build_and_write(spec: KindSpec, request: ExportRequest, series: Sequence[Se
     return len(rows) - 1
 
 
+def _verify_kind(spec: KindSpec, request: ExportRequest, target: ExportTarget, path: Path) -> tuple[str, ...]:
+    """Checks (a)-(c) for one kind, re-reading its parts and output file from disk."""
+    _, windows, prints = _plan(spec, request, target)
+    store = PartStore(request.parts_dir)
+    loaded = [store.load(spec.kind, i, w, prints[i - 1]) for i, w in enumerate(windows, start=1)]
+    gaps = check_parts_complete(loaded)  # windows inside the ingestion lag are never cached, so today's export keeps its parts
+    for gap in gaps:
+        LOGGER.warning("sanity check %s: %s", spec.kind, gap)
+    if gaps:
+        return tuple(f"{spec.kind}: {gap}" for gap in gaps)
+    broken = check_output(path, expected_columns(spec.kind, request.tenant), [p or [] for p in loaded],
+                          derived=spec.derived_from is not None)
+    if broken:
+        raise SanityCheckError("; ".join(broken))
+    return ()
+
+
+def _existing_output_verified(spec: KindSpec, request: ExportRequest, deps: Dependencies, path: Path) -> bool:
+    """True when nothing is pending: the kind does not apply to the tenant, or its existing output matches the verified parts."""
+    if spec.unavailable_reason(request.tenant):
+        return True
+    if not path.exists():
+        return False
+    try:
+        return not _verify_kind(spec, request, deps.resolve_target(spec.kind, request.tenant), path)
+    except (SanityCheckError, ValueError, KeyError, OSError):
+        return False
+
+
 def export_kind(kind: str, request: ExportRequest, deps: Dependencies) -> KindResult:
     """Fetches and writes one kind; failures are logged once here and returned, not raised."""
     spec = get_kind(kind)
@@ -188,13 +230,19 @@ def export_kind(kind: str, request: ExportRequest, deps: Dependencies) -> KindRe
     reason = _skip_reason(spec, request, path)
     if reason:
         LOGGER.warning("skipping %s: %s", kind, reason)
-        return KindResult(kind, "skipped", reason)
+        return KindResult(kind, "skipped", reason, verified=_existing_output_verified(spec, request, deps, path))
     started = time.monotonic()
     try:
-        series = _fetch(spec, request, deps.resolve_target(kind, request.tenant), deps)
+        target = deps.resolve_target(kind, request.tenant)
+        series = _fetch(spec, request, target, deps)
         check_single_tenant(series, spec, request.tenant)
         row_count = _build_and_write(spec, request, series, path)
-    except (LightstepError, TenantSafetyError, FileExistsRefused, ValueError, KeyError, OSError) as exc:
+        try:
+            problems = _verify_kind(spec, request, target, path)
+        except SanityCheckError:
+            path.unlink(missing_ok=True)  # a rerun would otherwise skip the bad file as "already exists"
+            raise
+    except (LightstepError, TenantSafetyError, SanityCheckError, FileExistsRefused, ValueError, KeyError, OSError) as exc:
         LOGGER.exception("export of %s failed", kind)
         return KindResult(kind, "failed", f"{type(exc).__name__}: {exc}")
     oldest, youngest = utc_day_window(request.day)
@@ -202,7 +250,7 @@ def export_kind(kind: str, request: ExportRequest, deps: Dependencies) -> KindRe
         "exported %s duration_ms=%d rows=%d series=%d base_slices=%d file=%s",
         kind, int((time.monotonic() - started) * 1000), row_count, len(series), len(split_window(oldest, youngest)), path.name,
     )
-    return KindResult(kind, "ok", f"{row_count} rows -> {path}")
+    return KindResult(kind, "ok", f"{row_count} rows -> {path}", problems)
 
 
 def input_check_applies(kinds: Sequence[str]) -> bool:
@@ -213,6 +261,27 @@ def input_check_applies(kinds: Sequence[str]) -> bool:
 def drm_expected(kinds: Sequence[str], results: Sequence[KindResult]) -> bool:
     """DRM files are required by the input check only when both DRM kinds ran and none was skipped."""
     return set(DRM_REQUIRED) <= set(kinds) and all(r.status != "skipped" for r in results if r.kind in DRM_REQUIRED)
+
+
+def cleanup_parts(request: ExportRequest, results: Sequence[KindResult], *, check_ok: bool) -> bool:
+    """Deletes this run's ``<TENANT>_<date>/`` parts folder only when every kind is ok with no findings and (d) passed."""
+    blockers = [r.problems for r in results if r.problems] + [f"{r.kind} {r.status}" for r in results if r.status != "ok" and not (r.status == "skipped" and r.verified)]
+    if blockers or not check_ok:
+        LOGGER.warning("parts kept for resume at %s: %s", request.parts_dir, blockers or "input check failed or run had failures")
+        return False
+    if not request.parts_dir.exists():
+        return False
+    foreign = sorted({p.name.rsplit("_", 1)[0] for p in request.parts_dir.glob("*.json")} - set(request.kinds))
+    if foreign:
+        LOGGER.warning("parts kept: %s holds resume parts of kinds not in this run: %s", request.parts_dir, foreign)
+        return False
+    try:
+        PartStore(request.parts_dir).discard()
+    except OSError:
+        LOGGER.exception("could not delete parts folder %s", request.parts_dir)
+        return False
+    LOGGER.info("sanity checks passed; deleted parts folder %s", request.parts_dir)
+    return True
 
 
 def run_export(request: ExportRequest, deps: Dependencies) -> int:
@@ -229,6 +298,7 @@ def run_export(request: ExportRequest, deps: Dependencies) -> int:
         ok = ok and check_ok
     else:
         LOGGER.info("input check skipped: it needs all of %s", ",".join(CORE_KINDS))
+    cleanup_parts(request, results, check_ok=ok)
     deps.report(results, report)
     LOGGER.info("run end ok=%s summary=%s", ok, "; ".join(f"{r.kind}={r.status}" for r in results))
     return 0 if ok else 1

@@ -166,6 +166,7 @@ def test_failure_at_part_n_keeps_earlier_parts_and_rerun_fetches_only_rest(tmp_p
 
 
 def test_corrupted_part_is_refetched_on_resume(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "cleanup_parts", lambda *args, **kwargs: False)
     _run(tmp_path, monkeypatch, kinds=["ctap"])
     (tmp_path / f"{DAY}_ctap.csv").unlink()
     (_parts_dir(tmp_path) / "ctap_03.json").write_text("[]", encoding="utf-8")
@@ -188,6 +189,7 @@ def test_fresh_ignores_all_parts(tmp_path, monkeypatch):
 
 
 def test_part_hours_sets_window_count(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "cleanup_parts", lambda *args, **kwargs: False)
     monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
     transport = FakeTransport()
     deps = runner.Dependencies(
@@ -226,3 +228,60 @@ def test_window_inside_ingestion_lag_is_not_cached(tmp_path, monkeypatch):
 def test_export_request_rejects_invalid_part_hours(tmp_path):
     with pytest.raises(ValueError):
         runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=0)
+
+
+def test_parts_folder_deleted_only_after_all_checks_pass(tmp_path, monkeypatch):
+    sibling = _parts_dir(tmp_path).with_name("ZA_2026-10-28")
+    sibling.mkdir(parents=True)
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"]) == 0
+    assert not _parts_dir(tmp_path).exists() and sibling.exists()
+
+
+def test_failed_input_check_keeps_parts_for_resume(tmp_path, monkeypatch):
+    kinds = ["ctap", "smvod", "smvod-ts"]
+    assert _run(tmp_path, monkeypatch, kinds=kinds, check=lambda directory, drm: ("FAIL", False)) == 1
+    assert (_parts_dir(tmp_path) / "ctap_01.json").exists()
+
+
+def test_failed_kind_keeps_parts(tmp_path, monkeypatch):
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=FailingAfter(fail_from=6)) == 1
+    assert (_parts_dir(tmp_path) / "ctap_05.json").exists()
+
+
+def test_tampered_output_row_count_keeps_parts(tmp_path, monkeypatch):
+    original = runner._build_and_write
+
+    def drop_rows(spec, request, series, path):
+        return original(spec, request, [], path)
+
+    monkeypatch.setattr(runner, "_build_and_write", drop_rows)
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"]) == 1
+    assert (_parts_dir(tmp_path) / "ctap_01.json").exists() and not (tmp_path / f"{DAY}_ctap.csv").exists()
+
+
+def test_other_kinds_resume_parts_block_cleanup(tmp_path, monkeypatch):
+    assert _run(tmp_path, monkeypatch, kinds=["smvod"], transport=FailingAfter(fail_from=6)) == 1
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"]) == 0
+    assert (_parts_dir(tmp_path) / "smvod_01.json").exists()
+
+
+def test_uncached_window_is_a_gap_and_keeps_run_ok(tmp_path, monkeypatch, caplog):
+    today = datetime.now(timezone.utc).date().isoformat()
+    monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
+    deps = runner.Dependencies(
+        transport=FakeTransport(), tokens=runner.EnvTokenProvider(), resolve_target=kinds_mod.resolve_target,
+        input_check=lambda d, drm: ("ok", True), report=runner.print_report,
+    )
+    request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=today, kinds=["ctap"], out_dir=tmp_path, force=False, part_hours=24)
+    assert runner.run_export(request, deps) == 0
+    assert "missing or failed verification" in caplog.text
+
+
+def test_resume_skipping_verified_existing_output_still_cleans_up(tmp_path, monkeypatch):
+    real_cleanup = runner.cleanup_parts
+    monkeypatch.setattr(runner, "cleanup_parts", lambda *args, **kwargs: False)
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"]) == 0
+    monkeypatch.setattr(runner, "cleanup_parts", real_cleanup)
+    assert _parts_dir(tmp_path).exists()
+    assert _run(tmp_path, monkeypatch, kinds=["ctap"], transport=FakeTransport()) == 0
+    assert not _parts_dir(tmp_path).exists()
