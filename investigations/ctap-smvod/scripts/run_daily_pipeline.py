@@ -82,14 +82,15 @@ def default_day(now: datetime | None = None) -> Date:
     return (now or datetime.now(timezone.utc)).astimezone(timezone.utc).date() - timedelta(days=1)
 
 
-def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: int, python: str = sys.executable,
+def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: int, workers: int | None = None, python: str = sys.executable,
                 investigation_dir: Path = INVESTIGATION_DIR) -> list[Step]:
     """The ordered step list for ``day``; pure, so it can be tested without running anything."""
     scripts = investigation_dir / "scripts"
     iso, ddmmyyyy = day.isoformat(), day.strftime("%d%m%Y")
     steps: list[Step] = []
     if not skip_export:
-        steps += [Step(f"export {t}", (python, str(scripts / "export_lightstep_day.py"), "--tenant", t, "--date", iso)) for t in tenants]
+        extra = ("--workers", str(workers)) if workers is not None else ()
+        steps += [Step(f"export {t}", (python, str(scripts / "export_lightstep_day.py"), "--tenant", t, "--date", iso, *extra)) for t in tenants]
     reports = {t: investigation_dir / "output" / t / f"{iso}_error_report_1xxx.csv" for t in tenants}
     steps += [
         Step("check inputs", (python, str(scripts / "check_lightstep_inputs.py"), "--date", ddmmyyyy, "--drm")),
@@ -148,6 +149,8 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap.add_argument("--date", default=None, help="UTC day as DDMMYYYY or YYYY-MM-DD (default: yesterday UTC)")
     ap.add_argument("--tenants", default=",".join(DEFAULT_TENANTS), help="Comma-separated tenant codes (default: ZA,GH,ZM)")
     ap.add_argument("--skip-export", action="store_true", help="Skip the Lightstep export; use CSVs already in data/lightstep/<TENANT>/")
+    ap.add_argument("--workers", type=int, default=None, choices=range(1, 9), metavar="1-8",
+                    help="Passed to export_lightstep_day.py --workers (default: the exporter's own default, 4)")
     ap.add_argument("--top", type=int, default=10, help="Households to print per tenant in the ranking (default: 10)")
     ap.add_argument("--step-timeout-minutes", type=float, default=DEFAULT_STEP_TIMEOUT_MINUTES,
                     help=f"Kill any single step after this many minutes (default: {DEFAULT_STEP_TIMEOUT_MINUTES:g})")
@@ -168,7 +171,7 @@ def main(argv: Sequence[str] | None = None, runner: StepRunner | None = None) ->
         return 1
     fcid = init_logging("run-daily-pipeline", log_dir=args.log_dir, file_prefix=LOG_PREFIX, date=day, keep_days=LOG_KEEP_DAYS)
     LOGGER.info("daily pipeline for %s tenants=%s skip_export=%s fcid=%s", day.isoformat(), ",".join(tenants), args.skip_export, current_fcid())
-    steps = build_steps(day, tenants, skip_export=args.skip_export, top=args.top, investigation_dir=INVESTIGATION_DIR)
+    steps = build_steps(day, tenants, skip_export=args.skip_export, top=args.top, workers=args.workers, investigation_dir=INVESTIGATION_DIR)
     results = run_steps(steps, runner or make_subprocess_runner(args.step_timeout_minutes * 60), cwd=INVESTIGATION_DIR, env={**os.environ, FCID_ENV: fcid})
     failed = [r.name for r in results if not r.ok]
     not_run = len(steps) - len(results)

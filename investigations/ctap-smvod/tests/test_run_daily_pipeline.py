@@ -33,6 +33,12 @@ def test_steps_run_in_order_with_date_argument(tmp_path):
     assert calls[-1][3].endswith("GH/2026-10-29_error_report_1xxx.csv")
 
 
+def test_workers_is_passed_to_export_steps_only_when_given(tmp_path):
+    with_workers = mod.build_steps(DAY, ["ZA"], skip_export=False, top=10, workers=6, python="py", investigation_dir=tmp_path)
+    assert with_workers[0].argv[-2:] == ("--workers", "6")
+    assert "--workers" not in _steps(tmp_path)[0].argv
+
+
 def test_skip_export_drops_export_steps(tmp_path):
     assert not any(s.name.startswith("export") for s in _steps(tmp_path, skip_export=True))
 
