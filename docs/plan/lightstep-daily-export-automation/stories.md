@@ -145,11 +145,19 @@ Per kind, full UTC day, 1 h slices halved on >=50 series, keyed on the group-by 
 | mdrm-cdm-fairplay | 514 | 563 | 511 | 3 | 52 | 26 | **GO** (see quirks) |
 | mdrm-cdm-playready | 117 | 114 | 114 | 3 | 0 | 24 | **GO** (superset) |
 | mdrm-lrm | 3595 | 3656 | 3567 | 28 | 89 | 202 | **GO** (see quirks) |
-| smvod-ts | — | — | — | — | — | — | **NO-GO via public API as-is** |
+| smvod-ts | — | — | — | — | — | — | **GO, derived (approximate)**, no public span-sample endpoint |
 
 - **`smvod-ts`:** `query_spans`, `query_span_samples`, `spans/query`, `query_traces` under `/telemetry/` (and `/spans/query`) all return HTTP 403 with an empty body, so the public API exposes no
-  span-sample endpoint to this token. The hand file is a 500-row sample per hour part, not a complete set. Fallback to decide in LX-2: derive `sessionId`, `oldest_micros`, `youngest_micros` and
-  `duration_millis` from the `smvod` series' point timestamps (needs a fine `output-period`), keeping the validator's UTC-day coverage satisfied; or keep `smvod-ts` manual. Needs user decision.
+  span-sample endpoint to this token. The hand file is a 500-row sample per hour part, not a complete set. **Decision (2026-11-01): derive it approximately** from the `smvod` series' point timestamps
+  (first and last non-zero point per `sessionId`, `output-period` 1 s), keeping the validator's UTC-day coverage satisfied.
+- **Derivation probe (`scratch/2026-11-01_lightstep_smvod-ts_derive_probe.py`, ZA 2026-10-29, 328 calls, about 14 min):** every one of the 3,492 sessions in the hand `smvod-ts` was found (3,492 /
+  3,492); the API also returned 2,347 sessions the hand sample lacks, which is expected because the hand file is capped at 500 rows per hour. Timestamps do not match exactly: `oldest_micros` derived
+  minus hand has median -3.5 s (min -46,043 s, max +6.5 s) with only 229 / 3,492 within 1 s; `youngest_micros` has median +10.5 s (max +19,371 s) with 3 / 3,492 within 1 s. The large outliers are most
+  likely sessions with several spans (the hand row is one span, the derivation merges all spans of a session); the median offsets suggest Lightstep returns coarser buckets than 1 s. Neither cause is
+  confirmed. `duration_millis` (hand median 33.6 ms) cannot be derived from point timestamps. So the derived file is session-level coverage only: `error_flag`, `component_name`, `span_name` and
+  `duration_millis` need placeholders or extra `group_by` labels, and LX-2 must check what `check_lightstep_inputs.py` and the downstream steps actually read from `smvod-ts` before choosing them.
+- **Retention:** the API returns no data for 2026-10-02 to 2026-10-24 and data from 2026-10-26, so retention is about 7 days. The daily export must run within a week of the UTC day, and the 2026-09-28
+  hand file cannot be reproduced. Any parity run must use a day within the last 7 days.
 - **Differences are small (about 1-3 % of keys) and explained by:** (1) the UI export prefixes values that start with `-` with an apostrophe (`'-QSn81...`, in `householdId`; 13 rows in one smvod part)
   — the writer must reproduce or the diff must normalise it; (2) the hand exports were taken at a different time than the API run, so late-arriving spans and hour-boundary assignment differ; (3) blank
   vs missing attribute values (`drmInfo.Make=` empty in hand rows). Exact normalisation is LX-6's parity-run job, not a blocker.
@@ -172,7 +180,9 @@ Per kind, full UTC day, 1 h slices halved on >=50 series, keyed on the group-by 
 
 **What to implement:**
 
-1. Add the eight templates using the UQL proven in LX-1; no literal ids, dates or tenants. `smvod` and `smvod-ts` share one template and differ only in the output (aggregates vs span samples).
+1. Add the templates using the UQL proven in LX-1; no literal ids, dates or tenants. `smvod-ts` is derived (LX-1 decision 2026-11-01): it reuses the `smvod` query at `output-period` 1 s and takes each
+   session's first and last non-zero point as `oldest_micros`/`youngest_micros`; registry entry kind `derived` with the columns it can fill. First check which `smvod-ts` columns the validator and the
+   downstream steps read, and fill the rest with documented placeholders. For `mdrmfe`, `request.tenant` comes from `config/tenants.yaml` (the GO tenant id), not from the project name.
 2. Build the registry as data, not branching code, so a ninth kind is one new entry. Each entry names its tenant attribute and whether it applies always or only on a shared project.
 3. Resolve the project and shared-project filter through the `resolve_tenant.py` logic, never hardcoded.
 4. Use the ZA/ZM `operation` filter for the three CDM kinds for every tenant, including GH.
@@ -197,9 +207,11 @@ Per kind, full UTC day, 1 h slices halved on >=50 series, keyed on the group-by 
 **What to implement:**
 
 1. Read the token from `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` in the environment, falling back to the gitignored root `.env`; fail with a clear message if missing; never log it.
-2. Slice a window into fixed-size sub-windows; when a response reports `series_returned == 50` and `series_total > 50`, halve that slice and retry until it fits or hits a minimum width, then fail.
-3. Retry transient errors (429/5xx) with backoff; surface everything else.
-4. Deduplicate a series seen in adjacent slices by label set and timestamp, and verify the merged count against each slice's `series_total`.
+2. Slice a window into fixed-size sub-windows (start at 1 h); the API response has only a `series` array (no `series_total`), so when `len(series) >= 50` halve that slice and retry until it fits or
+   hits a minimum width, then fail. An empty window has no `series` key and must be treated as zero series.
+3. Retry transient errors (429/5xx and network errors such as `IncompleteRead`) with backoff and a retry cap; surface everything else. Measured in LX-1: no 429 or 5xx in about 1,250 calls.
+4. Deduplicate a series seen in adjacent slices by label set and timestamp (merge points, do not drop the second slice's points); there is no `series_total` to cross-check, so verify by re-querying a
+   sample slice at a smaller width.
 
 **Tests (no network, no real external services):**
 - `test_split_halves_on_truncation` — a capped response triggers a halved retry.
@@ -265,8 +277,10 @@ Per kind, full UTC day, 1 h slices halved on >=50 series, keyed on the group-by 
 
 **What to implement:**
 
-1. Run the command for ZA 2026-10-29 into a scratch directory and compare with the hand-exported files; record row-count parity and any known differences.
-2. Document token setup (`.env`, never committed) and the rate-limit behaviour measured in LX-1.
+1. Run the command for ZA on a UTC day within the last 7 days (Lightstep retention; 2026-10-29 is hand-exported but expires soon, so run it first) into a scratch directory and compare with the
+   hand-exported files by key set, not row count: key-level differences of up to about 3 % in either direction were seen in LX-1 (export timing, late spans). Record the tolerance and any known
+   differences, including the leading-apostrophe values and the approximate `smvod-ts`.
+2. Document token setup (`.env`, never committed), the 7-day retention limit and the rate-limit behaviour measured in LX-1 (about 1.0-1.3 s per call, no throttling; 24-322 calls per kind per day).
 
 **Tests (no network, no real external services):** none — documentation and a recorded parity run.
 

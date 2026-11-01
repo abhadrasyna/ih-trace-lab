@@ -20,7 +20,7 @@ spec.
 - **LX-3** — the client returns every series for a window by splitting any slice that hits the 50-series cap, and never reads the token from anywhere but the environment.
 - **LX-4** — written files match the UI export format in structure (BOM, quoting, header) and use the existing `_NN_` part naming.
 - **LX-5** — one command produces all eight files for a tenant and UTC date, supports `--kinds` and `--tenant`, and fails loudly on truncation, empty results or a failed input check.
-- **LX-6** — usage docs and the `SCRIPTS.md` registry are updated, and a parity run for 2026-10-29 ZA is documented.
+- **LX-6** — usage docs and the `SCRIPTS.md` registry are updated, and a key-set parity run for a ZA day within the 7-day retention window is documented.
 - **LX-7** — one command runs the whole daily chain for a UTC date, logs every step under one FCID, verifies the output CSVs and exits non-zero on failure.
 
 ## After each task

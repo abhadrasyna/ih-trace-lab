@@ -49,12 +49,14 @@ any change to `check_lightstep_inputs.py` behaviour — the new files must pass 
 
 ## Definition of done
 
-`python3 export_lightstep_day.py --tenant ZA --date 2026-10-29` writes all eight files into `data/lightstep/ZA/`, they pass `check_lightstep_inputs.py`, row counts match the hand-exported day within
-the documented tolerance, and the token never appears in the repo. See `tasks.md` "Story done when".
+`python3 export_lightstep_day.py --tenant ZA --date <UTC day within the last 7 days>` writes all eight files into `data/lightstep/ZA/` (`smvod-ts` derived approximately), they pass
+`check_lightstep_inputs.py`, key sets match a hand-exported day within the documented tolerance, and the token never appears in the repo. See `tasks.md` "Story done when".
 
 ## Perspectives not covered
 
-- Rate limits and quotas of the Lightstep public API for a full day of slices are unknown until LX-1 measures them.
+- Rate limits were measured in LX-1: no throttling in about 1,250 calls (about 1.0-1.3 s each); a full day is 24-322 calls per kind, about 20 minutes for `smvod`. Quotas beyond that are unknown.
+- Lightstep retains about 7 days of data, so the export must run within a week of the UTC day.
+- `smvod-ts` is derived approximately from `smvod` point timestamps (session coverage only), not exported as span samples.
 - Scheduling (cron/CI) of the daily pull is out of scope; this story delivers the on-demand command only.
 - Token rotation and secret storage beyond a gitignored `.env` are not addressed.
 - Nigeria has no registered mDRM tenant id, so its DRM exports cannot be automated yet.
