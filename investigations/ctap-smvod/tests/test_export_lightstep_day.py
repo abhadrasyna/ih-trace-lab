@@ -107,10 +107,35 @@ def test_log_lines_carry_one_fcid_and_no_token(tmp_path, monkeypatch, caplog):
     own = [record for record in caplog.records if record.name == runner.LOGGER.name]
     assert own and {record.fcid for record in own} == {"export-lightstep-day-test"}
     assert TOKEN not in caplog.text
+    messages = [record.getMessage() for record in own]
+    assert any(m.startswith("part 1/") and "eta_s=" in m and "window=" in m for m in messages)
+    assert any(m.startswith("stitching kind=ctap") for m in messages)
+    assert any(m.startswith("kind done kind=ctap elapsed=") for m in messages)
+    assert any(m.startswith("cleanup tmp=") for m in messages)
+
+
+def test_main_writes_log_named_by_data_day_and_prunes_old_files(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    old = logs / "export-lightstep-day_2000-01-01.log"
+    unrelated = logs / "14102026.txt"
+    for path in (old, unrelated):
+        path.write_text("x", encoding="utf-8")
+    argv = ["--tenant", "ZA", "--date", DAY, "--kinds", "ctap", "--output-dir", str(tmp_path / "out"), "--log-dir", str(logs)]
+    try:
+        cli.main(argv, FakeTransport(), lambda directory, drm: ("ok", True))
+        cli.main(argv, FakeTransport(), lambda directory, drm: ("ok", True))
+    finally:
+        logging.getLogger().handlers.clear()
+    log_file = logs / f"export-lightstep-day_{DAY}.log"
+    text = log_file.read_text(encoding="utf-8")
+    assert text.count("run start") == 2 and TOKEN not in text
+    assert not old.exists() and unrelated.exists()
 
 
 def test_output_dir_argument_redirects_csvs_and_check(tmp_path, monkeypatch):
-    monkeypatch.setattr(cli, "init_logging", lambda slug: "fcid")
+    monkeypatch.setattr(cli, "init_logging", lambda slug, **kwargs: "fcid")
     monkeypatch.setenv("LIGHTSTEP_API_KEY_EU", TOKEN)
     seen: list[Path] = []
     target = tmp_path / "elsewhere"

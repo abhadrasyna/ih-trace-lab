@@ -168,7 +168,8 @@ def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: D
     parts = [store.load(spec.kind, i, w, prints[i - 1]) for i, w in enumerate(windows, start=1)]
     missing = [i for i, part in enumerate(parts) if part is None]
     LOGGER.info("kind=%s parts total=%d reused=%d remaining=%d", spec.kind, len(windows), len(windows) - len(missing), len(missing))
-    for i in missing:
+    kind_started = time.monotonic()
+    for done, i in enumerate(missing, start=1):
         started = time.monotonic()
         fetched = fetch_all_series(
             deps.transport, project=project, token=deps.tokens.token(target.region), uql=uql,
@@ -179,9 +180,12 @@ def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: D
         else:
             LOGGER.info("part %d/%d kind=%s ends within the ingestion lag; not cached", i + 1, len(windows), spec.kind)
         parts[i] = fetched
-        LOGGER.info("part %d/%d kind=%s series=%d duration_ms=%d", i + 1, len(windows), spec.kind, len(fetched),
-                    int((time.monotonic() - started) * 1000))
+        elapsed = time.monotonic() - kind_started
+        eta_s = int(elapsed / done * (len(missing) - done))
+        LOGGER.info("part %d/%d kind=%s window=%s..%s series=%d duration_ms=%d eta_s=%d", i + 1, len(windows), spec.kind,
+                    windows[i][0].isoformat(), windows[i][1].isoformat(), len(fetched), int((time.monotonic() - started) * 1000), eta_s)
     series = stitch_series([part or [] for part in parts])
+    LOGGER.info("stitching kind=%s parts=%d series=%d", spec.kind, len(windows), len(series))
     if not series:
         raise LightstepError(f"{spec.kind}: no series returned for {request.day}; is it older than the ~7 day retention?")
     return series
@@ -250,6 +254,7 @@ def export_kind(kind: str, request: ExportRequest, deps: Dependencies) -> KindRe
         "exported %s duration_ms=%d rows=%d series=%d base_slices=%d file=%s",
         kind, int((time.monotonic() - started) * 1000), row_count, len(series), len(split_window(oldest, youngest)), path.name,
     )
+    LOGGER.info("kind done kind=%s elapsed=%ds", kind, int(time.monotonic() - started))
     return KindResult(kind, "ok", f"{row_count} rows -> {path}", problems)
 
 
@@ -280,7 +285,7 @@ def cleanup_parts(request: ExportRequest, results: Sequence[KindResult], *, chec
     except OSError:
         LOGGER.exception("could not delete parts folder %s", request.parts_dir)
         return False
-    LOGGER.info("sanity checks passed; deleted parts folder %s", request.parts_dir)
+    LOGGER.info("cleanup tmp=%s deleted after passing sanity checks", request.parts_dir)
     return True
 
 

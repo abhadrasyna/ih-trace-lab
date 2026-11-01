@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextvars
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -72,3 +73,32 @@ def test_init_logging_twice_replaces_handlers_instead_of_duplicating_them(
     assert len(first_handlers) == len(second_handlers) == 2
     assert len({id(handler) for handler in second_handlers}) == 2
     assert all(first is not second for first, second in zip(first_handlers, second_handlers, strict=True))
+
+
+def test_init_logging_dated_file_appends_and_prunes_only_own_old_files(tmp_path: Path) -> None:
+    from datetime import date
+
+    from src.lib.logging.dated_logs import dated_log_path
+
+    today = datetime.now(timezone.utc).date()
+    old = tmp_path / f"job_{today - timedelta(days=8)}.log"
+    recent = tmp_path / f"job_{today - timedelta(days=7)}.log"
+    other = tmp_path / f"other_{today - timedelta(days=30)}.log"
+    for path in (old, recent, other):
+        path.write_text("x", encoding="utf-8")
+    day = date(2026, 10, 1)
+
+    init_logging("job", log_dir=tmp_path, file_prefix="job", date=day, keep_days=7)
+    logging.getLogger("t").warning("first")
+    init_logging("job", log_dir=tmp_path, file_prefix="job", date=day, keep_days=7)
+    logging.getLogger("t").warning("second")
+    logging.shutdown()
+
+    text = dated_log_path(tmp_path, "job", day).read_text(encoding="utf-8")
+    assert "first" in text and "second" in text
+    assert not old.exists() and recent.exists() and other.exists()
+
+
+def test_init_logging_rejects_partial_dated_arguments(tmp_path: Path) -> None:
+    with pytest.raises(ValueError):
+        init_logging("job", log_dir=tmp_path)

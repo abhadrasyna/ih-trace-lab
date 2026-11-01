@@ -59,13 +59,14 @@ _LEVEL_NAMES = {
 }
 
 
-def setup_logging(*, level: str = "INFO", to_file: bool = True) -> None:
+def setup_logging(*, level: str = "INFO", to_file: bool = True, log_file: Path | None = None) -> None:
     """Configure the root logger with a consistent line format.
 
     Args:
         level: Standard library level name (``DEBUG``, ``INFO``, ``WARNING``, ...). Raises
             ``ValueError`` on an unrecognized name rather than silently falling back to ``INFO``.
         to_file: When ``True``, also write to ``<logs_root>/app.log`` alongside stderr.
+        log_file: Opt-in file to append to instead of ``<logs_root>/app.log`` (its folder is created).
     """
     level_name = level.upper()
     try:
@@ -78,10 +79,10 @@ def setup_logging(*, level: str = "INFO", to_file: bool = True) -> None:
     # stream so they never interleave with a consumer parsing stdout. Cron captures are unaffected —
     # this project's crontab entries redirect both streams into the same .out file (`2>&1`).
     handlers: list[logging.Handler] = [logging.StreamHandler(sys.stderr)]
-    if to_file:
-        logs_dir = _logs_dir()
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        handlers.append(logging.FileHandler(logs_dir / "app.log"))
+    if to_file or log_file is not None:
+        target = log_file or _logs_dir() / "app.log"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(target))
     for handler in handlers:
         handler.addFilter(_FCID_LOG_FILTER)
 

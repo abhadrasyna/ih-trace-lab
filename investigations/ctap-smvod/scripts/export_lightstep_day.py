@@ -38,6 +38,10 @@ from scripts.lib.lightstep_export_runner import (
 from src.lib.logging.bootstrap import init_logging
 from src.tenant_registry import TenantRegistry
 
+LOG_PREFIX = "export-lightstep-day"
+LOG_KEEP_DAYS = 7
+DEFAULT_LOG_DIR = Path(__file__).resolve().parents[1] / "logs"
+
 
 def default_date(now: datetime | None = None) -> str:
     """Yesterday in UTC as ``YYYY-MM-DD``."""
@@ -66,18 +70,23 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     resume = ap.add_mutually_exclusive_group()
     resume.add_argument("--resume", action="store_true", help="Reuse verified parts from an earlier run (default)")
     resume.add_argument("--fresh", action="store_true", help="Discard this tenant/date's parts folder and fetch everything again")
+    ap.add_argument("--log-dir", type=Path, default=DEFAULT_LOG_DIR, help="Folder for export-lightstep-day_<date>.log (default: investigations/ctap-smvod/logs)")
     return ap.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None, transport: Transport | None = None, input_check: InputCheck | None = None) -> int:
     """Composition root: the only place that picks the real transport, tokens and input check."""
-    init_logging("export-lightstep-day")
     args = parse_args(argv)
     day = args.date or default_date()
     try:
-        Date.fromisoformat(day)
+        data_day = Date.fromisoformat(day)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    init_logging("export-lightstep-day", log_dir=args.log_dir, file_prefix=LOG_PREFIX, date=data_day, keep_days=LOG_KEEP_DAYS)
+    try:
         tenant = TenantRegistry().get(args.tenant)
-    except (ValueError, KeyError) as exc:
+    except KeyError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     deps = Dependencies(

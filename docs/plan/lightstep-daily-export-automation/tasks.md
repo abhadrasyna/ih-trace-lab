@@ -14,7 +14,7 @@ spec.
 - [x] **LX-9a** — Pure part-series stitch module and part-file reader | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: d87c17c
 - [x] **LX-9b** — Runner writes part files with a manifest, verified resume, `--fresh`, `--part-hours` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: c9c0920
 - [x] **LX-9c** — Stitch per kind, `smvod-ts` from stitched parts, pre-cleanup sanity check and cleanup | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 96f58f1
-- [ ] **LX-9d** — Per-step logging with ETA and opt-in per-date log files pruned after 7 days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **LX-9d** — Per-step logging with ETA and opt-in per-date log files pruned after 7 days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: pending
 - [ ] **LX-10** — Parallel fetch of part windows with bounded workers, FCID kept in worker threads | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-6** — Docs, `SCRIPTS.md` entry and parity run against a hand-exported day | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [ ] **LX-7** — Cron-ready wrapper: export, input check, pipeline, error report, household ranking | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
