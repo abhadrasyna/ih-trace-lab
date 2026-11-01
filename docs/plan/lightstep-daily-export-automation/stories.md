@@ -310,11 +310,17 @@ Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6
 
 1. **Part files:** fetch fixed windows (`--part-hours`, default 1) and write each to its own file as soon as it is fetched (atomic writer). Parts go in
    `/Users/abhadra/myWork/myOffice/ih-trace-lab/tmp/lightstep-export/<TENANT>_<date>/` (a subfolder, relative to the repo root; `tmp/` itself holds a tracked `README.md` and is never deleted).
-2. **Resume:** an existing part is not fetched again unless `--force`; a rerun after a failure fetches only the missing windows.
+2. **Resume (`--resume`, on by default; `--fresh` discards the parts folder and starts over):** after any failure or interruption, rerunning the same tenant, date and kinds continues from the parts
+   already downloaded and fetches only the missing windows. Each part gets a small manifest entry (window, kind, query fingerprint, row count, sha256) written after the part file; a part is reused
+   only if the file exists, its sha256 and row count match the manifest, and the query fingerprint matches the current query (so a changed query or tenant never reuses stale parts). A part that fails
+   this check is logged and fetched again. The log says how many parts were reused and how many remain.
 3. **Stitch:** when every part of a kind exists, merge them into `<output-dir>/<date>_<kind>.csv` (deduplicated by label set, stats recomputed across parts).
 4. **`smvod-ts` is derived from the stitched `smvod` parts** (first and last non-zero point per session across the whole day), not per part; its own parts are fetched at the 1 s period, then stitched
    before deriving.
-5. **Cleanup:** after a successful stitch of all requested kinds, delete the `tmp/lightstep-export/<TENANT>_<date>/` subfolder; keep it on any failure so the rerun can resume.
+5. **Sanity check, then cleanup:** the parts folder is deleted only after every check below passes; any failure keeps it so the rerun can resume. Checks: (a) every expected window of every kind has a
+   verified part (no gaps, no duplicates); (b) the stitched file has the expected header and BOM, and its row count equals the number of distinct label sets across the parts; (c) each stitched file
+   was written and re-read successfully; (d) for the core kinds the Step 0 input check passes on the output folder. Then delete only the `tmp/lightstep-export/<TENANT>_<date>/` subfolder, and log what
+   was deleted.
 6. **Logging (`docs/refactor/logging-and-correlation-id.md`):** one INFO line per step, all under the single FCID: `part 3/24 window=... series=... calls=... duration_ms=...`, `stitching kind=...
    parts=24 rows=...`, `kind done elapsed=...`, an ETA estimate per kind, and `cleanup tmp=...`.
 7. **Parallel fetch (threads):** fetch windows concurrently with a `ThreadPoolExecutor` (`--workers`, default 4, hard cap 8). Each worker runs the call inside `contextvars.copy_context()` so the FCID
@@ -323,6 +329,8 @@ Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6
 
 **Tests (no network):**
 - A failure at part N leaves parts 1 to N-1 and a rerun fetches only the rest.
+- A corrupted or truncated part, or one with a different query fingerprint, is re-fetched on resume; `--fresh` ignores all parts.
+- A missing window or a row-count mismatch at the sanity check blocks the stitch and the cleanup, and the parts folder is kept.
 - Stitched output equals the one-shot output for the same fake data.
 - Derived `smvod-ts` from stitched parts equals the one-shot derivation.
 - Parts are deleted after success and kept after failure; `tmp/README.md` is never touched.
