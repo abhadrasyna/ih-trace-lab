@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LX-8, LX-9, LX-6, LX-7** (do LX-8 and LX-9 before the LX-6/LX-7 docs and wrapper; the numbers are kept so existing references stay valid).
+**Open: LX-8, LX-9, LX-10, LX-6, LX-7** (do LX-8, LX-9 and LX-10 before the LX-6/LX-7 docs and wrapper; the numbers are kept so existing references stay valid).
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -12,7 +12,8 @@ spec.
 - [x] **LX-5** — `export_lightstep_day.py` CLI for all eight kinds, with input check | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: eb2e43e
 - [ ] **LX-8** — SOLID refactor of the export CLI per `docs/refactor` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-9** — Incremental export: part files in `tmp/`, verified resume after failure, stitching, pre-cleanup sanity check, `smvod-ts` from stitched parts, per-step logging, per-date log files kept
-  7 days, parallel fetch | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+  7 days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-10** — Parallel fetch of part windows with bounded workers, FCID kept in worker threads | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-6** — Docs, `SCRIPTS.md` entry and parity run against a hand-exported day | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [ ] **LX-7** — Cron-ready wrapper: export, input check, pipeline, error report, household ranking | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 
@@ -26,6 +27,7 @@ spec.
 - **LX-8** — the CLI is orchestration only, every SOLID finding from the LX-5 review is fixed, and behaviour and tests are unchanged.
 - **LX-9** — parts are written as they are fetched, a rerun resumes, the stitched files equal the one-shot output, `smvod-ts` is derived from the stitched parts, the temp subfolder is removed after
   success, and logs show every step.
+- **LX-10** — windows are fetched by a bounded worker pool behind an injected runner, output equals the `--workers 1` run, worker log lines keep the FCID, and a failure keeps finished parts.
 - **LX-6** — usage docs and the `SCRIPTS.md` registry are updated, and a key-set parity run for a ZA day within the 7-day retention window is documented.
 - **LX-7** — one command runs the whole daily chain for a UTC date, logs every step under one FCID, verifies the output CSVs and exits non-zero on failure.
 

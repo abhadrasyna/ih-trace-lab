@@ -295,7 +295,7 @@ behaviour change.
 
 ---
 
-## LX-9 — Incremental export: part files, stitching, per-step logging, parallel fetch
+## LX-9 — Incremental export: part files, stitching, resume, per-step logging
 
 Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6-20 minutes per kind with no output until the kind ends, and a failure late in a kind loses everything.
 
@@ -328,12 +328,7 @@ Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6
      (such as the pipeline's `DDMMYYYY.txt`). It is opt-in on the shared bootstrap (`init_logging(..., log_dir=, file_prefix=, date=, keep_days=)`), so no other entry point changes; the shared
      `logs/app.log` default is untouched. Console (stderr) output stays on, and `--log-dir` overrides the folder.
    - **Tests** use a temp folder: the file is named by the `--date` day, files older than 7 days are pruned, newer and unrelated files and the current file are kept, and a second run for the same date
-     appends.
-7. **Parallel fetch (threads):** fetch windows concurrently with a `ThreadPoolExecutor` (`--workers`, default 4, hard cap 8). Each worker runs the call inside `contextvars.copy_context()` so the FCID
-   is kept (checklist section 4); retries and backoff stay per call. A shared lock-free counter for progress is avoided; progress is logged from the collecting thread. LX-1 measured no throttling at
-   six parallel kinds, so 4 workers is the starting point.
-
-**Tests (no network):**
+     appends. **Tests (no network):**
 - A failure at part N leaves parts 1 to N-1 and a rerun fetches only the rest.
 - A corrupted or truncated part, or one with a different query fingerprint, is re-fetched on resume; `--fresh` ignores all parts.
 - A missing window or a row-count mismatch at the sanity check blocks the stitch and the cleanup, and the parts folder is kept.
@@ -341,9 +336,42 @@ Added 2026-11-01. Must be done before LX-6 and LX-7, after LX-8. A full day is 6
 - Derived `smvod-ts` from stitched parts equals the one-shot derivation.
 - Parts are deleted after success and kept after failure; `tmp/README.md` is never touched.
 - Worker-side log lines carry the FCID and never the token (explicit test per the checklist).
-- Parallel run returns the same rows as `--workers 1`.
 
-**Commit:** `feat(lightstep): export in resumable part files with parallel fetch`
+**Commit:** `feat(lightstep): export in resumable part files`
+
+---
+
+## LX-10 — Parallel fetch of part windows
+
+Added 2026-11-01, split out of LX-9. Must be done after LX-9 (it needs independent part windows) and before LX-6 and LX-7. A full day currently fetches windows one after another; threads cut the wall
+time because each call waits on the network.
+
+**Files to change / create:**
+- `scripts/lib/lightstep_parallel.py` (new) — runs a list of independent jobs with a bounded worker pool and returns results in input order.
+- `scripts/lib/lightstep_export_runner.py` — hand the window jobs to that runner; no thread code inside it.
+- `investigations/ctap-smvod/scripts/export_lightstep_day.py` — new `--workers` flag only.
+- Tests in `tests/lib/` and `investigations/ctap-smvod/tests/`.
+
+**Design (checked against `docs/refactor/design-principles.md` and `code-review-checklist.md`):**
+- **SRP:** the pool lives in its own module; the runner decides which windows to fetch, the pool decides how to run them, and neither knows about the other's internals.
+- **DIP / OCP:** the runner receives the executor-like runner as an injected argument (default: the thread pool, tests pass a serial one), so serial and parallel runs share one code path and a process
+  pool or async version could be added without editing the runner.
+- **Context (`logging-and-correlation-id.md`):** each job runs inside `contextvars.copy_context()` so the FCID is kept in worker threads. This is the known gotcha and has its own test.
+- **Thread safety:** workers only fetch and write their own part file (atomic writer, distinct names). The manifest is written by the collecting thread alone, so no shared mutable state or locks.
+  Progress and ETA logs are emitted from the collecting thread, not the workers.
+- **Failure:** the first failed window stops new submissions, in-flight windows finish and are kept for resume, and the run exits non-zero. Retries and backoff stay per call in the API client.
+- **Limits:** `--workers` default 4, hard cap 8, `--workers 1` is the serial path. LX-1 measured no throttling at six parallel kinds; a 429 or throttling response is logged and counted, and the README
+  note says to lower `--workers` if it appears.
+- **Output ordering:** results are returned in input order, so the stitched files are identical regardless of worker count.
+
+**Tests (no network):**
+- A parallel run returns the same rows and stitched files as `--workers 1`.
+- Worker-side log lines carry the FCID and never the token (explicit test per checklist section 4).
+- A failing window stops new submissions, completed parts are kept, and a rerun resumes.
+- `--workers` above the cap or below 1 is rejected.
+- The runner works with an injected serial runner (no threads started).
+
+**Commit:** `feat(lightstep): fetch part windows in parallel with bounded workers`
 
 ---
 
