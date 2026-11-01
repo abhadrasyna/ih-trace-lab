@@ -346,6 +346,27 @@ python3 chart_bandwidth_vs_failure.py --date 2026-10-24 --tenant ZA      # outpu
 
 Statistics logic is in `scripts/lib/bandwidth_stats.py` (pure functions: percentiles, Spearman, Mann-Whitney, ABR-bucket failure rate); tests in `tests/test_bandwidth_vs_failure.py`.
 
+## 7g. Daily cron pipeline (`run_daily_pipeline.py`)
+
+One command runs the whole daily chain for a UTC day (default yesterday): `export_lightstep_day.py` per tenant, `check_lightstep_inputs.py --drm`, `run_pipeline.py --drm --skip-input-check`,
+`extract_error_report_1xxx.py`, then `rank_households_by_error.py --top 10` per tenant. Options: `--date DDMMYYYY|YYYY-MM-DD`, `--tenants ZA,GH,ZM`, `--skip-export`, `--top`, `--log-dir`. The first
+failed step stops the run (ranking continues across tenants); exit code is non-zero on any failure or missing output CSV. One FCID covers the run and is passed to the steps as `FCID`. Log:
+`logs/run-daily-pipeline_<date>.log` (30-day prune); cron stdout/stderr: `logs/cron.out`.
+
+```
+python3 scripts/run_daily_pipeline.py --date 29102026 --skip-export
+```
+
+Crontab, 13:00 IST daily (the UTC day has ended; Lightstep keeps about 7 days). Cron has a minimal `PATH`, so set one that includes `aws` and `aws-sso`:
+
+```
+PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
+0 13 * * * cd /Users/abhadra/myWork/myOffice/ih-trace-lab && .venv/bin/python investigations/ctap-smvod/scripts/run_daily_pipeline.py >> investigations/ctap-smvod/logs/cron.out 2>&1
+```
+
+AWS SSO: `run_pipeline.py` Steps 3/4 pre-flight the SSO session and refresh it through `aws-sso`; if that cannot happen non-interactively the step fails fast and the wrapper exits non-zero. A Mac must
+be awake at 13:00 (cron does not catch up missed runs).
+
 ## 8. Ad-hoc helpers (explicit `--input`/`--out`, no date convention)
 
 `extract_session_ids.py`, `extract_session_timeline.py`, `flatten_debug_events.py`, `build_debug_completeness_query.py`, `parse_debug_user_agents.py`, `analyze_debug_sample.py`,
