@@ -15,6 +15,7 @@ output CSV is missing. Steps 3/4 of ``run_pipeline.py`` need AWS SSO: its pre-fl
 Usage:
     python3 run_daily_pipeline.py                       # yesterday UTC, ZA,GH,ZM
     python3 run_daily_pipeline.py --date 29102026 --skip-export
+    python3 run_daily_pipeline.py --date 29102026 --from-step pipeline   # resume after a failure (export, check, pipeline, report, rank)
 Crontab (13:00 IST daily, UTC day just ended):
     0 13 * * * cd <repo> && .venv/bin/python investigations/ctap-smvod/scripts/run_daily_pipeline.py >> investigations/ctap-smvod/logs/cron.out 2>&1
 Cron's PATH is minimal: set ``PATH`` (with ``aws``/``aws-sso``) at the top of the crontab.
@@ -49,6 +50,8 @@ DEFAULT_LOG_DIR = INVESTIGATION_DIR / "logs"
 DEFAULT_TENANTS = ("ZA", "GH", "ZM")
 FCID_ENV = "FCID"
 DEFAULT_STEP_TIMEOUT_MINUTES = 180
+# --from-step group -> prefix of the step names it starts at
+STEP_GROUPS = {"export": "export ", "check": "check inputs", "pipeline": "run_pipeline", "report": "error report", "rank": "rank households"}
 
 # (return code, combined stdout+stderr)
 StepRunner = Callable[[Sequence[str], Path, dict[str, str]], tuple[int, str]]
@@ -113,6 +116,17 @@ def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: in
     return steps
 
 
+def select_from_step(steps: Sequence[Step], from_step: str | None) -> list[Step]:
+    """Drops every step before the first one in group ``from_step`` (``None`` keeps all)."""
+    if from_step is None:
+        return list(steps)
+    prefix = STEP_GROUPS[from_step]
+    for index, step in enumerate(steps):
+        if step.name.startswith(prefix):
+            return list(steps[index:])
+    raise ValueError(f"no step in group {from_step!r} (is --skip-export hiding it?)")
+
+
 def make_subprocess_runner(timeout_seconds: float) -> StepRunner:
     """A runner that kills a step after ``timeout_seconds`` so a hung step cannot block the next day's cron run."""
 
@@ -159,6 +173,8 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap.add_argument("--date", default=None, help="UTC day as DDMMYYYY or YYYY-MM-DD (default: yesterday UTC)")
     ap.add_argument("--tenants", default=",".join(DEFAULT_TENANTS), help="Comma-separated tenant codes (default: ZA,GH,ZM)")
     ap.add_argument("--skip-export", action="store_true", help="Skip the Lightstep export; use CSVs already in data/lightstep/<TENANT>/")
+    ap.add_argument("--from-step", choices=list(STEP_GROUPS), default=None,
+                    help="Resume: skip every step before this one (export, check, pipeline, report, rank); use after a failure")
     ap.add_argument("--workers", type=int, default=None, choices=range(1, 9), metavar="1-8",
                     help="Passed to export_lightstep_day.py --workers (default: the exporter's own default, 4)")
     ap.add_argument("--top", type=int, default=10, help="Households to print per tenant in the ranking (default: 10)")
@@ -182,6 +198,11 @@ def main(argv: Sequence[str] | None = None, runner: StepRunner | None = None) ->
     fcid = init_logging("run-daily-pipeline", log_dir=args.log_dir, file_prefix=LOG_PREFIX, date=day, keep_days=LOG_KEEP_DAYS)
     LOGGER.info("daily pipeline for %s tenants=%s skip_export=%s fcid=%s", day.isoformat(), ",".join(tenants), args.skip_export, current_fcid())
     steps = build_steps(day, tenants, skip_export=args.skip_export, top=args.top, workers=args.workers, investigation_dir=INVESTIGATION_DIR)
+    try:
+        steps = select_from_step(steps, args.from_step)
+    except ValueError as exc:
+        LOGGER.error("%s", exc)
+        return 1
     results = run_steps(steps, runner or make_subprocess_runner(args.step_timeout_minutes * 60), cwd=INVESTIGATION_DIR, env={**os.environ, FCID_ENV: fcid})
     failed = [r.name for r in results if not r.ok]
     not_run = len(steps) - len(results)

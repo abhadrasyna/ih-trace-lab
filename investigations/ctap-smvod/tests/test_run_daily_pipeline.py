@@ -42,6 +42,15 @@ def test_workers_is_passed_to_export_steps_only_when_given(tmp_path):
     assert "--workers" not in _steps(tmp_path)[0].argv
 
 
+def test_from_step_starts_at_the_named_group(tmp_path):
+    names = lambda group: [s.name for s in mod.select_from_step(_steps(tmp_path), group)]  # noqa: E731  (one-line helper)
+    assert names("pipeline") == ["run_pipeline", "error report 1xxx", "rank households ZA", "rank households GH"]
+    assert names("rank") == ["rank households ZA", "rank households GH"]
+    assert len(names(None)) == len(_steps(tmp_path))
+    with pytest.raises(ValueError):
+        mod.select_from_step(_steps(tmp_path, skip_export=True), "export")
+
+
 def test_skip_export_drops_export_steps(tmp_path):
     assert not any(s.name.startswith("export") for s in _steps(tmp_path, skip_export=True))
 

@@ -349,10 +349,11 @@ Statistics logic is in `scripts/lib/bandwidth_stats.py` (pure functions: percent
 ## 7g. Daily cron pipeline (`run_daily_pipeline.py`)
 
 One command runs the whole daily chain for a UTC day (default yesterday): `export_lightstep_day.py` per tenant, `check_lightstep_inputs.py --drm`, `run_pipeline.py --drm --skip-input-check`,
-`extract_error_report_1xxx.py`, then `rank_households_by_error.py --top 10` per tenant. Options: `--date DDMMYYYY|YYYY-MM-DD`, `--tenants ZA,GH,ZM`, `--skip-export`, `--workers 1-8` (passed to the
-export, default 4), `--top`, `--log-dir`. The first failed step stops the run, except that an export whose 8 CSVs were all written (e.g. only the input check failed), the advisory input-check step and
-the ranking let it continue; the final exit is still non-zero; exit code is non-zero on any failure or missing output CSV. One FCID covers the run and is passed to the steps as `FCID`. Log:
-`logs/run-daily-pipeline_<date>.log` (30-day prune); cron stdout/stderr: `logs/cron.out`.
+`extract_error_report_1xxx.py`, then `rank_households_by_error.py --top 10` per tenant. Options: `--date DDMMYYYY|YYYY-MM-DD`, `--tenants ZA,GH,ZM`, `--skip-export`, `--from-step
+export|check|pipeline|report|rank` (resume at that step after a failure, e.g. `--from-step rank`), `--workers 1-8` (passed to the export, default 4), `--top`, `--log-dir`. The first failed step stops
+the run, except that an export whose 8 CSVs were all written (e.g. only the input check failed), the advisory input-check step and the ranking let it continue; the final exit is still non-zero; exit
+code is non-zero on any failure or missing output CSV. One FCID covers the run and is passed to the steps as `FCID`. Log: `logs/run-daily-pipeline_<date>.log` (30-day prune); cron stdout/stderr:
+`logs/cron.out`.
 
 ```
 python3 scripts/run_daily_pipeline.py --date 29102026 --skip-export
