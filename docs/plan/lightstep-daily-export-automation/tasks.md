@@ -3,10 +3,11 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open, in this order: LX-6a, LX-14, LX-15, LX-16, LX-19, LX-17, LX-11, LX-20, LX-22, LX-12, LX-18, LX-6b, LX-21** (reordered 2026-11-02 for resilience then maintainability: the time-boxed parity run
-first, silent-wrong-data and false-failure fixes next, the wrapper step-identity refactor LX-19 before the tasks that touch the same code (LX-17, LX-11), the mechanical 60-file LX-12 and the health
-check LX-18 after the wrapper and its log layout settle, docs last; LX-6 was split into 6a/6b; LX-19 to LX-22 were added from the `run_daily_pipeline.py` and SOLID/pattern reviews). LX-9a to LX-9d
-count as "LX-9" in other text; LX-21 is optional.
+**Open, in this order: LX-6a, LX-14, LX-15, LX-16, LX-19, LX-17, LX-11, LX-20, LX-22, LX-24, LX-25, LX-26, LX-23, LX-27, LX-12, LX-18, LX-6b, LX-21** (reordered 2026-11-02 for resilience then
+maintainability: the time-boxed parity run first, silent-wrong-data and false-failure fixes next, the wrapper step-identity refactor LX-19 before the tasks that touch the same code (LX-17, LX-11),
+then the call and data optimisations LX-24 to LX-27 once the shared runner exists, the mechanical 60-file LX-12 and the health check LX-18 after the wrapper and its log layout settle, docs last; LX-6
+was split into 6a/6b; LX-19 to LX-22 came from the `run_daily_pipeline.py` and SOLID/pattern reviews and LX-23 to LX-27 from the data/output and Lightstep/Athena call reviews). LX-9a to LX-9d count as
+"LX-9" in other text; LX-21 is optional and needs LX-24.
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -38,6 +39,14 @@ count as "LX-9" in other text; LX-21 is optional.
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-22** — `run_pipeline.py` adopts the shared step runner and a typed step table (one runner for both scripts, steps no longer positional tuples) | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-24** — One run-level SSO pre-flight (children skip their own) and DRM exports gated by `--skip-drm-reports` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-25** — Adaptive Lightstep window sizing from the previous run's call and truncation counts, and an up-front skip of finished days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
+  code-reviewer | SHA: —
+- [ ] **LX-26** — Spike: one shared Lightstep fetch for ZM and GH (same project), split locally by `busUnitId` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
+- [ ] **LX-23** — One Athena debug-events extract per tenant-day shared by Steps 4 and 6f (and the investigation scripts), plus one combined sessions query | Owner: Copilot CLI | Model:
+  claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-27** — Artifact registry (producer, readers, retention) and a dry-run-first prune script for `data/` and `output/` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
+  SHA: —
 - [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-18** — Daily pipeline health check: parse the run summary and alert on FAILED/NOT RUN steps or a missing run, with a warning digest | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer | SHA: —
@@ -81,6 +90,15 @@ count as "LX-9" in other text; LX-21 is optional.
   report it.
 - **LX-22** — `run_pipeline.py` has no direct `subprocess.run` loop: it runs its steps through the shared runner from LX-19 (injected, so its tenant loop is testable offline), its steps are typed
   `Step` entries, Step 1b's post-check is tied to a step id and not a list position, and its output, skip flags and exit codes are unchanged.
+- **LX-24** — `run_pipeline.py` and the wrapper refresh the SSO session once per run and pass `--skip-auth-check` to every Athena child, and a run with `--skip-drm-reports` makes no mDRM/CDM/LRM
+  Lightstep exports.
+- **LX-25** — the exporter records calls and truncated windows per tenant, kind and day, starts the next day with window sizes derived from them, makes fewer calls than the fixed-window run for the
+  same output (compared in a recorded run), and finished days are skipped before any API call.
+- **LX-26** — a written go/no-go for fetching ZM and GH in one Lightstep query, with call counts and a key-set comparison against the per-tenant exports; implemented only if the go criteria hold.
+- **LX-23** — Steps 4 and 6f read one cached debug-events extract per tenant and day instead of querying `ccl_debug_events` each, Step 3 and the ingest export share one `unified_sessions` query, the
+  outputs match the old ones, and a recorded run shows fewer Athena queries.
+- **LX-27** — every artifact under `data/` and `output/` has a registry row (producer, readers, retention), unused or duplicate artifacts are listed, and the prune script defaults to a dry run and
+  deletes only registry-approved files older than their retention.
 - **LX-21** — with `--parallel-tenants N`, per-tenant chains run concurrently with the same results as the serial run, Athena-using steps are capped, one tenant's failure leaves the others complete,
   and every log line keeps the FCID and a tenant prefix.
 

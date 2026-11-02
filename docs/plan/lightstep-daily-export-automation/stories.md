@@ -683,9 +683,102 @@ that consume all tenants stay all-or-nothing.
 
 ---
 
+## LX-24 — Single SSO pre-flight and gated DRM exports
+
+Added 2026-11-02 from the Lightstep/Athena call review. Each `run_athena_*` script runs its own SSO check and refresh unless `--skip-auth-check` is passed, so a run repeats the check per script and
+tenant (and races under LX-21). The DRM Lightstep exports run even when the DRM reports are skipped.
+
+**Files to change / create:** `scripts/run_pipeline.py` (or the shared runner after LX-22), `scripts/run_daily_pipeline.py`, the DRM kind selection in `scripts/export_lightstep_day.py`, tests,
+`docs/usage.md` §7g.
+
+**What to implement:** one pre-flight refresh at the start of the run (reusing the existing `aws_sso` helper), then `--skip-auth-check` on every child; a failed refresh still fails fast with the same
+message. `--skip-drm-reports` also drops the DRM kinds (`mdrmfe`, the CDM kinds, `lrm`) from the wrapper's export step.
+
+**Tests:** `test_children_get_skip_auth_check_after_preflight`, `test_failed_preflight_stops_before_any_step`, `test_skip_drm_reports_drops_drm_export_kinds`.
+
+**Commit:** `feat(ctap-smvod): single SSO pre-flight and gated DRM exports`
+
+---
+
+## LX-25 — Adaptive Lightstep window sizing and early skip
+
+Added 2026-11-02. A window that hits the 50-series cap is split, so each truncation costs the failed call plus the split calls (24 to 322 calls per kind per day, about 1.0 to 1.3 s each). The
+part-hours are fixed today.
+
+**Files to change / create:** the export planner/runner in `scripts/lib/`, a small per-tenant stats file under `data/lightstep/<TENANT>/` (gitignored), tests, `docs/usage.md`.
+
+**What to implement:** after each export, record per kind the call count and truncated-window count; the next run derives its starting window size from the latest stats (clamped to a sane range;
+`--part-hours` still wins). Check for a finished final file before building any client or making any call. Output must equal the fixed-window run.
+
+**Tests:** `test_window_shrinks_after_truncation`, `test_window_grows_when_no_truncation`, `test_explicit_part_hours_wins`, `test_finished_day_makes_no_api_call`.
+
+**Commit:** `feat(lightstep): size export windows from previous run statistics`
+
+---
+
+## LX-26 — Spike: shared Lightstep fetch for ZM and GH
+
+Added 2026-11-02. ZM and GH share one Lightstep project and their `ctap`/`smvod` queries differ only by the `busUnitId` filter, so one query grouped by `busUnitId` could serve both and roughly halve
+their calls.
+
+**Process:** a scratch spike per `scratch/SCRATCH.md` (duplicate-check first), no change to the exporter. Compare call counts, truncation rate and the key sets against the per-tenant exports for one
+day.
+
+**Go criteria (to confirm before starting):** call reduction of at least 30 %, key-set difference within the LX-1 tolerance (about 3 %), and no new truncation that the splitter cannot resolve. If met,
+add an implementation task; if not, record why and close.
+
+**Commit:** `docs(lightstep): record shared ZM/GH fetch spike result`
+
+---
+
+## LX-23 — One debug-events extract per tenant-day
+
+Added 2026-11-02. Step 4 (`run_athena_debug_events`) and Step 6f (`run_athena_error_eventdata`), and on investigation days `run_athena_session_bandwidth` and `run_athena_debug_sessions`, each scan
+`ccl_debug_events` for the same tenant and day and each run `json_extract_scalar` over every row. Step 3 (`run_athena_playback_outcome`) and `run_athena_session_ingest` both query `unified_sessions`.
+Step 4 also builds a large `IN (...)` list of session ids from the Lightstep merge.
+
+**Process:** a read-only audit first (`docs/refactor/code-deduplication-and-taxonomy.md` Step 1): list the columns, event ids and filters each of the five scripts uses, measure bytes scanned per query
+from Athena's execution stats, and write the result before designing the shared extract. Follow `docs/guides/query-catalog.md` for any new SQL.
+
+**Files to change / create:** a new catalog query and `scripts/run_athena_debug_extract.py` (one day, one tenant, flattened columns, written under `data/athena/<TENANT>/`), `scripts/lib/` reader
+helpers, the steps above reading the extract, tests, `docs/usage.md`.
+
+**What to implement:** produce the daily extract once (cached by tenant, day, table suffix and query version; `--force` re-pulls); Steps 4 and 6f read and filter it locally and keep their current
+output files and columns; join on session ids locally instead of an `IN` list; combine the Step 3 and ingest queries into one.
+
+**Tests:** same rows as before for a fixture day, cache hit makes no query, `--force` re-pulls, table-suffix change invalidates the cache. No network.
+
+**Risks:** extract size (the error events alone are 10 to 15 MB per day); keep only the event ids needed. Do after LX-24.
+
+**Commit:** `feat(ctap-smvod): share one Athena debug-events extract per tenant-day`
+
+---
+
+## LX-27 — Artifact registry and prune script
+
+Added 2026-11-02 from the data/output review. `data/` is 672 MB and `output/` is 533 MB (both gitignored). Duplicates seen: Lightstep part files (138 MB) kept beside the stitched files (267 MB),
+`smvod-ts` (95 MB) used only to enrich the merge, `error_eventdata_flat/` (265 MB, `*_all.csv` plus per-error-code copies, on top of the raw Athena file), the `setupsession` intermediate (59 MB),
+`check_script/` and `parallel_version/` folders under `data/lightstep/ZA/` (13 MB each), and one-off investigation outputs (bandwidth, ingest, `debug_all_events`, 3xxx household files, the range
+reports).
+
+**Files to change / create:** `investigations/ctap-smvod/docs/artifact-registry.md` (artifact pattern, producer, readers, keep-or-prune, retention days), `scripts/lib/artifact_registry.py` (pure
+parser and age rules), `scripts/prune_artifacts.py` (argparse, dry run by default, `--apply`), `SCRIPTS.md` entries, tests, `RETENTION.md` for this investigation.
+
+**What to implement:** build the registry from the `scripts/` readers (grep-verified, not guessed); mark unused or superseded artifacts; the prune script lists, then with `--apply` deletes only
+registry rows marked prunable and older than their retention, never anything without a row. Keep `ad hoc` outputs in an `adhoc/` folder going forward.
+
+**Tests:** `test_unregistered_file_is_never_deleted`, `test_dry_run_deletes_nothing`, `test_retention_age_rule`, `test_parts_pruned_only_after_stitched_file_exists`.
+
+**Risks:** deleting data a later analysis still reads; the registry's reader column is the safeguard. Run after LX-23 so the retained set is final.
+
+**Commit:** `feat(ctap-smvod): add artifact registry and prune script`
+
+---
+
 ## LX-21 — (optional) Parallel per-tenant chains
 
-Added 2026-11-02. Tenants are independent after the shared steps, so wall-clock time can drop by running them concurrently. Do only after LX-19 and LX-20, and only if a serial run is too slow.
+Added 2026-11-02. Tenants are independent after the shared steps, so wall-clock time can drop by running them concurrently. Do only after LX-19, LX-20 and LX-24 (single SSO refresh), and only if a
+serial run is too slow.
 
 **Process:** first confirm `run_pipeline --tenant T` is safe to run concurrently (shared output files, `aws-sso` refresh races, Athena quota) and record it; if not safe, close the task as not done.
 
