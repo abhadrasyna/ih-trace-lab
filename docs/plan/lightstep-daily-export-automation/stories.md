@@ -642,6 +642,9 @@ hand-built flag string goes away); no log or exit-code change.
 
 **Risks:** FCID and env handling must stay in `main`; import cycles between the new modules (dependency direction: plan and summary have no imports of the runner).
 
+**Reuse constraint (added 2026-11-02 from the SOLID review):** `daily_runner.py` and `Step` must not depend on anything wrapper-specific, because LX-22 reuses them in `run_pipeline.py`. The "run
+steps, log, verify outputs, continue or stop" loop is the Template Method; the runner stays an injected function type (Strategy), and steps stay a plain table, not a class hierarchy.
+
 **Commit:** `refactor(ctap-smvod): split daily wrapper into plan, runner and summary`
 
 ---
@@ -692,3 +695,24 @@ refresh happens before the fan-out; log lines carry the FCID and a tenant prefix
 **Tests:** same results as the serial run with a fake runner, one tenant failing leaves the others complete, FCID present in worker log lines, the Athena cap is respected.
 
 **Commit:** `feat(ctap-smvod): optional parallel tenant chains in daily wrapper`
+
+---
+
+## LX-22 — `run_pipeline.py` adopts the shared runner and typed steps
+
+Added 2026-11-02 from the SOLID/pattern review. `run_pipeline._run_tenant` runs a list of `(label, argv, skip)` tuples with a direct `subprocess.run` (DIP seam missing, no timeout, no output capture)
+while `run_daily_pipeline.py` has its own runner; Step 1b's post-check is keyed on `step_index == 0`. Do after LX-19 (the shared runner and `Step`) and LX-20.
+
+**Files to change / create:** `scripts/run_pipeline.py`, `scripts/lib/daily_runner.py` (rename to a neutral name such as `step_runner.py` if LX-19 left a wrapper-specific one),
+`investigations/ctap-smvod/tests/` (existing `run_pipeline` tests plus new ones), `docs/usage.md`.
+
+**What to implement:** `_build_steps` returns typed `Step` entries (id, argv, skip, post-check); `_run_tenant` calls the shared runner, injected for tests; Step 1b's input check is a post-check on its
+step id; the printed `==> [tenant] label` / `$ command` lines and SKIPPED lines stay as they are; flags, outputs and exit codes do not change.
+
+**Tests:** `test_run_tenant_uses_injected_runner`, `test_step_1b_postcheck_runs_after_step_by_id`, `test_skipped_steps_are_not_run`, `test_failed_step_returns_failure_description`; existing tests pass
+unchanged.
+
+**Risks:** the daily wrapper's timeout/streaming behaviour (LX-11) must not leak into the per-tenant run unless asked for; keep the runner's defaults equal to today's `subprocess.run` behaviour for
+`run_pipeline.py`.
+
+**Commit:** `refactor(ctap-smvod): run_pipeline uses shared step runner and typed steps`

@@ -3,10 +3,10 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open, in this order: LX-6a, LX-14, LX-15, LX-16, LX-19, LX-17, LX-11, LX-20, LX-12, LX-18, LX-6b, LX-21** (reordered 2026-11-02 for resilience then maintainability: the time-boxed parity run first,
-silent-wrong-data and false-failure fixes next, the wrapper step-identity refactor LX-19 before the tasks that touch the same code (LX-17, LX-11), the mechanical 60-file LX-12 and the health check
-LX-18 after the wrapper and its log layout settle, docs last; LX-6 was split into 6a/6b; LX-19 to LX-21 were added from the `run_daily_pipeline.py` review). LX-9a to LX-9d count as "LX-9" in other
-text; LX-21 is optional.
+**Open, in this order: LX-6a, LX-14, LX-15, LX-16, LX-19, LX-17, LX-11, LX-20, LX-22, LX-12, LX-18, LX-6b, LX-21** (reordered 2026-11-02 for resilience then maintainability: the time-boxed parity run
+first, silent-wrong-data and false-failure fixes next, the wrapper step-identity refactor LX-19 before the tasks that touch the same code (LX-17, LX-11), the mechanical 60-file LX-12 and the health
+check LX-18 after the wrapper and its log layout settle, docs last; LX-6 was split into 6a/6b; LX-19 to LX-22 were added from the `run_daily_pipeline.py` and SOLID/pattern reviews). LX-9a to LX-9d
+count as "LX-9" in other text; LX-21 is optional.
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -35,6 +35,8 @@ text; LX-21 is optional.
   Review: code-reviewer | SHA: —
 - [ ] **LX-11** — Daily wrapper streams each step's output live and logs a heartbeat for quiet steps | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-20** — Daily wrapper: drop the duplicate 1xxx extract if `run_pipeline` Step 6e already produces it, and isolate a failed tenant so the others still complete | Owner: Copilot CLI | Model:
+  claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-22** — `run_pipeline.py` adopts the shared step runner and a typed step table (one runner for both scripts, steps no longer positional tuples) | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-18** — Daily pipeline health check: parse the run summary and alert on FAILED/NOT RUN steps or a missing run, with a warning digest | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
@@ -77,6 +79,8 @@ text; LX-21 is optional.
   and the planner, runner and summary are separate `scripts/lib/` modules with the runner injected as a `Protocol`; behaviour and the existing tests are unchanged.
 - **LX-20** — the 1xxx report is produced once per run (or the second extract is justified in writing), and a failed tenant no longer stops the other tenants' steps; the summary and exit code still
   report it.
+- **LX-22** — `run_pipeline.py` has no direct `subprocess.run` loop: it runs its steps through the shared runner from LX-19 (injected, so its tenant loop is testable offline), its steps are typed
+  `Step` entries, Step 1b's post-check is tied to a step id and not a list position, and its output, skip flags and exit codes are unchanged.
 - **LX-21** — with `--parallel-tenants N`, per-tenant chains run concurrently with the same results as the serial run, Athena-using steps are capped, one tenant's failure leaves the others complete,
   and every log line keeps the FCID and a tenant prefix.
 
