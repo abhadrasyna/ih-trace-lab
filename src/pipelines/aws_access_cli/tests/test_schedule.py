@@ -93,6 +93,24 @@ def test_run_daily_reports_force_only_on_target_date(monkeypatch: pytest.MonkeyP
     assert ["--force" in argv for argv in seen] == [False] * 7 + [True]
 
 
+def test_run_daily_reports_table_suffix_is_per_tenant(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[list[str]] = []
+
+    def fake(build_argv, *_a, **_k) -> int:
+        seen.append(build_argv(DEFAULT_TENANT))
+        return 0
+
+    monkeypatch.setattr(run_daily_reports, "init_logging", lambda _slug: "fcid")
+    monkeypatch.setattr(schedule, "run_for_all_tenants", fake)
+
+    run_daily_reports.main(["--date", "2026-10-31", "--no-catch-up", "--table-suffix", "oct26"])
+    assert seen[0][seen[0].index("--table") + 1] == f"{DEFAULT_TENANT.debug_events_table}_oct26"
+
+    seen.clear()
+    run_daily_reports.main(["--date", "2026-10-31", "--no-catch-up"])
+    assert "--table" not in seen[0]
+
+
 def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     prints: list[tuple[object, ...]] = []
     rows = [{"session_date": "2026-10-03", "Home": "7"}]

@@ -22,6 +22,7 @@ queried.
 |---|---|---|---|
 | `--lookback-days N` | daily | 7 | Also process the N days before `--date` |
 | `--retry-blank-days N` | daily | 3 | Adoption reports: re-run dates with blank cells if at most N days old; use a large N to backfill old blanks |
+| `--table-suffix S` | daily | none | Read each tenant's `<id>_ccl_debug_events_S` table (e.g. `oct26`) for a past month, whose events are missing from the current table |
 | `--lookback-weeks N` | weekly | 4 | Also process the N weeks before `--week` |
 | `--lookback-months N` | monthly | 3 | Also process the N months before `--month` |
 | `--no-catch-up` | all three | off | Process only the target period |
@@ -39,6 +40,9 @@ python -m src.pipelines.aws_access_cli.scripts.run_daily_reports --date 2026-10-
 
 # Widen the gap window to 14 days
 python -m src.pipelines.aws_access_cli.scripts.run_daily_reports --date 2026-10-07 --lookback-days 14
+
+# Past-month day: read the suffixed debug tables
+python -m src.pipelines.aws_access_cli.scripts.run_daily_reports --date 2026-10-31 --no-catch-up --force --table-suffix oct26
 
 # Weekly and monthly
 python -m src.pipelines.aws_access_cli.scripts.run_weekly_reports --week 2026-09-30
