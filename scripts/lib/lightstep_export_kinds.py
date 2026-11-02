@@ -112,6 +112,8 @@ KINDS: dict[str, KindSpec] = {
             "busUnitId", SHARED_ONLY, derived_from="smvod", placeholder_columns=_SMVOD_TS_PLACEHOLDERS,
             output_period_s=1, row_builder=derive_rows,
         ),
+        KindSpec("smvod-release", "lightstep-export-smvod-release", GO, "smvod-release",
+                 ("sessionId", "http.status_code", "externalTeardownReason"), "busUnitId", SHARED_ONLY),
         KindSpec(
             "mdrmfe", "lightstep-export-mdrmfe", GO, "mdrmfe",
             ("drmAuthToken.sessionId", "fcid", "drmAuthToken.householdId", "drmAuthToken.deviceId",

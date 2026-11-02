@@ -9,8 +9,8 @@ import pytest
 from scripts.lib import lightstep_export_kinds as lk
 from src.tenant_registry import TenantConfig
 
-EIGHT = {
-    "ctap", "smvod", "smvod-ts", "mdrmfe",
+NINE = {
+    "ctap", "smvod", "smvod-ts", "smvod-release", "mdrmfe",
     "mdrm-cdm-widevine", "mdrm-cdm-fairplay", "mdrm-cdm-playready", "mdrm-lrm",
 }
 
@@ -29,9 +29,9 @@ ZA = _tenant("ZA", False, "goza", "mdza")
 GH = _tenant("GH", True, "gogh", "mdgh")
 
 
-def test_registry_covers_all_eight_kinds() -> None:
-    assert set(lk.KINDS) == EIGHT
-    for kind in EIGHT:
+def test_registry_covers_all_nine_kinds() -> None:
+    assert set(lk.KINDS) == NINE
+    for kind in NINE:
         spec = lk.get_kind(kind)
         assert spec.template_slug and spec.system and spec.suffix
         assert lk.load_template(kind)
@@ -57,6 +57,12 @@ def test_shared_tenant_uses_kind_specific_attribute() -> None:
     smvod = lk.expand_query("smvod", GH)
     assert ' && busUnitId == "gogh"' in smvod and "sessionInfo.busUnitId" not in smvod
     assert "busUnitId" in lk.expected_columns("smvod-ts", GH)
+
+
+def test_smvod_release_filters_release_spans_and_groups_by_session() -> None:
+    query = lk.expand_query("smvod-release", ZA)
+    assert 'session.api == "Release"' in query and '"sessionId"' in query and "busUnitId" not in query
+    assert ' && busUnitId == "gogh"' in lk.expand_query("smvod-release", GH)
 
 
 def test_mdrmfe_always_filters_request_tenant_with_go_id() -> None:

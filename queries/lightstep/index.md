@@ -16,6 +16,7 @@ Source file: `/Users/abhadra/github_copilot/applauseInvestigation/knowledge/ligh
 | `smvod-session-inventory-by-device` | sm-vod / query_timeseries | enumerate every `sm-vod` streaming session a device touched in a window… | sm-vod Session Inventory by Device |
 | `lightstep-export-ctap` | ctap / query_timeseries | daily `ctap` export (user agent × trace id); `busUnitId` clause only on shared projects | stories.md LX-2 |
 | `lightstep-export-smvod` | sm-linear, sm-vod / query_timeseries | daily `smvod` export; also the source of the derived `smvod-ts` | stories.md LX-2 |
+| `lightstep-export-smvod-release` | sm-vod / query_timeseries | daily `smvod-release` export (`Release` teardown per sessionId); pairs with `smvod` SetupSession | EBVS Release-coverage check |
 | `lightstep-export-mdrmfe` | go-mdrmfe / query_timeseries | daily `mdrmfe` license-by-session export, always filtered on `request.tenant` | stories.md LX-2 |
 | `lightstep-export-mdrm-cdm-widevine` | widevine-license-generator / query_timeseries | daily mDRM CDM Widevine export (US, `tenantId`) | stories.md LX-2 |
 | `lightstep-export-mdrm-cdm-fairplay` | fairplay-license-generator / query_timeseries | daily mDRM CDM FairPlay export (US, `tenantId`) | stories.md LX-2 |

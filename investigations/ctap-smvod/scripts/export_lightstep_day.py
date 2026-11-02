@@ -1,4 +1,4 @@
-"""Export one tenant's daily Lightstep CSVs (ctap, smvod, smvod-ts, mdrmfe and the four mDRM kinds) through the public API.
+"""Export one tenant's daily Lightstep CSVs (ctap, smvod, smvod-ts, smvod-release, mdrmfe and the four mDRM kinds) through the public API.
 
 Writes ``<date>_<kind>.csv`` in the UI export format into ``data/lightstep/<TENANT>/`` (or ``--output-dir``),
 then runs the Step 0 input check on that folder. Existing files are skipped unless ``--force`` is given.
@@ -64,7 +64,7 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tenant", required=True, help="Tenant code from config/tenants.yaml, e.g. ZA")
     ap.add_argument("--date", default=None, help="UTC day as YYYY-MM-DD (default: yesterday UTC)")
-    ap.add_argument("--kinds", nargs="+", default=list(KINDS), choices=list(KINDS), help="Kinds to export (default: all eight)")
+    ap.add_argument("--kinds", nargs="+", default=list(KINDS), choices=list(KINDS), help="Kinds to export (default: all nine)")
     ap.add_argument("--output-dir", type=Path, default=None, help="Folder for the CSVs and the input check (default: data/lightstep/<TENANT>)")
     ap.add_argument("--force", action="store_true", help="Overwrite existing files instead of skipping them")
     ap.add_argument("--part-hours", type=int, default=1, choices=range(1, 25), metavar="1-24", help="Hours per part file (default: 1)")
