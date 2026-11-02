@@ -44,7 +44,7 @@ any change to `check_lightstep_inputs.py` behaviour — the new files must pass 
 - **LX-3** — Lightstep API client with slicing and truncation-driven auto-split.
 - **LX-4** — UI-format CSV writer and part-file naming.
 - **LX-5** — `export_lightstep_day.py` CLI that pulls all eight kinds for a tenant and date and runs the input check.
-- **LX-6** — docs, `SCRIPTS.md` entry, and a parity run against a day that was exported by hand.
+- **LX-6a/LX-6b** — a parity run against a hand-exported day, then docs and the `SCRIPTS.md` entry (split 2026-11-02).
 - **LX-7** — cron-ready wrapper that runs the input check, `run_pipeline`, error report and household ranking after the export.
 - **LX-13** — (done) month-suffixed debug table for past-month re-runs: `--table-suffix`/`--force` through `run_pipeline.py` and the daily wrapper.
 - **LX-11** — daily wrapper streams each step's output live with a heartbeat, so a long step no longer looks hung.

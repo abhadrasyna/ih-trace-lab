@@ -3,8 +3,10 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LX-6, LX-11, LX-12** (LX-9a to LX-9d, LX-10 and LX-13 are done; they come before the LX-6/LX-7 docs and wrapper; "LX-9" in other text means all four sub-tasks; LX-11 and LX-12 were added
-2026-11-02 after the first real daily run and are independent of LX-6).
+**Open, in this order: LX-6a, LX-14, LX-15, LX-16, LX-19, LX-17, LX-11, LX-20, LX-12, LX-18, LX-6b, LX-21** (reordered 2026-11-02 for resilience then maintainability: the time-boxed parity run first,
+silent-wrong-data and false-failure fixes next, the wrapper step-identity refactor LX-19 before the tasks that touch the same code (LX-17, LX-11), the mechanical 60-file LX-12 and the health check
+LX-18 after the wrapper and its log layout settle, docs last; LX-6 was split into 6a/6b; LX-19 to LX-21 were added from the `run_daily_pipeline.py` review). LX-9a to LX-9d count as "LX-9" in other
+text; LX-21 is optional.
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -17,21 +19,29 @@ spec.
 - [x] **LX-9c** — Stitch per kind, `smvod-ts` from stitched parts, pre-cleanup sanity check and cleanup | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 96f58f1
 - [x] **LX-9d** — Per-step logging with ETA and opt-in per-date log files pruned after 7 days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 850d079
 - [x] **LX-10** — Parallel fetch of part windows with bounded workers, FCID kept in worker threads | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: cbcff3d
-- [ ] **LX-6** — Docs, `SCRIPTS.md` entry and parity run against a hand-exported day | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [x] **LX-7** — Cron-ready wrapper: export, input check, pipeline, error report, household ranking | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: pending
 - [x] **LX-13** — Past-month debug table: shared `--table-suffix`, plus `--force`, through the pipeline and the daily wrapper | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: 3690f57
-- [ ] **LX-11** — Daily wrapper streams each step's output live and logs a heartbeat for quiet steps | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-6a** — Parity run of the daily export against a hand-exported ZA day (time-boxed: the 29 Oct hand export leaves the 7-day retention window about 5 Nov) | Owner: Copilot CLI | Model:
+  claude-sonnet-5.5 | Review: user | SHA: —
 - [ ] **LX-14** — Daily wrapper derives `--table-suffix` for a past-month day (or fails fast) instead of only warning | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-15** — Tenant-aware `smvod-ts` coverage check (low-volume tolerance) and check-inputs legend matches real blocking behaviour | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer | SHA: —
 - [ ] **LX-16** — Export skips an existing kind quietly, without the per-part "missing or failed verification" sanity warnings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: —
+- [ ] **LX-19** — Daily wrapper step identity: `Step.id`/`group`/`tenant`, resume flags derived from the parsed args, plan/runner/summary split into `scripts/lib/` modules behind a `Protocol` (design
+  review first) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-17** — Daily wrapper resume hint re-runs only failed tenants, steps use one pinned interpreter, and the check-inputs legend is logged once | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: code-reviewer | SHA: —
+- [ ] **LX-11** — Daily wrapper streams each step's output live and logs a heartbeat for quiet steps | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-20** — Daily wrapper: drop the duplicate 1xxx extract if `run_pipeline` Step 6e already produces it, and isolate a failed tenant so the others still complete | Owner: Copilot CLI | Model:
+  claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-18** — Daily pipeline health check: parse the run summary and alert on FAILED/NOT RUN steps or a missing run, with a warning digest | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer | SHA: —
+- [ ] **LX-6b** — Docs and `SCRIPTS.md` entries for the export command, the daily wrapper and the health check, plus the recorded LX-6a parity result | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
+  Review: user | SHA: —
+- [ ] **LX-21** — (optional) Run per-tenant chains in parallel with bounded workers and an Athena concurrency cap | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 
 ## Story done when
 
@@ -46,7 +56,9 @@ spec.
 - **LX-9c** — stitched files equal the one-shot output, `smvod-ts` is derived from the stitched `smvod` parts, and the temp subfolder is removed only after every sanity check passes.
 - **LX-9d** — logs show one INFO line per step under one FCID with an ETA, and the per-date log file is written and pruned after 7 days without touching other files.
 - **LX-10** — windows are fetched by a bounded worker pool behind an injected runner, output equals the `--workers 1` run, worker log lines keep the FCID, and a failure keeps finished parts.
-- **LX-6** — usage docs and the `SCRIPTS.md` registry are updated, and a key-set parity run for a ZA day within the 7-day retention window is documented.
+- **LX-6a** — a key-set parity run of the daily export for a ZA day still inside the 7-day retention window is recorded (tolerance about 3 %, known differences listed) before the hand export expires.
+- **LX-6b** — `usage.md`, `lightstep-drm-exports.md`, `SCRIPTS.md` and `CONTEXT.md` describe the export command, the daily wrapper and the health check, and cite the LX-6a result (token setup, 7-day
+  retention and measured rate limits included).
 - **LX-7** — one command runs the whole daily chain for a UTC date, logs every step under one FCID, verifies the output CSVs and exits non-zero on failure.
 - **LX-13** — `--table-suffix` (e.g. `oct26`) selects `<id>_ccl_debug_events_<suffix>` through one shared helper, reaches only Steps 4 and 6f of `run_pipeline.py` and the `run_pipeline` step of the
   daily wrapper, `--force` re-pulls over stale CSVs, and a past-month day run without a suffix logs a warning.
@@ -61,6 +73,12 @@ spec.
 - **LX-17** — the printed resume command names the failed tenants (`--tenants`), every step uses the same interpreter (the repo `.venv`), and the check-inputs table and legend appear once per run.
 - **LX-18** — a failed or not-run step, or a missing/incomplete daily log, raises one notification (tenant, step, FCID) through a pluggable notifier; warnings appear only in a digest line; the same
   run is never alerted twice; verified on the 30/31 Oct logs.
+- **LX-19** — `run_daily_pipeline.py` is orchestration only: steps carry `id`/`group`/`tenant`, `--from-step` and the printed resume command come from the same parsed args (no name-prefix matching),
+  and the planner, runner and summary are separate `scripts/lib/` modules with the runner injected as a `Protocol`; behaviour and the existing tests are unchanged.
+- **LX-20** — the 1xxx report is produced once per run (or the second extract is justified in writing), and a failed tenant no longer stops the other tenants' steps; the summary and exit code still
+  report it.
+- **LX-21** — with `--parallel-tenants N`, per-tenant chains run concurrently with the same results as the serial run, Athena-using steps are capped, one tenant's failure leaves the others complete,
+  and every log line keeps the FCID and a tenant prefix.
 
 ## After each task
 

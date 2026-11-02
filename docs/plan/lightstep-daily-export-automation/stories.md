@@ -397,24 +397,38 @@ time because each call waits on the network.
 
 ---
 
-## LX-6 — Docs, registry and parity run
+## LX-6a — Parity run against a hand-exported day
+
+Split from LX-6 on 2026-11-02 and moved first: the 2026-10-29 hand export leaves the 7-day Lightstep retention window about 5 Nov, after which no parity run is possible.
+
+**Files to change / create:** a short findings note in `investigations/ctap-smvod/docs/` (for example `2026-11-xx-lightstep-export-parity.md`); no code.
+
+**What to implement:** run the command for ZA on a UTC day within the last 7 days into a scratch directory and compare with the hand-exported files by key set, not row count: key-level differences of
+up to about 3 % in either direction were seen in LX-1 (export timing, late spans). Record the tolerance and any known differences, including the leading-apostrophe values and the approximate
+`smvod-ts`.
+
+**Tests (no network, no real external services):** none — a recorded parity run.
+
+**Commit:** `docs(lightstep): record daily export parity run`
+
+---
+
+## LX-6b — Docs and registry
+
+Split from LX-6 on 2026-11-02 and moved last so it documents the final wrapper, log layout and health check once.
 
 **Files to change / create:**
-- `investigations/ctap-smvod/docs/usage.md` — document the command next to the manual export rule.
+- `investigations/ctap-smvod/docs/usage.md` — document the command next to the manual export rule, the daily wrapper (§7g) and the health check.
 - `investigations/ctap-smvod/docs/lightstep-drm-exports.md` — point to the script as the default path; keep the manual steps as fallback.
-- `SCRIPTS.md` (workspace root) — add entries for the new scripts.
+- `SCRIPTS.md` (workspace root) — add entries for the new scripts and shared `lib` modules.
 - `CONTEXT.md` — "What Exists" line for the new command.
 
-**What to implement:**
+**What to implement:** document token setup (`.env`, never committed), the 7-day retention limit, the rate-limit behaviour measured in LX-1 (about 1.0-1.3 s per call, no throttling; 24-322 calls per
+kind per day) and the LX-6a parity result.
 
-1. Run the command for ZA on a UTC day within the last 7 days (Lightstep retention; 2026-10-29 is hand-exported but expires soon, so run it first) into a scratch directory and compare with the
-   hand-exported files by key set, not row count: key-level differences of up to about 3 % in either direction were seen in LX-1 (export timing, late spans). Record the tolerance and any known
-   differences, including the leading-apostrophe values and the approximate `smvod-ts`.
-2. Document token setup (`.env`, never committed), the 7-day retention limit and the rate-limit behaviour measured in LX-1 (about 1.0-1.3 s per call, no throttling; 24-322 calls per kind per day).
+**Tests (no network, no real external services):** none — documentation.
 
-**Tests (no network, no real external services):** none — documentation and a recorded parity run.
-
-**Commit:** `docs(lightstep): document daily export command and parity run`
+**Commit:** `docs(lightstep): document daily export, wrapper and health check`
 
 ---
 
@@ -562,3 +576,119 @@ missed runs, so failures go unnoticed. The 31 Oct log holds about 50 WARNING lin
 **Decisions (open):** notification channel (Teams webhook recommended); warning threshold (suggest none: alert on FAILED only).
 
 **Commit:** `feat(ctap-smvod): alert on daily pipeline failures`
+
+---
+
+## LX-14 — Derive `--table-suffix` for a past-month day
+
+Added 2026-11-02. The 2026-10-31 run read the unsuffixed debug table and gave 5 GH 1xxx rows against 177 after a `--table-suffix oct26 --force` rerun; LX-13 only logs a warning.
+
+**Files to change / create:** `scripts/lib/tenant_context.py` (the shared suffix helper), `run_daily_pipeline.py`, `investigations/ctap-smvod/tests/test_run_daily_pipeline.py`, `docs/usage.md` §7g.
+
+**What to implement:** one pure function maps a day outside the current UTC month to its suffix (`oct26`); the wrapper passes it to `run_pipeline` automatically, or exits 1 before any step when the
+suffix table is unknown or not derivable. An explicit `--table-suffix` still wins.
+
+**Tests:** `test_past_month_day_derives_suffix`, `test_current_month_day_has_no_suffix`, `test_explicit_suffix_wins`, `test_underivable_month_fails_fast`.
+
+**Commit:** `fix(ctap-smvod): derive table suffix for past-month daily runs`
+
+---
+
+## LX-15 — Tenant-aware `smvod-ts` coverage check
+
+Added 2026-11-02. A quiet tenant (ZM: 133 sessions, first span 04:17 UTC) fails the `smvod-ts` UTC-day coverage check in the export and in `check_lightstep_inputs.py`, and the legend does not say
+whether a FAIL blocks the pipeline.
+
+**Files to change / create:** `scripts/lib/lightstep_inputs.py`, `check_lightstep_inputs.py`, the export's input check, tests, `docs/usage.md`.
+
+**What to implement:** a per-tenant coverage tolerance (start/end gap allowed, from a small config next to the tenant list, not hardcoded in the check); the legend states which result codes block the
+pipeline and which are advisory. One shared helper serves both callers.
+
+**Tests:** a low-volume tenant passes with a late first span; a normal tenant with the same gap fails; the legend text matches the blocking behaviour.
+
+**Commit:** `fix(ctap-smvod): tenant-aware smvod-ts coverage tolerance`
+
+---
+
+## LX-16 — Quiet skip for an existing export kind
+
+Added 2026-11-02. Re-running over an existing `smvod-release` file logs about 24 per-part "missing or failed verification" sanity warnings and may leave stale temp parts.
+
+**Files to change / create:** the export runner module in `scripts/lib/` and its tests.
+
+**What to implement:** when the final file for a kind already exists, log one skip line and return before the per-part sanity check; remove stale temp parts; `--fresh` still re-fetches.
+
+**Tests:** `test_existing_kind_logs_one_skip_line`, `test_no_part_warnings_for_existing_kind`, `test_fresh_refetches`.
+
+**Commit:** `fix(ctap-smvod): skip existing export kinds quietly`
+
+---
+
+## LX-19 — Daily wrapper step identity and module split
+
+Added 2026-11-02 from the `run_daily_pipeline.py` review (`docs/refactor/design-principles.md`: SRP, DIP). `STEP_GROUPS` resumes by name prefix, so renaming a step silently breaks `--from-step`;
+`main()` rebuilds the resume flags by hand and can drift from `parse_args`; planning, running and summary share one 300-line file.
+
+**Process:** a design review of the seam (a short `Protocol` for the runner and the step-plan shape, "before" diagram per `docs/refactor/architecture-diagrams.md`) is committed and approved before any
+code changes; no behaviour change.
+
+**Files to change / create:** `scripts/run_daily_pipeline.py` (thin `main()`), new `scripts/lib/daily_plan.py` (pure `build_steps`, `coverage_plan`, `select_from_step`), `scripts/lib/daily_runner.py`
+(`StepRunner` Protocol, subprocess runner, `run_steps`), `scripts/lib/daily_summary.py` (pure `format_summary`), existing tests updated to the new import paths.
+
+**What to implement:** `Step` gains `id`, `group` and `tenant`; `select_from_step` and `format_summary` use `group`; the resume command is built from one function of the parsed args (the old
+hand-built flag string goes away); no log or exit-code change.
+
+**Tests:** the existing suite passes unchanged apart from imports; add `test_renaming_a_step_does_not_break_resume` and `test_resume_flags_round_trip_through_parse_args`.
+
+**Risks:** FCID and env handling must stay in `main`; import cycles between the new modules (dependency direction: plan and summary have no imports of the runner).
+
+**Commit:** `refactor(ctap-smvod): split daily wrapper into plan, runner and summary`
+
+---
+
+## LX-17 — Resume only failed tenants, one interpreter, legend once
+
+Added 2026-11-02. After LX-19 (needs `Step.tenant`). The resume hint re-runs every tenant, steps may use different interpreters, and the check-inputs table and legend print once per step.
+
+**Files to change / create:** `scripts/lib/daily_summary.py`, `scripts/lib/daily_plan.py`, `run_daily_pipeline.py`, `check_lightstep_inputs.py`, tests, `docs/usage.md` §7g.
+
+**What to implement:** the resume command carries `--tenants <failed tenants>` (all when a tenant-less step failed); every step argv uses the repo `.venv` interpreter, resolved once; the check-inputs
+table and legend are logged once per run.
+
+**Tests:** `test_resume_names_only_failed_tenants`, `test_all_steps_use_pinned_interpreter`, `test_legend_logged_once`.
+
+**Commit:** `feat(ctap-smvod): tenant-scoped resume hint and pinned interpreter`
+
+---
+
+## LX-20 — Drop the duplicate 1xxx extract and isolate tenant failures
+
+Added 2026-11-02 from the wrapper review. `run_pipeline.py` Step 6e (`extract_error_report_1xxx_6xxx.py`) and the wrapper's `extract_error_report_1xxx.py` may overlap, and one tenant's failure
+currently stops all remaining steps.
+
+**Process:** start with a read-only audit (`docs/refactor/code-deduplication-and-taxonomy.md` Step 1): compare the two scripts' columns, filters and outputs and write the result in the task commit.
+Remove the wrapper step only if the outputs match; otherwise record why both stay.
+
+**Files to change / create:** `scripts/lib/daily_plan.py`, `scripts/lib/daily_runner.py`, tests, `docs/usage.md` §7g.
+
+**What to implement:** per-tenant steps after the shared export/check are marked tenant-scoped and continue past another tenant's failure; the summary and exit code still report every failure; steps
+that consume all tenants stay all-or-nothing.
+
+**Tests:** `test_failed_tenant_does_not_skip_other_tenants`, `test_summary_reports_failed_tenant`, plus a test for whichever dedupe outcome the audit decided.
+
+**Commit:** `refactor(ctap-smvod): dedupe 1xxx extract and isolate tenant failures`
+
+---
+
+## LX-21 — (optional) Parallel per-tenant chains
+
+Added 2026-11-02. Tenants are independent after the shared steps, so wall-clock time can drop by running them concurrently. Do only after LX-19 and LX-20, and only if a serial run is too slow.
+
+**Process:** first confirm `run_pipeline --tenant T` is safe to run concurrently (shared output files, `aws-sso` refresh races, Athena quota) and record it; if not safe, close the task as not done.
+
+**What to implement:** `--parallel-tenants N` (default 1) runs per-tenant chains in a bounded `ThreadPoolExecutor` behind the injected runner; a semaphore caps concurrent Athena-using steps; one SSO
+refresh happens before the fan-out; log lines carry the FCID and a tenant prefix.
+
+**Tests:** same results as the serial run with a fake runner, one tenant failing leaves the others complete, FCID present in worker log lines, the Athena cap is respected.
+
+**Commit:** `feat(ctap-smvod): optional parallel tenant chains in daily wrapper`
