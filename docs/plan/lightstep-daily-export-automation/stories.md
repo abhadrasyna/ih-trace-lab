@@ -448,3 +448,99 @@ for t in ZA GH ZM; do python scripts/rank_households_by_error.py --csv output/$t
 - `test_ranking_continues_across_tenants_after_one_failure`.
 
 **Commit:** `feat(ctap-smvod): add cron-ready daily pipeline wrapper`
+
+---
+
+## LX-13 — Past-month debug table through the pipeline and the daily wrapper
+
+Added 2026-11-02, done the same day. After the month rolled over, the unsuffixed debug-events table no longer held October, so the 2026-10-30 pull returned near-empty data for ZA (debug_states 362
+rows against about 55,000 on a normal day; error_eventdata 10 against about 2,500), GH (56 and 13) and ZM (header only), and the household ranking had 5 rows. Re-pulling needs the month-suffixed table
+`<id>_ccl_debug_events_<suffix>` (for example `oct26`; the September table was `sept26`, so the suffix cannot be derived from the date).
+
+**What was implemented (three commits):**
+1. `dc4539e` and `10e494c` — `add_table_suffix_arg(parser)` in `scripts/lib/tenant_context.py` (one shared option; `resolve_tenant_context(..., table_suffix=)` already validated it). Used by
+   `run_pipeline.py` (passed only to Step 4 `run_athena_debug_events.py` and Step 6f `run_athena_error_eventdata.py`; Step 3 reads unified sessions and does not get it), the two Athena scripts and
+   `run_athena_debug_sessions.py`. A bad suffix fails at `run_pipeline` start before any step runs. Test stubs of `resolve_tenant_context` accept the new keyword.
+2. `3690f57` — `run_daily_pipeline.py` gets `--table-suffix` and `--force`, passed to the `run_pipeline` step only and echoed in the resume line; a warning is logged when the run date is not in the
+   current UTC month and no suffix was given. The suffix is an explicit flag, not derived, because month-table names are irregular and a wrong guess fails quietly.
+
+**Re-run for a past month (all tenants; `--force` is needed because the output CSV names carry no suffix and a non-empty CSV is otherwise reused):**
+
+```
+python3 run_daily_pipeline.py --date 30102026 --skip-export --table-suffix oct26 --force
+```
+
+**Tests:** `test_build_steps_forwards_table_suffix_only_to_debug_table_steps` (`test_run_pipeline.py`), `test_add_table_suffix_arg_parses_and_defaults_to_none` (`test_tenant_context.py`),
+`test_table_suffix_and_force_reach_only_run_pipeline_step` (`test_run_daily_pipeline.py`).
+
+**Open follow-up:** confirm the `oct26` table exists for GH and ZM (read-only `SHOW TABLES`) before relying on the re-run for those tenants.
+
+---
+
+## LX-11 — Daily wrapper streams step output live
+
+Added 2026-11-02. In `logs/run-daily-pipeline_2026-10-30.log` the line `step start: run_pipeline` (12:54:46) was followed by nothing for about 5 minutes 20 seconds, then every line of that step's
+output appeared at once at 13:00:07, so the run looked hung. Cause: `make_subprocess_runner` in `run_daily_pipeline.py` starts each step with `stdout=PIPE` and calls `proc.communicate(timeout=...)`,
+which returns only when the step exits, and `run_steps` logs the captured lines afterwards. The child's own timestamps are preserved, so nothing is lost; the log is just not live. `run_pipeline.py`
+runs many Athena steps for three tenants, so a long quiet gap is normal and must be told apart from a real hang.
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/run_daily_pipeline.py` — the runner and `run_steps`.
+- `investigations/ctap-smvod/tests/test_run_daily_pipeline.py` — runner and streaming tests.
+- `investigations/ctap-smvod/docs/usage.md` — section 7g note.
+
+**What to implement:**
+
+1. Replace `communicate()` with a loop that reads `proc.stdout` line by line and logs each line at once as `[<step name>] <line>` (same format as today), while keeping every line so the runner's
+   return value `(exit code, combined output)` is unchanged. Move the per-line logging into the runner via an optional `on_line` callback so `run_steps` no longer logs the lines a second time; a fake
+   runner in tests that returns the output without calling `on_line` must still get its lines logged (keep a fallback in `run_steps`, or give the fake runner the callback).
+2. Keep the timeout: a watchdog (`threading.Timer`) that calls `os.killpg(proc.pid, SIGKILL)` after `timeout_seconds`, then the read loop ends on EOF; the result is exit 124 with the output plus
+   `timed out after <N>s`, as today. The process still runs in its own session so Athena and `aws-sso` children die with it.
+3. Heartbeat: if no line arrives for 60 seconds, log `step still running: <name> (<elapsed>s)` at INFO and repeat every 60 seconds until output resumes or the step ends. A small constant, no new flag;
+   read on a thread or with `selectors` so the heartbeat fires while the read blocks.
+4. Child output must reach the pipe promptly: pass `PYTHONUNBUFFERED=1` in the step environment (the `FCID` env is already added in `main`), otherwise the child buffers and streaming gains little.
+5. Mention the live-streaming and heartbeat behaviour in `docs/usage.md` section 7g.
+
+**Tests (no network, no real external services; use small real subprocesses such as `python -c`):**
+- `test_lines_are_logged_before_the_step_exits` (a child that prints, sleeps, prints: the first line is logged before the child ends).
+- `test_timeout_kills_process_group_and_returns_124` (output so far is kept, exit code 124).
+- `test_returned_output_and_exit_code_unchanged_for_fast_step`.
+- `test_heartbeat_logged_for_quiet_step` (heartbeat interval injected as a small value).
+
+**Risks:** the watchdog and heartbeat threads must not outlive the step or leak on timeout; read order of stderr and stdout stays interleaved because stderr is merged into stdout.
+
+**Decisions (open, default in brackets):** heartbeat interval [60 s]; live lines go to both console and the log file [yes, the logger already does both].
+
+**Commit:** `feat(ctap-smvod): stream daily-pipeline step output live with heartbeat`
+
+---
+
+## LX-12 — Per-script dated log files by default
+
+Added 2026-11-02. `run_daily_pipeline.py` already writes `investigations/ctap-smvod/logs/run-daily-pipeline_<date>.log` (`init_logging(..., log_dir=, file_prefix=, date=, keep_days=)`), but the other
+60 or so `ctap-smvod` entry points call `init_logging("<slug>")` with no log arguments, so they append to the shared `logs/app.log` at the repo root. Wanted: by default, each script writes
+`<investigation>/logs/<prefix>_<date>.log`, the same format as the wrapper.
+
+**Files to change / create:**
+- `investigations/ctap-smvod/scripts/lib/runtime.py` (or a new small `scripts/lib/script_logging.py`) — `init_script_logging(slug)`.
+- Every `investigations/ctap-smvod/scripts/*.py` that calls `init_logging(` — one mechanical replacement, no other change.
+- `.gitignore` — add `investigations/ctap-smvod/logs/*.log` (the existing `logs/*.log` rule only covers the repo-root folder).
+- `investigations/ctap-smvod/tests/` — wrapper test.
+- `investigations/ctap-smvod/docs/usage.md` — short note on where logs go.
+
+**What to implement:**
+
+1. `init_script_logging(slug, *, date=None, keep_days=...)` calls `init_logging(slug, log_dir=<investigation>/logs, file_prefix=<prefix>, date=<date>, keep_days=<N>)`; the log folder is built from the
+   repo path, never hardcoded. Returns the FCID like `init_logging`.
+2. Replace the direct `init_logging(...)` calls in `ctap-smvod/scripts` with it (all entry points; check `src/lib/logging` is not edited).
+3. The daily wrapper keeps its own `run-daily-pipeline_<date>.log` and its steps become separate files, one per script and day (for example `run_pipeline_2026-11-02.log`); there is no single per-run
+   file because the wrapper runs each step as a subprocess.
+4. After this task `app.log` no longer receives these scripts' logs; say so in `docs/usage.md`.
+
+**Tests:** `test_init_script_logging_builds_dated_path_under_investigation_logs`, `test_init_script_logging_passes_prune_days`, and one test that the entry-point scripts import the wrapper (a
+grep-style guard so a new script cannot silently go back to `app.log`).
+
+**Decisions (open, to confirm before starting):** prefix is the full slug (`ctap-smvod-run_pipeline`) or the short script name; date is UTC (matches the FCID timestamp) or local; prune after how many
+days (the wrapper uses 30, export uses 7) or keep everything; only `ctap-smvod` or reusable for other investigations.
+
+**Commit:** `feat(ctap-smvod): write per-script dated log files by default`

@@ -3,7 +3,8 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: LX-6** (LX-9a to LX-9d and LX-10 are done; they come before the LX-6/LX-7 docs and wrapper; "LX-9" in other text means all four sub-tasks).
+**Open: LX-6, LX-11, LX-12** (LX-9a to LX-9d, LX-10 and LX-13 are done; they come before the LX-6/LX-7 docs and wrapper; "LX-9" in other text means all four sub-tasks; LX-11 and LX-12 were added
+2026-11-02 after the first real daily run and are independent of LX-6).
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -18,6 +19,10 @@ spec.
 - [x] **LX-10** — Parallel fetch of part windows with bounded workers, FCID kept in worker threads | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: cbcff3d
 - [ ] **LX-6** — Docs, `SCRIPTS.md` entry and parity run against a hand-exported day | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [x] **LX-7** — Cron-ready wrapper: export, input check, pipeline, error report, household ranking | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: pending
+- [x] **LX-13** — Past-month debug table: shared `--table-suffix`, plus `--force`, through the pipeline and the daily wrapper | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
+  SHA: 3690f57
+- [ ] **LX-11** — Daily wrapper streams each step's output live and logs a heartbeat for quiet steps | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 
 ## Story done when
 
@@ -34,6 +39,11 @@ spec.
 - **LX-10** — windows are fetched by a bounded worker pool behind an injected runner, output equals the `--workers 1` run, worker log lines keep the FCID, and a failure keeps finished parts.
 - **LX-6** — usage docs and the `SCRIPTS.md` registry are updated, and a key-set parity run for a ZA day within the 7-day retention window is documented.
 - **LX-7** — one command runs the whole daily chain for a UTC date, logs every step under one FCID, verifies the output CSVs and exits non-zero on failure.
+- **LX-13** — `--table-suffix` (e.g. `oct26`) selects `<id>_ccl_debug_events_<suffix>` through one shared helper, reaches only Steps 4 and 6f of `run_pipeline.py` and the `run_pipeline` step of the
+  daily wrapper, `--force` re-pulls over stale CSVs, and a past-month day run without a suffix logs a warning.
+- **LX-11** — a step's lines appear in the wrapper log as the step prints them (not after it exits), a step silent for 60 s logs a heartbeat, and the timeout still kills the whole process group
+  (exit 124) with the same captured output as before.
+- **LX-12** — every `ctap-smvod` script writes `<investigation>/logs/<prefix>_<date>.log` by default through one wrapper, with no per-script path, and old files of the same prefix are pruned.
 
 ## After each task
 
