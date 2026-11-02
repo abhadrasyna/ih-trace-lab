@@ -111,3 +111,36 @@ def test_failed_export_with_all_files_written_continues_but_exits_nonzero(tmp_pa
 def test_failed_export_with_missing_files_still_stops(tmp_path):
     results = mod.run_steps(_steps(tmp_path), lambda *a: (1, "no files"), cwd=tmp_path, env={})
     assert len(results) == 1 and not results[0].ok
+
+
+def _coverage_inputs(tmp_path: Path, tenant: str, iso: str) -> None:
+    (tmp_path / "data" / "athena" / tenant).mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "athena" / tenant / f"{iso}_session.csv").write_text("x")
+    (tmp_path / "data" / "lightstep" / tenant).mkdir(parents=True, exist_ok=True)
+    for kind in ("smvod", "smvod-release"):
+        (tmp_path / "data" / "lightstep" / tenant / mod.output_file_name(kind, iso)).write_text("x")
+
+
+def test_coverage_plan_uses_lagged_day_and_skips_tenants_with_missing_inputs(tmp_path):
+    _coverage_inputs(tmp_path, "ZA", "2026-10-28")
+    steps, skipped = mod.coverage_plan(DAY, ["ZA", "GH"], 1, python="py", investigation_dir=tmp_path)
+    assert [s.name for s in steps] == ["ebvs release coverage ZA"]
+    assert steps[0].argv[-4:] == ("--date", "2026-10-28", "--tenant", "ZA") and steps[0].continue_on_failure
+    assert len(skipped) == 1 and "GH" in skipped[0] and "2026-10-28_session.csv" in skipped[0]
+
+
+def test_summary_reports_each_step_and_resume_command(tmp_path):
+    _touch_reports(tmp_path)
+    steps = _steps(tmp_path)
+    results = [mod.StepResult(s.name, s.name != "run_pipeline", 1.0) for s in steps[:4]]
+    text = "\n".join(t for _, t in mod.format_summary(steps, results, ["ebvs release coverage GH (x): missing y"], DAY))
+    assert "run_pipeline: FAILED" in text and "error report 1xxx: OK" not in text.replace("NOT RUN", "")
+    assert "rank households ZA: NOT RUN" in text
+    assert "--date 29102026 --from-step pipeline" in text and "SKIPPED ebvs release coverage GH" in text
+
+
+def test_summary_all_ok_needs_no_resume(tmp_path):
+    steps = _steps(tmp_path)
+    results = [mod.StepResult(s.name, True, 0.5) for s in steps]
+    text = "\n".join(t for _, t in mod.format_summary(steps, results, [], DAY))
+    assert "nothing to resume" in text and "to resume:" not in text

@@ -6,6 +6,10 @@ Steps, in order (each a subprocess run from ``investigations/ctap-smvod/``, one 
   3. ``run_pipeline.py --date DDMMYYYY --drm --skip-input-check``
   4. ``extract_error_report_1xxx.py --date DDMMYYYY --tenants ...``
   5. ``rank_households_by_error.py --csv output/T/YYYY-MM-DD_error_report_1xxx.csv --top N`` per tenant
+  6. (opt-in ``--ebvs-release-coverage``) ``analyze_ebvs_release_coverage.py`` per tenant for the day ``--coverage-lag-days`` (default 1) before the run day,
+     so the next day's Release file exists; a tenant whose inputs for that day are missing is skipped with a warning (never a failure)
+
+The log ends with a summary: OK / FAILED / NOT RUN / SKIPPED per step and the exact command to resume.
 
 The first failed step stops the run, except: an export whose CSVs were all written (e.g. only the input check failed), the advisory
 input-check step, and the per-tenant ranking all let the run continue; the final exit is still non-zero. Exit code is non-zero if any step failed or an expected
@@ -51,7 +55,8 @@ DEFAULT_TENANTS = ("ZA", "GH", "ZM")
 FCID_ENV = "FCID"
 DEFAULT_STEP_TIMEOUT_MINUTES = 180
 # --from-step group -> prefix of the step names it starts at
-STEP_GROUPS = {"export": "export ", "check": "check inputs", "pipeline": "run_pipeline", "report": "error report", "rank": "rank households"}
+STEP_GROUPS = {"export": "export ", "check": "check inputs", "pipeline": "run_pipeline", "report": "error report", "rank": "rank households",
+               "coverage": "ebvs release coverage"}
 
 # (return code, combined stdout+stderr)
 StepRunner = Callable[[Sequence[str], Path, dict[str, str]], tuple[int, str]]
@@ -116,6 +121,54 @@ def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: in
     return steps
 
 
+def coverage_plan(day: Date, tenants: Sequence[str], lag_days: int, *, python: str = sys.executable,
+                  investigation_dir: Path = INVESTIGATION_DIR) -> tuple[list[Step], list[str]]:
+    """EBVS Release-coverage steps for ``day - lag_days`` plus a reason per tenant skipped for missing inputs."""
+    target = day - timedelta(days=lag_days)
+    iso = target.isoformat()
+    steps: list[Step] = []
+    skipped: list[str] = []
+    for tenant in tenants:
+        needed = [investigation_dir / "data" / "athena" / tenant / f"{iso}_session.csv",
+                  *(investigation_dir / "data" / "lightstep" / tenant / output_file_name(k, iso) for k in ("smvod", "smvod-release"))]
+        missing = [p.name for p in needed if not p.is_file()]
+        if missing:
+            skipped.append(f"ebvs release coverage {tenant} ({iso}): missing {', '.join(missing)}")
+            continue
+        steps.append(Step(f"ebvs release coverage {tenant}",
+                          (python, str(investigation_dir / "scripts" / "analyze_ebvs_release_coverage.py"), "--date", iso, "--tenant", tenant),
+                          outputs=(investigation_dir / "output" / tenant / f"{iso}_ebvs_release_coverage.csv",), continue_on_failure=True))
+    return steps, skipped
+
+
+def format_summary(steps: Sequence[Step], results: Sequence[StepResult], skipped: Sequence[str], day: Date, *, extra_flags: str = "") -> list[tuple[int, str]]:
+    """Closing log lines as (level, text): per-step status, then what to resume. Pure."""
+    by_name = {r.name: r for r in results}
+    lines: list[tuple[int, str]] = [(logging.INFO, "==== run summary ====")]
+    redo: list[Step] = []
+    for step in steps:
+        result = by_name.get(step.name)
+        if result is None:
+            status = "NOT RUN"
+        else:
+            status = f"OK ({result.seconds:.1f}s)" if result.ok else f"FAILED ({result.seconds:.1f}s)"
+        if result is None or not result.ok:
+            redo.append(step)
+        lines.append((logging.INFO if status.startswith("OK") else logging.ERROR, f"  {step.name}: {status}"))
+    lines += [(logging.WARNING, f"  SKIPPED {reason}") for reason in skipped]
+    if not redo and not skipped:
+        lines.append((logging.INFO, "nothing to resume"))
+        return lines
+    if redo:
+        group = next((g for g, prefix in STEP_GROUPS.items() if redo[0].name.startswith(prefix)), "export")
+        advisory = all(s.continue_on_failure for s in redo) and all(s.name in by_name for s in redo)
+        lines.append((logging.ERROR, f"to resume: python3 run_daily_pipeline.py --date {day.strftime('%d%m%Y')} --from-step {group}{extra_flags}"
+                      + ("  (only advisory steps failed; the main chain completed)" if advisory else "")))
+    if skipped:
+        lines.append((logging.WARNING, "skipped coverage steps run once their inputs exist: --from-step coverage --ebvs-release-coverage"))
+    return lines
+
+
 def select_from_step(steps: Sequence[Step], from_step: str | None) -> list[Step]:
     """Drops every step before the first one in group ``from_step`` (``None`` keeps all)."""
     if from_step is None:
@@ -175,6 +228,10 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap.add_argument("--skip-export", action="store_true", help="Skip the Lightstep export; use CSVs already in data/lightstep/<TENANT>/")
     ap.add_argument("--from-step", choices=list(STEP_GROUPS), default=None,
                     help="Resume: skip every step before this one (export, check, pipeline, report, rank); use after a failure")
+    ap.add_argument("--ebvs-release-coverage", action="store_true",
+                    help="Add the EBVS Release-coverage analysis for the day --coverage-lag-days back (implied by --from-step coverage)")
+    ap.add_argument("--coverage-lag-days", type=int, default=1, choices=range(1, 8), metavar="1-7",
+                    help="Days before the run day to analyse, so the next day's Release file exists (default: 1)")
     ap.add_argument("--workers", type=int, default=None, choices=range(1, 9), metavar="1-8",
                     help="Passed to export_lightstep_day.py --workers (default: the exporter's own default, 4)")
     ap.add_argument("--top", type=int, default=10, help="Households to print per tenant in the ranking (default: 10)")
@@ -198,12 +255,27 @@ def main(argv: Sequence[str] | None = None, runner: StepRunner | None = None) ->
     fcid = init_logging("run-daily-pipeline", log_dir=args.log_dir, file_prefix=LOG_PREFIX, date=day, keep_days=LOG_KEEP_DAYS)
     LOGGER.info("daily pipeline for %s tenants=%s skip_export=%s fcid=%s", day.isoformat(), ",".join(tenants), args.skip_export, current_fcid())
     steps = build_steps(day, tenants, skip_export=args.skip_export, top=args.top, workers=args.workers, investigation_dir=INVESTIGATION_DIR)
+    skipped: list[str] = []
+    coverage = args.ebvs_release_coverage or args.from_step == "coverage"
+    if coverage:
+        extra, skipped = coverage_plan(day, tenants, args.coverage_lag_days, investigation_dir=INVESTIGATION_DIR)
+        steps += extra
+        if args.from_step == "coverage" and not extra:
+            for reason in skipped:
+                LOGGER.warning("SKIPPED %s", reason)
+            LOGGER.error("--from-step coverage: no tenant has its coverage inputs; nothing to run")
+            return 1
     try:
         steps = select_from_step(steps, args.from_step)
     except ValueError as exc:
         LOGGER.error("%s", exc)
         return 1
     results = run_steps(steps, runner or make_subprocess_runner(args.step_timeout_minutes * 60), cwd=INVESTIGATION_DIR, env={**os.environ, FCID_ENV: fcid})
+    flags = (" --ebvs-release-coverage" if coverage else "") + (" --skip-export" if args.skip_export else "")
+    flags += f" --coverage-lag-days {args.coverage_lag_days}" if coverage and args.coverage_lag_days != 1 else ""
+    flags += f" --tenants {','.join(tenants)}" if tenants != list(DEFAULT_TENANTS) else ""
+    for level, text in format_summary(steps, results, skipped, day, extra_flags=flags):
+        LOGGER.log(level, "%s", text)
     failed = [r.name for r in results if not r.ok]
     not_run = len(steps) - len(results)
     if failed or not_run:
