@@ -92,6 +92,11 @@ other errors are never retried.
 - tests.
 
 **What to implement:** `max_workers=1` equals the serial path; one group's failure cancels nothing; a semaphore caps concurrent Athena-using units across groups; FCID present in worker log lines.
+Prototype result (`scratch/2026-11-02_pipeline-runtime_parallel-tenants_poc.py`, simulated Athena, 192 units): one group per tenant scales almost linearly (2 workers 2.0x, 4 workers 3.9x, peak 4
+concurrent queries, no throttling); the FCID is lost in worker threads unless each task runs in its own `contextvars.copy_context()` taken in the submitting thread (one copy per task, not copied
+inside the worker); parallelism inside a tenant (24 wide) only adds ~2x more and, without the shared semaphore cap, produced 164 throttle events against a simulated 8-query quota, with the cap zero.
+So the pool is per-tenant only; units inside a tenant stay serial unless a consumer asks for it, and then only through the cap. The real Athena quota is unmeasured, so the default stays
+`max_workers=1`.
 
 **Tests:** `test_results_ordered_by_input_regardless_of_completion`, `test_one_group_failure_does_not_cancel_others`, `test_max_workers_one_matches_serial`, `test_cap_limits_concurrent_units`.
 
