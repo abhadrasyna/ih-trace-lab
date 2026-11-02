@@ -71,6 +71,7 @@ Variations:
 python3 run_pipeline.py --date 06102026 --dry-run                    # print commands only, touch nothing
 python3 run_pipeline.py --date 06102026 --skip-step3 --skip-step4    # reuse existing Athena CSVs
 python3 run_pipeline.py --date 06102026 --skip-if-exists             # skip Athena per step only if its CSV exists
+python3 run_pipeline.py --date 30102026 --skip-step3 --skip-input-check --table-suffix oct26 --force   # past-month debug re-pull (Steps 4/6f)
 python3 run_pipeline.py --date 06102026 --skip-step6b                # no position_report.csv
 python3 run_pipeline.py --date 06102026 --skip-step6e                # no 1xxx/6xxx error report
 python3 run_pipeline.py --date 06102026 --skip-step6d                # no webview device report

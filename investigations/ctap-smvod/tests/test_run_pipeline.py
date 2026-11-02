@@ -25,6 +25,7 @@ class _Args:
     skip_auth_check = False
     skip_if_exists = False
     force = False
+    table_suffix = None
     skip_step3 = False
     skip_step4 = False
     skip_step6b = False
@@ -147,6 +148,15 @@ def test_build_steps_forwards_force_to_athena_steps(tenant_root: Path) -> None:
     assert "--force" in steps[2][1]
     assert "--force" in steps[3][1]
 
+
+def test_build_steps_forwards_table_suffix_only_to_debug_table_steps(tenant_root: Path) -> None:
+    steps = run_pipeline._build_steps(_args(table_suffix="oct26", skip_auth_check=True), "2026-09-30", "ZM")
+    with_suffix = [label for label, cmd, _ in steps if "--table-suffix" in cmd]
+
+    assert with_suffix == [
+        "Step 4 - Athena error/lifecycle (run_athena_debug_events.py)",
+        "Step 6f - raw PLAYER_ERROR eventdata export (run_athena_error_eventdata.py)",
+    ]
 
 def _run_main(monkeypatch: pytest.MonkeyPatch, *argv: str) -> None:
     monkeypatch.setattr(sys, "argv", ["run_pipeline.py", "--date", "30092026", *argv])

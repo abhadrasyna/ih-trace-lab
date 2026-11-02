@@ -1,6 +1,7 @@
 """Resolve a tenant code into the frozen context the CTAP/SM-VOD pipeline steps consume."""
 from __future__ import annotations
 
+import argparse
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +24,14 @@ class TenantContext:
     lightstep_project: str
     disambiguation_attribute: str | None
     disambiguation_value: str | None
+
+
+def add_table_suffix_arg(parser: argparse.ArgumentParser) -> None:
+    """Add the shared `--table-suffix` option; pass `args.table_suffix` to `resolve_tenant_context`."""
+    parser.add_argument(
+        "--table-suffix", default=None,
+        help="Month-suffixed debug-events table, e.g. oct26 for the previous month (default: unsuffixed)",
+    )
 
 
 def resolve_tenant_context(

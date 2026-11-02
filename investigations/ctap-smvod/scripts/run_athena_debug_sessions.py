@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.query_catalog import render_query
-from lib.tenant_context import resolve_tenant_context
+from lib.tenant_context import add_table_suffix_arg, resolve_tenant_context
 from lib.runtime import ensure_valid_credentials, investigation_data_dir, run_athena_query, should_skip_athena
 from src.lib.logging.bootstrap import init_logging
 
@@ -38,7 +38,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="UTC day, YYYY-MM-DD")
     ap.add_argument("--tenant", default="ZA", help="Tenant code from config/tenants.yaml (default: ZA)")
-    ap.add_argument("--table-suffix", default=None, help="Month-suffixed debug table, e.g. sept26 (default: unsuffixed)")
+    add_table_suffix_arg(ap)
     ap.add_argument("--profile", default=None)
     ap.add_argument("--database", default=None)
     ap.add_argument("--region", default=None)

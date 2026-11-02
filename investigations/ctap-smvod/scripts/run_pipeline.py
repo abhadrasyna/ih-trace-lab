@@ -93,7 +93,7 @@ from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.pat
 from lib.drm_exports import LRM, MDRMFE, export_paths
 from lib.lightstep_inputs import Settings
 from lib.runtime import investigation_data_dir, investigation_output_dir, snapshot_output_path
-from lib.tenant_context import discover_tenants, require_lightstep_dir, resolve_tenant_context
+from lib.tenant_context import add_table_suffix_arg, discover_tenants, require_lightstep_dir, resolve_tenant_context
 from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_pipeline")
@@ -180,6 +180,8 @@ def _build_steps(args, date_iso: str, tenant: str):
     if args.force:
         athena_common += ["--force"]
     athena_common += ["--tenant", tenant, "--output-dir", athena_dir]
+    # Only the debug-events steps (4, 6f) read the month-suffixed table; Step 3 reads unified sessions.
+    debug_common = athena_common + (["--table-suffix", args.table_suffix] if args.table_suffix else [])
 
     # --skip-if-exists is opt-in and per-date: unlike --skip-step3/--skip-step4
     # (always skip, regardless of file state), this only skips Athena for a
@@ -220,7 +222,7 @@ def _build_steps(args, date_iso: str, tenant: str):
         ),
         (
             step4_label,
-            [py, os.path.join(SCRIPT_DIR, "run_athena_debug_events.py"), "--date", date_iso] + athena_common,
+            [py, os.path.join(SCRIPT_DIR, "run_athena_debug_events.py"), "--date", date_iso] + debug_common,
             args.skip_step4 or skip4_existing,
         ),
         (
@@ -251,7 +253,7 @@ def _build_steps(args, date_iso: str, tenant: str):
         ),
         (
             "Step 6f - raw PLAYER_ERROR eventdata export (run_athena_error_eventdata.py)",
-            [py, os.path.join(SCRIPT_DIR, "run_athena_error_eventdata.py"), "--date", date_iso] + athena_common,
+            [py, os.path.join(SCRIPT_DIR, "run_athena_error_eventdata.py"), "--date", date_iso] + debug_common,
             args.skip_error_eventdata,
         ),
         (
@@ -375,6 +377,7 @@ def main():
                      help="Skip Step 0 (validation of the manual Lightstep CSVs: presence, parts, schema, tenant, UTC coverage)")
     ap.add_argument("--profile", default=None, help="AWS SSO profile, passed through to Steps 3/4")
     ap.add_argument("--skip-auth-check", action="store_true", help="Passed through to Steps 3/4")
+    add_table_suffix_arg(ap)
     ap.add_argument(
         "--dry-run", action="store_true",
         help="Print the commands that would run, in order, and exit -- no "
@@ -392,6 +395,8 @@ def main():
 
     try:
         tenants = _select_tenants(args.tenant, date_iso)
+        for code in tenants:
+            resolve_tenant_context(code, table_suffix=args.table_suffix)  # fail on a bad suffix before any step runs
     except (ValueError, FileNotFoundError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)

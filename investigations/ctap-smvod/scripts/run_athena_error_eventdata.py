@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.query_catalog import render_query
 from lib.runtime import ensure_valid_credentials, investigation_data_dir, run_athena_query, should_skip_athena
-from lib.tenant_context import resolve_tenant_context
+from lib.tenant_context import add_table_suffix_arg, resolve_tenant_context
 from src.lib.logging.bootstrap import init_logging
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.run_athena_error_eventdata")
@@ -85,11 +85,12 @@ def main() -> None:
     ap.add_argument("--timeout", type=int, default=300, help="Max seconds to wait for the query (default: 300)")
     ap.add_argument("--dry-run", action="store_true", help="Print the filled-in query and exit, without touching Athena")
     ap.add_argument("--skip-auth-check", action="store_true", help="Skip the SSO credential check/auto-refresh pre-flight")
+    add_table_suffix_arg(ap)
     ap.add_argument("--force", action="store_true", help="Re-run Athena even if the output CSV already has data")
     args = ap.parse_args()
 
     try:
-        ctx = resolve_tenant_context(args.tenant)
+        ctx = resolve_tenant_context(args.tenant, table_suffix=args.table_suffix)
         date_iso = datetime.strptime(args.date, "%Y-%m-%d").strftime("%Y-%m-%d")
         codes = parse_codes(args.codes)
     except ValueError as exc:

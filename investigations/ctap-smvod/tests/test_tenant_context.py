@@ -69,3 +69,13 @@ def test_discovery_rejects_non_code_folder_name(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="must be named by tenant code 'ZM'"):
         tenant_context.discover_tenants("2026-10-02", data_root=tmp_path)
+
+
+def test_add_table_suffix_arg_parses_and_defaults_to_none() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    tenant_context.add_table_suffix_arg(parser)
+
+    assert parser.parse_args([]).table_suffix is None
+    assert parser.parse_args(["--table-suffix", "oct26"]).table_suffix == "oct26"

@@ -46,7 +46,7 @@ import extract_session_ids
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from lib.query_catalog import render_query
-from lib.tenant_context import resolve_tenant_context
+from lib.tenant_context import add_table_suffix_arg, resolve_tenant_context
 from lib.runtime import ensure_valid_credentials, investigation_data_dir, run_athena_query, should_skip_athena, snapshot_output_path
 from src.lib.logging.bootstrap import init_logging
 
@@ -151,11 +151,12 @@ def main():
     ap.add_argument("--timeout", type=int, default=300, help="Max seconds to wait for query completion (default: 300)")
     ap.add_argument("--dry-run", action="store_true", help="Print the filled-in query and exit, without touching Athena")
     ap.add_argument("--skip-auth-check", action="store_true", help="Skip the SSO credential check/auto-refresh pre-flight")
+    add_table_suffix_arg(ap)
     ap.add_argument("--force", action="store_true", help="Re-run Athena even if the output CSV already has data")
     args = ap.parse_args()
 
     try:
-        ctx = resolve_tenant_context(args.tenant or LEGACY_TENANT)
+        ctx = resolve_tenant_context(args.tenant or LEGACY_TENANT, table_suffix=args.table_suffix)
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
