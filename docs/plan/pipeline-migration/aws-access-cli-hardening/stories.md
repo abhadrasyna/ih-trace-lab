@@ -9,6 +9,11 @@ All paths below are under `src/pipelines/aws_access_cli/` unless stated. Tests a
 
 ## AAH-1 — Run summary record and non-zero-exit alerting
 
+**Revised 2026-11-02 (needs SPR-2):** do not write `UnitResult`, `RunSummary` or the atomic status writer here; they live in `src/lib/pipeline_runtime/` (`docs/plan/shared-pipeline-runtime/`). This
+task adapts `SubReport` and `run_for_all_tenants` to build `Unit`s and call `run_units` with the in-process runner, writes the status file through `write_status`, and wires the three
+`run_*_reports.py` mains. The tests below that cover the summary and atomic write move to SPR-2; keep only the AWS wiring tests (2 tenants × 2 fake reports, one raising → non-zero exit and `failed` in
+the file).
+
 **Files to change / create:**
 - `schedule.py` — return a typed `UnitResult(tenant, report, period_value, status, exit_code, duration_s, error)` per unit instead of a bare int; add `RunSummary` with `exit_code` and `to_dict()`.
 - Write the status file with `json` plus an atomic temp-file rename inside `schedule.py`; `src/lib/*` is not touched.
@@ -33,6 +38,10 @@ All paths below are under `src/pipelines/aws_access_cli/` unless stated. Tests a
 
 ## AAH-2 — Preflight failure isolation and mid-run SSO re-check
 
+**Revised 2026-11-02 (needs SPR-3):** the once-per-run pre-flight, the no-traceback failure and the rate-limited single re-check are `Preflight`/`retry_if` in `src/lib/pipeline_runtime/`. This task
+only injects the AWS `refresh` (over `make_auth().ensure_session(profile)`) and the `retry_if` predicate for `AthenaAuthError`; `ensure_session_once` in `common.py` is not written. Keep the three
+tests as integration tests against fakes.
+
 **Files to change / create:**
 - `schedule.py` — wrap `preflight()` in try/except; on failure log with the fcid, mark every unit `skipped`, return exit 1.
 - `scripts/common.py` — add `ensure_session_once(profile)` helper used by the runner when a unit raises an auth error (`AthenaAuthError`).
@@ -54,6 +63,9 @@ All paths below are under `src/pipelines/aws_access_cli/` unless stated. Tests a
 ---
 
 ## AAH-3 — Per-unit timeout and per-metric isolation
+
+**Revised 2026-11-02 (needs SPR-2):** the unit timeout is `make_inprocess_runner(timeout_s)` in `src/lib/pipeline_runtime/`; do not add a second thread/timeout implementation to `schedule.py`. Pass
+`unit_timeout_s` (default 900) through. The `adoption.py` per-metric isolation (`ReportIncompleteError`) stays here unchanged: it is AWS-specific.
 
 **Files to change / create:**
 - `schedule.py` — add `unit_timeout_s` (default 900) enforced with a worker thread and `future.result(timeout=…)`; log the timeout and mark the unit `timed_out`.
@@ -119,6 +131,10 @@ All paths below are under `src/pipelines/aws_access_cli/` unless stated. Tests a
 ---
 
 ## AAH-6 — Output and log retention
+
+**Revised 2026-11-02 (needs SPR-5):** no new prune engine. Declare this pipeline's artifacts (position CSVs, cron `.out` files, `app.log`) as `Artifact` registry rows and run them through
+`scripts/prune_artifacts.py`; log rotation of `app.log` stays here if the logger config is the right place. The dry-run-default and `SCRIPTS.md` requirements are satisfied by SPR-5; this task adds the
+registry module and its tests only.
 
 **Files to change / create:**
 - `scripts/aws_access_cli_retention.py` (repo-level `scripts/`, not in the package) — argparse CLI: `--output-dir`, `--logs-dir`, `--keep-days-position`, `--keep-days-logs`, `--apply` (default
@@ -218,6 +234,10 @@ All paths below are under `src/pipelines/aws_access_cli/` unless stated. Tests a
 ---
 
 ## AAH-10 — Parallelise tenants with a bounded pool
+
+**Revised 2026-11-02 (needs SPR-4; do after AAH-7):** the pool, deterministic ordering, failure isolation and Athena cap are `run_pool` in `src/lib/pipeline_runtime/`; do not add a
+`ThreadPoolExecutor` to `schedule.py`. This task passes one group per tenant, adds `--max-workers`, builds one Athena client per tenant, and keeps the throttling warning. Its tests shrink to the AWS
+wiring (one client per tenant, `--max-workers 1` equals today's serial output).
 
 **Files to change / create:**
 - `schedule.py` — run tenants (not reports within a tenant) in a `ThreadPoolExecutor(max_workers=N)`; `--max-workers` flag (default 1, so behaviour is opt-in), deterministic result order.

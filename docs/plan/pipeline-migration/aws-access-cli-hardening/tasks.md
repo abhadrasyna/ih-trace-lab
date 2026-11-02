@@ -3,18 +3,20 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: AAH-1, AAH-2, AAH-3, AAH-4, AAH-5, AAH-6, AAH-7, AAH-8, AAH-9, AAH-10.**
+**Open, in this order: AAH-4, AAH-5, AAH-1, AAH-3, AAH-2, AAH-7, AAH-8, AAH-9, AAH-10, AAH-6.** Reordered 2026-11-02: the run engine that AAH-1/2/3/6/10 would each build is now the separate story
+`docs/plan/shared-pipeline-runtime/` (SPR-1 to SPR-6), and these five tasks become thin adopters of it. A task marked "needs SPR-n" must not start until that SPR task has a SHA; if the first unchecked
+task is blocked, do the next unblocked one and say so. AAH-4, AAH-5, AAH-7, AAH-8 and AAH-9 are AWS-specific and stay as written.
 
-- [ ] **AAH-1** — Add run summary record and non-zero-exit alerting to the schedule | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
-- [ ] **AAH-2** — Isolate preflight failure and add mid-run SSO re-check | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
-- [ ] **AAH-3** — Add per-unit timeout and per-metric isolation | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
 - [ ] **AAH-4** — Add empty-day sentinel for header-only CSVs | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
 - [ ] **AAH-5** — Fix `--force` scope across catch-up dates and document it | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
-- [ ] **AAH-6** — Add output and log retention script | Owner: AI agent | Model: n/a | Review: tests green + dry-run read by human | SHA: <—>
+- [ ] **AAH-1** — (needs SPR-2) Add run summary record and non-zero-exit alerting to the schedule | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
+- [ ] **AAH-3** — (needs SPR-2) Add per-unit timeout and per-metric isolation | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
+- [ ] **AAH-2** — (needs SPR-3) Isolate preflight failure and add mid-run SSO re-check | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
 - [ ] **AAH-7** — Add `ReportSpec` registry and one `run_report` | Owner: AI agent | Model: n/a | Review: tests green + CSV parity diff + code-reviewer | SHA: <—>
 - [ ] **AAH-8** — Deduplicate date, batch and error-code helpers | Owner: AI agent | Model: n/a | Review: tests green | SHA: <—>
 - [ ] **AAH-9** — Merge shaka queries and combine `unified_sessions` metrics | Owner: AI agent | Model: n/a | Review: tests green + CSV parity diff on a sample day | SHA: <—>
-- [ ] **AAH-10** — Parallelise tenants with a bounded pool | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
+- [ ] **AAH-10** — (needs SPR-4) Parallelise tenants with a bounded pool | Owner: AI agent | Model: n/a | Review: tests green + code-reviewer | SHA: <—>
+- [ ] **AAH-6** — (needs SPR-5) Add output and log retention script | Owner: AI agent | Model: n/a | Review: tests green + dry-run read by human | SHA: <—>
 
 ## Story done when
 

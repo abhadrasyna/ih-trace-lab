@@ -20,6 +20,9 @@ unrotated.
 
 **In bounds:** `src/pipelines/aws_access_cli/` (schedule, scripts, business modules, tests), the pipeline's own retention script under `scripts/`, and this story's docs.
 
+**Shared runtime (added 2026-11-02):** the run summary, runner/timeout, SSO pre-flight, pool and prune engines are built once in `src/lib/pipeline_runtime/` by `docs/plan/shared-pipeline-runtime/`
+(SPR-1 to SPR-6); AAH-1/2/3/6/10 only adopt them and are blocked until the named SPR task has a SHA.
+
 **Out of bounds:** report content and column layout (every refactor task must leave existing CSVs byte-identical for the same inputs, unless the task says otherwise); `src/lib/*` internals;
 `vendor/athena-mcp-server`; the crontab itself and AAM-5 (human-owned, unchanged); `investigations/ctap-smvod` readers.
 

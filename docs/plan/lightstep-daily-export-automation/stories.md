@@ -561,6 +561,10 @@ days (the wrapper uses 30, export uses 7) or keep everything; only `ctap-smvod` 
 
 ## LX-18 — Daily pipeline health check and failure notification
 
+**Revised 2026-11-02 (needs SPR-6):** do not parse the log text. The daily wrapper writes the SPR-2 status file (via LX-19) and `check_status` from `src/lib/pipeline_runtime/health.py` finds
+FAILED/NOT RUN steps and a missing or stale run. Drop `scripts/lib/run_summary.py`; this task keeps `notify.py` (notifier, `logs/alerts.log`, optional webhook), the FCID dedupe, the WARNING digest
+(the only part that still reads the log) and the cron lines. `check_daily_pipeline_health.py` becomes a thin wrapper over `scripts/check_pipeline_health.py`'s core.
+
 Added 2026-11-02. `run_daily_pipeline.py` exits non-zero and ends its log with a `==== run summary ====` block (OK / FAILED / NOT RUN per step), but nothing reads either, and cron does not catch up
 missed runs, so failures go unnoticed. The 31 Oct log holds about 50 WARNING lines (TransportError retries, smvod-release sanity checks) that are not all failures.
 
@@ -626,6 +630,11 @@ Added 2026-11-02. Re-running over an existing `smvod-release` file logs about 24
 
 ## LX-19 — Daily wrapper step identity and module split
 
+**Revised 2026-11-02 (needs SPR-2):** `StepRunner`, `make_subprocess_runner`, `run_steps` and the status/summary types are no longer created here: they move to `src/lib/pipeline_runtime/` in SPR-2
+(`Step` becomes `Unit`). This task keeps what is wrapper-specific: `Unit.id`/`group`/`tenant` assigned in the plan, `scripts/lib/daily_plan.py` (pure `build_steps`, `coverage_plan`,
+`select_from_step`), `scripts/lib/daily_summary.py` (the human-readable run-summary block, resume command from parsed args), and calling the shared `run_units`. `daily_runner.py` is not created. The
+design-review gate is satisfied by SPR-1's `design.md`.
+
 Added 2026-11-02 from the `run_daily_pipeline.py` review (`docs/refactor/design-principles.md`: SRP, DIP). `STEP_GROUPS` resumes by name prefix, so renaming a step silently breaks `--from-step`;
 `main()` rebuilds the resume flags by hand and can drift from `parse_args`; planning, running and summary share one 300-line file.
 
@@ -684,6 +693,9 @@ that consume all tenants stay all-or-nothing.
 ---
 
 ## LX-24 — Single SSO pre-flight and gated DRM exports
+
+**Revised 2026-11-02 (needs SPR-3):** the once-per-run pre-flight is `Preflight` in `src/lib/pipeline_runtime/`, with the refresh injected from `scripts/lib/runtime.ensure_valid_credentials`; this
+task wires it into the wrapper and `run_pipeline.py`, adds `--skip-auth-check` to every Athena child, and does the DRM-kind gating (the DRM part is unchanged).
 
 Added 2026-11-02 from the Lightstep/Athena call review. Each `run_athena_*` script runs its own SSO check and refresh unless `--skip-auth-check` is passed, so a run repeats the check per script and
 tenant (and races under LX-21). The DRM Lightstep exports run even when the DRM reports are skipped.
@@ -756,6 +768,10 @@ output files and columns; join on session ids locally instead of an `IN` list; c
 
 ## LX-27 — Artifact registry and prune script
 
+**Revised 2026-11-02 (needs SPR-5):** the registry type, `plan_prune`/`apply_prune` and `scripts/prune_artifacts.py` come from SPR-5; do not write `scripts/lib/artifact_registry.py` or a second prune
+script. This task does the grep-verified audit, the ctap-smvod registry module (`Artifact` rows for `data/` and `output/`, plus `docs/artifact-registry.md` as the human view), `RETENTION.md`, and the
+`parts pruned only after the stitched file exists` rule as a registry condition.
+
 Added 2026-11-02 from the data/output review. `data/` is 672 MB and `output/` is 533 MB (both gitignored). Duplicates seen: Lightstep part files (138 MB) kept beside the stitched files (267 MB),
 `smvod-ts` (95 MB) used only to enrich the merge, `error_eventdata_flat/` (265 MB, `*_all.csv` plus per-error-code copies, on top of the raw Athena file), the `setupsession` intermediate (59 MB),
 `check_script/` and `parallel_version/` folders under `data/lightstep/ZA/` (13 MB each), and one-off investigation outputs (bandwidth, ingest, `debug_all_events`, 3xxx household files, the range
@@ -777,6 +793,9 @@ registry rows marked prunable and older than their retention, never anything wit
 
 ## LX-21 — (optional) Parallel per-tenant chains
 
+**Revised 2026-11-02 (needs SPR-4):** the bounded pool, ordering, failure isolation and Athena cap are `run_pool` from SPR-4 (it absorbs `scripts/lib/lightstep_parallel.py`). This task adds
+`--parallel-tenants N`, the concurrency-safety check for `run_pipeline --tenant T`, and the tenant log prefix.
+
 Added 2026-11-02. Tenants are independent after the shared steps, so wall-clock time can drop by running them concurrently. Do only after LX-19, LX-20 and LX-24 (single SSO refresh), and only if a
 serial run is too slow.
 
@@ -792,6 +811,9 @@ refresh happens before the fan-out; log lines carry the FCID and a tenant prefix
 ---
 
 ## LX-22 — `run_pipeline.py` adopts the shared runner and typed steps
+
+**Revised 2026-11-02 (needs SPR-2):** the shared runner is `src/lib/pipeline_runtime/runner.py` (no rename step; `daily_runner.py` never existed). Express `_build_steps` as `Unit`s and `_run_tenant`
+as `run_units` with an injected runner whose default keeps today's `subprocess.run` behaviour (no timeout, output inherited); the Step 1b post-check hangs off the unit id.
 
 Added 2026-11-02 from the SOLID/pattern review. `run_pipeline._run_tenant` runs a list of `(label, argv, skip)` tuples with a direct `subprocess.run` (DIP seam missing, no timeout, no output capture)
 while `run_daily_pipeline.py` has its own runner; Step 1b's post-check is keyed on `step_index == 0`. Do after LX-19 (the shared runner and `Step`) and LX-20.

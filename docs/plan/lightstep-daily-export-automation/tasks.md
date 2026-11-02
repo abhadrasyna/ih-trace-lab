@@ -7,7 +7,9 @@ spec.
 maintainability: the time-boxed parity run first, silent-wrong-data and false-failure fixes next, the wrapper step-identity refactor LX-19 before the tasks that touch the same code (LX-17, LX-11),
 then the call and data optimisations LX-24 to LX-27 once the shared runner exists, the mechanical 60-file LX-12 and the health check LX-18 after the wrapper and its log layout settle, docs last; LX-6
 was split into 6a/6b; LX-19 to LX-22 came from the `run_daily_pipeline.py` and SOLID/pattern reviews and LX-23 to LX-27 from the data/output and Lightstep/Athena call reviews). LX-9a to LX-9d count as
-"LX-9" in other text; LX-21 is optional and needs LX-24.
+"LX-9" in other text; LX-21 is optional and needs LX-24. **Shared runtime (2026-11-02):** the generic runner, run summary/status file, SSO pre-flight, pool, prune and health-check core are built once
+in `docs/plan/shared-pipeline-runtime/` (SPR-1 to SPR-6), shared with the aws-access-cli hardening story. LX-19 needs SPR-2, LX-24 needs SPR-3, LX-21 needs SPR-4, LX-27 needs SPR-5, LX-18 needs SPR-6;
+do SPR-1 and SPR-2 alongside LX-6a/LX-14/LX-15/LX-16, and if the first unchecked task is blocked on an SPR task, do the next unblocked one and say so.
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -30,29 +32,31 @@ was split into 6a/6b; LX-19 to LX-22 came from the `run_daily_pipeline.py` and S
   code-reviewer | SHA: —
 - [ ] **LX-16** — Export skips an existing kind quietly, without the per-part "missing or failed verification" sanity warnings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
   SHA: —
-- [ ] **LX-19** — Daily wrapper step identity: `Step.id`/`group`/`tenant`, resume flags derived from the parsed args, plan/runner/summary split into `scripts/lib/` modules behind a `Protocol` (design
-  review first) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-19** — (needs SPR-2) Daily wrapper step identity: `Step.id`/`group`/`tenant`, resume flags derived from the parsed args, plan/runner/summary split into `scripts/lib/` modules behind a
+  `Protocol` (design review first) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-17** — Daily wrapper resume hint re-runs only failed tenants, steps use one pinned interpreter, and the check-inputs legend is logged once | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: code-reviewer | SHA: —
 - [ ] **LX-11** — Daily wrapper streams each step's output live and logs a heartbeat for quiet steps | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-20** — Daily wrapper: drop the duplicate 1xxx extract if `run_pipeline` Step 6e already produces it, and isolate a failed tenant so the others still complete | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **LX-22** — `run_pipeline.py` adopts the shared step runner and a typed step table (one runner for both scripts, steps no longer positional tuples) | Owner: Copilot CLI | Model:
+- [ ] **LX-22** — (needs SPR-2) `run_pipeline.py` adopts the shared step runner and a typed step table (one runner for both scripts, steps no longer positional tuples) | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **LX-24** — One run-level SSO pre-flight (children skip their own) and DRM exports gated by `--skip-drm-reports` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-24** — (needs SPR-3) One run-level SSO pre-flight (children skip their own) and DRM exports gated by `--skip-drm-reports` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
+  code-reviewer | SHA: —
 - [ ] **LX-25** — Adaptive Lightstep window sizing from the previous run's call and truncation counts, and an up-front skip of finished days | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer | SHA: —
 - [ ] **LX-26** — Spike: one shared Lightstep fetch for ZM and GH (same project), split locally by `busUnitId` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: —
 - [ ] **LX-23** — One Athena debug-events extract per tenant-day shared by Steps 4 and 6f (and the investigation scripts), plus one combined sessions query | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **LX-27** — Artifact registry (producer, readers, retention) and a dry-run-first prune script for `data/` and `output/` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
-  SHA: —
-- [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **LX-18** — Daily pipeline health check: parse the run summary and alert on FAILED/NOT RUN steps or a missing run, with a warning digest | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
+- [ ] **LX-27** — (needs SPR-5) Artifact registry (producer, readers, retention) and a dry-run-first prune script for `data/` and `output/` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer | SHA: —
+- [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-18** — (needs SPR-6) Daily pipeline health check: parse the run summary and alert on FAILED/NOT RUN steps or a missing run, with a warning digest | Owner: Copilot CLI | Model:
+  claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-6b** — Docs and `SCRIPTS.md` entries for the export command, the daily wrapper and the health check, plus the recorded LX-6a parity result | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: user | SHA: —
-- [ ] **LX-21** — (optional) Run per-tenant chains in parallel with bounded workers and an Athena concurrency cap | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-21** — (optional, needs SPR-4) Run per-tenant chains in parallel with bounded workers and an Athena concurrency cap | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
+  SHA: —
 
 ## Story done when
 
