@@ -241,7 +241,7 @@ def test_default_runs_all_discovered_tenants(tenant_root: Path, monkeypatch: pyt
 def test_tenant_flag_runs_only_that_tenant(tenant_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _write_inputs(tenant_root, "ZM")
     monkeypatch.setattr(run_pipeline, "discover_tenants", lambda date_iso: pytest.fail("must not discover"))
-    monkeypatch.setattr(run_pipeline, "resolve_tenant_context", lambda code: Mock(code=code))
+    monkeypatch.setattr(run_pipeline, "resolve_tenant_context", lambda code, **_: Mock(code=code))
     monkeypatch.setattr(run_pipeline, "require_lightstep_dir", lambda code: None)
     ran = _record_runs(monkeypatch)
 

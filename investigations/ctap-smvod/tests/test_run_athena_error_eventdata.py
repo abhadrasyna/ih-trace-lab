@@ -45,7 +45,7 @@ def test_output_path_uses_date_and_dir():
 def _run_main(monkeypatch, *argv: str) -> None:
     monkeypatch.setattr(sys, "argv", ["run_athena_error_eventdata.py", *argv])
     monkeypatch.setattr(mod, "init_logging", lambda slug: None)
-    monkeypatch.setattr(mod, "resolve_tenant_context", lambda code: CTX)
+    monkeypatch.setattr(mod, "resolve_tenant_context", lambda code, **_: CTX)
     mod.main()
 
 
