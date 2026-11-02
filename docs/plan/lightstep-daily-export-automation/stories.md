@@ -544,3 +544,21 @@ grep-style guard so a new script cannot silently go back to `app.log`).
 days (the wrapper uses 30, export uses 7) or keep everything; only `ctap-smvod` or reusable for other investigations.
 
 **Commit:** `feat(ctap-smvod): write per-script dated log files by default`
+
+## LX-18 — Daily pipeline health check and failure notification
+
+Added 2026-11-02. `run_daily_pipeline.py` exits non-zero and ends its log with a `==== run summary ====` block (OK / FAILED / NOT RUN per step), but nothing reads either, and cron does not catch up
+missed runs, so failures go unnoticed. The 31 Oct log holds about 50 WARNING lines (TransportError retries, smvod-release sanity checks) that are not all failures.
+
+**Files to change / create:**
+- `scripts/lib/run_summary.py` — pure parser: summary block and WARNING class counts from log text.
+- `scripts/lib/notify.py` — notifier interface (stdout/macOS + `logs/alerts.log`; optional webhook via env var, never in the repo).
+- `scripts/check_daily_pipeline_health.py` — argparse (`--date`, `--log-dir`, `--notify`); exit 1 on failure or missing log; dedupe per FCID.
+- `investigations/ctap-smvod/tests/` — parser, notifier (no network) and dedupe tests.
+- `docs/usage.md` §7g (cron lines: after the run, plus a ~15:00 IST dead-man's-switch), `CONTEXT.md`, `/Users/abhadra/github_copilot/SCRIPTS.md`.
+
+**What to implement:** alert on FAILED/NOT RUN steps or a missing/incomplete log; warnings only as a digest line; verify against the 30/31 Oct logs.
+
+**Decisions (open):** notification channel (Teams webhook recommended); warning threshold (suggest none: alert on FAILED only).
+
+**Commit:** `feat(ctap-smvod): alert on daily pipeline failures`

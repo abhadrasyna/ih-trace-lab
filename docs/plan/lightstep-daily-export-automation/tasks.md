@@ -30,6 +30,8 @@ spec.
   SHA: —
 - [ ] **LX-17** — Daily wrapper resume hint re-runs only failed tenants, steps use one pinned interpreter, and the check-inputs legend is logged once | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
   Review: code-reviewer | SHA: —
+- [ ] **LX-18** — Daily pipeline health check: parse the run summary and alert on FAILED/NOT RUN steps or a missing run, with a warning digest | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
+  code-reviewer | SHA: —
 
 ## Story done when
 
@@ -57,6 +59,8 @@ spec.
   pipeline.
 - **LX-16** — re-running over an existing `smvod-release` file logs one skip line and no 24 per-part verification warnings, and keeps no stale temp parts.
 - **LX-17** — the printed resume command names the failed tenants (`--tenants`), every step uses the same interpreter (the repo `.venv`), and the check-inputs table and legend appear once per run.
+- **LX-18** — a failed or not-run step, or a missing/incomplete daily log, raises one notification (tenant, step, FCID) through a pluggable notifier; warnings appear only in a digest line; the same
+  run is never alerted twice; verified on the 30/31 Oct logs.
 
 ## After each task
 
