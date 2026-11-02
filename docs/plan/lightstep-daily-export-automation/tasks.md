@@ -23,6 +23,13 @@ spec.
   SHA: 3690f57
 - [ ] **LX-11** — Daily wrapper streams each step's output live and logs a heartbeat for quiet steps | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-14** — Daily wrapper derives `--table-suffix` for a past-month day (or fails fast) instead of only warning | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-15** — Tenant-aware `smvod-ts` coverage check (low-volume tolerance) and check-inputs legend matches real blocking behaviour | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
+  code-reviewer | SHA: —
+- [ ] **LX-16** — Export skips an existing kind quietly, without the per-part "missing or failed verification" sanity warnings | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer |
+  SHA: —
+- [ ] **LX-17** — Daily wrapper resume hint re-runs only failed tenants, steps use one pinned interpreter, and the check-inputs legend is logged once | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
+  Review: code-reviewer | SHA: —
 
 ## Story done when
 
@@ -44,6 +51,12 @@ spec.
 - **LX-11** — a step's lines appear in the wrapper log as the step prints them (not after it exits), a step silent for 60 s logs a heartbeat, and the timeout still kills the whole process group
   (exit 124) with the same captured output as before.
 - **LX-12** — every `ctap-smvod` script writes `<investigation>/logs/<prefix>_<date>.log` by default through one wrapper, with no per-script path, and old files of the same prefix are pruned.
+- **LX-14** — a run for a day outside the current UTC month never reads the unsuffixed debug table silently: the suffix (e.g. `oct26`) is derived and passed to `run_pipeline`, or the run stops with a
+  clear error. Found in the 2026-10-31 log, where the unsuffixed run gave 5 GH 1xxx rows against 177 after the `--table-suffix oct26 --force` rerun.
+- **LX-15** — a quiet tenant (e.g. ZM, 133 sessions, first span 04:17 UTC) no longer fails the export and the input check on `smvod-ts` coverage, and the legend states whether a FAIL blocks the
+  pipeline.
+- **LX-16** — re-running over an existing `smvod-release` file logs one skip line and no 24 per-part verification warnings, and keeps no stale temp parts.
+- **LX-17** — the printed resume command names the failed tenants (`--tenants`), every step uses the same interpreter (the repo `.venv`), and the check-inputs table and legend appear once per run.
 
 ## After each task
 
