@@ -20,6 +20,7 @@ Usage:
     python3 run_daily_pipeline.py                       # yesterday UTC, ZA,GH,ZM
     python3 run_daily_pipeline.py --date 29102026 --skip-export
     python3 run_daily_pipeline.py --date 29102026 --from-step pipeline   # resume after a failure (export, check, pipeline, report, rank)
+    python3 run_daily_pipeline.py --date 30102026 --skip-export --table-suffix oct26 --force   # past-month day: read <id>_ccl_debug_events_oct26
 Crontab (13:00 IST daily, UTC day just ended):
     0 13 * * * cd <repo> && .venv/bin/python investigations/ctap-smvod/scripts/run_daily_pipeline.py >> investigations/ctap-smvod/logs/cron.out 2>&1
 Cron's PATH is minimal: set ``PATH`` (with ``aws``/``aws-sso``) at the top of the crontab.
@@ -41,6 +42,7 @@ from pathlib import Path
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 
+from lib.tenant_context import add_table_suffix_arg
 from scripts.lib.lightstep_export_kinds import KINDS, output_file_name
 from src.lib.logging.bootstrap import init_logging
 from src.lib.logging.context import current_fcid
@@ -94,7 +96,7 @@ def default_day(now: datetime | None = None) -> Date:
 
 
 def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: int, workers: int | None = None, python: str = sys.executable,
-                investigation_dir: Path = INVESTIGATION_DIR) -> list[Step]:
+                investigation_dir: Path = INVESTIGATION_DIR, table_suffix: str | None = None, force: bool = False) -> list[Step]:
     """The ordered step list for ``day``; pure, so it can be tested without running anything."""
     scripts = investigation_dir / "scripts"
     iso, ddmmyyyy = day.isoformat(), day.strftime("%d%m%Y")
@@ -107,9 +109,10 @@ def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: in
             for t in tenants
         ]
     reports = {t: investigation_dir / "output" / t / f"{iso}_error_report_1xxx.csv" for t in tenants}
+    pipeline_extra = (("--table-suffix", table_suffix) if table_suffix else ()) + (("--force",) if force else ())
     steps += [
         Step("check inputs", (python, str(scripts / "check_lightstep_inputs.py"), "--date", ddmmyyyy, "--drm"), continue_on_failure=True),
-        Step("run_pipeline", (python, str(scripts / "run_pipeline.py"), "--date", ddmmyyyy, "--drm", "--skip-input-check")),
+        Step("run_pipeline", (python, str(scripts / "run_pipeline.py"), "--date", ddmmyyyy, "--drm", "--skip-input-check", *pipeline_extra)),
         Step("error report 1xxx", (python, str(scripts / "extract_error_report_1xxx.py"), "--date", ddmmyyyy, "--tenants", ",".join(tenants)),
              outputs=tuple(reports.values())),
     ]
@@ -234,6 +237,8 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
                     help="Days before the run day to analyse, so the next day's Release file exists (default: 1)")
     ap.add_argument("--workers", type=int, default=None, choices=range(1, 9), metavar="1-8",
                     help="Passed to export_lightstep_day.py --workers (default: the exporter's own default, 4)")
+    add_table_suffix_arg(ap)
+    ap.add_argument("--force", action="store_true", help="Passed to run_pipeline.py: re-run Athena even if the output CSVs already have data")
     ap.add_argument("--top", type=int, default=10, help="Households to print per tenant in the ranking (default: 10)")
     ap.add_argument("--step-timeout-minutes", type=float, default=DEFAULT_STEP_TIMEOUT_MINUTES,
                     help=f"Kill any single step after this many minutes (default: {DEFAULT_STEP_TIMEOUT_MINUTES:g})")
@@ -254,7 +259,10 @@ def main(argv: Sequence[str] | None = None, runner: StepRunner | None = None) ->
         return 1
     fcid = init_logging("run-daily-pipeline", log_dir=args.log_dir, file_prefix=LOG_PREFIX, date=day, keep_days=LOG_KEEP_DAYS)
     LOGGER.info("daily pipeline for %s tenants=%s skip_export=%s fcid=%s", day.isoformat(), ",".join(tenants), args.skip_export, current_fcid())
-    steps = build_steps(day, tenants, skip_export=args.skip_export, top=args.top, workers=args.workers, investigation_dir=INVESTIGATION_DIR)
+    if args.table_suffix is None and (day.year, day.month) != (datetime.now(timezone.utc).year, datetime.now(timezone.utc).month):
+        LOGGER.warning("%s is not in the current UTC month and no --table-suffix was given: the unsuffixed debug table may lack that day's data", day.isoformat())
+    steps = build_steps(day, tenants, skip_export=args.skip_export, top=args.top, workers=args.workers, investigation_dir=INVESTIGATION_DIR,
+                        table_suffix=args.table_suffix, force=args.force)
     skipped: list[str] = []
     coverage = args.ebvs_release_coverage or args.from_step == "coverage"
     if coverage:
@@ -274,6 +282,7 @@ def main(argv: Sequence[str] | None = None, runner: StepRunner | None = None) ->
     flags = (" --ebvs-release-coverage" if coverage else "") + (" --skip-export" if args.skip_export else "")
     flags += f" --coverage-lag-days {args.coverage_lag_days}" if coverage and args.coverage_lag_days != 1 else ""
     flags += f" --tenants {','.join(tenants)}" if tenants != list(DEFAULT_TENANTS) else ""
+    flags += (f" --table-suffix {args.table_suffix}" if args.table_suffix else "") + (" --force" if args.force else "")
     for level, text in format_summary(steps, results, skipped, day, extra_flags=flags):
         LOGGER.log(level, "%s", text)
     failed = [r.name for r in results if not r.ok]
