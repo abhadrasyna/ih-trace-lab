@@ -359,11 +359,12 @@ One command runs the whole daily chain for a UTC day (default yesterday): `expor
 `extract_error_report_1xxx.py`, then `rank_households_by_error.py --top 10` per tenant. Options: `--date DDMMYYYY|YYYY-MM-DD`, `--tenants ZA,GH,ZM`, `--skip-export`, `--from-step
 export|check|pipeline|report|rank|coverage` (resume at that step after a failure, e.g. `--from-step rank`), `--ebvs-release-coverage` (opt-in last step: `analyze_ebvs_release_coverage.py` per tenant
 for the day `--coverage-lag-days` (default 1) before the run day; a tenant missing that day's `session`/`smvod`/`smvod-release` CSV is skipped with a warning, never a failure; implied by `--from-step
-coverage`), `--workers 1-8` (passed to the export, default 4), `--table-suffix oct26` and `--force` (passed to `run_pipeline.py` only, to re-read a past month's debug table; a warning is logged when
-the day is not in the current UTC month and no suffix is given), `--top`, `--log-dir`. The first failed step stops the run, except that an export whose 9 CSVs were all written (e.g. only the input
-check failed), the advisory input-check step and the ranking let it continue; the final exit is still non-zero; exit code is non-zero on any failure or missing output CSV. One FCID covers the run and
-is passed to the steps as `FCID`. Log: `logs/run-daily-pipeline_<date>.log` (30-day prune); cron stdout/stderr: `logs/cron.out`. The log ends with a `==== run summary ====` block: OK / FAILED / NOT
-RUN per step, SKIPPED coverage tenants with the missing file, and a ready-to-paste `to resume: ... --from-step <group>` line.
+coverage`; each tenant's coverage step is followed by `analyze_release_gap_webview.py` for the same day, skipped with a warning when that day's `setupsession_with_outcome.csv` is missing), `--workers
+1-8` (passed to the export, default 4), `--table-suffix oct26` and `--force` (passed to `run_pipeline.py` only, to re-read a past month's debug table; a warning is logged when the day is not in the
+current UTC month and no suffix is given), `--top`, `--log-dir`. The first failed step stops the run, except that an export whose 9 CSVs were all written (e.g. only the input check failed), the
+advisory input-check step and the ranking let it continue; the final exit is still non-zero; exit code is non-zero on any failure or missing output CSV. One FCID covers the run and is passed to the
+steps as `FCID`. Log: `logs/run-daily-pipeline_<date>.log` (30-day prune); cron stdout/stderr: `logs/cron.out`. The log ends with a `==== run summary ====` block: OK / FAILED / NOT RUN per step,
+SKIPPED coverage tenants with the missing file, and a ready-to-paste `to resume: ... --from-step <group>` line.
 
 ```
 python3 scripts/run_daily_pipeline.py --date 29102026 --skip-export

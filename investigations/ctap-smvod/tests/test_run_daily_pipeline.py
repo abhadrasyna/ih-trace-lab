@@ -136,7 +136,17 @@ def test_coverage_plan_uses_lagged_day_and_skips_tenants_with_missing_inputs(tmp
     steps, skipped = mod.coverage_plan(DAY, ["ZA", "GH"], 1, python="py", investigation_dir=tmp_path)
     assert [s.name for s in steps] == ["ebvs release coverage ZA"]
     assert steps[0].argv[-4:] == ("--date", "2026-10-28", "--tenant", "ZA") and steps[0].continue_on_failure
-    assert len(skipped) == 1 and "GH" in skipped[0] and "2026-10-28_session.csv" in skipped[0]
+    assert len(skipped) == 2 and "GH" in skipped[1] and "2026-10-28_session.csv" in skipped[1]
+    assert "ebvs release coverage webview ZA" in skipped[0] and "2026-10-28_setupsession_with_outcome.csv" in skipped[0]
+
+
+def test_coverage_plan_adds_webview_step_after_coverage_when_setupsession_report_exists(tmp_path):
+    _coverage_inputs(tmp_path, "ZA", "2026-10-28")
+    (tmp_path / "output" / "ZA").mkdir(parents=True)
+    (tmp_path / "output" / "ZA" / "2026-10-28_setupsession_with_outcome.csv").write_text("x")
+    steps, skipped = mod.coverage_plan(DAY, ["ZA"], 1, python="py", investigation_dir=tmp_path)
+    assert [s.name for s in steps] == ["ebvs release coverage ZA", "ebvs release coverage webview ZA"] and not skipped
+    assert steps[1].argv[1].endswith("analyze_release_gap_webview.py") and steps[1].continue_on_failure
 
 
 def test_summary_reports_each_step_and_resume_command(tmp_path):

@@ -7,7 +7,8 @@ Steps, in order (each a subprocess run from ``investigations/ctap-smvod/``, one 
   4. ``extract_error_report_1xxx.py --date DDMMYYYY --tenants ...``
   5. ``rank_households_by_error.py --csv output/T/YYYY-MM-DD_error_report_1xxx.csv --top N`` per tenant
   6. (opt-in ``--ebvs-release-coverage``) ``analyze_ebvs_release_coverage.py`` per tenant for the day ``--coverage-lag-days`` (default 1) before the run day,
-     so the next day's Release file exists; a tenant whose inputs for that day are missing is skipped with a warning (never a failure)
+     so the next day's Release file exists; a tenant whose inputs for that day are missing is skipped with a warning (never a failure).
+     Each tenant's coverage step is followed by ``analyze_release_gap_webview.py`` (WebView split of the sessions with no Release)
 
 The log ends with a summary: OK / FAILED / NOT RUN / SKIPPED per step and the exact command to resume.
 
@@ -141,6 +142,13 @@ def coverage_plan(day: Date, tenants: Sequence[str], lag_days: int, *, python: s
         steps.append(Step(f"ebvs release coverage {tenant}",
                           (python, str(investigation_dir / "scripts" / "analyze_ebvs_release_coverage.py"), "--date", iso, "--tenant", tenant),
                           outputs=(investigation_dir / "output" / tenant / f"{iso}_ebvs_release_coverage.csv",), continue_on_failure=True))
+        setup_report = investigation_dir / "output" / tenant / f"{iso}_setupsession_with_outcome.csv"
+        if not setup_report.is_file():
+            skipped.append(f"ebvs release coverage webview {tenant} ({iso}): missing {setup_report.name}")
+            continue
+        steps.append(Step(f"ebvs release coverage webview {tenant}",
+                          (python, str(investigation_dir / "scripts" / "analyze_release_gap_webview.py"), "--date", iso, "--tenant", tenant),
+                          outputs=(investigation_dir / "output" / tenant / f"{iso}_release_gap_webview.csv",), continue_on_failure=True))
     return steps, skipped
 
 
