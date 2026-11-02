@@ -22,7 +22,7 @@ queried.
 |---|---|---|---|
 | `--lookback-days N` | daily | 7 | Also process the N days before `--date` |
 | `--retry-blank-days N` | daily | 3 | Adoption reports: re-run dates with blank cells if at most N days old; use a large N to backfill old blanks |
-| `--table-suffix S` | daily | none | Read each tenant's `<id>_ccl_debug_events_S` table (e.g. `oct26`) for a past month, whose events are missing from the current table |
+| `--table-suffix S` | daily, weekly | none | Read each tenant's `<id>_ccl_debug_events_S` table (e.g. `oct26`); needs `--no-catch-up`; weekly runs stop at the start month's last day |
 | `--lookback-weeks N` | weekly | 4 | Also process the N weeks before `--week` |
 | `--lookback-months N` | monthly | 3 | Also process the N months before `--month` |
 | `--no-catch-up` | all three | off | Process only the target period |
@@ -47,6 +47,9 @@ python -m src.pipelines.aws_access_cli.scripts.run_daily_reports --date 2026-10-
 # Weekly and monthly
 python -m src.pipelines.aws_access_cli.scripts.run_weekly_reports --week 2026-09-30
 python -m src.pipelines.aws_access_cli.scripts.run_weekly_reports --week 2026-09-30 --force --no-catch-up
+
+# Week crossing a month end: 26 Oct week covers 26-31 Oct only, from the oct26 tables
+python -m src.pipelines.aws_access_cli.scripts.run_weekly_reports --week 2026-10-26 --force --no-catch-up --table-suffix oct26
 python -m src.pipelines.aws_access_cli.scripts.run_monthly_reports --month 2026-09
 python -m src.pipelines.aws_access_cli.scripts.run_monthly_reports --month 2026-09 --lookback-months 6
 ```

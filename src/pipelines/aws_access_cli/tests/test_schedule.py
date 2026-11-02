@@ -10,7 +10,7 @@ import pytest
 from src.lib.logging.bootstrap import init_logging
 from src.lib.logging.context import FcidLogFilter, _fcid_var
 from src.pipelines.aws_access_cli import schedule
-from src.pipelines.aws_access_cli.scripts import common, run_daily_reports
+from src.pipelines.aws_access_cli.scripts import common, run_daily_reports, run_weekly_reports
 from src.pipelines.aws_access_cli.tenants import DEFAULT_TENANT
 
 
@@ -109,6 +109,39 @@ def test_run_daily_reports_table_suffix_is_per_tenant(monkeypatch: pytest.Monkey
     seen.clear()
     run_daily_reports.main(["--date", "2026-10-31", "--no-catch-up"])
     assert "--table" not in seen[0]
+
+
+def test_run_weekly_reports_table_suffix_cuts_week_at_month_end(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[list[str]] = []
+
+    def fake(build_argv, *_a, **_k) -> int:
+        seen.append(build_argv(DEFAULT_TENANT))
+        return 0
+
+    monkeypatch.setattr(run_weekly_reports, "init_logging", lambda _slug: "fcid")
+    monkeypatch.setattr(schedule, "run_for_all_tenants", fake)
+
+    run_weekly_reports.main(["--week", "2026-10-26", "--no-catch-up", "--table-suffix", "oct26"])
+    argv = seen[0]
+    assert argv[argv.index("--end-date") + 1] == "2026-10-31"
+    assert argv[argv.index("--table") + 1] == f"{DEFAULT_TENANT.debug_events_table}_oct26"
+
+    seen.clear()
+    run_weekly_reports.main(["--week", "2026-10-19", "--no-catch-up", "--table-suffix", "oct26"])
+    assert seen[0][seen[0].index("--end-date") + 1] == "2026-10-25"
+
+    seen.clear()
+    run_weekly_reports.main(["--week", "2026-10-26", "--no-catch-up"])
+    assert "--table" not in seen[0] and "--end-date" not in seen[0]
+
+
+def test_table_suffix_requires_no_catch_up(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(run_weekly_reports, "init_logging", lambda _slug: "fcid")
+    monkeypatch.setattr(run_daily_reports, "init_logging", lambda _slug: "fcid")
+    with pytest.raises(SystemExit):
+        run_weekly_reports.main(["--week", "2026-10-26", "--table-suffix", "oct26"])
+    with pytest.raises(SystemExit):
+        run_daily_reports.main(["--date", "2026-10-31", "--table-suffix", "oct26"])
 
 
 def test_run_adoption_cli_preview_off_by_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

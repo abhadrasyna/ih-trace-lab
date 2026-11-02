@@ -36,7 +36,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--retry-blank-days', type=int, default=3, help='Re-run adoption dates with blank cells if at most this many days old (all sub-reports accept the flag via base_parser; only adoption ones use it).')
     parser.add_argument('--table-suffix', default=None, help="Read each tenant's '<id>_ccl_debug_events_<suffix>' table (e.g. oct26) instead of the current-month one.")
     args = parser.parse_args(argv)
-
+    if args.table_suffix and not args.no_catch_up:
+        parser.error('--table-suffix requires --no-catch-up (lookback periods would read the wrong month table)')
     def build_argv(value: str, tenant: TenantConfig) -> list[str]:
         base = ['--date', value, '--tenant', tenant.code, '--skip-auth-check', '--retry-blank-days', str(args.retry_blank_days)]
         if args.table_suffix:
