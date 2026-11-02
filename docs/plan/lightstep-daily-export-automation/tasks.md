@@ -8,8 +8,8 @@ maintainability: the time-boxed parity run first, silent-wrong-data and false-fa
 then the call and data optimisations LX-24 to LX-27 once the shared runner exists, the mechanical 60-file LX-12 and the health check LX-18 after the wrapper and its log layout settle, docs last; LX-6
 was split into 6a/6b; LX-19 to LX-22 came from the `run_daily_pipeline.py` and SOLID/pattern reviews and LX-23 to LX-27 from the data/output and Lightstep/Athena call reviews). LX-9a to LX-9d count as
 "LX-9" in other text; LX-21 is optional and needs LX-24. **Shared runtime (2026-11-02):** the generic runner, run summary/status file, SSO pre-flight, pool, prune and health-check core are built once
-in `docs/plan/shared-pipeline-runtime/` (SPR-1 to SPR-6), shared with the aws-access-cli hardening story. LX-19 needs SPR-2, LX-24 needs SPR-3, LX-21 needs SPR-4, LX-27 needs SPR-5, LX-18 needs SPR-6;
-do SPR-1 and SPR-2 alongside LX-6a/LX-14/LX-15/LX-16, and if the first unchecked task is blocked on an SPR task, do the next unblocked one and say so.
+in `docs/plan/shared-pipeline-runtime/` (SPR-1 to SPR-6), shared with the aws-access-cli hardening story. LX-19 needs SPR-2, LX-12 needs SPR-2, LX-24 needs SPR-3, LX-21 needs SPR-4, LX-27 needs SPR-5,
+LX-18 needs SPR-6; do SPR-1 and SPR-2 alongside LX-6a/LX-14/LX-15/LX-16, and if the first unchecked task is blocked on an SPR task, do the next unblocked one and say so.
 
 - [x] **LX-1** — Feasibility spike: reproduce one hand-exported file per kind via the API and diff | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 00ea164
 - [x] **LX-2** — Query templates for the eight exports plus a per-kind registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: user | SHA: 1795278
@@ -50,7 +50,7 @@ do SPR-1 and SPR-2 alongside LX-6a/LX-14/LX-15/LX-16, and if the first unchecked
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-27** — (needs SPR-5) Artifact registry (producer, readers, retention) and a dry-run-first prune script for `data/` and `output/` | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review:
   code-reviewer | SHA: —
-- [ ] **LX-12** — Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [ ] **LX-12** — (needs SPR-2) Per-script dated log files under `investigations/ctap-smvod/logs/` by default | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-18** — (needs SPR-6) Daily pipeline health check: parse the run summary and alert on FAILED/NOT RUN steps or a missing run, with a warning digest | Owner: Copilot CLI | Model:
   claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **LX-6b** — Docs and `SCRIPTS.md` entries for the export command, the daily wrapper and the health check, plus the recorded LX-6a parity result | Owner: Copilot CLI | Model: claude-sonnet-5.5 |
@@ -79,7 +79,8 @@ do SPR-1 and SPR-2 alongside LX-6a/LX-14/LX-15/LX-16, and if the first unchecked
   daily wrapper, `--force` re-pulls over stale CSVs, and a past-month day run without a suffix logs a warning.
 - **LX-11** — a step's lines appear in the wrapper log as the step prints them (not after it exits), a step silent for 60 s logs a heartbeat, and the timeout still kills the whole process group
   (exit 124) with the same captured output as before.
-- **LX-12** — every `ctap-smvod` script writes `<investigation>/logs/<prefix>_<date>.log` by default through one wrapper, with no per-script path, and old files of the same prefix are pruned.
+- **LX-12** — every `ctap-smvod` script writes `<investigation>/logs/<prefix>_<date>.log` by default through one wrapper, with no per-script path, old files of the same prefix are pruned after the
+  shared 7-day default (`DEFAULT_LOG_KEEP_DAYS`).
 - **LX-14** — a run for a day outside the current UTC month never reads the unsuffixed debug table silently: the suffix (e.g. `oct26`) is derived and passed to `run_pipeline`, or the run stops with a
   clear error. Found in the 2026-10-31 log, where the unsuffixed run gave 5 GH 1xxx rows against 177 after the `--table-suffix oct26 --force` rerun.
 - **LX-15** — a quiet tenant (e.g. ZM, 133 sessions, first span 04:17 UTC) no longer fails the export and the input check on `smvod-ts` coverage, and the legend states whether a FAIL blocks the
