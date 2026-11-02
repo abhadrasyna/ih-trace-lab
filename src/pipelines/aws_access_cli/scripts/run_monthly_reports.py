@@ -31,10 +31,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--force', action='store_true')
     parser.add_argument('--lookback-months', type=int, default=3, help='Also fill missing periods this many months before the target.')
     parser.add_argument('--no-catch-up', action='store_true', help='Only process the target period.')
+    parser.add_argument('--table-suffix', default=None, help="Read each tenant's '<id>_ccl_debug_events_<suffix>' table (e.g. oct26); requires --no-catch-up.")
     args = parser.parse_args(argv)
+    if args.table_suffix and not args.no_catch_up:
+        parser.error('--table-suffix requires --no-catch-up (lookback periods would read the wrong month table)')
 
     def build_argv(value: str, tenant: TenantConfig) -> list[str]:
-        return ['--month', value, '--tenant', tenant.code, '--period', 'month', '--skip-auth-check'] + (['--force'] if args.force and value == values[-1] else [])
+        base = ['--month', value, '--tenant', tenant.code, '--period', 'month', '--skip-auth-check']
+        if args.table_suffix:
+            base += ['--table', f'{tenant.debug_events_table}_{args.table_suffix}']
+        return base + (['--force'] if args.force and value == values[-1] else [])
 
     values = [args.month] if args.no_catch_up else catch_up_months(args.month, args.lookback_months)
     return run_catch_up(values, build_argv, _SUB_REPORTS, preflight=lambda: make_auth().ensure_session(DEFAULT_RUNTIME.profile))
