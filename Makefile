@@ -4,7 +4,7 @@ VENV_DIR := .venv
 PYTHON := $(VENV_DIR)/bin/python
 PIP := $(VENV_DIR)/bin/pip
 
-.PHONY: help all venv test lint lint-fix typecheck pre-commit registries clean clean-all
+.PHONY: help all venv test lint lint-fix typecheck pre-commit registries clean clean-all clean-locks
 
 help: ## Show this help
 	@echo "Available targets:"
@@ -40,6 +40,9 @@ clean: ## Remove local caches and pyc files
 	find . -type d -name '__pycache__' -not -path './$(VENV_DIR)/*' -exec rm -rf {} +
 	find . -type f -name '*.pyc' -not -path './$(VENV_DIR)/*' -exec rm -f {} +
 	rm -rf .pytest_cache
+
+clean-locks: ## Remove MonthlyCsvStore .lock sidecar files under output/ (run only when no report job is active)
+	find output -name '*.csv.lock' -type f -delete
 
 clean-all: clean ## clean + remove the .venv
 	rm -rf $(VENV_DIR)
