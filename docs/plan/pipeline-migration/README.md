@@ -96,6 +96,7 @@ graph TB
 |---|---|---|---|---|
 | `aws-access-cli-pipeline-migration/` | Port Athena reports to `src/pipelines/aws-access-cli/`, incl. PT-6 cutover | 🔄 In progress (merged) | taxonomy PT-1/2/6/7, lib-migration, catalog | `5f89050` |
 | `ctap-smvod-investigation-migration/` | Port campaign to `investigations/ctap-smvod/`, incl. manual-step + output reorg | ✅ Done (merged) | taxonomy PT-1/2/7, lib-migration, catalog | `b417cfa` |
+| `aws-access-cli-hardening/` | Add run summary, failure isolation, dedup and query merging to the aws-access-cli chain | ⬜ Not started | `aws-access-cli-pipeline-migration` AAM-1..4, AAM-6 | — |
 
 Status: ⬜ Not started · 🔄 In progress · ✅ Done. This column is the epic's progress view — per-task checkboxes live only in each sub-story's `tasks.md`.
 

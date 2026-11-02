@@ -18,6 +18,7 @@ If any of these are not yet ✅ done, stop and pick up that story instead — do
 | If you're working on… | Go to |
 |---|---|
 | `aws-access-cli` (scheduled Athena adoption/session/shaka-error reports, cron-driven) | `aws-access-cli-pipeline-migration/prompt.md` |
+| `aws-access-cli` resilience, maintainability and query-cost hardening (after the port) | `aws-access-cli-hardening/prompt.md` |
 | `ctap-smvod-session-report` (recurring, part-manual/part-Athena investigation campaign) | `ctap-smvod-investigation-migration/prompt.md` |
 
 ## Invariant
