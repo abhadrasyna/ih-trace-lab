@@ -535,6 +535,9 @@ Added 2026-11-02. `run_daily_pipeline.py` already writes `investigations/ctap-sm
 60 or so `ctap-smvod` entry points call `init_logging("<slug>")` with no log arguments, so they append to the shared `logs/app.log` at the repo root. Wanted: by default, each script writes
 `<investigation>/logs/<prefix>_<date>.log`, the same format as the wrapper.
 
+**Revised 2026-11-02:** retention is the shared `DEFAULT_LOG_KEEP_DAYS = 7` in `src/lib/logging` (added in SPR-2; `init_logging` uses it when `keep_days` is not given), not a per-script number; the
+helper below passes no `keep_days` of its own. Needs SPR-2.
+
 **Files to change / create:**
 - `investigations/ctap-smvod/scripts/lib/runtime.py` (or a new small `scripts/lib/script_logging.py`) — `init_script_logging(slug)`.
 - Every `investigations/ctap-smvod/scripts/*.py` that calls `init_logging(` — one mechanical replacement, no other change.

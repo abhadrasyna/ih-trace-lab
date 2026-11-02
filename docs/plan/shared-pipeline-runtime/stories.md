@@ -47,7 +47,11 @@ one runner test. Consumers (AAH, LX) change in their own tasks; this story never
 1. Move behaviour, not names: the daily wrapper's loop and `make_subprocess_runner` become the shared ones byte-for-byte in logging and exit codes; the daily wrapper keeps passing its own tests via
    LX-19.
 2. FCID is read from the environment/logging context inside worker threads and passed through `env` for subprocesses (`logging-and-correlation-id.md`).
-3. Status JSON: `{"fcid","started","finished","exit_code","units":[{"id","tenant","group","status","exit_code","seconds","error"}]}`.
+3. Logging: `run_units` owns the `step start` / `step end` / `[unit] line` log format so both chains log identically, and each `UnitResult` records the run FCID. Add `DEFAULT_LOG_KEEP_DAYS = 7` to
+   `src/lib/logging` and have `init_logging` use it when a dated log is requested without `keep_days`; existing callers that pass `keep_days` are unchanged. Dated logs are pruned at the start of the
+   next run of the same prefix, so a wrapper that runs weekly or monthly keeps its last log until the next run. The status file is overwritten per run and is never pruned by this rule, so health
+   checks do not depend on logs.
+4. Status JSON: `{"fcid","started","finished","exit_code","units":[{"id","tenant","group","status","exit_code","seconds","error"}]}`.
 
 **Tests (no network, no real external services):**
 - `test_run_units_stops_after_failure_unless_policy_continues`.

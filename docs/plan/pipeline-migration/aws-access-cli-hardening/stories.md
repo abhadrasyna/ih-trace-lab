@@ -133,8 +133,9 @@ tests as integration tests against fakes.
 ## AAH-6 — Output and log retention
 
 **Revised 2026-11-02 (needs SPR-5):** no new prune engine. Declare this pipeline's artifacts (position CSVs, cron `.out` files, `app.log`) as `Artifact` registry rows and run them through
-`scripts/prune_artifacts.py`; log rotation of `app.log` stays here if the logger config is the right place. The dry-run-default and `SCRIPTS.md` requirements are satisfied by SPR-5; this task adds the
-registry module and its tests only.
+`scripts/prune_artifacts.py`. `app.log` is not rotated: each wrapper switches to dated logs through `init_logging(log_dir=, file_prefix=, date=)` with the shared 7-day default
+(`DEFAULT_LOG_KEEP_DAYS`, SPR-2), one prefix per wrapper (`aws-access-cli-daily`, `-weekly`, `-monthly`, `-backfill`) so a weekly or monthly log is not pruned by the daily one; cron `.out` files stay
+under the registry. The dry-run-default and `SCRIPTS.md` requirements are satisfied by SPR-5; this task adds the registry module and its tests only.
 
 **Files to change / create:**
 - `scripts/aws_access_cli_retention.py` (repo-level `scripts/`, not in the package) — argparse CLI: `--output-dir`, `--logs-dir`, `--keep-days-position`, `--keep-days-logs`, `--apply` (default
