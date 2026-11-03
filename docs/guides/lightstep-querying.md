@@ -26,6 +26,20 @@ that it was followed.
 | Saved Lightstep CSV exports (ctap-smvod) | `investigations/ctap-smvod/docs/lightstep-drm-exports.md` |
 | Sample spans, household/device field naming | `investigations/mtn-sa-span-attribute-audit/docs/` |
 
+## mDRM EU to US hop
+
+The EU and US projects are separate Lightstep projects reached through separate MCP tool sets (`lightstep-eu_*` for `mcs-go-prod-iye9omdf-eu`, `lightstep-us_*` for `mcs-mdrm-production`). Nothing
+joins them except the flow correlation id, which you copy across by hand. Full detail: `knowledge/mtn-sa-mdrm-session-to-device-tracing.md` and
+`investigations/ctap-smvod/docs/lightstep-drm-exports.md`. This recipe is from those docs and has not been re-verified live.
+
+1. Resolve the tenant first (`scripts/resolve_tenant.py`); apply the returned filter on the shared EU project. The mDRM tenant is the internal `qfrtzlcj`, not the GO tenant `iye9omdf`.
+2. EU `query_spans`: `service == "go-mdrmfe" && drmAuthToken.sessionId == "<abr-vod-...>"`. Read `fcid` (lowercase), `householdId`, `deviceId`, `brRef` and the user agent from the result.
+3. US `query_spans`: `fcId == "<fcid from step 2>"`, with a tight time window. This returns the whole license chain (`mdrm-rate-limit` to `authorization-token-service` to `session-state-enforcer` to
+   license generation, plus the CDM spans).
+4. Tag case differs: `fcid` on EU `go-mdrmfe`, `FCID` on `ctap`/`session-guard`, `fcId` on every US service. A wrong-case filter returns empty without an error.
+5. Do not pivot on `sessionId` or `drmAuthToken.jti` on the US side (not indexed), and do not rely on `get_stored_trace` (most spans 404 from sampling).
+6. A missing US row is not proof of failure: sampling can drop rows (13 ZA mdrmfe `201` rows had no LRM row). A failure usually shows as EU `go-mdrmfe` 403 with a US LRM 400 on the same `fcId`.
+
 ## Pitfalls that recur
 
 - **Tool/syntax split:** the `spans count | delta | ...` pipeline works only in `query_timeseries`; `query_spans` takes a plain `uql_filter`. Use RFC3339 timestamps. `get_stored_trace` needs hex ids,
