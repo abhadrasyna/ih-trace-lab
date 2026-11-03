@@ -37,7 +37,7 @@ from src.tenant_registry import TenantRegistry
 
 LOGGER = logging.getLogger(__name__)
 LIGHTSTEP_RETENTION = timedelta(days=7)
-OUTPUT_PERIOD_S = 60
+SERIES_POINT_SECONDS = 60
 
 
 def parse_utc(text: str, *, end: bool = False) -> datetime:
@@ -67,7 +67,7 @@ def lightstep_part(tenant_code: str, hhid: str, oldest: datetime, youngest: date
         base_url, org = ENDPOINTS[target.region.upper()]
         return fetch_all_series(transport, project=Project(base_url, org, target.project),
                                 token=load_token(target.region), uql=uql, oldest=oldest, youngest=youngest,
-                                output_period=OUTPUT_PERIOD_S)
+                                output_period=SERIES_POINT_SECONDS)
 
     sm_vod = fetch(eu, ht.sm_vod_uql(hhid))
     mdrmfe = fetch(eu, ht.mdrmfe_uql(hhid))

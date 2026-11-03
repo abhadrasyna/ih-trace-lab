@@ -11,23 +11,37 @@ import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
-_ID = re.compile(r"^[A-Za-z0-9_-]{20,100}$")
-_FCID = re.compile(r"^[A-Za-z0-9]{8,64}$")
+_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,100}$")
+_FCID_PATTERN = re.compile(r"^[A-Za-z0-9]{8,64}$")
 
 Series = Mapping[str, object]
 
-OUTCOME_FAILED = "FAILED"
-OUTCOME_PLAYED = "PLAYED"
-OUTCOME_LICENSE_OK = "LICENSE_OK_PLAYBACK_UNCONFIRMED"
-OUTCOME_LICENSE_DENIED = "LICENSE_DENIED"
-OUTCOME_NO_LICENSE = "NO_LICENSE_REQUEST"
-OUTCOME_NO_ATHENA = "NO_PLAYER_OUTCOME"
+# Each outcome is prefixed with the system that produced the evidence; that prefix is the `evidence_layer` column.
+OUTCOME_ATHENA_PLAYER_ERROR = "ATHENA_PLAYER_ERROR"
+OUTCOME_ATHENA_PLAYING_SEEN = "ATHENA_PLAYING_SEEN"
+OUTCOME_ATHENA_EVENTS_NO_PLAY_OR_ERROR = "ATHENA_EVENTS_NO_PLAY_OR_ERROR"
+OUTCOME_SMVOD_CREATE_NON_2XX = "SMVOD_CREATE_NON_2XX"
+OUTCOME_MDRMFE_SPAN_NOT_SEEN = "MDRMFE_SPAN_NOT_SEEN"
+OUTCOME_MDRMFE_STATUS_NON_2XX = "MDRMFE_STATUS_NON_2XX"
+OUTCOME_MDRM_US_HOP_NON_2XX = "MDRM_US_HOP_NON_2XX"
+OUTCOME_MDRM_LICENSE_OK_NO_ATHENA = "MDRM_LICENSE_OK_NO_ATHENA"
+
+EVIDENCE_LAYER = {
+    OUTCOME_ATHENA_PLAYER_ERROR: "ATHENA",
+    OUTCOME_ATHENA_PLAYING_SEEN: "ATHENA",
+    OUTCOME_ATHENA_EVENTS_NO_PLAY_OR_ERROR: "ATHENA",
+    OUTCOME_SMVOD_CREATE_NON_2XX: "SMVOD",
+    OUTCOME_MDRMFE_SPAN_NOT_SEEN: "MDRMFE",
+    OUTCOME_MDRMFE_STATUS_NON_2XX: "MDRMFE",
+    OUTCOME_MDRM_US_HOP_NON_2XX: "MDRM",
+    OUTCOME_MDRM_LICENSE_OK_NO_ATHENA: "MDRM",
+}
 
 COLUMNS = (
     "first_seen_utc", "sessionId", "contentId", "clientIp", "sm_vod_create", "sm_vod_teardown",
     "drmType", "brRef", "mdrmfe_status", "fcid", "licence_chain", "drm_make", "drm_model",
     "drm_platform", "drm_security_level", "athena_error_code", "athena_error_text", "athena_shaka_error",
-    "athena_user_agent", "outcome",
+    "athena_user_agent", "outcome", "evidence_layer",
 )
 
 
@@ -51,7 +65,7 @@ class SessionRow:
 def validate_hhid(hhid: str) -> str:
     """Returns the stripped household id; raises ValueError for anything that is not a plain id token."""
     value = hhid.strip()
-    if not _ID.fullmatch(value):
+    if not _ID_PATTERN.fullmatch(value):
         raise ValueError(f"householdId {hhid!r} is not a plain id (20-100 chars of A-Z a-z 0-9 _ -)")
     return value
 
@@ -76,7 +90,7 @@ def us_chain_uql(fcids: Iterable[str]) -> str:
     ids = sorted({f.strip() for f in fcids if f.strip()})
     if not ids:
         raise ValueError("no fcid to query")
-    bad = [f for f in ids if not _FCID.fullmatch(f)]
+    bad = [f for f in ids if not _FCID_PATTERN.fullmatch(f)]
     if bad:
         raise ValueError(f"malformed fcid(s): {bad}")
     flt = " || ".join(f'fcId == "{f}"' for f in ids)
@@ -196,22 +210,27 @@ def classify(row: SessionRow, athena_loaded: bool) -> str:
     if athena_loaded:
         info = row.athena
         if info.get("error_code"):
-            return OUTCOME_FAILED
+            return OUTCOME_ATHENA_PLAYER_ERROR
         if info.get("played"):
-            return OUTCOME_PLAYED
+            return OUTCOME_ATHENA_PLAYING_SEEN
         if info:
-            return OUTCOME_NO_ATHENA
+            return OUTCOME_ATHENA_EVENTS_NO_PLAY_OR_ERROR
+    if row.create_status and not _status_ok(row.create_status):
+        return OUTCOME_SMVOD_CREATE_NON_2XX
     if not row.mdrmfe_status:
-        return OUTCOME_NO_LICENSE
-    if not _status_ok(row.mdrmfe_status) or (row.chain and not all(_status_ok(p.rsplit(":", 1)[-1]) for p in row.chain.split(";"))):
-        return OUTCOME_LICENSE_DENIED
-    return OUTCOME_LICENSE_OK
+        return OUTCOME_MDRMFE_SPAN_NOT_SEEN
+    if not _status_ok(row.mdrmfe_status):
+        return OUTCOME_MDRMFE_STATUS_NON_2XX
+    if row.chain and not all(_status_ok(p.rsplit(":", 1)[-1]) for p in row.chain.split(";")):
+        return OUTCOME_MDRM_US_HOP_NON_2XX
+    return OUTCOME_MDRM_LICENSE_OK_NO_ATHENA
 
 
 def to_table(rows: Mapping[str, SessionRow], athena_loaded: bool, fmt_time) -> list[dict[str, str]]:
     """Rows sorted by first-seen time, one dict per session keyed by ``COLUMNS``; ``fmt_time(ms)`` renders the time."""
     table = []
     for row in sorted(rows.values(), key=lambda r: (r.first_seen_ms is None, r.first_seen_ms or 0, r.session_id)):
+        outcome = classify(row, athena_loaded)
         table.append({
             "first_seen_utc": fmt_time(row.first_seen_ms) if row.first_seen_ms is not None else "",
             "sessionId": row.session_id, "contentId": row.content_id, "clientIp": row.client_ip,
@@ -221,6 +240,6 @@ def to_table(rows: Mapping[str, SessionRow], athena_loaded: bool, fmt_time) -> l
             "drm_platform": row.drm.get("platform", ""), "drm_security_level": row.drm.get("security_level", ""),
             "athena_error_code": row.athena.get("error_code", ""), "athena_error_text": row.athena.get("error_text", ""),
             "athena_shaka_error": row.athena.get("shaka_error", ""), "athena_user_agent": row.athena.get("user_agent", ""),
-            "outcome": classify(row, athena_loaded),
+            "outcome": outcome, "evidence_layer": EVIDENCE_LAYER[outcome],
         })
     return table

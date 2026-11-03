@@ -37,16 +37,30 @@ def test_session_joins_sm_vod_mdrmfe_and_us_chain_and_reports_device():
     row = ht.to_table(rows, False, lambda ms: str(ms))[0]
     assert (row["sm_vod_create"], row["sm_vod_teardown"], row["brRef"], row["fcid"]) == ("200", "204", "LOW", FCID)
     assert (row["drm_make"], row["drm_model"], row["drm_security_level"]) == ("Samsung", "r12s", "L1")
-    assert row["outcome"] == ht.OUTCOME_LICENSE_OK
+    assert row["outcome"] == ht.OUTCOME_MDRM_LICENSE_OK_NO_ATHENA and row["evidence_layer"] == "MDRM"
     assert ht.device_ids([SM_POST], [MDRMFE]) == ["dev1"]
 
 
 def test_outcome_without_mdrmfe_or_with_failed_chain_is_flagged():
     rows = ht.build_sessions([SM_POST], [])
-    assert ht.classify(rows[SID], False) == ht.OUTCOME_NO_LICENSE
+    assert ht.classify(rows[SID], False) == ht.OUTCOME_MDRMFE_SPAN_NOT_SEEN
     rows = ht.build_sessions([SM_POST], [MDRMFE])
     ht.attach_chain(rows, [series({"fcId": FCID, "service": "license-request-manager", "http.status_code": "400"})])
-    assert ht.classify(rows[SID], False) == ht.OUTCOME_LICENSE_DENIED
+    assert ht.classify(rows[SID], False) == ht.OUTCOME_MDRM_US_HOP_NON_2XX
+
+
+def test_sm_vod_create_failure_wins_over_missing_mdrmfe_span():
+    post_500 = series({"sessionId": SID, "operation": "POST", "http.status_code": "500"})
+    row = ht.to_table(ht.build_sessions([post_500], []), False, str)[0]
+    assert (row["outcome"], row["evidence_layer"]) == (ht.OUTCOME_SMVOD_CREATE_NON_2XX, "SMVOD")
+
+
+def test_mdrmfe_failure_is_not_blamed_on_us_hop_and_every_outcome_has_a_layer():
+    fe_403 = series({"drmAuthToken.sessionId": SID, "http.status_code": "403", "fcid": FCID})
+    rows = ht.build_sessions([SM_POST], [fe_403])
+    assert ht.classify(rows[SID], False) == ht.OUTCOME_MDRMFE_STATUS_NON_2XX
+    outcomes = {v for k, v in vars(ht).items() if k.startswith("OUTCOME_")}
+    assert outcomes == set(ht.EVIDENCE_LAYER)
 
 
 def test_athena_error_and_played_override_lightstep_outcome():
@@ -54,10 +68,10 @@ def test_athena_error_and_played_override_lightstep_outcome():
         "errordescription": "E86001", "shakaerror": {"message": "REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE"}}})])
     rows = ht.build_sessions([SM_POST], [MDRMFE])
     rows[SID].athena = err[SID]
-    assert ht.classify(rows[SID], True) == ht.OUTCOME_FAILED and err[SID]["error_code"] == "6001"
+    assert ht.classify(rows[SID], True) == ht.OUTCOME_ATHENA_PLAYER_ERROR and err[SID]["error_code"] == "6001"
     ok = ht.summarize_athena([event("PLAYER_STATE_CHANGE", {"sessionid": SID, "state": "PLAYING"})])
     rows[SID].athena = ok[SID]
-    assert ht.classify(rows[SID], True) == ht.OUTCOME_PLAYED
+    assert ht.classify(rows[SID], True) == ht.OUTCOME_ATHENA_PLAYING_SEEN
 
 
 def test_validate_hhid_and_uql_reject_unsafe_input():

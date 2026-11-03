@@ -277,8 +277,10 @@ python3 run_athena_household_debug_events.py --report-csv ../output/ZA/2026-10-0
 ## 7c2. One household's sessions with DRM info (`trace_household_sessions.py`)
 
 Given a householdId, builds a table of `sm-vod` sessionIds joined to `go-mdrmfe` (DRM type, `brRef`, `fcid`), the US mDRM licence chain and CDM device (make/model/security level) by `fcid`, and an
-outcome (`LICENSE_OK_PLAYBACK_UNCONFIRMED`, `NO_LICENSE_REQUEST`, `LICENSE_DENIED`; with `--athena`: `FAILED` / `PLAYED`). Lightstep keeps about 7 days; the hhid is validated and bad input fails
-loudly. Tokens: `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (env or root `.env`). Pure logic lives in `scripts/lib/household_trace.py`.
+`outcome` whose prefix names the system that gave the evidence, also written to the `evidence_layer` column (`ATHENA`, `SMVOD`, `MDRMFE`, `MDRM`). Lightstep-only outcomes: `SMVOD_CREATE_NON_2XX`
+(`sm-vod` POST not 2xx), `MDRMFE_SPAN_NOT_SEEN` (no `go-mdrmfe` span, may be sampled away), `MDRMFE_STATUS_NON_2XX` (`go-mdrmfe` span not 2xx), `MDRM_US_HOP_NON_2XX` (a US licence hop not 2xx),
+`MDRM_LICENSE_OK_NO_ATHENA` (all 2xx, playback unconfirmed). With `--athena`: `ATHENA_PLAYER_ERROR`, `ATHENA_PLAYING_SEEN`, `ATHENA_EVENTS_NO_PLAY_OR_ERROR`. Lightstep keeps about 7 days; the hhid is
+validated and bad input fails loudly. Tokens: `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (env or root `.env`). Pure logic lives in `scripts/lib/household_trace.py`.
 
 ```bash
 python3 trace_household_sessions.py --tenant ZA --hhid <householdId> --from 2026-11-03T12:00:00 --to 2026-11-03T15:00:00
