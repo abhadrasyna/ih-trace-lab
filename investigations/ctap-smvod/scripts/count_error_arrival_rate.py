@@ -19,6 +19,10 @@ Usage:
     python3 count_error_arrival_rate.py                       # 1xxx/3xxx/6xxx families, all tenants
     python3 count_error_arrival_rate.py --codes 6007,1003 --from 2026-10-01 --to 2026-10-31 --tenants GH,ZA,ZM
     python3 count_error_arrival_rate.py --code 6007           # single code, per-day detail
+    python3 count_error_arrival_rate.py --codes all --chart   # + output/error_code/charts/arrival_rate_*_sessions.png
+
+`--chart` draws one line per code per day; with many codes (`all`) only the `--chart-top` (default 8) codes by total get
+their own line and the rest are summed into one muted "other (N codes)" line. `--chart-metric households` plots households.
 """
 import argparse
 import csv as std_csv
@@ -26,7 +30,9 @@ import re
 from datetime import date
 from pathlib import Path
 
+from lib.arrival_rate_chart import DEFAULT_TOP, render_arrival_chart
 from lib.bootstrap import REPO_ROOT
+from src.lib.charts.output import write_chart_png
 from src.lib.logging.bootstrap import init_logging
 
 OUTPUT_DIR = REPO_ROOT / "output"
@@ -213,6 +219,12 @@ def main() -> None:
     ap.add_argument("--include-partial", action="store_true",
                     help="Keep the first/last day in the mean (a given --from/--to already keeps that end)")
     ap.add_argument("--detail", action="store_true", help="Also print per-day tables per code (implied for one code)")
+    ap.add_argument("--chart", action="store_true",
+                    help="Also write a day-wise line chart to output/error_code/charts/")
+    ap.add_argument("--chart-metric", choices=list(METRICS), default="sessions")
+    ap.add_argument("--chart-top", type=int, choices=range(1, DEFAULT_TOP + 1), metavar=f"1..{DEFAULT_TOP}",
+                    default=DEFAULT_TOP,
+                    help="Codes drawn as their own line, ranked by total; the rest are summed into 'other'")
     ap.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     args = ap.parse_args()
     tenants = ([t.strip() for t in args.tenants.split(",") if t.strip()] if args.tenants
@@ -235,6 +247,11 @@ def main() -> None:
     out = args.output_dir / "error_code" / f"arrival_rate_{days[0]}_{days[-1]}.csv"
     write_matrix(out, matrix_rows(combined, codes))
     print(f"\nmatrix -> {out}")
+    if args.chart:
+        name = f"arrival_rate_{days[0]}_{days[-1]}_{args.chart_metric}.png"
+        png = render_arrival_chart(combined[args.chart_metric], args.chart_metric,
+                                   f"Error arrival rate per code, {days[0]} to {days[-1]}", args.chart_top)
+        print(f"chart -> {write_chart_png(png, args.output_dir, 'error_code', name)}")
 
 
 if __name__ == "__main__":

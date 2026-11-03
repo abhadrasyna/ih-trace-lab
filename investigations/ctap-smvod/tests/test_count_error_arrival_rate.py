@@ -79,3 +79,27 @@ def test_summary_family_sum_and_matrix_rows():
     text = mod.summary_table(combined, ["6007", "6008"], drop_first=False, drop_last=False)
     assert "6xxx (sum of codes) | 4.0/3/5 |" in text
     assert mod.matrix_rows(combined, ["6008"]) == [[D(2026, 10, 1), "6008", 2, 1], [D(2026, 10, 2), "6008", 2, 3]]
+
+
+def test_top_series_collapses_rest_into_other_and_rejects_bad_input():
+    from lib.arrival_rate_chart import top_series
+    per_code = {"1001": {D(2026, 10, 1): 9, D(2026, 10, 2): 9}, "6007": {D(2026, 10, 1): 2, D(2026, 10, 2): 1},
+                "6008": {D(2026, 10, 1): 1}}
+    got = top_series(per_code, 1)
+    assert list(got) == ["1001", "other (2 codes)"]
+    assert got["other (2 codes)"] == {D(2026, 10, 1): 3, D(2026, 10, 2): 1}
+    with pytest.raises(ValueError):
+        top_series(per_code, 0)
+    with pytest.raises(ValueError):
+        top_series(per_code, 9)
+    with pytest.raises(ValueError):
+        top_series({}, 3)
+
+
+def test_render_arrival_chart_returns_png_and_fails_on_single_day():
+    from lib.arrival_rate_chart import render_arrival_chart
+    from src.lib.charts.errors import ChartError
+    two = {"6007": {D(2026, 10, 1): 2, D(2026, 10, 2): 5}}
+    assert render_arrival_chart(two, "sessions", "t").startswith(b"\x89PNG")
+    with pytest.raises(ChartError):
+        render_arrival_chart({"6007": {D(2026, 10, 1): 2}}, "sessions", "t")
