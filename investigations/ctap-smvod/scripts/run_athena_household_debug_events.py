@@ -10,10 +10,13 @@ Usage:
         --report-csv ../output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv --tenant ZA \
         --from 2026-10-01 --to 2026-10-21
 
+    # Query a month-suffixed table (e.g. <id>_ccl_debug_events_oct26):
+    ... --table-suffix oct26
+
     # Preview the query without touching Athena:
     ... --dry-run
 
-Output: <report-csv minus .csv>_debug_events_all.csv (override with --out). Requires an AWS SSO profile with read
+Output: <report-csv minus .csv>_debug_events_all[_<suffix>].csv (override with --out). Requires an AWS SSO profile with read
 access to the tenant's unified_<id> database (auto-refreshed unless --skip-auth-check).
 """
 import argparse
@@ -83,6 +86,8 @@ def main() -> None:
     ap.add_argument("--from", dest="date_from", required=True, help="Range start, YYYY-MM-DD")
     ap.add_argument("--to", dest="date_to", required=True, help="Range end, YYYY-MM-DD, inclusive")
     ap.add_argument("--out", default=None, help="Output CSV (default: <report-csv minus .csv>_debug_events_all.csv)")
+    ap.add_argument("--table-suffix", default=None,
+                    help="Month-suffixed debug-events table, e.g. oct26 -> <id>_ccl_debug_events_oct26 (default: unsuffixed)")
     ap.add_argument("--profile", default=None, help="AWS SSO profile (default: from the tenant registry)")
     ap.add_argument("--database", default=None, help="Athena database (default: from the tenant registry)")
     ap.add_argument("--workgroup", default="primary", help="Athena workgroup (default: primary)")
@@ -97,7 +102,7 @@ def main() -> None:
     args = ap.parse_args()
 
     try:
-        ctx = resolve_tenant_context(args.tenant)
+        ctx = resolve_tenant_context(args.tenant, table_suffix=args.table_suffix)
         client_ids = load_client_ids(args.report_csv)
         database = args.database or ctx.database
         query = build_query(ctx, database, client_ids, args.date_from, args.date_to)
@@ -106,7 +111,8 @@ def main() -> None:
         sys.exit(1)
     profile = args.profile or ctx.profile
     region = args.region or ctx.region
-    out_path = args.out or os.path.splitext(args.report_csv)[0] + "_debug_events_all.csv"
+    suffix_tag = f"_{args.table_suffix}" if args.table_suffix else ""
+    out_path = args.out or os.path.splitext(args.report_csv)[0] + f"_debug_events_all{suffix_tag}.csv"
 
     if args.dry_run:
         sys.stdout.write(query)

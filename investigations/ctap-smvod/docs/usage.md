@@ -271,6 +271,7 @@ Live Athena query (catalog slug `ctap-smvod-household-debug-events`) for EVERY e
 ```bash
 python3 run_athena_household_debug_events.py --report-csv ../output/ZA/2026-10-01_2026-10-19_error_report_3xxx_rD_saW-t.csv --tenant ZA --from 2026-10-01 --to 2026-10-21
 # -> <report>_debug_events_all.csv (--dry-run, --out, --force)
+# --table-suffix oct26 queries the month table <id>_ccl_debug_events_oct26 (output gets a _oct26 suffix: <report>_debug_events_all_oct26.csv)
 ```
 
 ## 7d. Daily 3016 sub-category report (`run_3016_subcategory_report.py`)

@@ -48,3 +48,15 @@ def test_build_query_has_all_events_and_clientid_filter():
     q = mod.build_query(CTX, "db", ["d1:h1", "d2:h2"], "2026-10-01", "2026-10-21")
     assert "'d1:h1'" in q and "'d2:h2'" in q and "eventid =" not in q and "eventid IN" not in q
     assert "datetime <  '2026-10-22T00:00:00.000Z'" in q and '"db"."t_ccl_debug_events"' in q
+
+
+def test_table_suffix_selects_month_table_in_dry_run(tmp_path, monkeypatch, capsys):
+    p = tmp_path / "r.csv"
+    write_report(p, [["h1", "d1", "s1"]])
+    argv = ["x", "--report-csv", str(p), "--tenant", "ZA", "--from", "2026-10-19", "--to", "2026-10-30", "--dry-run"]
+    monkeypatch.setattr("sys.argv", argv + ["--table-suffix", "oct26"])
+    mod.main()
+    assert "_ccl_debug_events_oct26" in capsys.readouterr().out
+    monkeypatch.setattr("sys.argv", argv)
+    mod.main()
+    assert "_ccl_debug_events_oct26" not in capsys.readouterr().out
