@@ -63,15 +63,51 @@ def test_mdrmfe_failure_is_not_blamed_on_us_hop_and_every_outcome_has_a_layer():
     assert outcomes == set(ht.EVIDENCE_LAYER)
 
 
-def test_athena_error_and_played_override_lightstep_outcome():
+def unified(event_type, start, end, endreason, device="dev1", title="Boss Level"):
+    return {"parent_session_id": SID, "device_id": device, "event_type": event_type, "event_start": start, "event_end": end,
+            "content": title, "content_id": "AXP9000000030", "endreason": endreason}
+
+
+def test_unified_sessions_give_title_play_time_and_outcome():
+    played = ht.summarize_unified([
+        unified("REQUEST_VIEWING", "2026-11-03 13:50:34.746", "2026-11-03 13:50:38.641", "PLAYING"),
+        unified("PLAY", "2026-11-03 13:50:34.746", "2026-11-03 13:51:21.342", "DESTROY"),
+    ])
+    rows = ht.build_sessions([SM_POST], [MDRMFE])
+    rows[SID].unified = played[SID]
+    row = ht.to_table(rows, True, str)[0]
+    assert (row["content_title"], row["unified_endreason"], row["play_seconds"]) == ("Boss Level", "DESTROY", "47")
+    assert (row["outcome"], row["evidence_layer"]) == (ht.OUTCOME_ATHENA_SESSION_PLAYED, "ATHENA")
+
+
+def test_unified_player_error_and_unknown_session_fall_back():
+    failed = ht.summarize_unified([unified("REQUEST_VIEWING", "2026-11-03 13:31:37.766", "2026-11-03 13:31:40.135", "PLAYER_ERROR")])
+    rows = ht.build_sessions([SM_POST], [MDRMFE])
+    assert ht.classify(rows[SID], True) == ht.OUTCOME_MDRM_LICENSE_OK_NO_ATHENA  # not in unified_sessions
+    rows[SID].unified = failed[SID]
+    assert ht.classify(rows[SID], True) == ht.OUTCOME_ATHENA_SESSION_PLAYER_ERROR
+    assert ht.summarize_unified([{"event_type": "PLAY"}]) == {}
+
+
+def test_debug_events_are_requested_only_for_errored_sessions_by_month():
+    other = "abr-vod-other"
+    rows = ht.build_sessions([SM_POST], [])
+    rows[SID].unified = ht.summarize_unified([unified("REQUEST_VIEWING", "2026-11-03 13:31:37", "2026-11-03 13:31:40", "PLAYER_ERROR")])[SID]
+    rows[other] = ht.SessionRow(other, unified={"endreason": "DESTROY", "device_id": "dev2", "first_start": "2026-11-03 13:50:00"})
+    groups = ht.error_sessions_by_table(rows, None, ["oct26", "sept26"])
+    assert groups == {"": {"devices": ["dev1"], "date_from": "2026-11-03", "date_to": "2026-11-03", "sessions": [SID]}}
+    assert list(ht.error_sessions_by_table(rows, "oct26", [])) == ["oct26"]
+    assert ht.pick_debug_suffix("2026-09-30 10:00:00", ["oct26", "sept26"]) == "sept26"
+    assert ht.pick_debug_suffix("2026-10-19 10:00:00", ["oct26", "sept26"]) == "oct26"
+    rows[SID].unified["device_id"] = ""
+    with pytest.raises(ValueError):
+        ht.error_sessions_by_table(rows, None, [])
+
+
+def test_debug_events_summary_keeps_first_player_error_detail():
     err = ht.summarize_athena([event("PLAYER_ERROR", {"sessionid": SID, "errorcode": 6001, "errordescription": {
         "errordescription": "E86001", "shakaerror": {"message": "REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE"}}})])
-    rows = ht.build_sessions([SM_POST], [MDRMFE])
-    rows[SID].athena = err[SID]
-    assert ht.classify(rows[SID], True) == ht.OUTCOME_ATHENA_PLAYER_ERROR and err[SID]["error_code"] == "6001"
-    ok = ht.summarize_athena([event("PLAYER_STATE_CHANGE", {"sessionid": SID, "state": "PLAYING"})])
-    rows[SID].athena = ok[SID]
-    assert ht.classify(rows[SID], True) == ht.OUTCOME_ATHENA_PLAYING_SEEN
+    assert err[SID]["error_code"] == "6001" and err[SID]["shaka_error"] == "REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE"
 
 
 def test_validate_hhid_and_uql_reject_unsafe_input():

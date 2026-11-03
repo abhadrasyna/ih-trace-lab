@@ -279,13 +279,19 @@ python3 run_athena_household_debug_events.py --report-csv ../output/ZA/2026-10-0
 Given a householdId, builds a table of `sm-vod` sessionIds joined to `go-mdrmfe` (DRM type, `brRef`, `fcid`), the US mDRM licence chain and CDM device (make/model/security level) by `fcid`, and an
 `outcome` whose prefix names the system that gave the evidence, also written to the `evidence_layer` column (`ATHENA`, `SMVOD`, `MDRMFE`, `MDRM`). Lightstep-only outcomes: `SMVOD_CREATE_NON_2XX`
 (`sm-vod` POST not 2xx), `MDRMFE_SPAN_NOT_SEEN` (no `go-mdrmfe` span, may be sampled away), `MDRMFE_STATUS_NON_2XX` (`go-mdrmfe` span not 2xx), `MDRM_US_HOP_NON_2XX` (a US licence hop not 2xx),
-`MDRM_LICENSE_OK_NO_ATHENA` (all 2xx, playback unconfirmed). With `--athena`: `ATHENA_PLAYER_ERROR`, `ATHENA_PLAYING_SEEN`, `ATHENA_EVENTS_NO_PLAY_OR_ERROR`. Lightstep keeps about 7 days; the hhid is
-validated and bad input fails loudly. Tokens: `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (env or root `.env`). Pure logic lives in `scripts/lib/household_trace.py`.
+`MDRM_LICENSE_OK_NO_ATHENA` (all 2xx, playback unconfirmed).
+
+With `--athena` it also queries `unified_sessions` by household (`user_id`, one cheap query, catalog `ctap-smvod-household-unified-sessions`) and adds `content_title`, `unified_content_id`,
+`unified_endreason` and `play_seconds` (PLAY row). Athena outcomes win over the Lightstep ones: `ATHENA_SESSION_PLAYER_ERROR`, `ATHENA_SESSION_PLAYED`, `ATHENA_SESSION_OTHER_ENDREASON`. Only for
+`PLAYER_ERROR` sessions it then pulls their debug events (about 2 GB scanned per month table) into `debug_error_code`, `debug_error_text`, `debug_shaka_error` and `debug_user_agent`. The table is
+found with `SHOW TABLES` by session month (the unsuffixed table is the current month; `--table-suffix oct26` overrides). If that lookup fails the CSV is still written and the script exits 1. Lightstep
+keeps about 7 days; for older windows `--athena` still lists the sessions. The hhid is validated and bad input fails loudly. Tokens: `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (env or root
+`.env`). Pure logic: `scripts/lib/household_trace.py`.
 
 ```bash
 python3 trace_household_sessions.py --tenant ZA --hhid <householdId> --from 2026-11-03T12:00:00 --to 2026-11-03T15:00:00
-python3 trace_household_sessions.py --tenant ZA --hhid <householdId> --from 2026-10-19 --to 2026-10-30 --athena --table-suffix oct26 --device-id <deviceId>
-# -> output/<TENANT>/<hhid8>_<hhid-last8>_session_trace[_<suffix>].csv (+ _debug_events.csv with --athena)
+python3 trace_household_sessions.py --tenant ZA --hhid <householdId> --from 2026-11-03 --to 2026-11-03 --athena
+# -> output/<TENANT>/<hhid8>_<hhid-last8>_session_trace.csv (+ _unified_sessions.csv, _debug_tables.csv, _debug_events[_<suffix>].csv with --athena)
 ```
 
 ## 7d. Daily 3016 sub-category report (`run_3016_subcategory_report.py`)

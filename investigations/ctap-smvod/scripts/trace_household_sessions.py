@@ -5,12 +5,14 @@ Trace one household's playback sessions end to end and write a table.
 For a householdId it queries the Lightstep public API for the household's `sm-vod` sessions (EU project),
 joins each session to its `go-mdrmfe` token (`brRef`, DRM type, `fcid`), follows the `fcid` into the US mDRM
 project for the licence chain and the CDM device (make/model/security level), and, with `--athena`, adds the
-client debug events (PLAYER_ERROR / PLAYING) from the month-suffixed debug-events table.
-Lightstep keeps about 7 days; for older dates only `--athena` with `--device-id` gives results.
+content title, end reason and play time from `unified_sessions` (matched on user_id == householdId). Only for sessions
+whose end reason is PLAYER_ERROR does it also pull their debug events (error code/text/Shaka message/user agent) from
+the month's debug-events table (found with SHOW TABLES by session month; the unsuffixed table is the current month; override with `--table-suffix`).
+Lightstep keeps about 7 days; for older dates `--athena` alone still lists the sessions (a Lightstep failure is then tolerated).
 
 Usage:
     python3 trace_household_sessions.py --tenant ZA --hhid <householdId> --from 2026-11-03T12:00:00 --to 2026-11-03T15:00:00
-    python3 trace_household_sessions.py --tenant ZA --hhid <id> --from 2026-10-19 --to 2026-10-30 --athena --table-suffix oct26
+    python3 trace_household_sessions.py --tenant ZA --hhid <id> --from 2026-11-03 --to 2026-11-03 --athena
 
 `--from`/`--to` are UTC (a date or `YYYY-MM-DDTHH:MM:SS`; a bare `--to` date is inclusive). Tokens come from
 `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (environment or the gitignored root `.env`).
@@ -78,23 +80,52 @@ def lightstep_part(tenant_code: str, hhid: str, oldest: datetime, youngest: date
     return rows, ht.device_ids(sm_vod, mdrmfe)
 
 
-def athena_part(args, hhid: str, device_ids: list[str], out_path: str) -> list[dict[str, str]]:
-    """Live Athena query of every debug event for each `<deviceId>:<hhid>`; returns the CSV rows."""
-    import run_athena_household_debug_events as dbg
+def run_athena_to_rows(ctx, sql: str, raw_path: str) -> list[dict[str, str]]:
+    """Runs one Athena query, keeps its raw CSV at ``raw_path`` and returns the parsed rows."""
     from lib.runtime import ensure_valid_credentials, run_athena_query
 
-    ctx = resolve_tenant_context(args.tenant, table_suffix=args.table_suffix)
-    client_ids = sorted(f"{d}:{hhid}" for d in device_ids)
-    d_from, d_to = args.date_from, args.date_to
-    query = dbg.build_query(ctx, ctx.database, client_ids, d_from, d_to)
     ensure_valid_credentials(ctx.profile)
-    raw = out_path.removesuffix(".csv") + "_debug_events.csv"
-    os.makedirs(os.path.dirname(os.path.abspath(raw)), exist_ok=True)
-    run_athena_query(sql=query, params={}, output_path=raw, profile=ctx.profile, database=ctx.database,
+    os.makedirs(os.path.dirname(os.path.abspath(raw_path)), exist_ok=True)
+    run_athena_query(sql=sql, params={}, output_path=raw_path, profile=ctx.profile, database=ctx.database,
                      workgroup="primary", output_location="s3://clarissaprod-apps-athena-query-results/",
                      region=ctx.region, poll_interval=2, timeout=900)
-    with open(raw, encoding="utf-8-sig", newline="") as f:
+    with open(raw_path, encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
+
+
+def build_unified_query(database: str, hhid: str, date_from: str, date_to: str) -> str:
+    """Pure: renders the catalog query for the household's unified_sessions rows (user_id == householdId)."""
+    from lib.query_catalog import render_query
+
+    return render_query("ctap-smvod-household-unified-sessions", {
+        "database": database, "user_id": ht.validate_hhid(hhid), "date_start": date_from, "date_end": date_to,
+    })
+
+
+def list_debug_suffixes(ctx, out_path: str) -> list[str]:
+    """Month suffixes of the debug-events tables that exist (e.g. ``oct26``, ``sept26``), via SHOW TABLES (no data scanned)."""
+    prefix = f"{ctx.debug_events_table}_"
+    sql = f"SHOW TABLES IN {ctx.database} LIKE '{ctx.debug_events_table}_*'"
+    names = [next(iter(r.values()), "") for r in run_athena_to_rows(ctx, sql, out_path.removesuffix(".csv") + "_debug_tables.csv")]
+    return sorted(n[len(prefix):] for n in names if n.startswith(prefix))
+
+
+def debug_events_for_errors(args, hhid: str, rows: dict[str, ht.SessionRow], out_path: str) -> None:
+    """Only for sessions whose unified endreason is PLAYER_ERROR: pulls their debug events and fills ``row.debug``."""
+    import run_athena_household_debug_events as dbg
+
+    if not any(r.unified.get("endreason") == "PLAYER_ERROR" for r in rows.values()):
+        return
+    base = resolve_tenant_context(args.tenant)
+    existing = list_debug_suffixes(base, out_path) if args.table_suffix is None else []
+    for suffix, group in ht.error_sessions_by_table(rows, args.table_suffix, existing).items():
+        ctx = resolve_tenant_context(args.tenant, table_suffix=suffix or None)
+        client_ids = [f"{d}:{hhid}" for d in group["devices"]]
+        sql = dbg.build_query(ctx, ctx.database, client_ids, group["date_from"], group["date_to"])
+        raw = out_path.removesuffix(".csv") + f"_debug_events{'_' + suffix if suffix else ''}.csv"
+        by_session = ht.summarize_athena(run_athena_to_rows(ctx, sql, raw))
+        for sid in group["sessions"]:
+            rows[sid].debug = by_session.get(sid, {})
 
 
 def main() -> None:
@@ -104,9 +135,10 @@ def main() -> None:
     ap.add_argument("--hhid", required=True, help="householdId")
     ap.add_argument("--from", dest="start", required=True, help="UTC start: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS")
     ap.add_argument("--to", dest="end", required=True, help="UTC end (a bare date is inclusive)")
-    ap.add_argument("--device-id", default=None, help="deviceId for --athena when Lightstep returns none (e.g. older than 7 days)")
-    ap.add_argument("--athena", action="store_true", help="Also query the debug-events table (about 2 GB scanned per run)")
-    ap.add_argument("--table-suffix", default=None, help="Month debug-events table suffix, e.g. oct26")
+    ap.add_argument("--athena", action="store_true",
+                    help="Add title/endreason/play time from unified_sessions; PLAYER_ERROR sessions also get their debug events")
+    ap.add_argument("--table-suffix", default=None,
+                    help="Debug-events table suffix, e.g. oct26 (default: found via SHOW TABLES by session month; unsuffixed = current month)")
     ap.add_argument("--out", default=None, help="Output CSV path")
     args = ap.parse_args()
 
@@ -125,29 +157,28 @@ def main() -> None:
                                         f"{hhid[:8]}_{hhid[-8:]}_session_trace{suffix}.csv")
 
     rows: dict[str, ht.SessionRow] = {}
-    devices: list[str] = [args.device_id] if args.device_id else []
     if oldest < datetime.now(timezone.utc) - LIGHTSTEP_RETENTION:
         print("WARNING: window starts before the ~7 day Lightstep retention; older sessions will be missing.", file=sys.stderr)
     try:
-        rows, found = lightstep_part(args.tenant, hhid, oldest, youngest)
-        devices = sorted(set(devices) | set(found))
+        rows, _ = lightstep_part(args.tenant, hhid, oldest, youngest)
     except LightstepError as exc:
         print(f"ERROR: Lightstep failed: {exc}", file=sys.stderr)
         if not args.athena:
             sys.exit(1)
 
-    athena_loaded = False
+    debug_error = ""
     if args.athena:
-        if not devices:
-            print("ERROR: --athena needs a deviceId: Lightstep found none, pass --device-id", file=sys.stderr)
-            sys.exit(1)
-        events = athena_part(args, hhid, devices, out_path)
-        by_session = ht.summarize_athena(events)
-        for sid, info in by_session.items():
-            rows.setdefault(sid, ht.SessionRow(sid)).athena = info
-        athena_loaded = True
+        ctx = resolve_tenant_context(args.tenant)
+        sql = build_unified_query(ctx.database, hhid, args.date_from, args.date_to)
+        unified = ht.summarize_unified(run_athena_to_rows(ctx, sql, out_path.removesuffix(".csv") + "_unified_sessions.csv"))
+        for sid, info in unified.items():
+            rows.setdefault(sid, ht.SessionRow(sid)).unified = info
+        try:
+            debug_events_for_errors(args, hhid, rows, out_path)
+        except Exception as exc:  # reported and exits non-zero after the CSV is written
+            debug_error = f"{type(exc).__name__}: {exc}"
 
-    table = ht.to_table(rows, athena_loaded, fmt_ms)
+    table = ht.to_table(rows, args.athena, fmt_ms)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=ht.COLUMNS)
@@ -156,10 +187,13 @@ def main() -> None:
     counts: dict[str, int] = {}
     for row in table:
         counts[row["outcome"]] = counts.get(row["outcome"], 0) + 1
-    print(f"{len(table)} session(s) for {hhid} on {args.tenant}, devices={devices or 'none'} -> {out_path}")
+    print(f"{len(table)} session(s) for {hhid} on {args.tenant} -> {out_path}")
     for outcome, n in sorted(counts.items()):
         print(f"  {outcome}: {n}")
     LOGGER.info("Completed trace_household_sessions sessions=%d out=%s", len(table), out_path)
+    if debug_error:
+        print(f"ERROR: debug-events lookup for errored sessions failed ({debug_error}); debug_* columns are empty.", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

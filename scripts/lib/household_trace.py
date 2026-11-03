@@ -10,6 +10,7 @@ import json
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 
 _ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,100}$")
 _FCID_PATTERN = re.compile(r"^[A-Za-z0-9]{8,64}$")
@@ -17,9 +18,9 @@ _FCID_PATTERN = re.compile(r"^[A-Za-z0-9]{8,64}$")
 Series = Mapping[str, object]
 
 # Each outcome is prefixed with the system that produced the evidence; that prefix is the `evidence_layer` column.
-OUTCOME_ATHENA_PLAYER_ERROR = "ATHENA_PLAYER_ERROR"
-OUTCOME_ATHENA_PLAYING_SEEN = "ATHENA_PLAYING_SEEN"
-OUTCOME_ATHENA_EVENTS_NO_PLAY_OR_ERROR = "ATHENA_EVENTS_NO_PLAY_OR_ERROR"
+OUTCOME_ATHENA_SESSION_PLAYER_ERROR = "ATHENA_SESSION_PLAYER_ERROR"
+OUTCOME_ATHENA_SESSION_PLAYED = "ATHENA_SESSION_PLAYED"
+OUTCOME_ATHENA_SESSION_OTHER_ENDREASON = "ATHENA_SESSION_OTHER_ENDREASON"
 OUTCOME_SMVOD_CREATE_NON_2XX = "SMVOD_CREATE_NON_2XX"
 OUTCOME_MDRMFE_SPAN_NOT_SEEN = "MDRMFE_SPAN_NOT_SEEN"
 OUTCOME_MDRMFE_STATUS_NON_2XX = "MDRMFE_STATUS_NON_2XX"
@@ -27,9 +28,9 @@ OUTCOME_MDRM_US_HOP_NON_2XX = "MDRM_US_HOP_NON_2XX"
 OUTCOME_MDRM_LICENSE_OK_NO_ATHENA = "MDRM_LICENSE_OK_NO_ATHENA"
 
 EVIDENCE_LAYER = {
-    OUTCOME_ATHENA_PLAYER_ERROR: "ATHENA",
-    OUTCOME_ATHENA_PLAYING_SEEN: "ATHENA",
-    OUTCOME_ATHENA_EVENTS_NO_PLAY_OR_ERROR: "ATHENA",
+    OUTCOME_ATHENA_SESSION_PLAYER_ERROR: "ATHENA",
+    OUTCOME_ATHENA_SESSION_PLAYED: "ATHENA",
+    OUTCOME_ATHENA_SESSION_OTHER_ENDREASON: "ATHENA",
     OUTCOME_SMVOD_CREATE_NON_2XX: "SMVOD",
     OUTCOME_MDRMFE_SPAN_NOT_SEEN: "MDRMFE",
     OUTCOME_MDRMFE_STATUS_NON_2XX: "MDRMFE",
@@ -38,10 +39,10 @@ EVIDENCE_LAYER = {
 }
 
 COLUMNS = (
-    "first_seen_utc", "sessionId", "contentId", "clientIp", "sm_vod_create", "sm_vod_teardown",
+    "first_seen_utc", "sessionId", "contentId", "content_title", "clientIp", "sm_vod_create", "sm_vod_teardown",
     "drmType", "brRef", "mdrmfe_status", "fcid", "licence_chain", "drm_make", "drm_model",
-    "drm_platform", "drm_security_level", "athena_error_code", "athena_error_text", "athena_shaka_error",
-    "athena_user_agent", "outcome", "evidence_layer",
+    "drm_platform", "drm_security_level", "unified_content_id", "unified_endreason", "play_seconds",
+    "debug_error_code", "debug_error_text", "debug_shaka_error", "debug_user_agent", "outcome", "evidence_layer",
 )
 
 
@@ -59,7 +60,8 @@ class SessionRow:
     fcid: str = ""
     chain: str = ""
     drm: dict[str, str] = field(default_factory=dict)
-    athena: dict[str, str] = field(default_factory=dict)
+    debug: dict[str, str] = field(default_factory=dict)
+    unified: dict[str, str] = field(default_factory=dict)
 
 
 def validate_hhid(hhid: str) -> str:
@@ -191,30 +193,104 @@ def summarize_athena(events: Iterable[Mapping[str, str]]) -> dict[str, dict[str,
         sid = str(data.get("sessionid") or "")
         if not sid:
             continue
-        entry = out.setdefault(sid, {"error_code": "", "error_text": "", "shaka_error": "", "user_agent": "", "played": ""})
-        eid = event.get("eventid", "")
-        if eid == "PLAYER_ERROR" and not entry["error_code"]:
+        entry = out.setdefault(sid, {"error_code": "", "error_text": "", "shaka_error": "", "user_agent": ""})
+        if event.get("eventid", "") == "PLAYER_ERROR" and not entry["error_code"]:
             desc = data.get("errordescription") or {}
             shaka = desc.get("shakaerror") or {} if isinstance(desc, dict) else {}
             entry["error_code"] = str(data.get("errorcode", ""))
             entry["error_text"] = str(desc.get("errordescription", "")) if isinstance(desc, dict) else str(desc)
             entry["shaka_error"] = str(shaka.get("message", ""))
             entry["user_agent"] = str(desc.get("user_agent", "")) if isinstance(desc, dict) else ""
-        elif eid == "PLAYER_STATE_CHANGE" and data.get("state") not in (None, "", "STOPPED"):
-            entry["played"] = "yes"
     return out
 
 
+def _parse_ts(text: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def summarize_unified(rows: Iterable[Mapping[str, str]]) -> dict[str, dict[str, str]]:
+    """Per ``parent_session_id``: title, content id, device, first start, endreason and PLAY seconds from unified_sessions rows.
+
+    The PLAY row is the session summary; its endreason wins over the REQUEST_VIEWING row's.
+    """
+    out: dict[str, dict[str, str]] = {}
+    for row in rows:
+        sid = row.get("parent_session_id", "")
+        if not sid:
+            continue
+        entry = out.setdefault(sid, {"title": "", "content_id": "", "device_id": "", "first_start": "",
+                                     "endreason": "", "play_seconds": "", "has_play": "", "request_endreason": ""})
+        for key, column in (("title", "content"), ("content_id", "content_id"), ("device_id", "device_id")):
+            if row.get(column):
+                entry[key] = row[column]
+        start = row.get("event_start", "")
+        if start and (not entry["first_start"] or start < entry["first_start"]):
+            entry["first_start"] = start
+        if row.get("event_type") == "PLAY":
+            entry["has_play"] = "yes"
+            entry["endreason"] = row.get("endreason", "")
+            begin, end = _parse_ts(start), _parse_ts(row.get("event_end", ""))
+            if begin and end:
+                entry["play_seconds"] = f"{(end - begin).total_seconds():.0f}"
+        elif row.get("event_type") == "REQUEST_VIEWING":
+            entry["request_endreason"] = row.get("endreason", "")
+    for entry in out.values():
+        entry["endreason"] = entry["endreason"] or entry["request_endreason"]
+    return out
+
+
+def pick_debug_suffix(first_start: str, existing_suffixes: Iterable[str]) -> str:
+    """Suffix of the existing month table covering a ``YYYY-MM-DD hh:mm:ss`` time, or ``""`` for the unsuffixed (current) table.
+
+    Matches month abbreviation + 2-digit year, so ``sept26`` matches September 2026. ValueError if the time is unparsable.
+    """
+    moment = _parse_ts(first_start)
+    if moment is None:
+        raise ValueError(f"cannot derive debug table from {first_start!r}")
+    month, year = moment.strftime("%b").lower(), moment.strftime("%y")
+    for suffix in sorted(existing_suffixes):
+        if suffix.startswith(month) and suffix.endswith(year):
+            return suffix
+    return ""
+
+
+def error_sessions_by_table(
+    rows: Mapping[str, SessionRow], suffix_override: str | None, existing_suffixes: Iterable[str],
+) -> dict[str, dict[str, object]]:
+    """Groups sessions whose unified endreason is PLAYER_ERROR by debug table suffix (``""`` = unsuffixed table).
+
+    Value: ``{"devices": sorted device ids, "date_from": ..., "date_to": ..., "sessions": sorted ids}``.
+    Needs a device id and start time on each error session; raises ValueError otherwise.
+    """
+    existing = list(existing_suffixes)
+    groups: dict[str, dict[str, object]] = {}
+    for sid, row in rows.items():
+        if row.unified.get("endreason") != "PLAYER_ERROR":
+            continue
+        device, start = row.unified.get("device_id", ""), row.unified.get("first_start", "")
+        if not device or not start:
+            raise ValueError(f"session {sid} has a PLAYER_ERROR but no device_id/event_start in unified_sessions")
+        suffix = suffix_override if suffix_override is not None else pick_debug_suffix(start, existing)
+        group = groups.setdefault(suffix, {"devices": set(), "date_from": start[:10], "date_to": start[:10], "sessions": []})
+        group["devices"].add(device)  # type: ignore[attr-defined]
+        group["date_from"], group["date_to"] = min(group["date_from"], start[:10]), max(group["date_to"], start[:10])  # type: ignore[type-var]
+        group["sessions"].append(sid)  # type: ignore[attr-defined]
+    for group in groups.values():
+        group["devices"], group["sessions"] = sorted(group["devices"]), sorted(group["sessions"])  # type: ignore[type-var]
+    return groups
+
+
 def classify(row: SessionRow, athena_loaded: bool) -> str:
-    """Athena evidence wins when loaded; otherwise judge from the Lightstep licence chain only."""
-    if athena_loaded:
-        info = row.athena
-        if info.get("error_code"):
-            return OUTCOME_ATHENA_PLAYER_ERROR
-        if info.get("played"):
-            return OUTCOME_ATHENA_PLAYING_SEEN
-        if info:
-            return OUTCOME_ATHENA_EVENTS_NO_PLAY_OR_ERROR
+    """unified_sessions evidence wins when the session is in it; otherwise judge from the Lightstep licence chain."""
+    if athena_loaded and row.unified:
+        if row.unified.get("endreason") == "PLAYER_ERROR":
+            return OUTCOME_ATHENA_SESSION_PLAYER_ERROR
+        if row.unified.get("has_play"):
+            return OUTCOME_ATHENA_SESSION_PLAYED
+        return OUTCOME_ATHENA_SESSION_OTHER_ENDREASON
     if row.create_status and not _status_ok(row.create_status):
         return OUTCOME_SMVOD_CREATE_NON_2XX
     if not row.mdrmfe_status:
@@ -233,13 +309,16 @@ def to_table(rows: Mapping[str, SessionRow], athena_loaded: bool, fmt_time) -> l
         outcome = classify(row, athena_loaded)
         table.append({
             "first_seen_utc": fmt_time(row.first_seen_ms) if row.first_seen_ms is not None else "",
-            "sessionId": row.session_id, "contentId": row.content_id, "clientIp": row.client_ip,
+            "sessionId": row.session_id, "contentId": row.content_id, "content_title": row.unified.get("title", ""),
+            "clientIp": row.client_ip,
             "sm_vod_create": row.create_status, "sm_vod_teardown": row.teardown_status,
             "drmType": row.drm_type, "brRef": row.br_ref, "mdrmfe_status": row.mdrmfe_status, "fcid": row.fcid,
             "licence_chain": row.chain, "drm_make": row.drm.get("make", ""), "drm_model": row.drm.get("model", ""),
             "drm_platform": row.drm.get("platform", ""), "drm_security_level": row.drm.get("security_level", ""),
-            "athena_error_code": row.athena.get("error_code", ""), "athena_error_text": row.athena.get("error_text", ""),
-            "athena_shaka_error": row.athena.get("shaka_error", ""), "athena_user_agent": row.athena.get("user_agent", ""),
+            "unified_content_id": row.unified.get("content_id", ""), "unified_endreason": row.unified.get("endreason", ""),
+            "play_seconds": row.unified.get("play_seconds", ""),
+            "debug_error_code": row.debug.get("error_code", ""), "debug_error_text": row.debug.get("error_text", ""),
+            "debug_shaka_error": row.debug.get("shaka_error", ""), "debug_user_agent": row.debug.get("user_agent", ""),
             "outcome": outcome, "evidence_layer": EVIDENCE_LAYER[outcome],
         })
     return table
