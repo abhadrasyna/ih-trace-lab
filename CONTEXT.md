@@ -27,7 +27,7 @@
   `--codes`) merges the per-code flat files from all opcos into one XLSX per error code (sheet per opco, `date` column) in `output/error_code/<code>/`. `summarize_tenant_status.py --date DDMMYYYY`
   (run by hand after the pipeline) writes the ZA/GH/ZM cross-tenant daily status table to `docs/YYYY-MM-DD-tenant-status-summary.md` (UTC day; first one `docs/2026-10-08-tenant-status-summary.md`).
   `docs/usage.md` documents the layout, per-tenant export rule and how to add a tenant. `docs/2026-10-08-zm-6007-test-device-not-allowed.md` summarises a ZM Shaka 6007 case (MDRM 6211 "Test device not
-  allowed"). `count_error_arrival_rate.py` (`--codes 6007,1003|all|families` default 1xxx/3xxx/6xxx, `--from/--to`, `--tenants`, `--detail`, `--chart` day-wise line chart to
+  allowed"). `count_error_arrival_rate.py` (`--codes 6007,1003|6xxx|all|families` default 1xxx/3xxx/6xxx, `--from/--to`, `--tenants`, `--detail`, `--chart` day-wise line chart to
   `output/error_code/charts/`, top-N codes + "other" via `--chart-top`) sums sessions and unique households impacted per day per code across tenants from
   `output/<T>/daily/*_shaka-error-{session,hhid}.csv` (read-only; mean excludes first/last partial day; writes `output/error_code/arrival_rate_<from>_<to>.csv`). `count_error_by_content.py`
   (`--from/--to`, `--tenants`, default ZA) counts 6xxx sessions and unique households per content (per code + `_rollup`); `find_codec_support_content.py` (`--codec ec-3`) lists the content of error

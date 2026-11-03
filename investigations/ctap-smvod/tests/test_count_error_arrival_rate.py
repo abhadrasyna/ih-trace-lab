@@ -44,6 +44,11 @@ def test_select_codes_families_all_list_and_unknown():
     assert mod.select_codes(avail, "6007, 1003") == ["1003", "6007"]
     with pytest.raises(ValueError):
         mod.select_codes(avail, "9999")
+    assert mod.select_codes(avail, "6xxx,1003,6007") == ["1003", "6007"]
+    assert mod.select_codes(avail | {"6001"}, "6XXX") == ["6001", "6007"]
+    assert mod.select_codes(avail, "other") == ["E31012"]
+    with pytest.raises(ValueError):
+        mod.select_codes(avail, "9xxx")
 
 
 def test_family_of():

@@ -5,8 +5,8 @@ Reads `output/<TENANT>/daily/<YYYY-MM>_shaka-error-session.csv` (sessions) and `
 (unique households per day) from the repo-root output dir and sums per `session_date` across tenants (household ids
 are tenant-scoped, so per-day sums do not double count). A code a tenant/file has no column for counts as 0.
 
-`--codes` takes a comma list (e.g. 6007,1003), `all` (every code column found) or `families` (default: only
-1xxx, 3xxx and 6xxx codes). The summary table is grouped by family with mean/min/max per day for each code; the
+`--codes` takes a comma list of codes and/or family tokens (e.g. 6007,1003 or 6xxx,1003; `other` = non-4-digit
+codes), `all` (every code column found) or `families` (default: only 1xxx, 3xxx and 6xxx codes). The summary table is grouped by family with mean/min/max per day for each code; the
 family row is the sum of its codes (a session with several codes counts once per code). `--detail` prints the
 per-day tables (implied for a single code) and a code-by-day matrix is always written to
 `output/error_code/arrival_rate_<first>_<last>.csv` (long format: date, code, sessions, households).
@@ -18,6 +18,7 @@ coverage. Reads existing files only -- never fires Athena/Lightstep.
 Usage:
     python3 count_error_arrival_rate.py                       # 1xxx/3xxx/6xxx families, all tenants
     python3 count_error_arrival_rate.py --codes 6007,1003 --from 2026-10-01 --to 2026-10-31 --tenants GH,ZA,ZM
+    python3 count_error_arrival_rate.py --codes 6xxx --chart  # every 6xxx code found, plus a chart
     python3 count_error_arrival_rate.py --code 6007           # single code, per-day detail
     python3 count_error_arrival_rate.py --codes all --chart   # + output/error_code/charts/arrival_rate_*_sessions.png
 
@@ -128,16 +129,27 @@ def combine(per_tenant: dict[str, DailyCounts]) -> DailyCounts:
 
 
 def select_codes(available: set[str], spec: str) -> list[str]:
-    """Resolve --codes: comma list (must exist), 'all', or 'families' (1xxx/3xxx/6xxx). Sorted."""
+    """Resolve --codes: 'all', 'families' (1xxx/3xxx/6xxx), or a comma list of codes and family tokens (6xxx, other). Sorted."""
     if spec == "all":
         return sorted(available)
     if spec == "families":
         return sorted(c for c in available if family_of(c) in FAMILIES)
-    wanted = [c.strip() for c in spec.split(",") if c.strip()]
-    unknown = sorted(set(wanted) - available)
+    chosen: set[str] = set()
+    unknown: list[str] = []
+    for tok in (t.strip() for t in spec.split(",") if t.strip()):
+        fam = tok.lower() if re.fullmatch(r"(\d)xxx|other", tok, re.IGNORECASE) else None
+        if fam:
+            members = {c for c in available if family_of(c) == fam}
+            if not members:
+                raise ValueError(f"no codes in family {tok!r}; families found: {sorted({family_of(c) for c in available})}")
+            chosen |= members
+        elif tok in available:
+            chosen.add(tok)
+        else:
+            unknown.append(tok)
     if unknown:
-        raise ValueError(f"codes not found in any file: {unknown}; available: {sorted(available)}")
-    return sorted(set(wanted))
+        raise ValueError(f"codes not found in any file: {sorted(unknown)}; available: {sorted(available)}")
+    return sorted(chosen)
 
 
 def stats(daily: DailyCounts, drop_first: bool, drop_last: bool) -> dict[str, float]:
@@ -212,7 +224,7 @@ def main() -> None:
     init_logging("ctap-smvod-count_error_arrival_rate")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--codes", "--code", dest="codes", default="families",
-                    help="Comma list (6007,1003), 'all', or 'families' (1xxx/3xxx/6xxx; default)")
+                    help="Comma list of codes/families (6007,1003 or 6xxx,1003), 'all', or 'families' (1xxx/3xxx/6xxx; default)")
     ap.add_argument("--from", dest="start", type=date.fromisoformat)
     ap.add_argument("--to", dest="end", type=date.fromisoformat)
     ap.add_argument("--tenants", help="Comma-separated tenants; default = every output/<T> with a daily/ folder")
