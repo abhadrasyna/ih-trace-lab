@@ -87,6 +87,7 @@ For every step below, mark one of:
 | 5a | CONTEXT.md updated if new files were added | | |
 | 5b | Tests confirmed green before commit | | |
 | 5c | Commit executed (not drafted) + SHA confirmed | | |
+| 6 | Lightstep guide followed before querying (`docs/guides/lightstep-querying.md`) | | |
 
 <!--
 Add rows for Step 2b (council checkpoint), Step 3b (Antigravity routing), and any domain-specific AutoTrigger agents once the project actually adopts Tier 2. Not applicable at Tier 0 — do not score
@@ -96,6 +97,13 @@ them until they exist. -->
 
 **Mark LEGITIMATE SKIP when:**
 - Session was a query or read-only task (steps 2–5 don't apply to any of it)
+- Row 6: no Lightstep tool call (`lightstep_*_query_spans`, `_query_timeseries`, `_get_stored_trace`, `_list_*`) appears in the window
+
+**Row 6 check (Lightstep guide):** if any Lightstep query tool call is in the window, the tool-call log must show, before the first such call, a read of `docs/guides/lightstep-querying.md` (or both
+`knowledge/mtn-sa-lightstep-span-attributes-by-service.md` and `knowledge/mtn-sa-lightstep-query-templates.md`), and a `scripts/resolve_tenant.py` run. Also check the queries against the guide's
+pitfalls (e.g. pipeline syntax sent to `query_spans`, `deviceId`-only filter that misses `ctap`, `span.kind == "server"` on `session-guard`, `deviceType` used for platform segmentation, an unverified
+household on a loose OR filter). Mark VIOLATION for a missing read or tenant resolve, or a pitfall hit; name the one that applied. A pitfall hit that was caught and corrected in-session is FOLLOWED
+with a note.
 
 **Mark VIOLATION when:**
 - Step 3 was skipped — implementation started immediately after CONTEXT.md read with no plan stated
@@ -236,7 +244,7 @@ SESSION CLOSE — <YYYY-MM-DD> — <one-line task description>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 PROTOCOL COMPLIANCE
-  Steps followed:    <count> / 7
+  Steps followed:    <count> / 8
   Legitimate skips:  <count> — <comma-separated step IDs>
   Violations:        <count> — <comma-separated step IDs>
 

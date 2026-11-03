@@ -101,6 +101,8 @@ Delete this whole section if the project doesn't touch Athena/tenant investigati
 <!-- INSERT: athena -->
 
 - Before any Lightstep/Matisse/Athena MCP call, run `python scripts/resolve_tenant.py ...` first and follow `docs/guides/tenant-resolution.md`; never guess tenant ids or project context.
+- Before writing any Lightstep `query_spans`/`query_timeseries`/`get_stored_trace` call, read `docs/guides/lightstep-querying.md` and the `knowledge/` docs it lists (span attributes by service, query
+  templates); reuse `queries/lightstep/` entries first. `session-close` audits this.
 <!-- INSERT: investigations -->
 
 ## Git conventions

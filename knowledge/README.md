@@ -35,8 +35,5 @@ QC-4 adds only the ported tooling and this convention doc. It does **not** popul
 
 ## Lightstep follow-up
 
-The same cache idea applies on the Lightstep side: one durable knowledge file per project or service family capturing stable attribute names, grouping keys, and filtering conventions so future query
-writing does not start from zero.
-
-For the intended shape, see the read-only reference `/Users/abhadra/github_copilot/applauseInvestigation/knowledge/lightstep-span-attributes-by-service.md`. That Lightstep-side cache is a follow-up
-convention only; QC-4 does not build it here.
+The same cache idea applies on the Lightstep side and is now populated: the `mtn-sa-lightstep-*`, `mtn-lightstep-*`, `mtn-sa-service-correlation-maps`, `mtn-sa-mdrm-*`, `mtn-sa-timplay-*` and
+`mtn-sa-cdn-*` files. Read `docs/guides/lightstep-querying.md` first; it is the index and the pre-query checklist for these.

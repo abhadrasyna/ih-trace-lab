@@ -59,6 +59,8 @@
   `logging-and-correlation-id.md`, `process-discipline.md`, `python-hygiene-and-automation.md`, `architecture-diagrams.md`, `code-review-checklist.md`) distilling this repo's own `docs/archive/`,
   `docs/plan/`, and `PYTHON_DESIGN.md` history into a reusable method for refactoring a different ad hoc Python legacy tree later. No project-specific names (entities, tenants, repos) appear in it by
   design — it is meant to be read by a future, unrelated Python project.
+- `docs/guides/lightstep-querying.md` — read-first checklist for any Lightstep MCP query: resolve tenant, read `knowledge/mtn-sa-lightstep-{span-attributes-by-service,query-templates}.md` and
+  `queries/lightstep/index.md`, topic-doc table, recurring pitfalls. Pointed to from `AGENTS.md` Domain conventions and audited by `session-close` row 6.
 - `docs/guides/chart-guidelines.md` — matplotlib chart standard (dark theme, palette, font fallback, headless figure recipe) matching the shared `src/lib/charts/` package (`theme`, `fig`, `axes`,
   `title`, `header`, `signed_line`, `bar`, `stacked_bar`, `pie`, `errors`, `output`). `ChartTheme.series` is an ordered 5-colour palette (status colours `green`/`red`/`amber` stay out of it) for
   multi-series charts; `render_stacked_bar` (MDRM-2a) draws stacked bars with `green`/`red` reserved for success/failure. `output.write_chart_png` saves PNGs to
