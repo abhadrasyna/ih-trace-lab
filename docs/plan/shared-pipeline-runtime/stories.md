@@ -37,15 +37,15 @@ one runner test. Consumers (AAH, LX) change in their own tasks; this story never
 **Files to change / create:**
 - `src/lib/pipeline_runtime/units.py` — `Unit`, `UnitResult`, `Status`, `RunSummary` (`exit_code`, `failed`, `to_dict()`); pure.
 - `src/lib/pipeline_runtime/runner.py` — `UnitRunner` Protocol; `run_units(units, runner, *, log)` (the Template Method: log start/end, verify declared outputs, apply continue/stop policy);
-  `make_subprocess_runner(timeout_s)` moved from `run_daily_pipeline.py` (own session, `killpg`, exit 124); `make_inprocess_runner(timeout_s)` (worker thread, `future.result(timeout=…)`, converts
+  `make_subprocess_runner(timeout_s)` copied from `run_daily_pipeline.py` (own session, `killpg`, exit 124); `make_inprocess_runner(timeout_s)` (worker thread, `future.result(timeout=…)`, converts
   `SystemExit` and exceptions to `UnitResult`, the logic now in `schedule.run_for_all_tenants`).
 - `src/lib/pipeline_runtime/status_file.py` — `write_status(summary, path)` atomic (temp file + `os.replace`), fcid, start/end, units list; `read_status(path)`.
 - `tests/lib/pipeline_runtime/` — new.
 
 **What to implement:**
 
-1. Move behaviour, not names: the daily wrapper's loop and `make_subprocess_runner` become the shared ones byte-for-byte in logging and exit codes; the daily wrapper keeps passing its own tests via
-   LX-19.
+1. Copy behaviour, not names: the daily wrapper's loop and `make_subprocess_runner` are re-implemented as the shared ones byte-for-byte in logging and exit codes. The legacy file stays untouched until
+   the parity-gated cutover (`design.md` "Rollout rule"); LX-19 later adopts the shared runner as a `_v2` entry point.
 2. FCID is read from the environment/logging context inside worker threads and passed through `env` for subprocesses (`logging-and-correlation-id.md`).
 3. Logging: `run_units` owns the `step start` / `step end` / `[unit] line` log format so both chains log identically, and each `UnitResult` records the run FCID. Add `DEFAULT_LOG_KEEP_DAYS = 7` to
    `src/lib/logging` and have `init_logging` use it when a dated log is requested without `keep_days`; existing callers that pass `keep_days` are unchanged. Dated logs are pruned at the start of the

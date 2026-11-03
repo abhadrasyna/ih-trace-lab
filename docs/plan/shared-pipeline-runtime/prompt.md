@@ -23,8 +23,8 @@ runner, plain dataclass tables for steps).
 
 ## Scope guard
 
-**In bounds:** a new `src/lib/pipeline_runtime/` package with its tests, the one-time move of the generic parts of `run_daily_pipeline.py` into it, and doc edits to the AAH and LX plans. SPR-1 is
-docs-only; SPR-2 to SPR-6 add code and change no report content.
+**In bounds:** a new `src/lib/pipeline_runtime/` package with its tests, a copy (not a move; legacy stays untouched until the parity-gated cutover, see `design.md`) of the generic parts of
+`run_daily_pipeline.py` into it, and doc edits to the AAH and LX plans. SPR-1 is docs-only; SPR-2 to SPR-6 add code and change no report content.
 
 **Out of bounds:** the AAH and LX consumer changes themselves (they stay in their own task lists: AAH-1/2/3/6/10, LX-17/18/19/21/22/24/27 — each now says "consumes SPR-n"); report content and CSV
 layout; `vendor/athena-mcp-server`; `src/lib/auth/sso.py` internals (wrapped, not edited); the crontab (human-owned).
