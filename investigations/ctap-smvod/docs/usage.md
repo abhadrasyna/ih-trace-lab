@@ -274,6 +274,18 @@ python3 run_athena_household_debug_events.py --report-csv ../output/ZA/2026-10-0
 # --table-suffix oct26 queries the month table <id>_ccl_debug_events_oct26 (output gets a _oct26 suffix: <report>_debug_events_all_oct26.csv)
 ```
 
+## 7c2. One household's sessions with DRM info (`trace_household_sessions.py`)
+
+Given a householdId, builds a table of `sm-vod` sessionIds joined to `go-mdrmfe` (DRM type, `brRef`, `fcid`), the US mDRM licence chain and CDM device (make/model/security level) by `fcid`, and an
+outcome (`LICENSE_OK_PLAYBACK_UNCONFIRMED`, `NO_LICENSE_REQUEST`, `LICENSE_DENIED`; with `--athena`: `FAILED` / `PLAYED`). Lightstep keeps about 7 days; the hhid is validated and bad input fails
+loudly. Tokens: `LIGHTSTEP_API_KEY_EU` / `LIGHTSTEP_API_KEY_US` (env or root `.env`). Pure logic lives in `scripts/lib/household_trace.py`.
+
+```bash
+python3 trace_household_sessions.py --tenant ZA --hhid <householdId> --from 2026-11-03T12:00:00 --to 2026-11-03T15:00:00
+python3 trace_household_sessions.py --tenant ZA --hhid <householdId> --from 2026-10-19 --to 2026-10-30 --athena --table-suffix oct26 --device-id <deviceId>
+# -> output/<TENANT>/<hhid8>_<hhid-last8>_session_trace[_<suffix>].csv (+ _debug_events.csv with --athena)
+```
+
 ## 7d. Daily 3016 sub-category report (`run_3016_subcategory_report.py`)
 
 Splits the SMVOD player errors 3014/3015/3016 into the 5 "Media Playback Errors" triage sub-categories. Reads local files only (no Athena/Lightstep), per OpCo and day, from `output/<OPCO>/`:
