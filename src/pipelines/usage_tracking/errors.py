@@ -8,3 +8,7 @@ class UsageTrackingError(Exception):
 
 class RosterError(UsageTrackingError):
     """The tracked-household roster is missing or malformed."""
+
+
+class AthenaSourceError(UsageTrackingError):
+    """An Athena export is missing or malformed, or a live Athena call failed."""
