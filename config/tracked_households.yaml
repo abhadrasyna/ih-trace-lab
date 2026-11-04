@@ -5,6 +5,7 @@ households:
   - hhid: "-QSn81emg_utFvU0cHVJ1IpE2_Peygr3y5FuaMI1w1Cy4A16TSEn"
     label: team A
     track: true
+    phone: "605209478"
     members:
       - name: Fayaz Shaik
         device_id: cccd401e0e5e99f3e3a998f289aa5641490de6077c17d391bd07f809d029b794

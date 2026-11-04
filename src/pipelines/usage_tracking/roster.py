@@ -31,6 +31,7 @@ class Household:
     label: str
     track: bool
     members: tuple[Member, ...]
+    phone: str | None = None
 
 
 @dataclass(frozen=True)
@@ -101,12 +102,25 @@ def _household(entry: Any) -> Household:
         raise RosterError(f"household {hhid}: 'members' must be a list")
     if track and not members:
         raise RosterError(f"household {hhid}: a tracked household needs at least one member")
+    phone = _phone(hhid, entry.get("phone"), track)
     return Household(
         hhid=hhid.strip(),
         label=str(entry.get("label") or hhid),
         track=track,
         members=tuple(_member(hhid, member) for member in members),
+        phone=phone,
     )
+
+
+def _phone(hhid: str, value: Any, track: bool) -> str | None:
+    if value is None:
+        if track:
+            raise RosterError(f"household {hhid}: a tracked household needs a phone")
+        return None
+    # A quoted string is required: unquoted digits parse as an int in YAML and lose any leading zero.
+    if not isinstance(value, str) or not value.strip():
+        raise RosterError(f"household {hhid}: 'phone' must be a non-empty quoted string, got {value!r}")
+    return value.strip()
 
 
 def _member(hhid: str, entry: Any) -> Member:

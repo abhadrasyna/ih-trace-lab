@@ -15,6 +15,7 @@ households:
   - hhid: H1
     label: team
     track: true
+    phone: "600000001"
     members:
       - {name: Sai, device_id: d1, active_from: 2026-11-04}
       - {name: Fayaz, device_id: d2}
@@ -38,6 +39,8 @@ def test_load_valid_roster_and_filters_untracked(tmp_path: Path) -> None:
     assert [h.hhid for h in roster.tracked(loaded)] == ["H1"]
     assert loaded.households[0].members[0].active_from == "2026-11-04"
     assert loaded.households[0].members[1].active_from is None
+    assert loaded.households[0].phone == "600000001"
+    assert loaded.households[1].phone is None
 
 
 def test_duplicate_device_id_raises(tmp_path: Path) -> None:
@@ -53,7 +56,7 @@ def test_unknown_tenant_raises(tmp_path: Path) -> None:
 
 
 def test_json_config_loads(tmp_path: Path) -> None:
-    data = {"tenant": "ZA", "households": [{"hhid": "H1", "track": True, "members": [{"name": "Sai", "device_id": "d1"}]}]}
+    data = {"tenant": "ZA", "households": [{"hhid": "H1", "track": True, "phone": "600000001", "members": [{"name": "Sai", "device_id": "d1"}]}]}
 
     loaded = roster.load(_write(tmp_path, json.dumps(data), "roster.json"))
 
@@ -68,6 +71,8 @@ def test_json_config_loads(tmp_path: Path) -> None:
         ("{name: Fayaz, device_id: d2}", "{name: Fayaz}", "member without a device_id"),
         ("active_from: 2026-11-04", "active_from: 20261104", "invalid active_from"),
         ("members: []", "members: {}", "'members' must be a list"),
+        ('    phone: "600000001"\n', "", "needs a phone"),
+        ('phone: "600000001"', "phone: 600000001", "'phone' must be a non-empty quoted string"),
         ("      - {name: Sai, device_id: d1, active_from: 2026-11-04}\n      - {name: Fayaz, device_id: d2}\n", "", "at least one member"),
     ],
 )
