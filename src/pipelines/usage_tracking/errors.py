@@ -12,3 +12,7 @@ class RosterError(UsageTrackingError):
 
 class AthenaSourceError(UsageTrackingError):
     """An Athena export is missing or malformed, or a live Athena call failed."""
+
+
+class LightstepSourceError(UsageTrackingError):
+    """A Lightstep export is missing or malformed, or a live Lightstep call failed."""

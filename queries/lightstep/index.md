@@ -22,3 +22,4 @@ Source file: `/Users/abhadra/github_copilot/applauseInvestigation/knowledge/ligh
 | `lightstep-export-mdrm-cdm-fairplay` | fairplay-license-generator / query_timeseries | daily mDRM CDM FairPlay export (US, `tenantId`) | stories.md LX-2 |
 | `lightstep-export-mdrm-cdm-playready` | playready / query_timeseries | daily mDRM CDM PlayReady export (US, `tenantId`) | stories.md LX-2 |
 | `lightstep-export-mdrm-lrm` | license-request-manager / query_timeseries | daily mDRM LRM license-chain export (US, `tenantId`) | stories.md LX-2 |
+| `usage-tracking-smvod-by-device` | sm-vod / query_timeseries | live SetupSession count and trace id per session for the tracked household/device pairs | usage-tracking UT-4 |

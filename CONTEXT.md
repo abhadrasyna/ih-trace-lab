@@ -263,6 +263,9 @@
 - `src/pipelines/usage_tracking/athena_source.py` and `queries/athena/usage-tracking-*.sql` — UT-3: `SessionSource` Protocol with `LocalExportSource` (default, filters the tenant-wide ZA CSVs by
   roster household and device; a missing file raises `AthenaSourceError`) and `LiveAthenaSource` (`--live-athena`, injected query runner, month-aware debug table via `debug_table_name`); errors are
   fetched only for sessions whose outcome is `PLAYER_ERROR`.
+- `src/pipelines/usage_tracking/lightstep_source.py` and `queries/lightstep/usage-tracking-smvod-by-device.md` — UT-4: `RequestSource` Protocol with `LocalExportSource` (default, reads
+  `data/lightstep/<TENANT>/<date>_smvod.csv`, keeps roster `(hhid, device_id)` pairs; a missing file raises `LightstepSourceError`) and `LiveLightstepSource` (`--live-lightstep`, injected UQL runner);
+  `request_counts` returns 0 for a roster device with no rows. No 5xx column.
 
 ## Key Decisions
 
