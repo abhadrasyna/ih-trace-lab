@@ -151,11 +151,22 @@ def test_foreign_tenant_rows_fail_for_shared_project(tmp_path: Path) -> None:
 @pytest.mark.parametrize(("first", "last"), [((5, 47), (23, 55)), ((0, 5), (22, 52))])
 def test_day_edges_outside_tolerance_fail(tmp_path: Path, first: tuple[int, int], last: tuple[int, int]) -> None:
     _day(tmp_path)
-    _smvod_ts(tmp_path / f"{DATE}_smvod-ts.csv", first, last)
+    _smvod_ts(tmp_path / f"{DATE}_smvod-ts.csv", first, last, rows=SETTINGS.low_volume_rows)
 
     findings = li.validate_tenant(tmp_path, DATE, _context(), SETTINGS)
 
     assert ("coverage", "smvod-ts") in _levels(findings)
+
+
+@pytest.mark.parametrize(("first", "last"), [((5, 47), (23, 55)), ((0, 5), (22, 52))])
+def test_day_edges_outside_tolerance_only_warn_for_low_volume_day(tmp_path: Path, first: tuple[int, int], last: tuple[int, int]) -> None:
+    _day(tmp_path)
+    _smvod_ts(tmp_path / f"{DATE}_smvod-ts.csv", first, last, rows=SETTINGS.low_volume_rows - 1)
+
+    findings = li.validate_tenant(tmp_path, DATE, _context(), SETTINGS)
+
+    assert ("coverage", "smvod-ts") in _levels(findings, li.WARN)
+    assert not li.has_failures(findings)
 
 
 def test_gap_between_parts_fails(tmp_path: Path) -> None:
@@ -191,7 +202,7 @@ def test_non_numeric_timestamp_fails_loudly(tmp_path: Path) -> None:
 
 def test_report_is_a_table_with_issue_details(tmp_path: Path) -> None:
     _day(tmp_path)
-    _smvod_ts(tmp_path / f"{DATE}_smvod-ts.csv", (5, 47), (23, 55))
+    _smvod_ts(tmp_path / f"{DATE}_smvod-ts.csv", (5, 47), (23, 55), rows=SETTINGS.low_volume_rows)
 
     report = li.format_report("ZM", li.validate_tenant(tmp_path, DATE, _context(), SETTINGS))
 

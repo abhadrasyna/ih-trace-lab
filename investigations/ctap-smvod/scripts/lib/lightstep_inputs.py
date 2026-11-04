@@ -46,6 +46,7 @@ class Settings:
     tolerance: timedelta = timedelta(minutes=15)
     max_gap: timedelta = timedelta(minutes=15)
     row_cap: int = 500
+    low_volume_rows: int = 500
     include_drm: bool = False
 
 
@@ -208,10 +209,14 @@ def check_coverage(
     first = _utc(min(s.first_us for _, s in spans))
     last = _utc(max(s.last_us for _, s in spans))
     findings = []
+    # A quiet tenant can legitimately have no spans near midnight, so a day-edge gap is only advisory there.
+    low_volume = sum(s.count for _, s in spans) < settings.low_volume_rows
+    edge_level = WARN if low_volume else FAIL
+    note = f" (low volume: {sum(s.count for _, s in spans)} rows)" if low_volume else ""
     if first - day_start > settings.tolerance:
-        findings.append(Finding(FAIL, "coverage", f"first span {_hms(first)} UTC is more than {_mins(settings.tolerance)} after 00:00", kind))
+        findings.append(Finding(edge_level, "coverage", f"first span {_hms(first)} UTC is more than {_mins(settings.tolerance)} after 00:00{note}", kind))
     if day_end - last > settings.tolerance:
-        findings.append(Finding(FAIL, "coverage", f"last span {_hms(last)} UTC is more than {_mins(settings.tolerance)} before 24:00", kind))
+        findings.append(Finding(edge_level, "coverage", f"last span {_hms(last)} UTC is more than {_mins(settings.tolerance)} before 24:00{note}", kind))
     if first < day_start or last >= day_end:
         findings.append(Finding(WARN, "coverage", f"spans {_hms(first)}..{_hms(last)} reach outside {date_iso} UTC", kind))
     if split:
@@ -302,7 +307,7 @@ _LEGEND = (
     ("Schema", "Required columns are present and the file has data rows."),
     ("Tenant", "Rows belong to the tenant folder (shared Lightstep projects only); '-' for mDRM and dedicated projects."),
     ("Coverage", "smvod-ts only, the sole export with timestamps: first/last span within the tolerance of 00:00/24:00 UTC, "
-                 "no gap between parts; WARN if the last part hit the row cap."),
+                 "no gap between parts; WARN if the last part hit the row cap; day-edge misses are WARN when the day has under 500 rows."),
     ("Result", "Worst level in the row. PASS ok, WARN review but does not block, FAIL blocks the pipeline; '-' not applicable."),
 )
 
