@@ -3,12 +3,12 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: UT-1, UT-2, UT-3, UT-4, UT-5, UT-6, UT-7.**
+**Open: UT-3, UT-4, UT-5, UT-6, UT-7.**
 
-- [ ] **UT-1** — Prior-art audit and design review: resolve the report-date/Lightstep-source and Athena-factory decisions, module map, Protocols, planned diagram (docs only) | Owner: Copilot CLI |
-  Model: claude-sonnet-5.5 | Review: user approval of the design | SHA: —
-- [ ] **UT-2** — Roster file `config/tracked_households.yaml` and a validating loader with the `track` flag | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green + code-reviewer | SHA:
-  —
+- [x] **UT-1** — Prior-art audit and design review: resolve the report-date/Lightstep-source and Athena-factory decisions, module map, Protocols, planned diagram (docs only) | Owner: Copilot CLI |
+  Model: claude-sonnet-5.5 | Review: user approval of the design | SHA: b002123
+- [x] **UT-2** — Roster file `config/tracked_households.yaml` and a validating loader with the `track` flag | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green + code-reviewer | SHA:
+  8e4f150 (+ d4afd34, a4e712e)
 - [ ] **UT-3** — Athena source: query files and a fetcher for sessions, all devices per household, and error detail | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green +
   code-reviewer | SHA: —
 - [ ] **UT-4** — Lightstep source: request counts and trace ids per device, from the local export (default) or live (`--live-lightstep`) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests
