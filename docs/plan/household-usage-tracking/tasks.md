@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: UT-4, UT-5, UT-6, UT-7.**
+**Open: UT-5, UT-6, UT-7.**
 
 - [x] **UT-1** — Prior-art audit and design review: resolve the report-date/Lightstep-source and Athena-factory decisions, module map, Protocols, planned diagram (docs only) | Owner: Copilot CLI |
   Model: claude-sonnet-5.5 | Review: user approval of the design | SHA: b002123
@@ -11,8 +11,8 @@ spec.
   8e4f150 (+ d4afd34, a4e712e)
 - [x] **UT-3** — Athena source: query files and a fetcher for sessions, all devices per household, and error detail | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green +
   code-reviewer | SHA: 65345cb
-- [ ] **UT-4** — Lightstep source: request counts and trace ids per device, from the local export (default) or live (`--live-lightstep`) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests
-  green + code-reviewer | SHA: —
+- [x] **UT-4** — Lightstep source: request counts and trace ids per device, from the local export (default) or live (`--live-lightstep`) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests
+  green + code-reviewer | SHA: 2342cdd
 - [ ] **UT-5** — Pure merge and rule functions: per-person metrics, flags, new-device detection, 7-day trend | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green + code-reviewer |
   SHA: —
 - [ ] **UT-6** — Markdown report renderer to the agreed format | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green (golden file) + code-reviewer | SHA: —
