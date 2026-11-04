@@ -11,8 +11,8 @@ spec.
   —
 - [ ] **UT-3** — Athena source: query files and a fetcher for sessions, all devices per household, and error detail | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green +
   code-reviewer | SHA: —
-- [ ] **UT-4** — Lightstep source: request counts, 5xx and trace ids per device, from the source chosen in UT-1 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green + code-reviewer |
-  SHA: —
+- [ ] **UT-4** — Lightstep source: request counts and trace ids per device, from the local export (default) or live (`--live-lightstep`) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests
+  green + code-reviewer | SHA: —
 - [ ] **UT-5** — Pure merge and rule functions: per-person metrics, flags, new-device detection, 7-day trend | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green + code-reviewer |
   SHA: —
 - [ ] **UT-6** — Markdown report renderer to the agreed format | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green (golden file) + code-reviewer | SHA: —
@@ -25,7 +25,7 @@ spec.
 - **UT-2** — editing only the YAML adds a person or household; a duplicate device id, an unknown tenant or a malformed entry fails loudly; `track: false` households are skipped.
 - **UT-3** — for a date and a roster the fetcher returns sessions with content names, every device seen on each tracked household, and error detail for errored sessions only, all with injected fakes
   in tests.
-- **UT-4** — per-device request counts, 5xx counts and trace ids are returned from the chosen source, with no network in tests.
+- **UT-4** — per-device request counts and trace ids are returned from the local export, or live with the flag, with no network in tests.
 - **UT-5** — every flag is a separate rule function; a device not in the roster is flagged on a tracked household and never on an untracked one.
 - **UT-6** — the rendered Markdown matches the agreed format for the summary, per-household table, per-person session detail, anomalies and trend.
 - **UT-7** — the module runs end to end, a failed refresh exits non-zero with a "report not generated" note, the README states the cron line, and the registry docs and diagram are updated.

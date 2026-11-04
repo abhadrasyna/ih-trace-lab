@@ -17,8 +17,9 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 
 1. Prior-art check. Search `SCRIPTS.md`, `docs/archive/functional-code-taxonomy/`, `src/lib/*`, `scripts/lib/`, `investigations/ctap-smvod/scripts/` and `docs/plan/shared-pipeline-runtime/` for
    existing code that already loads a roster, queries Athena per household, reads the sm-vod Lightstep export, or renders a Markdown table. List each hit and reuse or reject it with a reason.
-2. Decide the report date and Lightstep source. Open one real ctap-smvod export (`investigations/ctap-smvod/data/lightstep/ZA/<date>_smvod*.csv`) and record whether it carries household id, device id,
-   status code and trace id. If yes, Option A (D-2, read the export) is viable; if not, Option B (D-1, live Lightstep) or a mix. Record the user's choice; do not pick for them if it is still open.
+2. Confirm the local-first data source. Record the columns of `data/lightstep/ZA/<date>_smvod.csv` (householdId, deviceId, sessionId, contentId, trace id; no status code) and of
+   `data/athena/ZA/<date>_session.csv`, `_debug_states.csv` and `_error_eventdata.csv`; check whether those exports are filtered to a household or cover the whole tenant. Measure each export's lag
+   against the download pipeline and set the default `--date` offset and cron time from it. Define the exact `--live-athena` and `--live-lightstep` behaviour.
 3. Decide where `make_auth` and `make_athena_client` come from: import from `aws_access_cli.runtime`, or extract into `src/lib` as a separate follow-up task. State the dependency direction either way
    (pipelines depend on `src/lib`, never on another pipeline).
 4. Confirm the debug-events table rule: current month is `<tenant>_ccl_debug_events`, an older month is `<tenant>_ccl_debug_events_<mon><yy>`; run `SHOW TABLES` once and record the exact naming and
@@ -72,8 +73,9 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 **What to implement:**
 
 1. Follow `docs/guides/query-catalog.md` for headers (Purpose, Tables, Params, Status, Source) and parameter placeholders. Scope every query by household id and device id together.
-2. `fetch_sessions`, `fetch_household_devices` and `fetch_errors` return plain typed rows. `clientid` is built as `<deviceId>:<householdId>`; the debug table name is picked by date using the UT-1
-   rule.
+2. Two implementers of `SessionSource`: a local-export reader (default; filters the tenant-wide CSVs by household and device id; a missing file raises `AthenaSourceError`) and the live Athena runner
+   (`--live-athena`). The CLI picks one; neither falls back to the other silently. `fetch_sessions`, `fetch_household_devices` and `fetch_errors` return plain typed rows. `clientid` is built as
+   `<deviceId>:<householdId>`; the debug table name is picked by date using the UT-1 rule.
 3. Fetch error detail only for devices or sessions whose `endreason` shows an error, not for every session.
 4. Wrap the Athena client's exceptions into `AthenaSourceError`; log call start at DEBUG and success at INFO with row count and duration; parameters go through `redact_params()`.
 5. Take the Athena client from the factory UT-1 chose; do not construct a client in this module.
@@ -82,6 +84,7 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 - `test_fetch_sessions_maps_rows` — a fake runner returns canned rows; the result carries content names and endreasons.
 - `test_errors_fetched_only_for_errored_sessions` — the fake runner is not called for the error query when no session errored.
 - `test_client_error_is_wrapped` — a raised client error surfaces as `AthenaSourceError`.
+- `test_local_reader_filters_by_household_and_device` and `test_missing_local_file_raises` — the default reader keeps only roster rows and never returns an empty result for a missing file.
 - `test_debug_table_name_by_month` — current month and an older month pick the right table.
 
 **Commit:** `feat(usage): Athena session and error source`
@@ -99,14 +102,14 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 
 **What to implement:**
 
-1. Return per-device request count, 5xx count and the trace id per session for the report date, as plain typed rows.
+1. Return per-device request count and the trace id per session for the report date, as plain typed rows. There is no 5xx count: the export has no status code, so that column is dropped.
 2. If reading the export: use the existing CSV helpers and handle a missing file as `LightstepSourceError`, not an empty result. If live: use the EU key from `.env` through the existing token
    provider, reuse the slicing and auto-split, and never log the token.
 3. Treat a household or device absent from the data as zero activity, distinct from a source failure.
 4. Wrap source exceptions into `LightstepSourceError`; same logging contract as UT-3.
 
 **Tests (no network, no real external services):**
-- `test_counts_and_5xx_per_device` — canned rows produce the right counts.
+- `test_counts_per_device` — canned rows produce the right counts.
 - `test_missing_export_raises` (or `test_api_error_is_wrapped` for the live path).
 - `test_absent_device_is_zero_not_error`.
 
@@ -123,7 +126,7 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 
 **What to implement:**
 
-1. Build per person: active, sessions, watch minutes, errors, top content, Lightstep requests, 5xx, flags. A person with no data is idle, not missing.
+1. Build per person: active, sessions, watch minutes, errors, top content, Lightstep requests, flags. A person with no data is idle, not missing.
 2. Flags as rule functions `rule(household_day) -> list[Flag]`: idle (N days, N from one named constant), error endreason, Athena-versus-Lightstep mismatch by session id, and new device.
 3. New device: any `device_id` returned by `fetch_household_devices` that is not in the household's `members`, reported only for `track: true` households, with first-seen time and session count.
 4. 7-day trend: sessions per person per day over the trailing seven days, from one Athena window.
@@ -149,7 +152,7 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 **What to implement:**
 
 1. Output exactly: title line with date and tenant; summary line (HHIDs, devices, active, sessions, errors); per household a table with Person, Device (first 8 chars), Active, Sessions, Watch min,
-   Errors, Top content, Lightstep reqs, 5xx, Flags; per-person session detail (time, parent_session_id, content, endreason, outcome, error code and message for errored sessions only, trace_id); an
+   Errors, Top content, Lightstep reqs, Flags; per-person session detail (time, parent_session_id, content, endreason, outcome, error code and message for errored sessions only, trace_id); an
    Anomalies section; a 7-day Trend section.
 2. HHIDs are shortened in headings (first 6 characters plus an ellipsis) with the label; full ids appear only in the Anomalies section where needed to act.
 3. Keep file writing out of this module: it returns a string; the CLI writes it through the shared writer.
@@ -166,7 +169,8 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 ## UT-7 — CLI, failure handling, docs and final diagram
 
 **Files to change / create:**
-- `src/pipelines/usage_tracking/scripts/run_daily_usage_report.py` — `main()` with `--date`, `--config`, `--out-dir`.
+- `src/pipelines/usage_tracking/scripts/run_daily_usage_report.py` — `main()` with `--date`, `--config`, `--out-dir`, `--live-athena`, `--live-lightstep` (each source reads the local export by default
+  and queries live only with its flag).
 - `src/pipelines/usage_tracking/README.md` — schedule, inputs, outputs, failure behaviour, the cron line.
 - `src/pipelines/usage_tracking/tests/test_run_daily_usage_report.py`.
 - `SCRIPTS.md`, `CONTEXT.md` ("What Exists"), `docs/plan/TODOS.md`, and the after diagram under `docs/` generated from the tree with tests excluded.

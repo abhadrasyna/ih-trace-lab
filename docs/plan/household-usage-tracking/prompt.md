@@ -24,13 +24,15 @@ Prior art found while scoping (2026-11-04), not to be rebuilt: `queries/athena/c
 - Output: a Markdown file only, `reports/usage/YYYY-MM-DD.md`. No email or chat delivery.
 - Roster: `config/tracked_households.yaml` is committed. Each household has `track: true|false`; only tracked ones are queried or reported.
 - Any device on a tracked HHID that is not in its `members` list is flagged in the report's Anomalies section.
+- Data source (2026-11-04): local-first. The report reads the ctap-smvod pipeline's local exports (`investigations/ctap-smvod/data/lightstep/ZA/<date>_smvod.csv` and
+  `data/athena/ZA/<date>_session.csv`, `_error_eventdata.csv`); the cron runs after those downloads. A missing local file fails loudly, never a silent zero. `--live-athena` and `--live-lightstep`
+  switch that source to a live query. The 5xx column is dropped (the sm-vod export has no status code); errors come from Athena playback outcome and the debug-events table.
 - Cron already exists for the other pipelines (`$PY -m ... >> $LOGS/cron_*.out`); this story adds one more job line in that style. The user installs it; the repo documents the line.
 
 ## Open decisions (resolve in UT-1 before any code)
 
-- **Report date offset and Lightstep source.** Option A: run after the 13:00 ctap-smvod Lightstep download for D-2 and read its exported sm-vod CSV (recommended: no duplicate Lightstep calls, but the
-  report is two days old; needs the export to carry household id, device id and trace id). Option B: run for D-1 and query Lightstep live (fresher, duplicates the download pipeline, D-1 may be
-  incomplete). The user has not chosen yet.
+- **Default report date offset.** Local-first means the date must be one the download pipeline has already produced (it runs for D-2 at 13:00). UT-1 confirms the Athena export's lag (the newest local
+  Athena file on 2026-11-04 was 2026-10-31, older than the Lightstep one) and sets the default `--date` offset and cron time; `--live-*` is for fresher dates.
 - **Where the shared Athena factories live.** `make_auth` and `make_athena_client` sit in `src/pipelines/aws_access_cli/runtime.py`. Importing them from a second pipeline creates a
   pipeline-to-pipeline dependency; the alternative is extracting them into `src/lib`. UT-1 decides, and records it.
 
@@ -72,7 +74,7 @@ secrets, and are committed by decision.
 - **UT-1** — Prior-art audit and design review (docs only): resolve the two open decisions, module map, Protocols, planned diagram.
 - **UT-2** — Roster file and loader: `config/tracked_households.yaml`, validation, `track` flag.
 - **UT-3** — Athena source: queries plus a fetcher for sessions, all-devices-per-household and error detail.
-- **UT-4** — Lightstep source: request counts, 5xx and trace ids per device, from the source chosen in UT-1.
+- **UT-4** — Lightstep source: request counts and trace ids per device, from the local export (default) or live (`--live-lightstep`).
 - **UT-5** — Merge and rules: per-person metrics, flags, 7-day trend.
 - **UT-6** — Markdown report renderer to the agreed format.
 - **UT-7** — CLI entry point, failure handling, README with the cron line, `SCRIPTS.md`, `CONTEXT.md`, final diagram.
