@@ -141,3 +141,14 @@ def test_debug_table_name_by_month():
     assert debug_table_name("e6auj7k7", date(2026, 9, 30), today, tables) == "e6auj7k7_ccl_debug_events_sept26"
     with pytest.raises(AthenaSourceError):
         debug_table_name("e6auj7k7", date(2026, 8, 1), today, tables)
+
+
+def test_malformed_live_row_is_wrapped():
+    with pytest.raises(AthenaSourceError):
+        _live(FakeRunner(session_rows=[{"parent_session_id": "s1"}])).fetch_sessions([HH], DAY)
+
+
+def test_debug_states_without_expected_columns_raises(tmp_path):
+    source = LocalExportSource("ZA", _export(tmp_path, "s1,H1,d1,Bluey,PLAYER_ERROR,a,,1,0,0\n", "foo,bar\n1,2\n"))
+    with pytest.raises(AthenaSourceError):
+        source.fetch_errors(source.fetch_sessions([HH], DAY), DAY)

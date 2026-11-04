@@ -260,6 +260,9 @@
   `hhid`, members with `device_id`, `track` flag); `roster.load(path)` validates it (duplicate `(tenant, hhid)` or `(tenant, device_id)`, empty hhid, a household with a missing or unknown `tenant` via
   `TenantRegistry`, non-bool `track`) and raises `RosterError`, `tracked()` returns only `track: true` households, and `resolve_config_path` takes `--config`, then `TRACK_CONFIG`, then the default.
   `tracked()` and `by_tenant()` return only `track: true` households, the latter grouped per tenant. The second household is a `track: false` placeholder.
+- `src/pipelines/usage_tracking/athena_source.py` and `queries/athena/usage-tracking-*.sql` — UT-3: `SessionSource` Protocol with `LocalExportSource` (default, filters the tenant-wide ZA CSVs by
+  roster household and device; a missing file raises `AthenaSourceError`) and `LiveAthenaSource` (`--live-athena`, injected query runner, month-aware debug table via `debug_table_name`); errors are
+  fetched only for sessions whose outcome is `PLAYER_ERROR`.
 
 ## Key Decisions
 

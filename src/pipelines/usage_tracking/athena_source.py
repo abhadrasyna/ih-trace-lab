@@ -125,13 +125,10 @@ class LocalExportSource:
         if not wanted:
             return []
         rows = self._read_csv(f"{day}_debug_states.csv")
-        return [_error_from_debug_state(r) for r in rows if r["eventid"] == "PLAYER_ERROR" and r["sessionId"] in wanted]
+        return _mapped(_error_from_debug_state, rows, "debug-states", lambda r: r["eventid"] == "PLAYER_ERROR" and r["sessionId"] in wanted)
 
     def _read_sessions(self, day: date) -> list[SessionRow]:
-        return [
-            SessionRow(r["sessionId"], r["householdId"], r["deviceId"], r["content"], "", r["playback_outcome"], r["event_start"], r["event_end"])
-            for r in self._read_csv(f"{day}_session.csv")
-        ]
+        return _mapped(_session_from_export, self._read_csv(f"{day}_session.csv"), "session export")
 
     def _read_csv(self, name: str) -> list[dict[str, str]]:
         path = self._dir / name
@@ -142,6 +139,10 @@ class LocalExportSource:
                 return list(csv.DictReader(handle))
         except (OSError, csv.Error) as exc:
             raise AthenaSourceError(f"cannot read {path}: {exc}") from exc
+
+
+def _session_from_export(r: dict[str, str]) -> SessionRow:
+    return SessionRow(r["sessionId"], r["householdId"], r["deviceId"], r["content"], "", r["playback_outcome"], r["event_start"], r["event_end"])
 
 
 def _error_from_debug_state(row: dict[str, str]) -> ErrorRow:
@@ -177,7 +178,7 @@ class LiveAthenaSource:
                 },
                 day,
             )
-            out.extend(_session_from_live(r) for r in rows)
+            out.extend(_mapped(_session_from_live, rows, "live session"))
         return out
 
     def fetch_household_devices(self, household: Household, day: date) -> list[DeviceSeen]:
@@ -187,7 +188,7 @@ class LiveAthenaSource:
             {"database": self._database, "date": str(day), "user_id": _safe(household.hhid)},
             day,
         )
-        return [DeviceSeen(household.hhid, r["device_id"], int(r["session_count"]), r["first_seen"]) for r in rows]
+        return _mapped(lambda r: DeviceSeen(household.hhid, r["device_id"], int(r["session_count"]), r["first_seen"]), rows, "live device")
 
     def fetch_errors(self, sessions: Sequence[SessionRow], day: date) -> list[ErrorRow]:
         errored = errored_sessions(sessions)
@@ -206,7 +207,10 @@ class LiveAthenaSource:
             },
             day,
         )
-        return [ErrorRow(r["session_id"], r["error_code"], r["message"], r["position"], r["datetime"]) for r in rows if r["session_id"] in wanted]
+        return _mapped(
+            lambda r: ErrorRow(r["session_id"], r["error_code"], r["message"], r["position"], r["datetime"]), rows, "live error",
+            lambda r: r["session_id"] in wanted,
+        )
 
     def _debug_table(self, day: date) -> str:
         if self._tables is None:
@@ -233,6 +237,15 @@ class LiveAthenaSource:
             extra={"call_name": "usage.athena", "params": shown, "row_count": len(rows), "duration_ms": int((time.monotonic() - started) * 1000)},
         )
         return rows
+
+
+def _mapped(
+    build: Callable[[dict[str, str]], object], rows: Iterable[dict[str, str]], what: str, keep: Callable[[dict[str, str]], bool] | None = None,
+) -> list:
+    try:
+        return [build(r) for r in rows if keep is None or keep(r)]
+    except (KeyError, ValueError, TypeError) as exc:
+        raise AthenaSourceError(f"malformed {what} row: {exc!r}") from exc
 
 
 def _safe(value: str) -> str:
