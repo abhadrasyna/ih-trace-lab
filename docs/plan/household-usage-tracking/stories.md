@@ -37,8 +37,9 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 ## UT-2 — Roster file and loader
 
 **Files to change / create:**
-- `config/tracked_households.yaml` — tenant `ZA`; households with `hhid`, `label`, `track`, and `members` (`name`, `device_id`, optional `active_from`). Real values for the team-A household (Sai,
-  Keertesh, Josiah, Fayaz); a placeholder entry for the second household with `track: false` until its ids are supplied.
+- `config/tracked_households.yaml` — no top-level tenant; each household carries its own required `tenant` (`ZA` for team A); households with `hhid`, `label`, `track`, `phone`, and `members` (`name`,
+  `device_id`, optional `active_from`). Real values for the team-A household (Sai, Keertesh, Josiah, Fayaz); a placeholder entry for the second household with `track: false` until its ids are
+  supplied.
 - `src/pipelines/usage_tracking/roster.py` — frozen dataclasses `Member`, `Household`, `Roster`; `load(path) -> Roster`; `tracked(roster) -> list[Household]`.
 - `src/pipelines/usage_tracking/errors.py` — `UsageTrackingError` and `RosterError`.
 - `src/pipelines/usage_tracking/tests/test_roster.py`.
@@ -46,7 +47,9 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 **What to implement:**
 
 1. Parse YAML (JSON accepted by the same loader). Resolve the tenant through `config/tenants.yaml` via the existing registry; never copy tenant ids into the roster.
-2. Validate and raise `RosterError` with the offending entry: duplicate `device_id` across the file, empty or missing `hhid`, unknown tenant, `track` not a boolean, a member without a device id.
+2. Validate and raise `RosterError` with the offending entry: duplicate `(tenant, device_id)` or `(tenant, hhid)` (the same id in two tenants is allowed), empty or missing `hhid`, a household with a
+   missing or unknown `tenant`, `track` not a boolean, a member without a device id, a tracked household without a `phone`. `Household.tenant` is the registry code; there is no `Roster.tenant`.
+   `by_tenant(roster)` returns the tracked households grouped by tenant code, so each source runs one query set per tenant.
 3. Allow the path to come from `--config` or the `TRACK_CONFIG` environment variable, defaulting to `config/tracked_households.yaml`.
 4. Keep `track: false` households in the loaded roster but return only `track: true` ones from `tracked()`.
 
@@ -54,6 +57,7 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 - `test_load_valid_roster_and_filters_untracked` — two households, one `track: false`; `tracked()` returns one.
 - `test_duplicate_device_id_raises` — the same device id in two entries raises `RosterError`.
 - `test_unknown_tenant_raises` and `test_json_config_loads` — error path and the JSON alternative.
+- `test_household_without_tenant_raises`, `test_same_device_id_in_two_tenants_allowed` and `test_by_tenant_groups_tracked_households` — the per-household tenant rules.
 
 **Commit:** `feat(usage): tracked-household roster loader`
 
@@ -73,9 +77,11 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 **What to implement:**
 
 1. Follow `docs/guides/query-catalog.md` for headers (Purpose, Tables, Params, Status, Source) and parameter placeholders. Scope every query by household id and device id together.
-2. Two implementers of `SessionSource`: a local-export reader (default; filters the tenant-wide CSVs by household and device id; a missing file raises `AthenaSourceError`) and the live Athena runner
-   (`--live-athena`). The CLI picks one; neither falls back to the other silently. `fetch_sessions`, `fetch_household_devices` and `fetch_errors` return plain typed rows. `clientid` is built as
-   `<deviceId>:<householdId>`; the debug table name is picked by date using the UT-1 rule.
+2. Every call is scoped to the household's tenant: the local folder is `data/athena/<TENANT>/`, the live database is `unified_<athena_tenant_id>` and the profile and region come from the registry
+   entry for that tenant (`config/tenants.yaml`), never another tenant's. Callers pass one tenant's households at a time (from `by_tenant`). Two implementers of `SessionSource`: a local-export reader
+   (default; filters the tenant-wide CSVs by household and device id; a missing file raises `AthenaSourceError`) and the live Athena runner (`--live-athena`). The CLI picks one; neither falls back to
+   the other silently. `fetch_sessions`, `fetch_household_devices` and `fetch_errors` return plain typed rows. `clientid` is built as `<deviceId>:<householdId>`; the debug table name is picked by date
+   using the UT-1 rule.
 3. Fetch error detail only for devices or sessions whose `endreason` shows an error, not for every session.
 4. Wrap the Athena client's exceptions into `AthenaSourceError`; log call start at DEBUG and success at INFO with row count and duration; parameters go through `redact_params()`.
 5. Take the Athena client from the factory UT-1 chose; do not construct a client in this module.
@@ -97,7 +103,8 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 - `queries/lightstep/usage-tracking-smvod-by-device.md` — template filtered by household id and device id, grouped by `sessionId`, `http.status_code`, `lightstep.trace_id` (only if UT-1 chose live
   queries or needs it for a gap-fill); `queries/lightstep/index.md` entry.
 - `src/pipelines/usage_tracking/lightstep_source.py` — `RequestSource` Protocol and the implementer for the source chosen in UT-1 (export CSV reader, or `scripts/lib/lightstep_api.py` client
-  injected).
+  injected). Scoped per tenant: the local folder is `data/lightstep/<TENANT>/`; the live path takes the project, region and any shared-project disambiguation filter (for example `busUnitId`) from the
+  tenant's registry entry, and keeps matching `(householdId, deviceId)` together.
 - `src/pipelines/usage_tracking/tests/test_lightstep_source.py`.
 
 **What to implement:**
@@ -151,9 +158,9 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 
 **What to implement:**
 
-1. Output exactly: title line with date and tenant; summary line (HHIDs, devices, active, sessions, errors); per household a table with Person, Device (first 8 chars), Active, Sessions, Watch min,
-   Errors, Top content, Lightstep reqs, Flags; per-person session detail (time, parent_session_id, content, endreason, outcome, error code and message for errored sessions only, trace_id); an
-   Anomalies section; a 7-day Trend section.
+1. One report per tenant (`reports/usage/<TENANT>/<date>.md` or the agreed equivalent), never a combined file. Output exactly: title line with date and tenant; summary line (HHIDs, devices, active,
+   sessions, errors); per household a table with Person, Device (first 8 chars), Active, Sessions, Watch min, Errors, Top content, Lightstep reqs, Flags; per-person session detail (time,
+   parent_session_id, content, endreason, outcome, error code and message for errored sessions only, trace_id); an Anomalies section; a 7-day Trend section.
 2. HHIDs are shortened in headings (first 6 characters plus an ellipsis) with the label; full ids appear only in the Anomalies section where needed to act.
 3. Keep file writing out of this module: it returns a string; the CLI writes it through the shared writer.
 4. Markdown prose lines stay within 200 characters.

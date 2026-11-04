@@ -102,7 +102,17 @@ flowchart LR
     AS -. live only .-> LIB[src/lib athena factory]
 ```
 
-## 7. Still open for the user
+## 7. Per-household tenant (decided 2026-11-04)
+
+- `tenant` is a required field on each household in `config/tracked_households.yaml`; the top-level `tenant` key is removed. Team A is `ZA`.
+- Resolution goes through `config/tenants.yaml` (`TenantRegistry`). Every Athena database, Lightstep project and local folder (`data/athena/<TENANT>/`, `data/lightstep/<TENANT>/`) comes from the
+  household's own tenant, never another one's.
+- Duplicate checks are per tenant: `(tenant, hhid)` and `(tenant, device_id)`; the same id in two tenants is legal. Sources are called once per tenant with that tenant's households (`by_tenant`).
+- Output is one report per tenant, not a combined file.
+- Impact on the module map (§5): `roster` exposes `by_tenant`; `athena_source` and `lightstep_source` take a tenant plus its households; `scripts/run_daily_usage_report` loops over tenants.
+- Follow-up: UT-2's already-committed loader still has the top-level tenant and needs a small change task to match (not part of this docs-only edit).
+
+## 8. Still open for the user
 
 1. Confirm D-2 at 14:00 as the default date offset and cron time.
 2. Confirm extracting the Athena factory to `src/lib` as a follow-up task (recommended) versus importing from `aws_access_cli`.
