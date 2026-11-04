@@ -269,7 +269,10 @@
 - `src/pipelines/usage_tracking/merge.py` and `rules.py` — UT-5: pure, no-I/O model. `build_household_day` turns one Athena window (trailing 7 days), devices seen, errors and Lightstep rows into
   `HouseholdDay`/`PersonDay` (sessions, watch minutes from `event_end − event_start`, errors, top content, Lightstep requests, 7-day trend with zeros; a person with no data is idle, not missing).
   `rules.RULES` lists one function per flag (idle after `IDLE_DAYS`=3, error endreason, Athena-vs-Lightstep session-id mismatch, new device on `track: true` households only); `apply_rules` fills
-  flags.
+  flags. `HouseholdDay.lightstep_traces` maps session id to its Lightstep trace ids (added in UT-6).
+- `src/pipelines/usage_tracking/render.py` — UT-6: `render_report(tenant, day, households) -> str` (pure; the CLI writes the file) renders title, summary, per-household table, per-person session
+  detail (parent_session_id, endreason, error code/message for errored sessions, trace_id), Anomalies (full HHIDs) and the 7-day trend; `MarkdownTableRenderer` satisfies `ReportRenderer`; golden file
+  in `tests/data/golden_report.md`.
 
 ## Key Decisions
 

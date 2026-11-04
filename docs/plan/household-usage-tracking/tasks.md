@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: UT-5, UT-6, UT-7.**
+**Open: UT-7.**
 
 - [x] **UT-1** — Prior-art audit and design review: resolve the report-date/Lightstep-source and Athena-factory decisions, module map, Protocols, planned diagram (docs only) | Owner: Copilot CLI |
   Model: claude-sonnet-5.5 | Review: user approval of the design | SHA: b002123
@@ -15,7 +15,7 @@ spec.
   green + code-reviewer | SHA: 2342cdd
 - [x] **UT-5** — Pure merge and rule functions: per-person metrics, flags, new-device detection, 7-day trend | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green + code-reviewer |
   SHA: e6a5534. Note for UT-7: `build_household_day` needs sessions for the trailing 7 days, but both `SessionSource` implementers fetch one day; UT-7 must fetch the window.
-- [ ] **UT-6** — Markdown report renderer to the agreed format | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green (golden file) + code-reviewer | SHA: —
+- [x] **UT-6** — Markdown report renderer to the agreed format | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green (golden file) + code-reviewer | SHA: PENDING
 - [ ] **UT-7** — CLI entry point, failure handling, README with the cron line, `SCRIPTS.md`, `CONTEXT.md`, final architecture diagram | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests
   green + code-reviewer + one real run read by the user | SHA: —
 

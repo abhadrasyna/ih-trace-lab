@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
 from .athena_source import DeviceSeen, ErrorRow, SessionRow, errored_sessions
@@ -47,6 +47,7 @@ class HouseholdDay:
     window_session_ids: frozenset[str]
     lightstep_session_devices: Mapping[str, str]
     flags: tuple[Flag, ...] = ()
+    lightstep_traces: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 def trend_days(day: date) -> list[date]:
@@ -84,7 +85,14 @@ def build_household_day(
     kept_errors = tuple(e for e in errors if e.session_id in session_ids)
     new = tuple(d for d in devices_seen if d.household_id == household.hhid and d.device_id not in member_ids)
     lightstep_devices = {r.session_id: r.device_id for r in requests if r.household_id == household.hhid and r.device_id in member_ids and r.session_id}
-    return HouseholdDay(household, day, people, today, kept_errors, new, frozenset(session_ids), frozenset(window_ids), lightstep_devices)
+    traces: dict[str, set[str]] = {}
+    for r in requests:
+        if r.household_id == household.hhid and r.device_id in member_ids and r.session_id and r.trace_id:
+            traces.setdefault(r.session_id, set()).add(r.trace_id)
+    return HouseholdDay(
+        household, day, people, today, kept_errors, new, frozenset(session_ids), frozenset(window_ids), lightstep_devices,
+        lightstep_traces={sid: tuple(sorted(t)) for sid, t in traces.items()},
+    )
 
 
 def _person(member: Member, lightstep_requests: int, sessions: Sequence[SessionRow], trend: tuple[int, ...]) -> PersonDay:

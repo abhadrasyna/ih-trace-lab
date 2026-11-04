@@ -68,6 +68,12 @@ def test_unparseable_start_raises():
         build_household_day(HH, DAY, [_s("s1", "d1", "garbage")], [], [], [])
 
 
+def test_lightstep_traces_grouped_per_session():
+    requests = [RequestRow("s1", "H1", "d1", "t2", 1), RequestRow("s1", "H1", "d1", "t1", 1), RequestRow("s9", "H1", "other", "t3", 1)]
+    hd = build_household_day(HH, DAY, [], [], [], requests)
+    assert dict(hd.lightstep_traces) == {"s1": ("t1", "t2")}
+
+
 def test_trend_has_seven_days_with_zeros():
     sessions = [_s("s1", "d1", "2026-10-27 10:00:00"), _s("s2", "d1", "2026-11-02 10:00:00"), _s("s3", "d1", "2026-10-26 10:00:00")]
     trend = build_trend(sessions, HH, DAY)
