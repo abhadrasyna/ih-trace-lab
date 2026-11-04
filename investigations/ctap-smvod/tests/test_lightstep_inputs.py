@@ -215,3 +215,15 @@ def test_drm_exports_required_only_with_include_drm(tmp_path: Path) -> None:
 
     assert ("presence", "mdrmfe") not in _levels(without)
     assert ("presence", "mdrmfe") in _levels(with_drm) and ("presence", "mdrm-lrm") in _levels(with_drm)
+
+
+def test_header_only_drm_export_warns_but_header_only_core_export_fails(tmp_path: Path) -> None:
+    _day(tmp_path)
+    _write(tmp_path / f"{DATE}_smvod.csv", ["householdId", "deviceId", "sessionId", "lightstep.trace_id"], [])
+    drm = next(k for k in li.DRM_KINDS)
+    _write(tmp_path / f"{DATE}_{drm}.csv", list(li.ARTIFACT_COLUMNS[drm]), [])
+
+    findings = li.validate_tenant(tmp_path, DATE, _context(), SETTINGS)
+
+    assert ("rows", "smvod") in _levels(findings) and ("rows", drm) not in _levels(findings)
+    assert ("rows", drm) in _levels(findings, li.WARN)

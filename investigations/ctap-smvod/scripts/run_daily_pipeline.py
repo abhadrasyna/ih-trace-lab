@@ -3,18 +3,19 @@
 Steps, in order (each a subprocess run from ``investigations/ctap-smvod/``, one FCID for the whole run):
   1. ``export_lightstep_day.py --tenant T --date YYYY-MM-DD`` for every tenant (skip with ``--skip-export``)
   2. ``check_lightstep_inputs.py --date DDMMYYYY --drm``
-  3. ``run_pipeline.py --date DDMMYYYY --drm --skip-input-check``
-  4. ``extract_error_report_1xxx.py --date DDMMYYYY --tenants ...``
-  5. ``rank_households_by_error.py --csv output/T/YYYY-MM-DD_error_report_1xxx.csv --top N`` per tenant
+  3. per tenant ``run_pipeline.py --date DDMMYYYY --tenant T --drm --skip-input-check``
+  4. per tenant ``extract_error_report_1xxx.py --date DDMMYYYY --tenants T``
+  5. per tenant ``rank_households_by_error.py --csv output/T/YYYY-MM-DD_error_report_1xxx.csv --top N``
+  (``--skip-input-check`` drops step 2)
   6. (opt-in ``--ebvs-release-coverage``) ``analyze_ebvs_release_coverage.py`` per tenant for the day ``--coverage-lag-days`` (default 1) before the run day,
      so the next day's Release file exists; a tenant whose inputs for that day are missing is skipped with a warning (never a failure).
      Each tenant's coverage step is followed by ``analyze_release_gap_webview.py`` (WebView split of the sessions with no Release)
 
 The log ends with a summary: OK / FAILED / NOT RUN / SKIPPED per step and the exact command to resume.
 
-The first failed step stops the run, except: an export whose CSVs were all written (e.g. only the input check failed), the advisory
-input-check step, and the per-tenant ranking all let the run continue; the final exit is still non-zero. Exit code is non-zero if any step failed or an expected
-output CSV is missing. Steps 3/4 of ``run_pipeline.py`` need AWS SSO: its pre-flight refreshes through ``aws-sso`` and fails fast
+A kind with no series is not a failure: its CSV is header-only, a WARNING is logged and the export is shown as "OK with warning". A failed step
+blocks only the later steps of the same tenant (NOT RUN); other tenants continue. A failed shared step stops the run, except the advisory input check. Exit code is
+non-zero if any step failed or an expected output CSV is missing. Steps 3/4 of ``run_pipeline.py`` need AWS SSO: its pre-flight refreshes through ``aws-sso`` and fails fast
 (non-zero exit, logged here) when the session cannot be refreshed non-interactively.
 
 Usage:
@@ -31,6 +32,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -56,6 +58,7 @@ SCRIPTS_DIR = INVESTIGATION_DIR / "scripts"
 DEFAULT_LOG_DIR = INVESTIGATION_DIR / "logs"
 DEFAULT_TENANTS = ("ZA", "GH", "ZM")
 FCID_ENV = "FCID"
+EMPTY_KIND_WARNING = re.compile(r"^WARNING\s+\S+: ", re.MULTILINE)  # the exporter's report line for a kind that returned no series
 DEFAULT_STEP_TIMEOUT_MINUTES = 180
 # --from-step group -> prefix of the step names it starts at
 STEP_GROUPS = {"export": "export ", "check": "check inputs", "pipeline": "run_pipeline", "report": "error report", "rank": "rank households",
@@ -72,6 +75,7 @@ class Step:
     outputs: tuple[Path, ...] = ()
     continue_on_failure: bool = False
     continue_if_outputs_exist: bool = False
+    tenant: str | None = None  # a failed step blocks only the later steps of the same tenant; None = shared, a failure stops the run
 
 
 @dataclass(frozen=True)
@@ -79,6 +83,7 @@ class StepResult:
     name: str
     ok: bool
     seconds: float
+    warning: bool = False  # the step succeeded but reported something to review (e.g. an empty Lightstep kind)
 
 
 def parse_day(text: str) -> Date:
@@ -97,7 +102,8 @@ def default_day(now: datetime | None = None) -> Date:
 
 
 def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: int, workers: int | None = None, python: str = sys.executable,
-                investigation_dir: Path = INVESTIGATION_DIR, table_suffix: str | None = None, force: bool = False) -> list[Step]:
+                investigation_dir: Path = INVESTIGATION_DIR, table_suffix: str | None = None, force: bool = False,
+                skip_input_check: bool = False) -> list[Step]:
     """The ordered step list for ``day``; pure, so it can be tested without running anything."""
     scripts = investigation_dir / "scripts"
     iso, ddmmyyyy = day.isoformat(), day.strftime("%d%m%Y")
@@ -106,22 +112,23 @@ def build_steps(day: Date, tenants: Sequence[str], *, skip_export: bool, top: in
         extra = ("--workers", str(workers)) if workers is not None else ()
         steps += [
             Step(f"export {t}", (python, str(scripts / "export_lightstep_day.py"), "--tenant", t, "--date", iso, *extra),
-                 outputs=tuple(investigation_dir / "data" / "lightstep" / t / output_file_name(k, iso) for k in KINDS), continue_if_outputs_exist=True)
+                 outputs=tuple(investigation_dir / "data" / "lightstep" / t / output_file_name(k, iso) for k in KINDS), continue_if_outputs_exist=True,
+                 tenant=t)
             for t in tenants
         ]
     reports = {t: investigation_dir / "output" / t / f"{iso}_error_report_1xxx.csv" for t in tenants}
     pipeline_extra = (("--table-suffix", table_suffix) if table_suffix else ()) + (("--force",) if force else ())
-    steps += [
-        Step("check inputs", (python, str(scripts / "check_lightstep_inputs.py"), "--date", ddmmyyyy, "--drm"), continue_on_failure=True),
-        Step("run_pipeline", (python, str(scripts / "run_pipeline.py"), "--date", ddmmyyyy, "--drm", "--skip-input-check", *pipeline_extra)),
-        Step("error report 1xxx", (python, str(scripts / "extract_error_report_1xxx.py"), "--date", ddmmyyyy, "--tenants", ",".join(tenants)),
-             outputs=tuple(reports.values())),
-    ]
-    steps += [
-        Step(f"rank households {t}", (python, str(scripts / "rank_households_by_error.py"), "--csv", str(reports[t]), "--top", str(top)),
-             outputs=(reports[t],), continue_on_failure=True)
-        for t in tenants
-    ]
+    if not skip_input_check:
+        steps.append(Step("check inputs", (python, str(scripts / "check_lightstep_inputs.py"), "--date", ddmmyyyy, "--drm"), continue_on_failure=True))
+    for t in tenants:
+        steps += [
+            Step(f"run_pipeline {t}", (python, str(scripts / "run_pipeline.py"), "--date", ddmmyyyy, "--tenant", t, "--drm", "--skip-input-check", *pipeline_extra),
+                 tenant=t),
+            Step(f"error report 1xxx {t}", (python, str(scripts / "extract_error_report_1xxx.py"), "--date", ddmmyyyy, "--tenants", t),
+                 outputs=(reports[t],), tenant=t),
+            Step(f"rank households {t}", (python, str(scripts / "rank_households_by_error.py"), "--csv", str(reports[t]), "--top", str(top)),
+                 outputs=(reports[t],), continue_on_failure=True, tenant=t),
+        ]
     return steps
 
 
@@ -141,19 +148,23 @@ def coverage_plan(day: Date, tenants: Sequence[str], lag_days: int, *, python: s
             continue
         steps.append(Step(f"ebvs release coverage {tenant}",
                           (python, str(investigation_dir / "scripts" / "analyze_ebvs_release_coverage.py"), "--date", iso, "--tenant", tenant),
-                          outputs=(investigation_dir / "output" / tenant / f"{iso}_ebvs_release_coverage.csv",), continue_on_failure=True))
+                          outputs=(investigation_dir / "output" / tenant / f"{iso}_ebvs_release_coverage.csv",), continue_on_failure=True, tenant=tenant))
         setup_report = investigation_dir / "output" / tenant / f"{iso}_setupsession_with_outcome.csv"
         if not setup_report.is_file():
             skipped.append(f"ebvs release coverage webview {tenant} ({iso}): missing {setup_report.name}")
             continue
         steps.append(Step(f"ebvs release coverage webview {tenant}",
                           (python, str(investigation_dir / "scripts" / "analyze_release_gap_webview.py"), "--date", iso, "--tenant", tenant),
-                          outputs=(investigation_dir / "output" / tenant / f"{iso}_release_gap_webview.csv",), continue_on_failure=True))
+                          outputs=(investigation_dir / "output" / tenant / f"{iso}_release_gap_webview.csv",), continue_on_failure=True, tenant=tenant))
     return steps, skipped
 
 
-def format_summary(steps: Sequence[Step], results: Sequence[StepResult], skipped: Sequence[str], day: Date, *, extra_flags: str = "") -> list[tuple[int, str]]:
-    """Closing log lines as (level, text): per-step status, then what to resume. Pure."""
+def format_summary(steps: Sequence[Step], results: Sequence[StepResult], skipped: Sequence[str], day: Date, *, extra_flags: str = "",
+                   tenants: Sequence[str] = DEFAULT_TENANTS) -> list[tuple[int, str]]:
+    """Closing log lines as (level, text): per-step status, then what to resume. Pure.
+
+    ``tenants`` is the run's full tenant list; the resume line narrows it to the tenants that still have steps to redo.
+    """
     by_name = {r.name: r for r in results}
     lines: list[tuple[int, str]] = [(logging.INFO, "==== run summary ====")]
     redo: list[Step] = []
@@ -163,9 +174,12 @@ def format_summary(steps: Sequence[Step], results: Sequence[StepResult], skipped
             status = "NOT RUN"
         else:
             status = f"OK ({result.seconds:.1f}s)" if result.ok else f"FAILED ({result.seconds:.1f}s)"
+            if result.ok and result.warning:
+                status = f"OK with warning: empty Lightstep kind(s) ({result.seconds:.1f}s)"
         if result is None or not result.ok:
             redo.append(step)
-        lines.append((logging.INFO if status.startswith("OK") else logging.ERROR, f"  {step.name}: {status}"))
+        level = logging.WARNING if "warning" in status else logging.INFO if status.startswith("OK") else logging.ERROR
+        lines.append((level, f"  {step.name}: {status}"))
     lines += [(logging.WARNING, f"  SKIPPED {reason}") for reason in skipped]
     if not redo and not skipped:
         lines.append((logging.INFO, "nothing to resume"))
@@ -173,7 +187,9 @@ def format_summary(steps: Sequence[Step], results: Sequence[StepResult], skipped
     if redo:
         group = next((g for g, prefix in STEP_GROUPS.items() if redo[0].name.startswith(prefix)), "export")
         advisory = all(s.continue_on_failure for s in redo) and all(s.name in by_name for s in redo)
-        lines.append((logging.ERROR, f"to resume: python3 run_daily_pipeline.py --date {day.strftime('%d%m%Y')} --from-step {group}{extra_flags}"
+        resume_tenants = list(tenants) if any(s.tenant is None for s in redo) else [t for t in tenants if any(s.tenant == t for s in redo)]
+        tenant_flag = f" --tenants {','.join(resume_tenants)}" if resume_tenants != list(DEFAULT_TENANTS) else ""
+        lines.append((logging.ERROR, f"to resume: python3 run_daily_pipeline.py --date {day.strftime('%d%m%Y')} --from-step {group}{extra_flags}{tenant_flag}"
                       + ("  (only advisory steps failed; the main chain completed)" if advisory else "")))
     if skipped:
         lines.append((logging.WARNING, "skipped coverage steps run once their inputs exist: --from-step coverage --ebvs-release-coverage"))
@@ -209,9 +225,14 @@ def make_subprocess_runner(timeout_seconds: float) -> StepRunner:
 
 
 def run_steps(steps: Sequence[Step], run: StepRunner, *, cwd: Path, env: dict[str, str]) -> list[StepResult]:
-    """Runs steps in order; stops after the first failure unless the step allows continuing."""
+    """Runs steps in order. A failure blocks only the later steps of the same tenant (they get no result, so the summary shows NOT RUN);
+    a failed shared step (no tenant) stops the run unless it may continue."""
     results: list[StepResult] = []
+    blocked: dict[str, str] = {}
     for step in steps:
+        if step.tenant in blocked:
+            LOGGER.warning("skipping %r: tenant %s is blocked by the failed step %r", step.name, step.tenant, blocked[step.tenant])
+            continue
         LOGGER.info("step start: %s", step.name)
         started = time.monotonic()
         code, output = run(step.argv, cwd, env)
@@ -220,13 +241,19 @@ def run_steps(steps: Sequence[Step], run: StepRunner, *, cwd: Path, env: dict[st
             LOGGER.info("[%s] %s", step.name, line)
         missing = [p for p in step.outputs if code == 0 and not p.is_file()]
         ok = code == 0 and not missing
+        warning = ok and step.name.startswith("export ") and bool(EMPTY_KIND_WARNING.search(output))
         LOGGER.log(logging.INFO if ok else logging.ERROR, "step end: %s exit=%d duration=%.1fs%s", step.name, code, seconds,
                    f" missing output(s): {', '.join(map(str, missing))}" if missing else "")
-        results.append(StepResult(step.name, ok, seconds))
+        if warning:
+            LOGGER.warning("step %r finished OK with warning: at least one Lightstep kind returned no series (header-only CSV written)", step.name)
+        results.append(StepResult(step.name, ok, seconds, warning))
         keep_going = step.continue_on_failure or (step.continue_if_outputs_exist and all(p.is_file() for p in step.outputs))
         if not ok and keep_going:
             LOGGER.warning("step %r failed but the run continues (outputs present or step is advisory); final exit will be non-zero", step.name)
-        if not ok and not keep_going:
+        elif not ok and step.tenant is not None:
+            blocked[step.tenant] = step.name
+            LOGGER.error("step %r failed: the remaining steps of tenant %s are skipped, other tenants continue", step.name, step.tenant)
+        elif not ok:
             LOGGER.error("stopping: step %r failed", step.name)
             break
     return results
@@ -237,6 +264,8 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap.add_argument("--date", default=None, help="UTC day as DDMMYYYY or YYYY-MM-DD (default: yesterday UTC)")
     ap.add_argument("--tenants", default=",".join(DEFAULT_TENANTS), help="Comma-separated tenant codes (default: ZA,GH,ZM)")
     ap.add_argument("--skip-export", action="store_true", help="Skip the Lightstep export; use CSVs already in data/lightstep/<TENANT>/")
+    ap.add_argument("--skip-input-check", action="store_true",
+                    help="Drop the advisory 'check inputs' step (run_pipeline already skips its own Step 0); use when a tenant legitimately has empty exports")
     ap.add_argument("--from-step", choices=list(STEP_GROUPS), default=None,
                     help="Resume: skip every step before this one (export, check, pipeline, report, rank); use after a failure")
     ap.add_argument("--ebvs-release-coverage", action="store_true",
@@ -270,7 +299,7 @@ def main(argv: Sequence[str] | None = None, runner: StepRunner | None = None) ->
     if args.table_suffix is None and (day.year, day.month) != (datetime.now(timezone.utc).year, datetime.now(timezone.utc).month):
         LOGGER.warning("%s is not in the current UTC month and no --table-suffix was given: the unsuffixed debug table may lack that day's data", day.isoformat())
     steps = build_steps(day, tenants, skip_export=args.skip_export, top=args.top, workers=args.workers, investigation_dir=INVESTIGATION_DIR,
-                        table_suffix=args.table_suffix, force=args.force)
+                        table_suffix=args.table_suffix, force=args.force, skip_input_check=args.skip_input_check)
     skipped: list[str] = []
     coverage = args.ebvs_release_coverage or args.from_step == "coverage"
     if coverage:
@@ -289,9 +318,9 @@ def main(argv: Sequence[str] | None = None, runner: StepRunner | None = None) ->
     results = run_steps(steps, runner or make_subprocess_runner(args.step_timeout_minutes * 60), cwd=INVESTIGATION_DIR, env={**os.environ, FCID_ENV: fcid})
     flags = (" --ebvs-release-coverage" if coverage else "") + (" --skip-export" if args.skip_export else "")
     flags += f" --coverage-lag-days {args.coverage_lag_days}" if coverage and args.coverage_lag_days != 1 else ""
-    flags += f" --tenants {','.join(tenants)}" if tenants != list(DEFAULT_TENANTS) else ""
+    flags += " --skip-input-check" if args.skip_input_check else ""
     flags += (f" --table-suffix {args.table_suffix}" if args.table_suffix else "") + (" --force" if args.force else "")
-    for level, text in format_summary(steps, results, skipped, day, extra_flags=flags):
+    for level, text in format_summary(steps, results, skipped, day, extra_flags=flags, tenants=tenants):
         LOGGER.log(level, "%s", text)
     failed = [r.name for r in results if not r.ok]
     not_run = len(steps) - len(results)

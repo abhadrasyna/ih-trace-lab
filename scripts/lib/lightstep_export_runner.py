@@ -52,6 +52,7 @@ CORE_KINDS = ("ctap", "smvod", "smvod-ts")
 DEFAULT_PARTS_ROOT = Path(__file__).resolve().parents[2] / "tmp" / "lightstep-export"
 INGEST_LAG = timedelta(hours=1)  # windows ending later than now minus this may still be filling, so they are never cached
 DRM_REQUIRED = ("mdrmfe", "mdrm-lrm")
+RETENTION_DAYS = 7
 InputCheck = Callable[[Path, bool], tuple[str, bool]]
 TargetResolver = Callable[[str, TenantConfig], ExportTarget]
 
@@ -118,6 +119,17 @@ class KindResult:
     detail: str
     problems: tuple[str, ...] = ()  # sanity-check findings (a)-(c); any finding keeps the parts folder
     verified: bool = False  # a skipped kind with nothing pending (not applicable, or output matches its parts); does not block cleanup
+    warning: str | None = None  # status stays "ok": the export succeeded but needs a human to know (e.g. no series for the day)
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def outside_retention(day: str, now: datetime, retention_days: int = RETENTION_DAYS) -> bool:
+    """True when ``day`` started more than ``retention_days`` before ``now``, i.e. Lightstep no longer holds it."""
+    oldest, _ = utc_day_window(day)
+    return oldest < now - timedelta(days=retention_days)
 
 
 def check_single_tenant(series: Sequence[Series], spec: KindSpec, tenant: TenantConfig) -> None:
@@ -198,8 +210,8 @@ def _fetch(spec: KindSpec, request: ExportRequest, target: ExportTarget, deps: D
     deps.job_runner.run([partial(fetch_part, i) for i in missing], collect)
     series = stitch_series([part or [] for part in parts])
     LOGGER.info("stitching kind=%s parts=%d series=%d", spec.kind, len(windows), len(series))
-    if not series:
-        raise LightstepError(f"{spec.kind}: no series returned for {request.day}; is it older than the ~7 day retention?")
+    if not series and outside_retention(request.day, utc_now()):
+        raise LightstepError(f"{spec.kind}: no series returned for {request.day}, which is older than the {RETENTION_DAYS} day retention")
     return series
 
 
@@ -253,6 +265,10 @@ def export_kind(kind: str, request: ExportRequest, deps: Dependencies) -> KindRe
         series = _fetch(spec, request, target, deps)
         check_single_tenant(series, spec, request.tenant)
         row_count = _build_and_write(spec, request, series, path)
+        warning = None
+        if not series:
+            warning = f"no series returned for {request.day}; wrote a header-only file"
+            LOGGER.warning("empty export tenant=%s kind=%s day=%s: %s", request.tenant.code, kind, request.day, warning)
         try:
             problems = _verify_kind(spec, request, target, path)
         except SanityCheckError:
@@ -267,7 +283,7 @@ def export_kind(kind: str, request: ExportRequest, deps: Dependencies) -> KindRe
         kind, int((time.monotonic() - started) * 1000), row_count, len(series), len(split_window(oldest, youngest)), path.name,
     )
     LOGGER.info("kind done kind=%s elapsed=%ds", kind, int(time.monotonic() - started))
-    return KindResult(kind, "ok", f"{row_count} rows -> {path}", problems)
+    return KindResult(kind, "ok", f"{row_count} rows -> {path}", problems, warning=warning)
 
 
 def input_check_applies(kinds: Sequence[str]) -> bool:
@@ -324,5 +340,7 @@ def run_export(request: ExportRequest, deps: Dependencies) -> int:
 def print_report(results: Sequence[KindResult], check_report: str | None) -> None:
     for result in results:
         print(f"{result.status.upper():8} {result.kind}: {result.detail}")
+        if result.warning:
+            print(f"WARNING  {result.kind}: {result.warning}")
     if check_report is not None:
         print(check_report)

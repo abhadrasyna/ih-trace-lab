@@ -161,7 +161,9 @@ def check_content(path: Path, kind: str, columns: list[str], rows: list[dict[str
     if missing:
         findings.append(Finding(FAIL, "schema", f"{path.name}: missing column(s) {missing}", kind))
     if not rows:
-        findings.append(Finding(FAIL, "rows", f"{path.name}: header only, no data rows", kind))
+        # an empty core export means a broken export; an empty mDRM/Release export is normal for a small tenant
+        level = FAIL if kind in CORE_KINDS else WARN
+        findings.append(Finding(level, "rows", f"{path.name}: header only, no data rows", kind))
     if not findings:
         findings.append(Finding(PASS, "schema", f"{path.name}: {len(rows)} row(s)", kind))
     return findings

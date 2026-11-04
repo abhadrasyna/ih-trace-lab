@@ -375,3 +375,38 @@ def test_runner_works_with_injected_serial_runner(tmp_path, monkeypatch):
     )
     request = runner.ExportRequest(tenant=TenantRegistry().get("ZA"), day=DAY, kinds=["ctap"], out_dir=tmp_path, force=False)
     assert runner.run_export(request, deps) == 0 and threading.active_count() == before
+
+
+class EmptyForTransport(FakeTransport):
+    """Returns zero series for queries containing ``marker``."""
+
+    def __init__(self, marker: str) -> None:
+        super().__init__()
+        self.marker = marker
+
+    def post(self, url, headers, body, timeout):
+        if self.marker in json.loads(body)["data"]["attributes"]["query"]:
+            return 200, json.dumps({"data": {"attributes": {"series": []}}}).encode()
+        return super().post(url, headers, body, timeout)
+
+
+def test_empty_kind_within_retention_writes_header_only_csv_and_warns(tmp_path, monkeypatch, caplog, capsys):
+    monkeypatch.setattr(runner, "utc_now", lambda: datetime(2026, 10, 31, tzinfo=timezone.utc))
+    with caplog.at_level(logging.WARNING):
+        assert _run(tmp_path, monkeypatch, transport=EmptyForTransport("go-mdrmfe")) == 0
+    lines = (tmp_path / f"{DAY}_mdrmfe.csv").read_text(encoding="utf-8-sig").splitlines()
+    assert len(lines) == 1 and len((tmp_path / f"{DAY}_ctap.csv").read_text(encoding="utf-8-sig").splitlines()) > 1
+    assert any("tenant=ZA kind=mdrmfe day=2026-10-29" in r.getMessage() and r.levelno == logging.WARNING for r in caplog.records)
+    assert "WARNING  mdrmfe: no series returned" in capsys.readouterr().out
+
+
+def test_empty_kind_older_than_retention_is_a_failure(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "utc_now", lambda: datetime(2026, 11, 20, tzinfo=timezone.utc))
+    assert _run(tmp_path, monkeypatch, kinds=["mdrmfe"], transport=EmptyForTransport("go-mdrmfe")) == 1
+    assert not (tmp_path / f"{DAY}_mdrmfe.csv").exists()
+
+
+def test_retention_window_is_judged_by_the_day_not_by_emptiness():
+    now = datetime(2026, 11, 4, 8, tzinfo=timezone.utc)
+    assert not runner.outside_retention("2026-11-02", now) and not runner.outside_retention("2026-10-29", now)
+    assert runner.outside_retention("2026-10-28", now)
