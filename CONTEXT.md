@@ -266,6 +266,10 @@
 - `src/pipelines/usage_tracking/lightstep_source.py` and `queries/lightstep/usage-tracking-smvod-by-device.md` — UT-4: `RequestSource` Protocol with `LocalExportSource` (default, reads
   `data/lightstep/<TENANT>/<date>_smvod.csv`, keeps roster `(hhid, device_id)` pairs; a missing file raises `LightstepSourceError`) and `LiveLightstepSource` (`--live-lightstep`, injected UQL runner);
   `request_counts` returns 0 for a roster device with no rows. No 5xx column.
+- `src/pipelines/usage_tracking/merge.py` and `rules.py` — UT-5: pure, no-I/O model. `build_household_day` turns one Athena window (trailing 7 days), devices seen, errors and Lightstep rows into
+  `HouseholdDay`/`PersonDay` (sessions, watch minutes from `event_end − event_start`, errors, top content, Lightstep requests, 7-day trend with zeros; a person with no data is idle, not missing).
+  `rules.RULES` lists one function per flag (idle after `IDLE_DAYS`=3, error endreason, Athena-vs-Lightstep session-id mismatch, new device on `track: true` households only); `apply_rules` fills
+  flags.
 
 ## Key Decisions
 

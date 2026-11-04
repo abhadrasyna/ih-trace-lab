@@ -16,3 +16,7 @@ class AthenaSourceError(UsageTrackingError):
 
 class LightstepSourceError(UsageTrackingError):
     """A Lightstep export is missing or malformed, or a live Lightstep call failed."""
+
+
+class MergeError(UsageTrackingError):
+    """A row handed to the merge step is malformed."""
