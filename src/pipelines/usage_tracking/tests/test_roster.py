@@ -10,16 +10,17 @@ from src.pipelines.usage_tracking import roster
 from src.pipelines.usage_tracking.errors import RosterError, UsageTrackingError
 
 VALID = """
-tenant: ZA
 households:
   - hhid: H1
     label: team
+    tenant: ZA
     track: true
     phone: "600000001"
     members:
       - {name: Sai, device_id: d1, active_from: 2026-11-04}
       - {name: Fayaz, device_id: d2}
   - hhid: H2
+    tenant: ZA
     track: false
     members: []
 """
@@ -34,7 +35,7 @@ def _write(tmp_path: Path, text: str, name: str = "roster.yaml") -> Path:
 def test_load_valid_roster_and_filters_untracked(tmp_path: Path) -> None:
     loaded = roster.load(_write(tmp_path, VALID))
 
-    assert loaded.tenant == "ZA"
+    assert loaded.households[0].tenant == "ZA"
     assert len(loaded.households) == 2
     assert [h.hhid for h in roster.tracked(loaded)] == ["H1"]
     assert loaded.households[0].members[0].active_from == "2026-11-04"
@@ -51,12 +52,46 @@ def test_duplicate_device_id_raises(tmp_path: Path) -> None:
 
 
 def test_unknown_tenant_raises(tmp_path: Path) -> None:
-    with pytest.raises(RosterError, match="unknown tenant 'XX'"):
-        roster.load(_write(tmp_path, VALID.replace("tenant: ZA", "tenant: XX")))
+    with pytest.raises(RosterError, match="household H1: unknown tenant 'XX'"):
+        roster.load(_write(tmp_path, VALID.replace("tenant: ZA", "tenant: XX", 1)))
+
+
+def test_household_without_tenant_raises(tmp_path: Path) -> None:
+    with pytest.raises(RosterError, match="household H1: missing 'tenant'"):
+        roster.load(_write(tmp_path, VALID.replace("    tenant: ZA\n", "", 1)))
+
+
+def test_same_device_id_in_two_tenants_allowed(tmp_path: Path) -> None:
+    other = VALID.replace("tenant: ZA", "tenant: ZM").replace("hhid: H1", "hhid: H3").replace("hhid: H2", "hhid: H4")
+    second_tenant = VALID + other.split("households:\n", 1)[1]
+
+    loaded = roster.load(_write(tmp_path, second_tenant))
+
+    assert {h.tenant for h in loaded.households} == {"ZA", "ZM"}
+    assert [m.device_id for h in loaded.households if h.tenant == "ZM" and h.members for m in h.members] == ["d1", "d2"]
+
+
+def test_same_hhid_in_two_tenants_allowed_but_not_within_one(tmp_path: Path) -> None:
+    body = VALID.split("households:\n", 1)[1]
+
+    loaded = roster.load(_write(tmp_path, VALID + body.replace("tenant: ZA", "tenant: ZM")))
+
+    assert [(h.tenant, h.hhid) for h in loaded.households] == [("ZA", "H1"), ("ZA", "H2"), ("ZM", "H1"), ("ZM", "H2")]
+    with pytest.raises(RosterError, match="duplicate hhid H1 in tenant ZA"):
+        roster.load(_write(tmp_path, VALID + body))
+
+
+def test_by_tenant_groups_tracked_households(tmp_path: Path) -> None:
+    other = VALID.replace("tenant: ZA", "tenant: ZM").replace("hhid: H1", "hhid: H3").replace("hhid: H2", "hhid: H4")
+    loaded = roster.load(_write(tmp_path, VALID + other.split("households:\n", 1)[1]))
+
+    grouped = roster.by_tenant(loaded)
+
+    assert {tenant: [h.hhid for h in hs] for tenant, hs in grouped.items()} == {"ZA": ["H1"], "ZM": ["H3"]}
 
 
 def test_json_config_loads(tmp_path: Path) -> None:
-    data = {"tenant": "ZA", "households": [{"hhid": "H1", "track": True, "phone": "600000001", "members": [{"name": "Sai", "device_id": "d1"}]}]}
+    data = {"households": [{"hhid": "H1", "tenant": "ZA", "track": True, "phone": "600000001", "members": [{"name": "Sai", "device_id": "d1"}]}]}
 
     loaded = roster.load(_write(tmp_path, json.dumps(data), "roster.json"))
 

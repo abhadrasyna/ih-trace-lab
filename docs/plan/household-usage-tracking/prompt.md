@@ -1,6 +1,7 @@
 # Household usage tracking — prompt
 
-> A daily, config-driven report of sm-vod/CTAP playback usage per tracked household and device (tenant ZA), built from Athena and Lightstep, written to `reports/usage/YYYY-MM-DD.md`.
+> A daily, config-driven report of sm-vod/CTAP playback usage per tracked household and device (per-household tenant, ZA for now), built from Athena and Lightstep, written to
+> `reports/usage/<TENANT>/YYYY-MM-DD.md`.
 
 Read `CONTEXT.md` and state `CONTEXT.md ✓` before anything else. Then read `tasks.md`, find the first unchecked `- [ ]`, and do **only** that task. Read that task's full spec in `stories.md` (same
 task id) before writing any code. One task per session. Complete it fully. Stop.
@@ -18,10 +19,10 @@ Prior art found while scoping (2026-11-04), not to be rebuilt: `queries/athena/c
 
 ## Decisions already made (2026-11-04, with the user)
 
-- Tenant: ZA only for now; the tenant comes from the roster and is resolved through `config/tenants.yaml`, never hardcoded.
+- Tenant: a required `tenant` on each roster household, resolved through `config/tenants.yaml`, never hardcoded; only ZA is populated for now, and one report is written per tenant.
 - Scope: playback only (sm-vod and CTAP). Navigation events are out.
 - Content name comes from `unified_sessions`; error code and message come from `<tenant>_ccl_debug_events`, and only for sessions or devices that errored.
-- Output: a Markdown file only, `reports/usage/YYYY-MM-DD.md`. No email or chat delivery.
+- Output: a Markdown file only, one per tenant (`reports/usage/<TENANT>/YYYY-MM-DD.md`). No email or chat delivery.
 - Roster: `config/tracked_households.yaml` is committed. Each household has `track: true|false`; only tracked ones are queried or reported.
 - Any device on a tracked HHID that is not in its `members` list is flagged in the report's Anomalies section.
 - Data source (2026-11-04): local-first. The report reads the ctap-smvod pipeline's local exports (`investigations/ctap-smvod/data/lightstep/ZA/<date>_smvod.csv` and
@@ -41,8 +42,9 @@ Prior art found while scoping (2026-11-04), not to be rebuilt: `queries/athena/c
 In bounds: a new pipeline package `src/pipelines/usage_tracking/` (its `scripts/`, `tests/`, `README.md`), `config/tracked_households.yaml`, new query files under `queries/athena/` and
 `queries/lightstep/` with their index entries, `reports/usage/` output, `SCRIPTS.md`, and the "What Exists" section of `CONTEXT.md`.
 
-Out of bounds: changing any existing pipeline's behaviour (`aws_access_cli`, `ctap-smvod`, the Lightstep export), the shared-pipeline-runtime story's code, other tenants, non-playback events, report
-delivery, and installing the cron entry. If UT-1 chooses to extract the Athena factories into `src/lib`, that extraction is its own follow-up task and must leave `aws_access_cli` behaviour unchanged.
+Out of bounds: changing any existing pipeline's behaviour (`aws_access_cli`, `ctap-smvod`, the Lightstep export), the shared-pipeline-runtime story's code, populating tenants other than ZA (the roster
+and sources are per-tenant, so adding one is a config change only), non-playback events, report delivery, and installing the cron entry. If UT-1 chooses to extract the Athena factories into `src/lib`,
+that extraction is its own follow-up task and must leave `aws_access_cli` behaviour unchanged.
 
 Runtime impact: a new read-only job; it only reads Athena and Lightstep and writes under `reports/usage/` and `logs/`. Secrets stay in the gitignored `.env`; HHIDs and device ids are identifiers, not
 secrets, and are committed by decision.
@@ -87,7 +89,7 @@ documents the cron line, and `SCRIPTS.md` and `CONTEXT.md` are updated.
 
 ## Perspectives not covered
 
-- Other tenants, other event types (navigation, DRM) and non-sm-vod playback paths.
+- Other event types (navigation, DRM) and non-sm-vod playback paths.
 - Alerting or delivery: a missing or alarming report is only visible by reading the file or the cron log.
 - Historical backfill: the job reports one date per run; the 7-day trend is read from Athena, not from stored reports.
 - Device identity changes: a person who gets a new device shows up as a new-device flag plus an idle old device until the roster is edited by hand.

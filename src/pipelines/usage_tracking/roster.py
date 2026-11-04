@@ -29,6 +29,7 @@ class Member:
 class Household:
     hhid: str
     label: str
+    tenant: str
     track: bool
     members: tuple[Member, ...]
     phone: str | None = None
@@ -36,7 +37,6 @@ class Household:
 
 @dataclass(frozen=True)
 class Roster:
-    tenant: str
     households: tuple[Household, ...]
 
 
@@ -49,18 +49,26 @@ def resolve_config_path(cli_value: str | Path | None = None) -> Path:
 
 def load(path: Path, registry: TenantRegistry | None = None) -> Roster:
     data = _read(path)
-    tenant = _tenant(data, registry or TenantRegistry())
+    registry = registry or TenantRegistry()
     entries = data.get("households")
     if not isinstance(entries, list) or not entries:
         raise RosterError(f"{path}: 'households' must be a non-empty list")
-    households = tuple(_household(entry) for entry in entries)
+    households = tuple(_household(entry, registry) for entry in entries)
     _reject_duplicate_hhids(households)
     _reject_duplicate_devices(households)
-    return Roster(tenant=tenant, households=households)
+    return Roster(households=households)
 
 
 def tracked(roster: Roster) -> list[Household]:
     return [household for household in roster.households if household.track]
+
+
+def by_tenant(roster: Roster) -> dict[str, list[Household]]:
+    """Tracked households grouped by tenant code, in roster order, so each source queries one tenant at a time."""
+    grouped: dict[str, list[Household]] = {}
+    for household in tracked(roster):
+        grouped.setdefault(household.tenant, []).append(household)
+    return grouped
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -73,21 +81,20 @@ def _read(path: Path) -> dict[str, Any]:
     except (ValueError, yaml.YAMLError) as exc:
         raise RosterError(f"{path}: not valid {'JSON' if path.suffix == '.json' else 'YAML'}: {exc}") from exc
     if not isinstance(data, dict):
-        raise RosterError(f"{path}: top level must be a mapping with 'tenant' and 'households'")
+        raise RosterError(f"{path}: top level must be a mapping with 'households'")
     return data
 
 
-def _tenant(data: dict[str, Any], registry: TenantRegistry) -> str:
-    code = data.get("tenant")
-    if not isinstance(code, str) or not code:
-        raise RosterError("roster is missing 'tenant'")
+def _tenant(hhid: str, code: Any, registry: TenantRegistry) -> str:
+    if not isinstance(code, str) or not code.strip():
+        raise RosterError(f"household {hhid}: missing 'tenant'")
     try:
-        return registry.get(code).code
+        return registry.get(code.strip()).code
     except KeyError as exc:
-        raise RosterError(f"unknown tenant {code!r}: {exc.args[0]}") from exc
+        raise RosterError(f"household {hhid}: unknown tenant {code!r}: {exc.args[0]}") from exc
 
 
-def _household(entry: Any) -> Household:
+def _household(entry: Any, registry: TenantRegistry) -> Household:
     if not isinstance(entry, dict):
         raise RosterError(f"household entry must be a mapping, got {entry!r}")
     hhid = entry.get("hhid")
@@ -106,6 +113,7 @@ def _household(entry: Any) -> Household:
     return Household(
         hhid=hhid.strip(),
         label=str(entry.get("label") or hhid),
+        tenant=_tenant(hhid, entry.get("tenant"), registry),
         track=track,
         members=tuple(_member(hhid, member) for member in members),
         phone=phone,
@@ -146,19 +154,21 @@ def _active_from(hhid: str, device_id: str, value: Any) -> str | None:
 
 
 def _reject_duplicate_hhids(households: tuple[Household, ...]) -> None:
-    seen: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     for household in households:
-        if household.hhid in seen:
-            raise RosterError(f"duplicate hhid {household.hhid}")
-        seen.add(household.hhid)
+        key = (household.tenant, household.hhid)
+        if key in seen:
+            raise RosterError(f"duplicate hhid {household.hhid} in tenant {household.tenant}")
+        seen.add(key)
 
 
 def _reject_duplicate_devices(households: tuple[Household, ...]) -> None:
-    seen: dict[str, str] = {}
+    seen: dict[tuple[str, str], str] = {}
     for household in households:
         for member in household.members:
-            if member.device_id in seen:
+            key = (household.tenant, member.device_id)
+            if key in seen:
                 raise RosterError(
-                    f"duplicate device_id {member.device_id} ({member.name} in {household.hhid}; first seen in {seen[member.device_id]})"
+                    f"duplicate device_id {member.device_id} in tenant {household.tenant} ({member.name} in {household.hhid}; first seen in {seen[key]})"
                 )
-            seen[member.device_id] = household.hhid
+            seen[key] = household.hhid
