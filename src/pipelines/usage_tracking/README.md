@@ -1,7 +1,7 @@
 # Household usage tracking pipeline
 
 A daily, read-only report of sm-vod/CTAP playback per tracked household and device, per tenant (ZA for now). It reads the ctap-smvod pipeline's local exports by default and writes
-`reports/usage/<TENANT>/<YYYY-MM-DD>.md`. Story: `docs/plan/household-usage-tracking/`.
+`output/reports/usage/<TENANT>/<YYYY-MM-DD>.md`. Story: `docs/plan/household-usage-tracking/`.
 
 ## Inputs
 
@@ -19,13 +19,13 @@ A daily, read-only report of sm-vod/CTAP playback per tracked household and devi
 python -m src.pipelines.usage_tracking.scripts.run_daily_usage_report --date 2026-11-02
 ```
 
-`--date` defaults to two days ago. Other options: `--config`, `--out-dir` (default `reports/usage`), `--live-athena`, `--live-lightstep`. Running the same date again overwrites that report.
+`--date` defaults to two days ago. Other options: `--config`, `--out-dir` (default `output/reports/usage`), `--live-athena`, `--live-lightstep`. Running the same date again overwrites that report.
 
 ## Outputs and failure behaviour
 
-- Success: `reports/usage/<TENANT>/<date>.md` (summary, per-household table, per-person session detail, Anomalies, 7-day trend) and exit code 0.
-- Failure (roster, missing export, Athena or Lightstep error, SSO refresh): the run logs the error once, writes `reports/usage/<TENANT>/<date>.FAILED.txt` saying "report not generated" and why (a
-  roster failure writes `reports/usage/<date>.FAILED.txt`), writes no partial report, and exits 1. A later successful run removes the stale note.
+- Success: `output/reports/usage/<TENANT>/<date>.md` (summary, per-household table, per-person session detail, Anomalies, 7-day trend) and exit code 0.
+- Failure (roster, missing export, Athena or Lightstep error, SSO refresh): the run logs the error once, writes `output/reports/usage/<TENANT>/<date>.FAILED.txt` saying "report not generated" and why
+  (a roster failure writes `output/reports/usage/<date>.FAILED.txt`), writes no partial report, and exits 1. A later successful run removes the stale note.
 - Logs go through `init_logging("daily-usage-report")` (one FCID per run).
 
 ## Schedule

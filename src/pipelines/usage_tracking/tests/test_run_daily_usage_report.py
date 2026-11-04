@@ -118,8 +118,8 @@ def test_roster_note_removed_once_roster_loads(tmp_path):
 def test_default_out_dir_is_repo_reports_usage():
     from src.pipelines.usage_tracking.scripts.run_daily_usage_report import DEFAULT_OUT_DIR
 
-    assert DEFAULT_OUT_DIR.parts[-2:] == ("reports", "usage")
-    assert (DEFAULT_OUT_DIR.parents[1] / "config" / "tenants.yaml").is_file()
+    assert DEFAULT_OUT_DIR.parts[-3:] == ("output", "reports", "usage")
+    assert (DEFAULT_OUT_DIR.parents[2] / "config" / "tenants.yaml").is_file()
 
 
 def test_missing_roster_exits_nonzero(tmp_path):

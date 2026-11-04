@@ -158,8 +158,8 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 
 **What to implement:**
 
-1. One report per tenant (`reports/usage/<TENANT>/<date>.md` or the agreed equivalent), never a combined file. Output exactly: title line with date and tenant; summary line (HHIDs, devices, active,
-   sessions, errors); per household a table with Person, Device (first 8 chars), Active, Sessions, Watch min, Errors, Top content, Lightstep reqs, Flags; per-person session detail (time,
+1. One report per tenant (`output/reports/usage/<TENANT>/<date>.md` or the agreed equivalent), never a combined file. Output exactly: title line with date and tenant; summary line (HHIDs, devices,
+   active, sessions, errors); per household a table with Person, Device (first 8 chars), Active, Sessions, Watch min, Errors, Top content, Lightstep reqs, Flags; per-person session detail (time,
    parent_session_id, content, endreason, outcome, error code and message for errored sessions only, trace_id); an Anomalies section; a 7-day Trend section.
 2. HHIDs are shortened in headings (first 6 characters plus an ellipsis) with the label; full ids appear only in the Anomalies section where needed to act.
 3. Keep file writing out of this module: it returns a string; the CLI writes it through the shared writer.
@@ -185,8 +185,8 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 **What to implement:**
 
 1. The first statement of `main()` is `init_logging()`; bind one FCID with the slug `daily-usage-report`; log run start with date and config path, and run end with counts and outcome.
-2. Wire: load roster, ensure Athena auth, fetch, merge, render, write `reports/usage/<date>.md`. Each source is injected so the wiring is the only place concrete clients are built.
-3. On a failed SSO refresh or query: log the failure once, write `reports/usage/<date>.FAILED.txt` stating "report not generated" and why, and exit non-zero; never write a partial report as if
+2. Wire: load roster, ensure Athena auth, fetch, merge, render, write `output/reports/usage/<date>.md`. Each source is injected so the wiring is the only place concrete clients are built.
+3. On a failed SSO refresh or query: log the failure once, write `output/reports/usage/<date>.FAILED.txt` stating "report not generated" and why, and exit non-zero; never write a partial report as if
    complete.
 4. A second run for the same date overwrites that date's report; there is no other state.
 5. Document the cron line in the same style as the existing jobs, with the offset chosen in UT-1, for example `0 14 * * * cd $REPO && $PY -m src.pipelines.usage_tracking.scripts.run_daily_usage_report

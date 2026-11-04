@@ -79,7 +79,7 @@ Package `src/pipelines/usage_tracking/` (dependencies point left to right, no cy
 | `render.py` | Markdown report, tables via `ReportRenderer`; no 5xx column | — |
 | `scripts/run_daily_usage_report.py` | CLI: `--date`, `--live-athena`, `--live-lightstep`, `init_logging()` first, FCID `daily-usage-report` | all exceptions derive from `UsageTrackingError` |
 
-Failure behaviour: a failed SSO refresh or query writes `reports/usage/<date>.FAILED.txt` and exits non-zero.
+Failure behaviour: a failed SSO refresh or query writes `output/reports/usage/<date>.FAILED.txt` and exits non-zero.
 
 ## 6. Planned structure diagram
 

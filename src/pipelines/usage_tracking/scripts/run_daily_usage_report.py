@@ -1,4 +1,4 @@
-"""Daily household usage report CLI: load the roster, fetch Athena and Lightstep data per tenant, merge, render and write `reports/usage/<TENANT>/<date>.md`.
+"""Daily household usage report CLI: load the roster, fetch Athena and Lightstep data per tenant, merge, render and write `output/reports/usage/<TENANT>/<date>.md`.
 
 Each source reads the local ctap-smvod export by default and queries live only with its flag. A failure for a tenant writes `<date>.FAILED.txt` ("report not generated") next to where the report
 would be and makes the exit code non-zero; a partial report is never written.
@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 FCID_SLUG = "daily-usage-report"
 DEFAULT_OFFSET_DAYS = 2
-DEFAULT_OUT_DIR = Path(__file__).resolve().parents[4] / "reports" / "usage"
+DEFAULT_OUT_DIR = Path(__file__).resolve().parents[4] / "output" / "reports" / "usage"
 
 
 @dataclass(frozen=True)
