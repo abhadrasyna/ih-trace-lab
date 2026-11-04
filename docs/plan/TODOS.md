@@ -104,6 +104,8 @@ follow-up story (create via `_TEMPLATE` once Phase 4/6 stories start landing):
    port is still fresh.
 4. Any finding becomes either a fix to the just-landed migration story (if genuinely missed logic) or a documented, deliberate scope exclusion (if the original node was dead code / out of scope) —
    never left as a silent, unexplained diagram mismatch.
+- [x] `household-usage-tracking` — daily per-household usage report (UT-1..UT-7 done; cron line documented in `src/pipelines/usage_tracking/README.md`, installed by the user).
+  - 2026-11-04: UT-7 landed; story complete pending the user reading a real run and installing the cron line.
 
 ## Notes
 

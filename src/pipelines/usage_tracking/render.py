@@ -97,7 +97,7 @@ def _describe(flag: Flag) -> str:
 def _trend(households: Sequence[HouseholdDay], day: date) -> str:
     days = [d.strftime("%m-%d") for d in trend_days(day)]
     rows = [
-        {"Household": hd.household.label, "Person": p.name, **{d: str(n) for d, n in zip(days, p.trend)}}
+        {"Household": hd.household.label, "Person": p.name, **{d: str(n) for d, n in zip(days, p.trend, strict=True)}}
         for hd in households
         for p in hd.people
     ]
