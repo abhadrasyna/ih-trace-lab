@@ -17,7 +17,7 @@ spec.
   SHA: e6a5534. Note for UT-7: `build_household_day` needs sessions for the trailing 7 days, but both `SessionSource` implementers fetch one day; UT-7 must fetch the window.
 - [x] **UT-6** — Markdown report renderer to the agreed format | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests green (golden file) + code-reviewer | SHA: 810d4aa
 - [x] **UT-7** — CLI entry point, failure handling, README with the cron line, `SCRIPTS.md`, `CONTEXT.md`, final architecture diagram | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: tests
-  green + code-reviewer + one real run read by the user | SHA: PENDING
+  green + code-reviewer + one real run read by the user | SHA: fedcc56
 
 ## Story done when
 
