@@ -1,0 +1,21 @@
+# Households tracked by src/pipelines/usage_tracking. HHIDs and device ids are identifiers, not secrets.
+# Add a person or household here only; no code change needed. Tenant ids resolve via config/tenants.yaml.
+tenant: ZA
+households:
+  - hhid: "-QSn81emg_utFvU0cHVJ1IpE2_Peygr3y5FuaMI1w1Cy4A16TSEn"
+    label: team A
+    track: true
+    members:
+      - name: Fayaz Shaik
+        device_id: cccd401e0e5e99f3e3a998f289aa5641490de6077c17d391bd07f809d029b794
+      - name: Keerthesh Kesulappagari
+        device_id: 00a41f3bc43daa4bcc599b9872076936d9a05763184532e9c4b0e05949f6ee9d
+      - name: Josiah Devasam Hananl
+        device_id: 3e2b7199ea2e5655de7f1f2356f3b399c49e7f6a3c341cdde4d9f49cc0060fd4
+      - name: Dumpa Revanth Venkata Sai
+        device_id: d927e570c1c9fa43c0bcd01b980c5ba558b150d4ff9562e32f7a4e63d68dbb8e
+  # Placeholder until the second household's ids are supplied; skipped while track is false.
+  - hhid: TBD-second-household
+    label: second household
+    track: false
+    members: []

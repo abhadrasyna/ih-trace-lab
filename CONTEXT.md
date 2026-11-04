@@ -256,6 +256,9 @@
   `unified_sessions` and debug states, with ZA 2026-10-24 as the acceptance baseline (4,443 Lightstep sessions, 3,763 in `unified_sessions`, 3,901 in debug states, 542 in neither). Story order since
   2026-10-26: `session-error-model/` (EM-1..EM-5), `linear-session-coverage/` (blocks GH/ZM only; ZA has no linear), `session-presence-funnel/`, then `session-lifecycle-report/` (SL-1..SL-6, none
   started): a daily per-tenant summary of the furthest hop, paths, hop timing, cohorts and export completeness, built on EM, PF-4 and PF-8, for ZA, GH and ZM now and NG once exported.
+- `config/tracked_households.yaml` and `src/pipelines/usage_tracking/` (`roster.py`, `errors.py`, `tests/`) — UT-2 of `docs/plan/household-usage-tracking/`: the roster of tracked households (full
+  `hhid`, members with `device_id`, `track` flag); `roster.load(path)` validates it (duplicate device id, empty hhid, unknown tenant via `TenantRegistry`, non-bool `track`) and raises `RosterError`,
+  `tracked()` returns only `track: true` households, and `resolve_config_path` takes `--config`, then `TRACK_CONFIG`, then the default. The second household is a `track: false` placeholder.
 
 ## Key Decisions
 
