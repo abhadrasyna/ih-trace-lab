@@ -202,11 +202,6 @@ def flatten_rows(rows: list[dict[str, str]]) -> list[dict]:
     return sorted(seen.values(), key=lambda r: r["datetime"])
 
 
-def filter_by_app_version(flat: list[dict], app_version: str) -> list[dict]:
-    """Pure: keep only rows whose app_version equals `app_version` exactly."""
-    return [r for r in flat if r.get("app_version") == app_version]
-
-
 def split_by_errorcode(flat: list[dict]) -> dict[str, tuple[list[str], list[dict]]]:
     """Pure: group flat rows by errorcode; per group keep FIELDS order minus columns blank in every row."""
     groups: dict[str, list[dict]] = {}
@@ -244,16 +239,10 @@ def main() -> None:
     ap.add_argument("--out-dir", required=True, help="Output folder (e.g. ../output/ZM/error_eventdata_flat), created if missing")
     ap.add_argument("--split-by-errorcode", action="store_true",
                     help="Also write <date>_<errorcode>.csv per code, with columns blank for that code dropped")
-    ap.add_argument("--app-version", default=None,
-                    help="Keep only rows with this exact app_version (e.g. v2026.11.03.02); use a separate --out-dir")
     args = ap.parse_args()
 
     rows = [r for path in args.input for r in read_rows(path)]
     flat = flatten_rows(rows)
-    if args.app_version:
-        total = len(flat)
-        flat = filter_by_app_version(flat, args.app_version)
-        LOGGER.info("app_version=%s kept %d of %d rows", args.app_version, len(flat), total)
     os.makedirs(args.out_dir, exist_ok=True)
     combined = output_file(args.out_dir, args.date, "all")
     write_csv(combined, FIELDS, flat)

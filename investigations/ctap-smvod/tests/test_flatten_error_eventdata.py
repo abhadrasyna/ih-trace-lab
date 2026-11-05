@@ -136,10 +136,3 @@ def test_main_writes_all_and_per_code_into_folder(monkeypatch, tmp_path):
     monkeypatch.setattr(mod, "init_logging", lambda slug: None)
     mod.main()
     assert sorted(p.name for p in out.iterdir()) == ["2026-10-04_3016.csv", "2026-10-04_6007.csv", "2026-10-04_all.csv"]
-
-
-def test_filter_by_app_version_exact_match_only():
-    rows = [{"app_version": "v2026.11.03.02", "n": 1}, {"app_version": "v2026.11.03.021", "n": 2},
-            {"app_version": None, "n": 3}]
-    assert [r["n"] for r in mod.filter_by_app_version(rows, "v2026.11.03.02")] == [1]
-    assert mod.filter_by_app_version(rows, "vX") == []
