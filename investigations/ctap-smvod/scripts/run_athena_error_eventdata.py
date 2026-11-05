@@ -14,6 +14,9 @@ Usage:
     # Only some error codes (matched on eventdata.errorcode):
     python3 run_athena_error_eventdata.py --date 2026-10-04 --tenant ZM --codes 3016,6007
 
+    # Only one app build (exact match on eventdata.errordescription.app_version):
+    python3 run_athena_error_eventdata.py --date 2026-11-05 --tenant ZA --codes 6001 --app-version v2026.11.03.02
+
     # Preview the query without touching Athena:
     python3 run_athena_error_eventdata.py --date 2026-10-04 --tenant ZM --dry-run
 
@@ -48,23 +51,38 @@ def parse_codes(raw: str | None) -> list[str]:
     return codes
 
 
-def build_query(ctx, database: str, date_iso: str, codes: list[str]) -> str:
-    """Pure: render the catalog query for one UTC day, optionally restricted to `codes`."""
+def parse_app_version(raw: str | None) -> str | None:
+    """Pure: validate an app_version token (e.g. v2026.11.03.02). Raises ValueError if not a plain token."""
+    if raw is None:
+        return None
+    version = raw.strip()
+    if not _CODE.match(version):
+        raise ValueError(f"invalid app version: {raw!r}")
+    return version
+
+
+def build_query(ctx, database: str, date_iso: str, codes: list[str], app_version: str | None = None) -> str:
+    """Pure: render the catalog query for one UTC day, optionally restricted to `codes` and an exact `app_version`."""
     next_day = (datetime.strptime(date_iso, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
     code_list = ", ".join(f"'{c}'" for c in codes)
-    code_filter = f"AND json_extract_scalar(eventdata, '$.errorcode') IN ({code_list})" if codes else ""
+    clauses = []
+    if codes:
+        clauses.append(f"AND json_extract_scalar(eventdata, '$.errorcode') IN ({code_list})")
+    if app_version:
+        clauses.append(f"AND json_extract_scalar(eventdata, '$.errordescription.app_version') = '{app_version}'")
     return render_query(QUERY_SLUG, {
         "database": database,
         "debug_events_table": ctx.debug_events_table,
         "datetime_start": f"{date_iso}T00:00:00.000Z",
         "datetime_end": f"{next_day}T00:00:00.000Z",
-        "error_code_filter": code_filter,
+        "error_code_filter": "\n  ".join(clauses),
     })
 
 
-def output_path(date_iso: str, output_dir: str, codes: list[str] | None = None) -> str:
-    """Unfiltered runs keep the default name; filtered runs embed the codes so caches never collide."""
+def output_path(date_iso: str, output_dir: str, codes: list[str] | None = None, app_version: str | None = None) -> str:
+    """Unfiltered runs keep the default name; filtered runs embed the filters so caches never collide."""
     suffix = f"_codes-{'-'.join(sorted(codes))}" if codes else ""
+    suffix += f"_app-{app_version}" if app_version else ""
     return os.path.join(output_dir, f"{date_iso}_error_eventdata{suffix}.csv")
 
 
@@ -73,6 +91,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--date", required=True, help="Partition date, YYYY-MM-DD (e.g. 2026-10-04)")
     ap.add_argument("--codes", default=None, help="Comma-separated error codes to keep (default: every PLAYER_ERROR)")
+    ap.add_argument("--app-version", default=None,
+                    help="Only keep events whose eventdata.errordescription.app_version equals this (e.g. v2026.11.03.02)")
     ap.add_argument("--tenant", required=True, help="Tenant code from config/tenants.yaml (e.g. ZM)")
     ap.add_argument("--profile", default=None, help="AWS SSO profile (default: from the tenant registry)")
     ap.add_argument("--database", default=None, help="Athena database (default: from the tenant registry)")
@@ -93,6 +113,7 @@ def main() -> None:
         ctx = resolve_tenant_context(args.tenant, table_suffix=args.table_suffix)
         date_iso = datetime.strptime(args.date, "%Y-%m-%d").strftime("%Y-%m-%d")
         codes = parse_codes(args.codes)
+        app_version = parse_app_version(args.app_version)
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -100,8 +121,8 @@ def main() -> None:
     database = args.database or ctx.database
     region = args.region or ctx.region
     out_dir = args.output_dir or str(investigation_data_dir("athena", tenant=args.tenant))
-    out_path = output_path(date_iso, out_dir, codes)
-    query = build_query(ctx, database, date_iso, codes)
+    out_path = output_path(date_iso, out_dir, codes, app_version)
+    query = build_query(ctx, database, date_iso, codes, app_version)
 
     if args.dry_run:
         sys.stdout.write(query)
@@ -117,7 +138,7 @@ def main() -> None:
 
     os.makedirs(out_dir, exist_ok=True)
     print(f"Starting Athena query [{ctx.code}] on {database}.{ctx.debug_events_table} for {date_iso} "
-          f"(codes={codes or 'all'}, profile={profile})...", file=sys.stderr)
+          f"(codes={codes or 'all'}, app_version={app_version or 'any'}, profile={profile})...", file=sys.stderr)
     try:
         result = run_athena_query(sql=query, params={}, output_path=out_path, profile=profile, database=database,
                                   workgroup=args.workgroup, output_location=args.output_location, region=region,

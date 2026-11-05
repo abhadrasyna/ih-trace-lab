@@ -218,8 +218,9 @@ Part of `run_pipeline.py` (Steps 6f/6g; skip with `--skip-error-eventdata`) and 
 1. `python3 run_pipeline.py --date 04102026 --tenant ZM` runs everything below as Steps 6f and 6g, after the reports. Step 4 (`run_athena_debug_events.py`) is a different export: its
    `debug_states.csv` only has extracted columns (`sessionId, eventid, state, position, errorcode, errordescription, datetime`), with no `eventdata`, `messageid` or `clientid`.
 2. Step 6f, `run_athena_error_eventdata.py --date 2026-10-04 --tenant ZM [--codes 3016,6007]`, exports every `PLAYER_ERROR` of the day to `data/athena/ZM/2026-10-04_error_eventdata.csv` (columns
-   `datetime, messageid, clibversion, clientid, eventclass, eventid, eventdata`). It covers all tenant traffic for the day, not just Lightstep-matched sessions, so counts can exceed the pipeline error
-   report. `--dry-run` prints the query; `--force` re-runs Athena over an existing CSV. The query is catalog slug `ctap-smvod-error-eventdata`.
+   `datetime, messageid, clibversion, clientid, eventclass, eventid, eventdata`). `--app-version v2026.11.03.02` keeps only that exact `app_version` and is added to the output filename. It covers all
+   tenant traffic for the day, not just Lightstep-matched sessions, so counts can exceed the pipeline error report. `--dry-run` prints the query; `--force` re-runs Athena over an existing CSV. The
+   query is catalog slug `ctap-smvod-error-eventdata`.
 3. Step 6g, `flatten_error_eventdata.py --split-by-errorcode`, writes `output/ZM/error_eventdata_flat/2026-10-04_all.csv` plus one `2026-10-04_<errorcode>.csv` per code.
 4. Analyse with `summarize_error_eventdata.py` (see Run).
 5. To find which sessions have errors first: `analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv`.

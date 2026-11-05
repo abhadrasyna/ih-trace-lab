@@ -97,3 +97,16 @@ def test_pipeline_athena_flags_are_accepted(monkeypatch, tmp_path):
     monkeypatch.setattr(mod, "run_athena_query", lambda **kw: SimpleNamespace(row_count=0))
     _run_main(monkeypatch, "--date", "2026-10-04", "--profile", "p", "--skip-auth-check", "--force",
               "--tenant", "ZM", "--output-dir", str(tmp_path))
+
+
+def test_app_version_filter_in_query_and_output_name():
+    sql = mod.build_query(CTX, "unified_a7vli5h8", "2026-11-05", ["6001"], "v2026.11.03.02")
+    assert "IN ('6001')" in sql
+    assert "'$.errordescription.app_version') = 'v2026.11.03.02'" in sql
+    assert mod.output_path("2026-11-05", "d", ["6001"], "v2026.11.03.02").endswith("_codes-6001_app-v2026.11.03.02.csv")
+
+
+def test_parse_app_version_rejects_injection():
+    assert mod.parse_app_version(None) is None
+    with pytest.raises(ValueError):
+        mod.parse_app_version("v1' OR '1'='1")
