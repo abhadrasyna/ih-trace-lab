@@ -256,7 +256,7 @@
   `unified_sessions` and debug states, with ZA 2026-10-24 as the acceptance baseline (4,443 Lightstep sessions, 3,763 in `unified_sessions`, 3,901 in debug states, 542 in neither). Story order since
   2026-10-26: `session-error-model/` (EM-1..EM-5), `linear-session-coverage/` (blocks GH/ZM only; ZA has no linear), `session-presence-funnel/`, then `session-lifecycle-report/` (SL-1..SL-6, none
   started): a daily per-tenant summary of the furthest hop, paths, hop timing, cohorts and export completeness, built on EM, PF-4 and PF-8, for ZA, GH and ZM now and NG once exported.
-- `config/tracked_households.yaml` and `src/pipelines/usage_tracking/` (`roster.py`, `errors.py`, `tests/`) — UT-2 of `docs/plan/household-usage-tracking/`: the roster of tracked households (full
+- `config/tracked_households.yaml` and `src/pipelines/usage_tracking/` (`roster.py`, `errors.py`, `tests/`) — UT-2 of `docs/archive/household-usage-tracking/`: the roster of tracked households (full
   `hhid`, members with `device_id`, `track` flag); `roster.load(path)` validates it (duplicate `(tenant, hhid)` or `(tenant, device_id)`, empty hhid, a household with a missing or unknown `tenant` via
   `TenantRegistry`, non-bool `track`) and raises `RosterError`, `tracked()` returns only `track: true` households, and `resolve_config_path` takes `--config`, then `TRACK_CONFIG`, then the default.
   `tracked()` and `by_tenant()` return only `track: true` households, the latter grouped per tenant. The second household is a `track: false` placeholder.
@@ -273,7 +273,7 @@
 - `src/pipelines/usage_tracking/scripts/run_daily_usage_report.py`, `live_clients.py` and `README.md` — UT-7: `python -m src.pipelines.usage_tracking.scripts.run_daily_usage_report [--date] [--config]
   [--out-dir] [--live-athena] [--live-lightstep]` writes `output/reports/usage/<TENANT>/<date>.md` per tenant from the local ctap-smvod exports (default date: two days ago); a failure writes
   `<date>.FAILED.txt` ("report not generated") and exits 1. `live_clients` builds the live sources only on a `--live-*` flag. The README holds the cron line; after-diagram in
-  `docs/plan/household-usage-tracking/architecture-after.md`.
+  `docs/archive/household-usage-tracking/architecture-after.md`.
 - `src/pipelines/usage_tracking/render.py` — UT-6: `render_report(tenant, day, households) -> str` (pure; the CLI writes the file) renders title, summary, per-household table, per-person session
   detail (parent_session_id, endreason, error code/message for errored sessions, trace_id), Anomalies (full HHIDs) and the 7-day trend; `MarkdownTableRenderer` satisfies `ReportRenderer`; golden file
   in `tests/data/golden_report.md`.

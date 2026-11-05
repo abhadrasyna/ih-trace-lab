@@ -1,7 +1,7 @@
 # Household usage tracking pipeline
 
 A daily, read-only report of sm-vod/CTAP playback per tracked household and device, per tenant (ZA for now). It reads the ctap-smvod pipeline's local exports by default and writes
-`output/reports/usage/<TENANT>/<YYYY-MM-DD>.md`. Story: `docs/plan/household-usage-tracking/`.
+`output/reports/usage/<TENANT>/<YYYY-MM-DD>.md`. Story: `docs/archive/household-usage-tracking/`.
 
 ## Inputs
 

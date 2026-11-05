@@ -11,7 +11,7 @@ Package layout for every task below: `src/pipelines/usage_tracking/` with one mo
 ## UT-1 — Prior-art audit and design review (docs only)
 
 **Files to change / create:**
-- `docs/plan/household-usage-tracking/spec.md` — audit evidence table, decisions, module map, planned diagram (no task checkboxes).
+- `docs/archive/household-usage-tracking/spec.md` — audit evidence table, decisions, module map, planned diagram (no task checkboxes).
 
 **What to implement:**
 
