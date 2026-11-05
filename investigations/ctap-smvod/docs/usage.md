@@ -144,6 +144,7 @@ Other options: `--output-dir` (root holding the `<TENANT>/` folders).
 | `python3 analyze_error_report_breakdown.py --all-codes --error-report ../output/ZM/2026-10-04_setupsession_with_outcome.csv` | same breakdown over every error code (incl. 3016) |
 | `python3 flatten_error_eventdata.py --input <export>.csv --date <date> --out-dir ../output/ZM/error_eventdata_flat` | `<date>_all.csv`: `eventdata` split into columns + `raw_eventdata` |
 | `python3 flatten_error_eventdata.py ... --split-by-errorcode` | also `<date>_<errorcode>.csv` per code, columns blank for that code dropped |
+| `python3 flatten_error_eventdata.py ... --app-version v2026.11.03.02` | keep only rows with that exact `app_version` (use a separate `--out-dir`) |
 | `python3 summarize_error_eventdata.py --flat <flat>.csv --by errorcode,net_effectivetype` | stdout only (counts/crosstab over flat columns; `--by` repeatable) |
 | `python3 count_error_by_content.py --from 2026-10-01 --to 2026-10-10 --tenants ZA` | `output/<TENANT>/<from>_<to>_error_6xxx_by_content[_rollup].csv` (`sessions,unique_households`) |
 | `python3 compute_concurrent_playback.py --date 2026-10-14 --tenants ZA,GH,ZM` | `output/<TENANT>/<date>_concurrent_playback[_summary].csv` (per UTC minute, three views); see note below |
