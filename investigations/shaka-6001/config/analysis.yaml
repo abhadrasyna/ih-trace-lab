@@ -1,0 +1,17 @@
+# Shaka 6001 analysis defaults. "before"/"after" in prompts resolve to the values below.
+tenant: ZA
+
+# Default analysis start when no date range is specified.
+default_start_date: 2026-11-01
+
+app_version:
+  before: v2026.10.27.01
+  after: v2026.11.03.02
+
+upgrade_window:
+  timezone: Asia/Kolkata  # IST, +05:30
+  start: "2026-11-04T16:30:00+05:30"
+  end: "2026-11-04T17:00:00+05:30"
+
+# before = timestamp < upgrade_window.start OR app_version == app_version.before
+# after  = timestamp > upgrade_window.end   OR app_version == app_version.after
