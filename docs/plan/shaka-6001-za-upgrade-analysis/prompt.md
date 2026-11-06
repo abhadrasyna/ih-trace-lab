@@ -26,6 +26,7 @@ Out of bounds:
 - `ctap-smvod` behaviour changes.
 - `src/lib/charts/` internals (use `render_*` as-is; no new chart type without a second consumer, per `docs/guides/chart-guidelines.md`).
 - Runtime services.
+- Installing the crontab (a human step; the story delivers the entry point and the documented line).
 
 This story is analysis code only.
 
@@ -53,7 +54,7 @@ This story is analysis code only.
 - SU-12 — daily top 10 households and devices impacted by 6001.
 - SU-13 — daily top 10 device models impacted by 6001.
 - SU-14 — user tenure and stickiness vs success rate.
-- SU-15 — step-registry runner, docs and registry.
+- SU-15 — step-registry runner, daily cron mode, docs and registry.
 
 ## Definition of done
 

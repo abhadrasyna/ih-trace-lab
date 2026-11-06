@@ -19,7 +19,7 @@ spec and `spec.md` for the audit of existing code.
 - [ ] **SU-12** — daily top 10 households and devices hit by 6001 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-13** — daily top 10 device models hit by 6001 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-14** — user tenure and stickiness vs success rate | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **SU-15** — step-registry runner, docs and registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
+- [ ] **SU-15** — step-registry runner, daily cron mode, docs and registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 
 ## Story done when
 
@@ -37,7 +37,8 @@ spec and `spec.md` for the audit of existing code.
 - **SU-12** — one ranked top-10 table per day for households and devices, plus a trend chart.
 - **SU-13** — one ranked top-10 model table per day with rates, plus charts.
 - **SU-14** — active households bucketed by tenure with success rate, stated limits, and a chart.
-- **SU-15** — one command re-runs everything for `--start-date/--end-date`; `SCRIPTS.md`, `docs/usage.md` and `CONTEXT.md` updated.
+- **SU-15** — one command re-runs everything for `--start-date/--end-date`, a cron-safe daily mode backfills missing dates with a lock, log and FAILED marker; `SCRIPTS.md`, `docs/usage.md` and
+  `CONTEXT.md` updated.
 
 ## After each task
 

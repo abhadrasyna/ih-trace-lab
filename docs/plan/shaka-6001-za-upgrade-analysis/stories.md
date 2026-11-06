@@ -14,6 +14,10 @@
 - Athena access is injected as a `src.lib.athena.AthenaClient`; tests use a fake client, so no network. Every query used is a registered file under `queries/athena/` (query-catalog rules).
 - Each task registers its scripts in `SCRIPTS.md` and its queries in `queries/athena/index.md` in the same commit.
 - Rates always appear next to counts, and every output states its base (events, sessions or households) and tenant. Table timestamps are UTC; convert to IST before day or period logic.
+- Cron-safe by design (the daily run reuses these scripts, never a copy): every script is non-interactive and idempotent (rerunning a date overwrites that date's outputs, never appends), takes
+  explicit dates (`--date`, or `--start-date/--end-date`) with no reliance on "today" except in the runner, exits non-zero on failure, and uses absolute-path-free config only. Cron has a minimal
+  `PATH`, no TTY and no SSO prompt, so Athena steps check AWS credentials first and fail fast with a clear message instead of waiting for a login. Cron does not catch up missed runs, so the runner
+  backfills any date in the lookback window whose outputs are missing.
 - `GUEST.*` ids are per-install, not real households or devices: keep them in their own cohort or table and say so.
 
 ---
@@ -290,18 +294,28 @@ carry on. Every title states its base (events or sessions, ZA, date range).
 
 ---
 
-## SU-15 — step-registry runner, docs and registry
+## SU-15 — step-registry runner, daily mode, docs and registry
 
 **Files to change / create:**
 - `investigations/shaka-6001/scripts/run_analysis.py` — a registry `dict` of named steps (SU-4 to SU-14), run in dependency order; a new analysis registers itself, never adds a branch.
-- `investigations/shaka-6001/docs/usage.md`, `SCRIPTS.md`, `CONTEXT.md` — every script, its inputs and outputs, and the local-data-first rule.
-- `investigations/shaka-6001/tests/test_run_analysis.py`
+- `investigations/shaka-6001/scripts/run_daily.py` — cron entry point on top of the runner (pattern: `ctap-smvod/scripts/run_daily_pipeline.py`).
+- `investigations/shaka-6001/docs/usage.md`, `SCRIPTS.md`, `CONTEXT.md` — every script, its inputs and outputs, the local-data-first rule and the cron line.
+- `investigations/shaka-6001/tests/test_run_analysis.py`, `test_run_daily.py`
 
 **What to implement:**
 
-1. `--start-date/--end-date` (config defaults), `--only` to pick steps; missing local dates are reported up front and the run stops before any Athena query unless `--fetch-missing` is passed.
-2. Re-running the same range overwrites that range's outputs.
+1. `run_analysis.py`: `--start-date/--end-date` (config defaults), `--only` to pick steps; missing local dates are reported up front and the run stops before any Athena query unless `--fetch-missing`
+   is passed. Re-running a range overwrites that range's outputs.
+2. `run_daily.py`: no arguments needed. It targets the last complete UTC day (and the IST day it overlaps), backfills any date in `--lookback-days` (default 3) with missing outputs, passes
+   `--fetch-missing`, and runs the full registry for the window from the config start date to that day so before/after totals and the tenure and trend views stay current.
+3. Runs are one-at-a-time (a lock file; a second start exits cleanly), logged to `investigations/shaka-6001/logs/run-daily_<date>.log` with a 30-day prune, and end with a run summary block (OK /
+   FAILED / NOT RUN per step). A step failure does not stop independent steps; any failure writes `<date>.FAILED.txt` and exits 1, so a half-built report is never mistaken for a good one.
+4. Credentials: refresh or verify AWS SSO through `src.lib.auth` before the first Athena call; if it cannot, mark the Athena steps NOT RUN, still run the local-data steps and exit 1.
+5. Cost guard: each fetch checks scan size against `--max-scan-gb` (default set in the config) and skips with a logged reason instead of running an expensive query unattended.
+6. Documented crontab line, in the style of `ctap-smvod/docs/usage.md` §7g: set `PATH` for `aws`, pick a time after the UTC day ends (for example 13:00 IST), note that the machine must be awake and
+   that installing the crontab is a human step.
 
-**Tests:** `test_runner_stops_on_missing_dates_without_flag`, `test_only_selects_steps`, `test_steps_run_in_dependency_order`.
+**Tests:** `test_runner_stops_on_missing_dates_without_flag`, `test_only_selects_steps`, `test_steps_run_in_dependency_order`, `test_daily_backfills_missing_dates`,
+`test_daily_second_instance_exits_on_lock`, `test_failed_step_writes_failed_marker_and_exit_1`.
 
-**Commit:** `feat(shaka-6001): add analysis runner and docs`
+**Commit:** `feat(shaka-6001): add analysis runner, daily mode and docs`
