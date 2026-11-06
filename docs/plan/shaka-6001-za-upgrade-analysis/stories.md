@@ -271,13 +271,16 @@ carry on. Every title states its base (events or sessions, ZA, date range).
 **Question (Sunday meeting):** how old, in time since subscribing, are the active users, is there stickiness, and how does playback success differ between old and new customers.
 
 **Decisions (user, 2026-11-06):**
-- Tenure proxy: first-ever session date per household in Athena. This is first seen, not a subscription date; state the earliest retained date in every output and never call it a subscription date.
+- **Revised 2026-11-06 (user):** no new Athena query. First seen comes from the local `<date>_session.csv` files already accumulated (earliest date available, 2026-10-01), read through `local_data`.
+  Every household first seen on the earliest local date is left-censored (true tenure unknown), so tenure is capped at the local history length and buckets above it will be empty or thin; flag this in
+  every output.
+- Tenure proxy: first session date per household in the local data. This is first seen, not a subscription date; state the earliest retained date in every output and never call it a subscription date.
 - Active user: a household with at least one session from 2026-10-01 (fixed; no local-data fallback). First seen is measured over the full retained history (my reading of "fix it from 1 October"; if
   first seen should also be floored at 2026-10-01, buckets above 31 days would be empty, so confirm before building).
 - Buckets: 0-7d, 8-30d, 31-90d, 91-180d, plus `180d+` so no household is dropped.
 
 **Files to change / create:**
-- `queries/athena/` — registered first-seen query (query catalog rules; check scan size first).
+- No query file: first seen is derived from local session files (see the revised decision).
 - `investigations/shaka-6001/scripts/analyze_user_tenure.py` and `tests/test_analyze_user_tenure.py`
 
 **What to implement:**
