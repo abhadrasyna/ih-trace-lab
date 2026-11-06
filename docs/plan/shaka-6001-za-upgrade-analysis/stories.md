@@ -203,3 +203,29 @@ analysis therefore counts guest ids, not households, and says so in every output
 - `test_same_day_and_cross_day_recovery_split` and `test_guest_cohort_kept_separate`.
 
 **Commit:** `feat(shaka-6001): analyse recovery after 6001`
+
+---
+
+## SU-10 — daily top 10 households and devices hit by 6001
+
+**Files to change / create:**
+- `investigations/shaka-6001/scripts/rank_daily_top_impacted.py` and `tests/test_rank_daily_top_impacted.py`
+
+**Reuse first:** `investigations/ctap-smvod/scripts/rank_households_by_error.py` already ranks households by error; read it and import or promote its ranking logic (with SU-2) instead of rewriting it.
+
+**What to implement:**
+
+1. For each day in `--start-date/--end-date` (IST day by default, `--day-basis utc` optional; state the basis in the output), rank households and devices separately by 6001 event count from the
+   enriched events (SU-3). `--top` defaults to 10.
+2. Columns: day, rank, householdId or deviceId, 6001 events, distinct sessions, first and last 6001 time (IST), most common device model and build, webview share of its 6001 events, the period (SU-1)
+   and app version(s) seen that day. Ties break by distinct sessions, then id, so reruns are stable.
+3. `GUEST.*` ids are ranked in their own table, because they are per-install, not real households; say so in the output. Rows with no household or device are counted, not dropped.
+4. Add each ranked id's recovery flag from SU-9 (did it have a `DESTROY` session after its first 6001) when that output exists; leave the column empty otherwise, never guess.
+5. Outputs: `output/ZA/<start>_<end>_6001_top{N}_households.csv` and `_devices.csv`, one stacked set per day. A chart (horizontal bar, sorted descending, per guidelines) for the latest day, plus a
+   share-of-total line showing how concentrated the 6001 volume is in the top 10 each day.
+
+**Tests (no network, no real external services):**
+- `test_top_n_per_day_with_stable_ties` and `test_guest_ids_ranked_separately`.
+- `test_day_basis_ist_vs_utc` — an event at 20:00 UTC lands on the next IST day.
+
+**Commit:** `feat(shaka-6001): rank daily top impacted households`
