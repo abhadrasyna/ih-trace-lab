@@ -15,3 +15,4 @@ upgrade_window:
 
 # before = timestamp < upgrade_window.start OR app_version == app_version.before
 # after  = timestamp > upgrade_window.end   OR app_version == app_version.after
+# Inside the window (start..end) timestamp is not decisive: classify by app_version only.
