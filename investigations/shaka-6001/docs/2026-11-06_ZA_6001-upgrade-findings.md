@@ -20,10 +20,18 @@ covers daytime only and after includes the evening peak and night, so the hourly
 | Before (264) | 258 (97.7%) | 6 (2.3%) |
 | After (850) | 803 (94.5%) | 47 (5.5%) |
 
+![6001 webview share before vs after](images/webview_share.png)
+
+Daily webview share, as a pp change vs the before-period share (day 0 = 11-04, day 2 = 11-06, which is partial):
+
+![6001 daily webview share change vs before](images/webview_daily_trend.png)
+
 Non-webview 6001s grew from 6 to 47 events (5 → 11 devices). Counts are small, so the 3.3 pp shift is indicative only. Eventdata `iswebview` disagrees with the user-agent `wv` flag on 28 of 850 rows
 where both are known.
 
 ## 3. Models
+
+![6001 top models](images/top_models.png)
 
 After the upgrade the top models are SM-A065F (116 events, 45 devices, 13.7%) and SM-A055F (103 events, 44 devices, 12.1%). SM-A055F's share is unchanged; SM-A065F gained 3.0 pp. The top models are
 the common Samsung A-series phones, so the list mostly mirrors the device base. "K (device masked - UA reduction)" is a masked bucket and not a single model.
@@ -40,6 +48,8 @@ compared before vs after.
 | Before | 231 | 5 | 2.2% |
 | After | 352 | 1 | 0.3% |
 
+![6001 household recovery by period](images/recovery_household_by_period.png)
+
 All 6 recoveries were cross-session on the same day; none were same-session. The webview split is 5 of 567 (0.9%) vs 1 of 16 (6.3%) non-webview. With 6 recoveries in total, no rate comparison is
 reliable.
 
@@ -54,6 +64,8 @@ Every guest has a debug-event match and 99% are webview. None had a 6001 before 
 short, so compare per hour before drawing conclusions. The daily file also contains a partial 2026-11-06 (101 rows).
 
 ## 7. User tenure (base: households, local session history from 2026-10-01)
+
+![Households by first-seen bucket](images/tenure_households_by_bucket.png) ![Session success rate by first-seen bucket](images/tenure_success_by_bucket.png)
 
 16,168 households: 0–7d 6,069, 8–30d 9,368, 31–90d 731, and none beyond 90 days. Session success rates are 35.0%, 36.4% and 66.3%. This is **not** a customer-age effect. Local history starts at
 2026-10-01 and session volume ramps from about 160 rows to about 6,000 a day, so "first seen" mostly reflects when a household entered the sample. The 31–90d bucket is also left-censored (31
