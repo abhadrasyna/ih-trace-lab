@@ -23,5 +23,6 @@ output/**/*.lock
 # Generated local outputs and cron logs
 /output/
 investigations/ctap-smvod/output/
+investigations/shaka-6001/output/
 logs/*.out
 logs/crontab-backups/

@@ -45,6 +45,8 @@
   `analyze_mdrm_quality.py` the license-chain quality report and `analyze_mdrm_devices.py` the device/`brRef` policy report (all in `docs/usage.md` §7e; outputs go to `output/<OPCO>/drm-analysis/`
   with `csv/` and `charts/` subfolders via `scripts/lib/drm_output.py`; the `stages` chart is `scripts/lib/funnel_stages_chart.py`; `run_pipeline.py` runs the three as Steps 6i-6k under one
   `--skip-drm-reports`; shared readers `scripts/lib/drm_*.py`). Constrained by `docs/refactor/`.
+- `investigations/shaka-6001/` (skeleton only, 2026-11-06) — Shaka 6001 across ZA/GH/ZM: which device models are impacted and how many have `drmenabled` in the debug table; reuses local `ctap-smvod`
+  data, `README.md` lists sources; no scripts yet.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
