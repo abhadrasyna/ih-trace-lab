@@ -24,5 +24,6 @@ output/**/*.lock
 /output/
 investigations/ctap-smvod/output/
 investigations/shaka-6001/output/
+investigations/shaka-6001/logs/
 logs/*.out
 logs/crontab-backups/

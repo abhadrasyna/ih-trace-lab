@@ -9,6 +9,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
 
+DEFAULT_MAX_SCAN_GB = 10.0
+DEFAULT_LOOKBACK_DAYS = 3
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "analysis.yaml"
 
 
@@ -25,6 +27,8 @@ class AnalysisConfig:
     timezone: ZoneInfo
     window_start: datetime
     window_end: datetime
+    max_scan_gb: float = DEFAULT_MAX_SCAN_GB
+    daily_lookback_days: int = DEFAULT_LOOKBACK_DAYS
 
 
 def _require(mapping: Any, key: str, where: str) -> Any:
@@ -61,6 +65,17 @@ def _parse_date(value: Any) -> date:
         raise AnalysisConfigError(f"invalid default_start_date: {value!r}") from exc
 
 
+def _positive_number(raw: Any, key: str, default: float, *, integer: bool = False) -> float:
+    if not isinstance(raw, dict) or key not in raw:
+        return default
+    value = raw[key]
+    ok = isinstance(value, int) if integer else isinstance(value, (int, float))
+    if isinstance(value, bool) or not ok or value <= 0:
+        kind = "a positive integer" if integer else "a positive number"
+        raise AnalysisConfigError(f"{key} must be {kind}, got {value!r}")
+    return value
+
+
 def parse_config(raw: Any) -> AnalysisConfig:
     """Validate an already-loaded mapping; pure, no I/O."""
     versions = _require(raw, "app_version", "")
@@ -86,6 +101,8 @@ def parse_config(raw: Any) -> AnalysisConfig:
         timezone=tz,
         window_start=start.astimezone(tz),
         window_end=end.astimezone(tz),
+        max_scan_gb=float(_positive_number(raw, "max_scan_gb", DEFAULT_MAX_SCAN_GB)),
+        daily_lookback_days=int(_positive_number(raw, "daily_lookback_days", DEFAULT_LOOKBACK_DAYS, integer=True)),
     )
 
 
