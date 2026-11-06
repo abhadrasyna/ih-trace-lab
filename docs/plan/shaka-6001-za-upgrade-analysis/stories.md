@@ -263,3 +263,28 @@ impact of failing vs succeeding customers is clear.
 - `test_guest_ids_excluded_from_tenure` and `test_first_seen_floor_flagged_as_censored`.
 
 **Commit:** `feat(shaka-6001): analyse user tenure vs success rate`
+
+---
+
+## SU-12 — daily top 10 device models hit by 6001
+
+**Files to change / create:**
+- `investigations/shaka-6001/scripts/rank_daily_top_models.py` and `tests/test_rank_daily_top_models.py`
+- Share the day-basis and ranking helpers with SU-10 (`scripts/lib/`), do not copy them.
+
+**What to implement:**
+
+1. Per day (IST by default, `--day-basis utc` optional, basis stated in the output), rank device models by 6001 events from the enriched events (SU-3); `--top` defaults to 10. Model comes from the
+   shared user-agent parser (SU-2), and build is shown as a separate column, not part of the key, so one model is not split across builds.
+2. Columns: day, rank, model, 6001 events, distinct devices, distinct households, distinct sessions, webview share, Android and Chrome versions most seen, and the period (SU-1) and app versions seen
+   that day. Rank by events; ties break by distinct devices, then model name.
+3. Normalise: add the model's total events or sessions that day (from the same data) so a rate sits next to the count; a big model with a small share is not the same as a small model failing often.
+   Models with too little traffic (`--min-events`, default 20) are flagged, not hidden.
+4. Unparsed and `unknown` shapes (reduced `K`, desktop, iOS) get their own labelled rows instead of being dropped, and `GUEST.*` events are kept in the count (the model is on the event, not the id).
+5. Outputs: `output/ZA/<start>_<end>_6001_top{N}_models.csv`; a sorted horizontal bar for the latest day and a stacked bar per day of top models vs other, following the chart guidelines.
+
+**Tests (no network, no real external services):**
+- `test_top_n_models_per_day_stable_ties` and `test_one_model_across_builds_is_one_row`.
+- `test_unparsed_ua_gets_own_row` and `test_low_traffic_model_flagged`.
+
+**Commit:** `feat(shaka-6001): rank daily top impacted device models`
