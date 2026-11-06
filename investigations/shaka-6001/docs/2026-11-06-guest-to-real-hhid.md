@@ -47,3 +47,15 @@ Short answer: there is no deterministic key anywhere, but a time-bounded join on
   unique inside a short window, and carrier NAT or shared Wi-Fi would produce several candidate pairs. A pair is credible only when the IP, a window of a few minutes, the same user agent and guestMode
   flipping from 1 to 0 all agree.
 - **Not possible without code changes:** a guest HHID to real HHID mapping that holds for every user. It would need the web client to log the guest clientId in the login request or in `ACTION_LOGON`.
+
+## Script: propose_guest_pairs.py
+
+`investigations/shaka-6001/scripts/propose_guest_pairs.py` automates the IP-and-time join described above. It queries ctap spans in Lightstep (public API, token from `LIGHTSTEP_API_KEY_EU` or the root
+`.env`) grouped by `http.client_ip`, device id, HHID, `guestMode` and user agent, then pairs a guest identity with a real one on the same IP when the real one first appears within `--max-gap-minutes`
+(default 10) after the guest. Pairs are marked `unique` only when they are the sole candidate in both directions; otherwise `ambiguous` (shared IP or NAT).
+
+```
+python investigations/shaka-6001/scripts/propose_guest_pairs.py --tenant ZA --ip 203.21.7.200 --start 2026-11-06T04:00:00 --minutes 30 --out investigations/shaka-6001/output/guest_pairs_ZA.csv
+```
+
+Validated on the sample: guest `a22e1f0b-…` pairs with real `b73708d0…` / `mSwS-…`, gap 180 s, user agent match, unique. The result is a candidate, not proof, and has been checked on one sample only.
