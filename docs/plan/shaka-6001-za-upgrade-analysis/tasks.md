@@ -3,10 +3,10 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec and `spec.md` for the audit of existing code.
 
-**Open: SU-2, SU-3, SU-4, SU-5, SU-6, SU-7, SU-8, SU-9, SU-10, SU-11, SU-12, SU-13, SU-14, SU-15.**
+**Open: SU-3, SU-4, SU-5, SU-6, SU-7, SU-8, SU-9, SU-10, SU-11, SU-12, SU-13, SU-14, SU-15.**
 
 - [x] **SU-1** — config loader and before/after classifier | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: a7caa70
-- [ ] **SU-2** — shared libs in src/lib (user agent, playback success, ranking) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **SU-2** — shared libs in src/lib (user agent, playback success, ranking) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 12a7ec8
 - [ ] **SU-3** — local-data loader and Athena fetch wrapper | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-4** — per-event enrichment table | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-5** — before/after counts by webview and device model | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
