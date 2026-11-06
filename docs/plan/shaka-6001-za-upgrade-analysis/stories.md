@@ -174,3 +174,32 @@ analysis therefore counts guest ids, not households, and says so in every output
 - `test_local_file_reused_for_known_dates` — only missing dates trigger a query.
 
 **Commit:** `feat(shaka-6001): fetch guest-login redirect events`
+
+---
+
+## SU-9 — 6001 users and successful playback
+
+**Files to change / create:**
+- `investigations/shaka-6001/scripts/analyze_6001_recovery.py` and `tests/test_analyze_6001_recovery.py`
+- `investigations/shaka-6001/scripts/lib/playback_success.py` — reuse the project's definition; do not redefine it.
+
+**Definition of success (already in the project):** a session is a confirmed success when its `playback_outcome` is `DESTROY`. `playback_outcome` comes from the registered query
+`ctap-smvod-playback-outcome` (`unified_sessions`, one row per `parent_session_id`: the `PLAY` row's `endreason`, else `EBVS` if any `DESTROY` exists, else `INCOMPLETE_NO_DESTROY`), consumed by
+`_is_success` in `investigations/ctap-smvod/scripts/analyze_webview_devices.py`. Import that helper (or promote it with SU-2) so the three existing wv scripts and this one stay consistent.
+
+**What to implement:**
+
+1. Cohort: every device/household with at least one 6001 in the enriched events (SU-3); key `deviceId`/`householdId` from `clientid` (`<deviceId>:<householdId>`), with the period (SU-1) and webview
+   flag (SU-2) of its first 6001.
+2. Outcomes: load `playback_outcome` per date from local `ctap-smvod` data and outputs first, else run `ctap-smvod-playback-outcome` for the missing dates and save the result locally.
+3. Per cohort member report: successful sessions before the first 6001, after it, and on the same day; time from first 6001 to the next success; never-recovered flag. Add the same-session case (6001
+   then `DESTROY` in one `sessionId`) separately from the cross-session case.
+4. Roll up: recovery rate by period, webview vs non-webview, and device model; counts next to rates; charts follow `docs/guides/chart-guidelines.md` (a 100% stacked bar of recovered vs not).
+5. Guest ids (`GUEST.*`) have no real household or device, so keep them as their own cohort and say it in the output; do not merge them with real households. Report the share of the cohort with no
+   `unified_sessions` rows rather than counting them as failures.
+
+**Tests (no network, no real external services):**
+- `test_success_means_destroy_only` — `EBVS` and `INCOMPLETE_NO_DESTROY` are not success.
+- `test_same_day_and_cross_day_recovery_split` and `test_guest_cohort_kept_separate`.
+
+**Commit:** `feat(shaka-6001): analyse recovery after 6001`
