@@ -7,13 +7,13 @@
 |---|---|---|---|---|---|
 | 101 | update-context-for-new-files | Update CONTEXT.md before commit whenever a session adds a new persistent repo file. | protocol-compliance | 2026-09-27 | 2026-11-06 |
 | 67 | edit-tool-over-inline-python-rewrite | Use the `edit` tool, not inline python rewrites; reflow can break string asserts. | protocol-compliance | 2026-10-07 | 2026-11-06 |
-| 56 | use-edit-tool-not-sed-i | Use the edit tool for file changes, not `sed -i` or `cat >>` heredocs via bash. | protocol-compliance | 2026-10-10 | 2026-11-06 |
+| 57 | use-edit-tool-not-sed-i | Use the edit tool for file changes, not `sed -i` or `cat >>` heredocs via bash. | protocol-compliance | 2026-10-10 | 2026-11-06 |
 | 56 | state-plan-before-editing | State the one-sentence plan before the first edit, even when the next task seems obvious from story order. | protocol-compliance | 2026-09-30 | 2026-11-05 |
-| 53 | avoid-mid-session-rereads | Reuse already-loaded file context instead of re-reading the same file mid-session unless it changed. | token-efficiency | 2026-09-27 | 2026-11-06 |
+| 54 | avoid-mid-session-rereads | Reuse already-loaded file context instead of re-reading the same file mid-session unless it changed. | token-efficiency | 2026-09-27 | 2026-11-06 |
 | 40 | re-read-context-on-resumed-task-segments | On each resumed autopilot segment, re-open CONTEXT.md and state `CONTEXT.md ✓`. | protocol-compliance | 2026-10-02 | 2026-11-04 |
 | 39 | read-context-md-in-full | Read CONTEXT.md in full with `view` at session start, not `head -c`, so later sections are not missed. | protocol-compliance | 2026-10-17 | 2026-11-06 |
 | 37 | reflow-md-before-commit | Run `python -m scripts.dev.reflow_md` on edited markdown before `git commit` so md-line-length pre-commit does not fail. | commit-hygiene | 2026-10-07 | 2026-11-06 |
-| 35 | prefer-scoped-file-reads-over-full-cat-dumps | Prefer `view_range`/`sed -n`/`grep`/summaries over full `cat` dumps once target section is known. | token-efficiency | 2026-09-29 | 2026-11-04 |
+| 36 | prefer-scoped-file-reads-over-full-cat-dumps | Prefer `view_range`/`sed -n`/`grep`/summaries over full `cat` dumps once target section is known. | token-efficiency | 2026-09-29 | 2026-11-06 |
 | 31 | wait-for-explicit-go-ahead-before-editing | Wait for explicit reply after stating the plan, before creating/committing when approval required. | protocol-compliance | 2026-09-27 | 2026-11-02 |
 | 29 | state-context-md-checkmark-explicitly | State `CONTEXT.md ✓` verbatim in the first response, not just read the file silently before coding. | protocol-compliance | 2026-09-28 | 2026-11-01 |
 | 24 | avoid-broad-filesystem-finds | Use repo-local `glob`/known paths, not broad `find`/repo-wide `grep -r` probes. | token-efficiency | 2026-09-27 | 2026-11-02 |
