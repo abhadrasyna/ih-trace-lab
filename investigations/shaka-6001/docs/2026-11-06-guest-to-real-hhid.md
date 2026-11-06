@@ -32,3 +32,18 @@ Both the deviceId and the HHID change: the guest deviceId is a random UUID and t
 - Guest ids in Lightstep ctap have no `GUEST.` prefix, while Athena clientIds do. Strip or add the prefix when joining.
 - Not found: the guest's own `x-syna-sessionobject` / `clientToken` response HHID (not in the HAR as plaintext), and a guest playback (the only playsession in the HAR is post-login).
 
+
+## Can guest ids be mapped to the real deviceId/HHID?
+
+Short answer: there is no deterministic key anywhere, but a time-bounded join on the client IP works for this sample (ZA, `mcs-go-prod-iye9omdf-eu`).
+
+- **Deterministic link: none found.** The login completion span (`client-id-prod-oauth-authorize-end`, `mcs-matisse-production-eu`) carries `sub`, `accountId`, the real `deviceId` and the real
+  `householdId`, but no guest id and no client IP. No ctap, households-* or sm-vod span carries both ids. Athena `device_data` and `e6auj7k7_ccl_debug_events` hold the two clientIds as unrelated rows,
+  and `ip_data` has no rows for either device.
+- **Probabilistic link: `http.client_ip` on ctap spans.** The guest `clientToken` span (04:09:53Z) has `http.client_ip=203.21.7.200`, `sessionInfo.guestMode=true`, and
+  `sessionInfo.deviceId`/`householdId` set to the guest uuid. Filtering ctap on that IP for 04:00-04:30Z returns exactly two identities: the guest device (guestMode=1) and the real device
+  `b73708d0...` with HHID `mSwS-...` (guestMode=0). The user agent (Chrome 157 / macOS) and app id (`sessionInfo.matisseAppId`) also match.
+- **Limits.** `net.peer.ip` on ctap is an internal proxy hop (10.130.x), so use `http.client_ip` only. The IP recurs across days (guest and logged-in traffic every day since 2026-10-30), so it is only
+  unique inside a short window, and carrier NAT or shared Wi-Fi would produce several candidate pairs. A pair is credible only when the IP, a window of a few minutes, the same user agent and guestMode
+  flipping from 1 to 0 all agree.
+- **Not possible without code changes:** a guest HHID to real HHID mapping that holds for every user. It would need the web client to log the guest clientId in the login request or in `ACTION_LOGON`.
