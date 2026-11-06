@@ -229,3 +229,37 @@ analysis therefore counts guest ids, not households, and says so in every output
 - `test_day_basis_ist_vs_utc` — an event at 20:00 UTC lands on the next IST day.
 
 **Commit:** `feat(shaka-6001): rank daily top impacted households`
+
+---
+
+## SU-11 — user tenure and stickiness vs success rate
+
+**Files to change / create:**
+- `investigations/shaka-6001/scripts/analyze_user_tenure.py` and `tests/test_analyze_user_tenure.py`
+- `queries/athena/` — registered query for first-seen date per household (query catalog rules).
+
+**Question (for the Sunday meeting):** how old, in time since subscribing, are the active users, is there stickiness, and how does playback success differ between old and new customers, so the wider
+impact of failing vs succeeding customers is clear.
+
+**Decisions (user, 2026-11-06):**
+- Tenure proxy: first-ever session date per household in Athena (no subscription-date column was found in the known tables). This is left-censored: a household first seen at the start of retained data
+  is not necessarily new. State the earliest date of retained data in every output and never call the proxy "subscription date".
+- Active user: a household with at least one session from 2026-10-01, or from the earliest date with data in the local folders if that is later.
+- Buckets: 0-7d, 8-30d, 31-90d, 91-180d; households older than 180 days go into an extra `180d+` bucket (added so no household is dropped; the user's list stopped at 180).
+
+**What to implement:**
+
+1. Per household: first-seen date, last-seen date, active days in the window, tenure at the end of the window. Guest ids (`GUEST.*`) have no stable household, so keep them out of tenure and report
+   their count separately.
+2. Per bucket: households, share of active households, sessions, success rate (`playback_outcome = DESTROY` per SU-9's shared definition, over sessions with a playback attempt) and, where SU-4's data
+   covers the period, 6001 households and rate. Counts next to rates.
+3. Stickiness: share of each bucket active on 7+ days and in more than one week of the window; and cohort by first-seen week, showing how many are still active in later weeks.
+4. Success vs failing: tenure distribution of households with at least one 6001 vs those with none, and before vs after the upgrade (SU-1), to show whether new or old customers are hit more.
+5. Outputs under `output/ZA/` plus charts per guidelines: a 100% stacked bar of success/failure by tenure bucket (absolute totals in labels) and a sorted bar of active households per bucket. The query
+   for first-seen needs the full retained history; use a `timestamp_formatted` lower bound that is stated in the output and check scan size before running.
+
+**Tests (no network, no real external services):**
+- `test_bucket_boundaries` — 7, 8, 30, 31, 90, 91, 180 and 181 days land in the right bucket.
+- `test_guest_ids_excluded_from_tenure` and `test_first_seen_floor_flagged_as_censored`.
+
+**Commit:** `feat(shaka-6001): analyse user tenure vs success rate`

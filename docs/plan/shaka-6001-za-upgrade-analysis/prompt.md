@@ -39,6 +39,7 @@ a second consumer, per `docs/guides/chart-guidelines.md`). Analysis code only; n
 - SU-8 — guest-login redirect (`guestLoginPrompt-redirect`) extract from `fact_navigation_interactions`.
 - SU-9 — 6001 users and successful playback (`playback_outcome = DESTROY`).
 - SU-10 — daily top 10 households and devices impacted by 6001.
+- SU-11 — user tenure (how long since first seen) and stickiness, cross-referenced with success rate.
 
 ## Definition of done
 
