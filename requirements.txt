@@ -10,3 +10,4 @@ numpy==2.5.4
 # boto3/botocore transitively via that submodule's own pyproject.toml. See docs/guides/submodules.md.
 -e vendor/athena-mcp-server
 
+ijson==3.5.1
