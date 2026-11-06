@@ -19,7 +19,9 @@ Anything missing locally is fetched by a script in `scripts/` from Athena (debug
 
 ## Layout
 
-- `data/` gitignored local inputs
+- `data/` gitignored local inputs, split by source (only the `.gitkeep` files are force-tracked):
+  - `data/athena/` Athena exports (debug events, `drmenabled`)
+  - `data/lightstep/` Lightstep exports
 - `output/` gitignored generated reports
 - `scripts/` single-purpose scripts, registered in the root `SCRIPTS.md`
 - `tests/` offline tests
