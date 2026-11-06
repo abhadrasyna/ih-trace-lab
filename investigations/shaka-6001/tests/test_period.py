@@ -74,3 +74,11 @@ def test_unquoted_numeric_version_raises():
 
 def test_real_config_loads():
     assert load_config().tenant == "ZA"
+
+
+def test_runner_defaults_are_loaded_and_validated():
+    assert load_config().max_scan_gb == 10.0 and load_config().daily_lookback_days == 3
+    assert parse_config(RAW).daily_lookback_days == 3
+    for bad in ({"max_scan_gb": 0}, {"max_scan_gb": "10"}, {"daily_lookback_days": 1.5}, {"daily_lookback_days": True}):
+        with pytest.raises(AnalysisConfigError):
+            parse_config({**RAW, **bad})

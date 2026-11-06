@@ -4,6 +4,10 @@ tenant: ZA
 # Default analysis start when no date range is specified.
 default_start_date: 2026-11-01
 
+# Runner defaults (run_analysis.py / run_daily.py).
+max_scan_gb: 10        # an Athena fetch estimated above this is skipped with a logged reason
+daily_lookback_days: 3 # run_daily.py rebuilds any of the last N days whose outputs are missing
+
 app_version:
   before: v2026.10.27.01
   after: v2026.11.03.02
