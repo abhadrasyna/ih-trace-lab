@@ -18,6 +18,7 @@ import sys
 
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from src.lib.logging.bootstrap import init_logging
+from src.lib.ranking import rank_by_count
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.rank_households_by_error")
 
@@ -73,10 +74,13 @@ def rank_households(rows: list[dict]) -> list[dict]:
         if r.get("deviceId"):
             a["devices"].add(str(r["deviceId"]))
         a["codes"].update(c.strip() for c in re.split(r"[,;]", str(r.get("error_codes") or "")) if c.strip())
-    ranked = sorted(acc.items(), key=lambda kv: (-len(kv[1]["sessions"]), kv[0]))
-    return [{"rank": i, "householdId": hh, "sessions": len(a["sessions"]), "days": len(a["days"]),
-             "devices": len(a["devices"]), "deviceIds": ";".join(sorted(a["devices"])), "error_codes": ",".join(sorted(a["codes"]))}
-            for i, (hh, a) in enumerate(ranked, 1)]
+    # one row per distinct (household, session) so rank_by_count counts distinct sessions
+    unique = [{"householdId": hh} for hh, a in acc.items() for _ in a["sessions"]]
+    ranked = rank_by_count(unique, "householdId", tie_breakers=[lambda hh: hh])
+    return [{"rank": r["rank"], "householdId": r["key"], "sessions": r["count"], "days": len(acc[r["key"]]["days"]),
+             "devices": len(acc[r["key"]]["devices"]), "deviceIds": ";".join(sorted(acc[r["key"]]["devices"])),
+             "error_codes": ",".join(sorted(acc[r["key"]]["codes"]))}
+            for r in ranked]
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
 # Functional code taxonomy
 
-Use this guide when deciding whether logic belongs in a shared `src/lib/` module or stays inside one pipeline, investigation, tool, or experiment. It names the six shared-library targets this repo is
+Use this guide when deciding whether logic belongs in a shared `src/lib/` module or stays inside one pipeline, investigation, tool, or experiment. It names the shared-library targets this repo is
 building toward and the specific `github_copilot` originals they replace.
 
 ## Modules
@@ -46,6 +46,21 @@ function-body-level duplicates in `github_copilot/applauseInvestigation/scripts/
 tool. Its first replaced originals are `github_copilot/mtn-network-traffic/scripts/curl_timer/blocks.py`, `github_copilot/mtn-network-traffic/scripts/curl_timer/curl_timing.py`,
 `github_copilot/mtn-network-traffic/scripts/time_curl_requests.py`, and `github_copilot/mtn-network-traffic/scripts/inspect_curl_auth.py`, which all parse or reinterpret captured curl commands inside
 that one tool. Status: not yet implemented — first real port happens when a follow-up story needs it.
+
+### `src/lib/user_agent/`
+
+`src/lib/user_agent/` owns parsing a browser/WebView `user_agent` string into OS, device model, build id, Chrome version, WebView flag and `ua_shape`. It replaces
+`investigations/ctap-smvod/scripts/parse_debug_user_agents.py::parse_user_agent`, which now re-exports it. Status: implemented (SU-2, shaka-6001).
+
+### `src/lib/playback/`
+
+`src/lib/playback/` owns playback-outcome rules; `is_success` is true only for `DESTROY` (`EBVS` and `INCOMPLETE_NO_DESTROY` are not success). It replaces the private `_is_success` in
+`investigations/ctap-smvod/scripts/analyze_webview_devices.py`. Status: implemented (SU-2, shaka-6001).
+
+### `src/lib/ranking/`
+
+`src/lib/ranking/` owns `rank_by_count(rows, key, *, top, tie_breakers)`, a deterministic count-and-rank with stable ties. It generalises
+`investigations/ctap-smvod/scripts/rank_households_by_error.py::rank_households`, which now ranks through it. Status: implemented (SU-2, shaka-6001).
 
 ## Shared vs. specific test
 

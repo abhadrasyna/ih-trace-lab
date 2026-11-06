@@ -42,6 +42,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from src.lib.logging.bootstrap import init_logging
+from src.lib.playback import is_success
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.analyze_webview_devices")
 
@@ -72,7 +73,7 @@ def _is_wv(row):
 
 
 def _is_success(row):
-    return (row.get("playback_outcome") or "").strip() == "DESTROY"
+    return is_success(row.get("playback_outcome"))
 
 
 def _is_failure(row):

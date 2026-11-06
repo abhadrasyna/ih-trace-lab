@@ -26,127 +26,14 @@ Prints frequency breakdowns to stdout. Does not write any files.
 import argparse
 import logging
 from lib import csv_io_compat as csv
-import re
 from collections import Counter
 from lib.bootstrap import REPO_ROOT  # noqa: F401  # import side effect: sys.path bootstrap
 from src.lib.logging.bootstrap import init_logging
+from src.lib.user_agent import parse_user_agent  # noqa: F401  # re-export
 
 LOGGER = logging.getLogger("investigations.ctap_smvod.scripts.parse_debug_user_agents")
 
-# Matches the common embedded-Android-WebView UA shape, e.g.:
-# "Mozilla/5.0 (Linux; Android 14; SM-A047F Build/UP1A.231005.007; wv) ...
-#  Chrome/148.0.7778.217 Mobile Safari/537.36"
-ANDROID_VERSION_RE = re.compile(r"Android\s+([\d.]+)")
-DEVICE_MODEL_RE = re.compile(r"Android\s+[\d.]+;\s*([^;]+?)\s+Build/")
-# Fallback for Chrome's User-Agent Reduction shape, which drops "Build/"
-# entirely and reduces the model to a bare token, e.g. "Android 10; K)".
-DEVICE_MODEL_NO_BUILD_RE = re.compile(r"Android\s+[\d.]+;\s*([^;)]+?)\)")
-BUILD_ID_RE = re.compile(r"Build/([^;)]+)")
-CHROME_VERSION_RE = re.compile(r"Chrome/([\d.]+)")
-WEBVIEW_RE = re.compile(r";\s*wv\)")
-
-# Desktop / non-Android UA shapes (Chrome's "User-Agent Reduction" also
-# replaces Android device models with a bare "K" placeholder -- handled
-# as its own case below rather than as "unparsed").
-WINDOWS_RE = re.compile(r"Windows NT ([\d.]+)")
-MACOS_RE = re.compile(r"Mac OS X ([\d_]+)")
-IOS_RE = re.compile(r"(?:iPhone|iPad|iPod).*?CPU (?:iPhone )?OS ([\d_]+)")
-LINUX_DESKTOP_RE = re.compile(r"X11; Linux")
-
-
-def parse_user_agent(ua):
-    """Extract os_name, os_version, device_model, build_id, chrome_version,
-    and is_webview from a single user_agent string. Fields default to '' /
-    False when the UA doesn't match any known shape, rather than raising.
-
-    Handles, in order: embedded-Android-WebView devices (real model or the
-    "K" UA-reduction placeholder), Windows/macOS/Linux desktop browsers,
-    and iOS. Anything else falls back to os_name="Other"/empty fields."""
-    if not ua:
-        return {
-            "os_name": "",
-            "os_version": "",
-            "device_model": "",
-            "build_id": "",
-            "chrome_version": "",
-            "is_webview": False,
-        }
-
-    chrome_match = CHROME_VERSION_RE.search(ua)
-    chrome_version = chrome_match.group(1) if chrome_match else ""
-
-    android_match = ANDROID_VERSION_RE.search(ua)
-    if android_match:
-        device_match = DEVICE_MODEL_RE.search(ua)
-        build_match = BUILD_ID_RE.search(ua)
-        raw_model = device_match.group(1) if device_match else ""
-        if not raw_model:
-            fallback_match = DEVICE_MODEL_NO_BUILD_RE.search(ua)
-            raw_model = fallback_match.group(1) if fallback_match else ""
-        # Chrome's User-Agent Reduction masks the real model as "K" for
-        # unrecognized/non-allow-listed devices -- label it distinctly
-        # from a genuinely unparsed/unmatched UA.
-        device_model = "K (device masked - UA reduction)" if raw_model == "K" else raw_model
-        return {
-            "os_name": "Android",
-            "os_version": android_match.group(1),
-            "device_model": device_model,
-            "build_id": build_match.group(1) if build_match else "",
-            "chrome_version": chrome_version,
-            "is_webview": bool(WEBVIEW_RE.search(ua)),
-        }
-
-    windows_match = WINDOWS_RE.search(ua)
-    if windows_match:
-        return {
-            "os_name": "Windows",
-            "os_version": windows_match.group(1),
-            "device_model": "Desktop (Windows)",
-            "build_id": "",
-            "chrome_version": chrome_version,
-            "is_webview": False,
-        }
-
-    macos_match = MACOS_RE.search(ua)
-    if macos_match:
-        return {
-            "os_name": "macOS",
-            "os_version": macos_match.group(1).replace("_", "."),
-            "device_model": "Desktop (macOS)",
-            "build_id": "",
-            "chrome_version": chrome_version,
-            "is_webview": False,
-        }
-
-    ios_match = IOS_RE.search(ua)
-    if ios_match:
-        return {
-            "os_name": "iOS",
-            "os_version": ios_match.group(1).replace("_", "."),
-            "device_model": "iPhone/iPad",
-            "build_id": "",
-            "chrome_version": chrome_version,
-            "is_webview": False,
-        }
-
-    if LINUX_DESKTOP_RE.search(ua):
-        return {
-            "os_name": "Linux",
-            "os_version": "",
-            "device_model": "Desktop (Linux)",
-            "build_id": "",
-            "chrome_version": chrome_version,
-            "is_webview": False,
-        }
-
-    return {
-        "os_name": "Other/unparsed",
-        "os_version": "",
-        "device_model": "(unparsed)",
-        "build_id": "",
-        "chrome_version": chrome_version,
-        "is_webview": False,
-    }
+# parse_user_agent now lives in src/lib/user_agent; re-exported here so existing callers keep working.
 
 
 def load_deduped_rows(input_csv):
