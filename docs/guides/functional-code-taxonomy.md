@@ -62,6 +62,11 @@ that one tool. Status: not yet implemented — first real port happens when a fo
 `src/lib/ranking/` owns `rank_by_count(rows, key, *, top, tie_breakers)`, a deterministic count-and-rank with stable ties. It generalises
 `investigations/ctap-smvod/scripts/rank_households_by_error.py::rank_households`, which now ranks through it. Status: implemented (SU-2, shaka-6001).
 
+### `src/lib/debug_events/`
+
+`src/lib/debug_events/` owns flattening one `ccl_debug_events` row (`clientid` split, `eventdata` JSON, per-`eventid` fields, PLAYER_ERROR `app_version`) so any investigation reads the debug table the
+same way. It was promoted from `investigations/ctap-smvod/scripts/lib/debug_event_parser.py`, which now re-exports it. Status: implemented (SU-4, shaka-6001).
+
 ## Shared vs. specific test
 
 Logic belongs in `src/lib/` if and only if it operates on a domain mechanism: a technical concern that stays the same regardless of which campaign, case, pipeline, or tool is asking for it. Athena
