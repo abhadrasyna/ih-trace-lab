@@ -53,7 +53,9 @@
   `chart_before_after.py`, `fetch_guest_login_redirects.py` with two registered queries, `analyze_guest_login_redirects.py`, `build_6001_cohort.py`, `analyze_6001_recovery.py`,
   `rank_daily_top_impacted.py` + `scripts/lib/day_basis.py`, `rank_daily_top_models.py`; the enriched table carries eventdata `drmsupported` (the drmenabled source) and `eventdata_iswebview`); real
   fetches for SU-8 (2026-11-02..05) and SU-10 (2026-11-04..05) done, data local; `run_analysis.py` runs the SU-4..SU-14 steps in dependency order (stops before Athena unless `--fetch-missing`),
-  `run_daily.py` is the cron entry point (lock, dated log, `<date>.FAILED.txt`), see `investigations/shaka-6001/docs/usage.md`; story complete.
+  `run_daily.py` is the cron entry point (lock, dated log, `<date>.FAILED.txt`), see `investigations/shaka-6001/docs/usage.md`; story complete. Follow-up: `analyze_session_error_impact.py` +
+  `chart_session_error_impact.py` (UTC days 2026-11-01..05: unique sessions vs error vs 6001 sessions, from local `session` and `error_eventdata` files; 11-05 error file fetched once, 678 MB);
+  findings in `investigations/shaka-6001/docs/2026-11-06_ZA_6001-upgrade-findings.md`.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.

@@ -71,8 +71,31 @@ short, so compare per hour before drawing conclusions. The daily file also conta
 2026-10-01 and session volume ramps from about 160 rows to about 6,000 a day, so "first seen" mostly reflects when a household entered the sample. The 31–90d bucket is also left-censored (31
 households). A valid tenure view needs a full-history first-seen query, which would need an approved Athena scan.
 
+## 8. Session error impact, 2026-11-01 to 11-05 (base: unique sessions per UTC day, ZA)
+
+Unique session = distinct `sessionId` in the day's `unified_sessions` extract. Error-impacted = the `sessionid` appears in a `PLAYER_ERROR` event of any code; 6001-impacted = at least one 6001 event.
+A session with 6001 plus another error counts as 6001 only. Percentages use only error sessions found in that day's session file, so they cannot exceed 100%.
+
+| UTC day | Unique sessions | Error sessions | 6001 sessions | % of unique with error | % of unique with 6001 | % of error sessions that are 6001 |
+|---|---|---|---|---|---|---|
+| 11-01 | 3,365 | 683 | 416 | 20.1% | 12.3% | 60.9% |
+| 11-02 | 4,050 | 823 | 499 | 20.3% | 12.3% | 60.6% |
+| 11-03 | 4,098 | 800 | 496 | 19.4% | 12.1% | 62.0% |
+| 11-04 | 3,711 | 863 | 580 | 23.2% | 15.6% | 67.2% |
+| 11-05 | 2,893 | 859 | 539 | 29.0% | 18.3% | 62.8% |
+| All | 18,112 | 4,028 | 2,530 | 22.1% | 13.9% | 62.8% |
+
+![Unique sessions vs 6001-impacted sessions per day](images/session_error_impact_counts.png) ![Share of unique sessions by error impact](images/session_error_impact_pct_stacked.png) ![6001 share of
+error-impacted sessions](images/session_error_impact_6001_share.png)
+
+- The 6001 share of all sessions was steady at about 12% on 11-01 to 11-03, then 15.6% on 11-04 (the upgrade day) and 18.3% on 11-05.
+- Part of the rise is a smaller denominator: unique sessions fell from about 4,100 to 2,893 on 11-05 while 6001 sessions stayed near 540. The 11-05 session file was fetched at about 07:00 UTC on
+  11-06, so ingest lag may explain the drop. Treat the 11-05 percentages as provisional until that day is re-fetched.
+- 6001 is the largest single error: about 61–67% of error-impacted sessions every day. The 11-04 share rose to 67.2% while the non-6001 error count stayed near 280–320.
+- 35 of 4,028 error sessions (14 of the 2,530 6001 sessions) are not in any session file; they are excluded from the percentages but included in the counts.
+
 ## Caveats
 
-- Run covers 2026-11-04 to 11-05 only; the before period is under one day.
+- Sections 1–7 cover 2026-11-04 to 11-05 only; the before period is under one day. Section 8 covers 11-01 to 11-05 on a UTC day basis.
 - About 46,000 session rows have no `event_start` and are dated by file day.
 - Eight commits skipped the automatic code review because the diff exceeded the cap (SU-4, SU-6, SU-9, SU-10, SU-12, `drm-fix`, SU-14, SU-15).
