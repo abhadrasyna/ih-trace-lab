@@ -159,11 +159,15 @@ analysis therefore counts guest ids, not households, and says so in every output
 **What to implement:**
 
 1. Query by date range (partition on `timestamp_formatted`), defaults from `config/analysis.yaml`; dedupe exact duplicate rows.
-2. Summaries: rows and distinct guest ids per day and per period (before/after by `nav_event_time` in IST, window per config, no app version on this table so the window itself is `unknown`); steps per
-   guest (`nav_step_num`/`nav_step_total`) to see whether the redirect is a dead end; the events that precede it, from the same `uid` journey in `fact_navigation_interactions`.
-3. Join keys for later analysis, because the guest uuid is the only link: `device_id` against the `GUEST.*` ids in the 6001 events (`hhid`/`clientid`) and in Lightstep traces, and against
-   `fact_navigation_interactions` rows from the same `uid` after the redirect, to see whether a guest later logs in. Report the match rate; do not assume it.
-4. Save the extract locally first; later runs read the local file and only query missing dates.
+2. Timestamps: `nav_event_time` is UTC (confirmed: it matches the debug table `datetime`, which ends in `Z`); convert to IST before applying the window. Before/after by timestamp is not enough on the
+   4th: the first redirect that day is at 11:15 UTC = 16:45 IST, inside the window, and its debug events still carry `appversion v2026.10.27.01`. So classify each guest by the `appversion` from the
+   `APP_DISCOVERY` debug events of the same guest (SU-1 classifier), not by this table alone.
+3. Same-guest debug lookup (probed 2026-11-06, ZA, 4-5 Nov): all 462 distinct redirect guests have events in `unified_e6auj7k7.e6auj7k7_ccl_debug_events`. Its `clientid` is `<uuid>:GUEST.<uuid>`, so
+   join on `clientid = device_id || ':' || user_id`, always with a `datetime` range filter (each day scans about 650 MB). Fetch per guest `datetime`, `eventclass`, `eventid`, `eventdata` (app version,
+   screens, errors incl. 6001, user agent) into `investigations/shaka-6001/data/athena/ZA/<date>_guest_redirect_debug_events.csv`.
+4. Summaries: rows and distinct guest ids per day and per period; steps per guest (`nav_step_num`/`nav_step_total`, `nav_end_event`) to see whether the redirect ends the journey; the debug events just
+   before the redirect (does 6001 or a webview user agent precede it); whether a guest later has non-guest ids (cannot be assumed, report the match rate).
+5. Save the extract locally first; later runs read the local file and only query missing dates.
 
 **Tests (no network, no real external services):**
 - `test_guest_ids_counted_not_households` — rows with `GUEST.` prefix are counted as guest ids and flagged as unmappable.
