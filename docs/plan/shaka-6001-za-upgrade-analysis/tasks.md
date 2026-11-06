@@ -3,18 +3,18 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec and `spec.md` for the audit of existing code.
 
-**Open: SU-5, SU-6, SU-7, SU-8, SU-9, SU-10, SU-11, SU-12, SU-13, SU-14, SU-15.**
+**Open: SU-7, SU-9, SU-11, SU-12, SU-13, SU-14, SU-15.**
 
 - [x] **SU-1** — config loader and before/after classifier | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: a7caa70
 - [x] **SU-2** — shared libs in src/lib (user agent, playback success, ranking) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 12a7ec8
 - [x] **SU-3** — local-data loader and Athena fetch wrapper | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: c47d0ef
 - [x] **SU-4** — per-event enrichment table | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 8f6af21
-- [ ] **SU-5** — before/after counts by webview and device model | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **SU-6** — Chrome/Android version and device-level cuts | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **SU-5** — before/after counts by webview and device model | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: b95454e
+- [x] **SU-6** — Chrome/Android version and device-level cuts | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 8aa8b12
 - [ ] **SU-7** — charts for SU-5 and SU-6 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **SU-8** — guest-login redirect fetch | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **SU-8** — guest-login redirect fetch | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 05de623
 - [ ] **SU-9** — guest-login redirect analysis | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
-- [ ] **SU-10** — 6001 cohort and playback-outcome data prep | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **SU-10** — 6001 cohort and playback-outcome data prep | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 0640fd0
 - [ ] **SU-11** — 6001 recovery analysis | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-12** — daily top 10 households and devices hit by 6001 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-13** — daily top 10 device models hit by 6001 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —

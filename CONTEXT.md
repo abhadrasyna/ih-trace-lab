@@ -49,7 +49,8 @@
   `README.md` lists sources; gitignored `data/athena/` and `data/lightstep/` hold fetched inputs. Story `docs/plan/shaka-6001-za-upgrade-analysis/` (ZA before/after the 2026-11-04 upgrade): SU-1..SU-4
   done — `scripts/lib/{analysis_config,period,local_data,athena_fetch}.py` (config in `config/analysis.yaml`, version-first before/after classifier, local loader with gap report, injected-client fetch
   of missing dates), `scripts/build_enriched_events.py` (deduped per-event table with UA fields and period, to `output/ZA/`); promoted shared libs `src/lib/{user_agent,playback,ranking,debug_events}/`
-  (`ctap-smvod` re-exports them); SU-5.. in progress.
+  (`ctap-smvod` re-exports them); SU-5/6/8/10 code done (`analyze_before_after.py`, `analyze_versions_devices.py`, `fetch_guest_login_redirects.py` with two registered queries, `build_6001_cohort.py`;
+  real Athena fetches for SU-8/SU-10 not yet run); SU-7, SU-9, SU-11..SU-15 open.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
