@@ -1,6 +1,7 @@
 """Load daily files for a date range from the local data sources and report the gaps."""
 from __future__ import annotations
 
+import csv
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -56,7 +57,7 @@ def find_daily_file(sources: Sequence[Path], day: date, artifact: str) -> Path |
 def _read_rows(path: Path) -> list[dict[str, str]]:
     try:
         return list(CsvFileReader().read_rows(str(path)))
-    except (OSError, UnicodeDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, csv.Error) as exc:
         raise LocalDataError(f"cannot read {path}: {exc}") from exc
 
 
