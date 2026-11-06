@@ -148,6 +148,9 @@ register(Step("rank_daily_top_impacted", "rank_daily_top_impacted.py", depends_o
 register(Step("rank_daily_top_models", "rank_daily_top_models.py", depends_on=("build_enriched_events",)))
 register(Step("analyze_user_tenure", "analyze_user_tenure.py", after=("build_6001_cohort",),
               outputs=("user_tenure_households", "user_tenure_buckets")))
+register(Step("analyze_session_error_impact", "analyze_session_error_impact.py", reads=(_SESSION, Need("error_eventdata")),
+              outputs=("session_error_impact",)))
+register(Step("chart_session_error_impact", "chart_session_error_impact.py", depends_on=("analyze_session_error_impact",)))
 
 
 def select_steps(only: Sequence[str] | None, registry: Mapping[str, Step]) -> list[Step]:

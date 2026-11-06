@@ -32,9 +32,18 @@ All take `--start-date` (default: config start date), `--end-date` and `--tenant
 | `rank_daily_top_impacted.py` | enriched, recovery members (optional) | top-N households and devices per day, guest and unassigned tables, PNGs | enriched |
 | `rank_daily_top_models.py` | enriched | top-N device models per day, PNGs | enriched |
 | `analyze_user_tenure.py` | daily `session` files (from 2026-10-01), cohort (optional) | `user_tenure_households`, `_buckets`, `_stickiness`, `_6001`, `_row_counts`, PNGs | cohort (ordering only) |
+| `analyze_session_error_impact.py` | daily `session` and `error_eventdata` files (local only, never fetched; missing day fails) | `session_error_impact` | none |
+| `chart_session_error_impact.py` | the `session_error_impact` table | 3 PNGs in `charts/`: `session_error_impact_counts`, `_pct_stacked`, `_6001_share` | session error impact |
 
 Ad hoc helpers outside the runner: `har_identity_timeline.py` (HAR identity timeline) and `propose_guest_pairs.py` (guest-to-real candidate pairs from Lightstep; read-only). Each script's `--help` has
 the exact options.
+
+Session error impact (`analyze_session_error_impact.py`, defaults 2026-11-01..2026-11-05): base is tenant ZA on **UTC days** (the file's partition day), not the IST default of the other analyses. A
+unique session is a distinct `sessionId` in that day's `session` file; an error-impacted session is one whose eventdata `sessionid` is in a `PLAYER_ERROR` event of that day's `error_eventdata` file
+(any code, counted once); a 6001-impacted session has at least one 6001 event (`shaka_code`, else `errorcode`) and is a subset of the error sessions; other-error = error without 6001. Error sessions
+can be missing from the session file (error-only sessions, day boundary), so the table gives all counts and the in-session-file counts side by side. `pct_*_of_unique` use the in-session-file
+numerators and cannot exceed 100; `pct_6001_of_error_sessions` uses all error sessions. The `all` row is the distinct union over the range. Error events without a `sessionid` are only logged. In the
+counts chart the 6001 bars are tiny next to the sessions, hence every bar carries its count.
 
 Known limits: user tenure is measured from the earliest local session date, so households first seen on that date are left-censored (true tenure is longer) and the long buckets can be empty;
 `drmsupported` is empty in events from before the upgrade, so DRM cuts only describe the after period.
