@@ -1,4 +1,4 @@
-"""Probe: derive smvod-ts oldest/youngest micros from smvod query_timeseries points and compare with the hand CSV (LX-1 follow-up).
+"""Probe: derive smvod-ts oldest/youngest micros from query_timeseries and compare with the hand CSV (LX-1).
 
 Usage: python3 scratch/2026-11-01_lightstep_smvod-ts_derive_probe.py --tenant ZA --date 2026-09-28
 Fetches the smvod query at output-period 1 s per slice, takes each series' first/last non-zero point
