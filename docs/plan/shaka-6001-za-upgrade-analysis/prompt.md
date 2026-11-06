@@ -36,6 +36,7 @@ a second consumer, per `docs/guides/chart-guidelines.md`). Analysis code only; n
 - SU-5 — Chrome/Android version and device-level (drmenabled, mixed webview) cuts.
 - SU-6 — charts via `src/lib/charts`.
 - SU-7 — one-command runner, docs and registry.
+- SU-8 — guest-login redirect (`guestLoginPrompt-redirect`) extract from `fact_navigation_interactions`.
 
 ## Definition of done
 

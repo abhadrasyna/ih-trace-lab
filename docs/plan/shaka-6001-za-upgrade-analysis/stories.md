@@ -138,3 +138,35 @@ labels), a horizontal bar sorted descending for top models (6001 dominates, so n
 - `test_runner_stops_on_missing_dates_without_flag` and `test_only_selects_steps`.
 
 **Commit:** `feat(shaka-6001): add analysis runner and docs`
+
+---
+
+## SU-8 — guest-login redirect extract
+
+**Files to change / create:**
+- `queries/athena/fact-navigation-interactions-guest-login-redirect.sql` — registered query (follow `docs/guides/query-catalog.md`, header and index entry in `queries/athena/index.md`).
+- `investigations/shaka-6001/scripts/fetch_guest_login_redirects.py` — fetch per date, save to `investigations/shaka-6001/data/athena/ZA/<date>_guest_login_redirect.csv`, then summarise.
+- `investigations/shaka-6001/tests/test_fetch_guest_login_redirects.py`
+
+**Why:** `event_source = 'guestLoginPrompt-redirect'` is new code meaning the user left the webview to log in through a new browser. Probe on ZA (Athena, 2026-11-06): 1 row on 2026-11-02, 280 rows /
+148 users on 2026-11-04, 608 rows / 315 users on 2026-11-05. Every `user_id` is `GUEST.<uuid>` and `device_id` is that same bare uuid, so rows cannot be mapped to a real hhid or device id; the
+analysis therefore counts guest ids, not households, and says so in every output.
+
+**Columns to fetch** (`timestamp_formatted` is only a date; `nav_event_time` is the event time): `user_id`, `device_id`, `device_type`, `uid`, `nav_event_time`, `timestamp_formatted`,
+`navigation_start_time`, `navigation_end_time`, `nav_step_num`, `nav_step_total`, `nav_start_event`, `nav_end_event`, `start_reason`, `end_reason`, `event_type`, `event`, `event_code`, `event_source`,
+`event_source_ex`, `event_source_ex_name`, `source_name`, `event_details`.
+
+**What to implement:**
+
+1. Query by date range (partition on `timestamp_formatted`), defaults from `config/analysis.yaml`; dedupe exact duplicate rows.
+2. Summaries: rows and distinct guest ids per day and per period (before/after by `nav_event_time` in IST, window per config, no app version on this table so the window itself is `unknown`); steps per
+   guest (`nav_step_num`/`nav_step_total`) to see whether the redirect is a dead end; the events that precede it, from the same `uid` journey in `fact_navigation_interactions`.
+3. Join keys for later analysis, because the guest uuid is the only link: `device_id` against the `GUEST.*` ids in the 6001 events (`hhid`/`clientid`) and in Lightstep traces, and against
+   `fact_navigation_interactions` rows from the same `uid` after the redirect, to see whether a guest later logs in. Report the match rate; do not assume it.
+4. Save the extract locally first; later runs read the local file and only query missing dates.
+
+**Tests (no network, no real external services):**
+- `test_guest_ids_counted_not_households` — rows with `GUEST.` prefix are counted as guest ids and flagged as unmappable.
+- `test_local_file_reused_for_known_dates` — only missing dates trigger a query.
+
+**Commit:** `feat(shaka-6001): fetch guest-login redirect events`

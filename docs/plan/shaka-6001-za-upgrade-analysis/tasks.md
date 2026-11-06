@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec.
 
-**Open: SU-1, SU-2, SU-3, SU-4, SU-5, SU-6, SU-7.**
+**Open: SU-1, SU-2, SU-3, SU-4, SU-5, SU-6, SU-7, SU-8.**
 
 - [ ] **SU-1** — config loader and before/after classifier | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-2** — shared user-agent parser and local-data loader | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
@@ -12,6 +12,7 @@ spec.
 - [ ] **SU-5** — Chrome/Android version and device-level cuts | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-6** — charts via shared chart layer | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-7** — one-command runner, docs and registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
+- [ ] **SU-8** — guest-login redirect extract (`guestLoginPrompt-redirect`) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 
 ## Story done when
 
@@ -22,6 +23,7 @@ spec.
 - **SU-5** — Chrome/Android version and drmenabled/mixed-webview device tables written as CSV.
 - **SU-6** — PNG charts for SU-4/SU-5 under `output/ZA/charts/`; a chart failure never blocks CSVs.
 - **SU-7** — a single command re-runs everything for `--start-date/--end-date`; `SCRIPTS.md`, `docs/usage.md` and `CONTEXT.md` updated.
+- **SU-8** — a script fetches `guestLoginPrompt-redirect` navigation rows per date, saves them locally, and reports daily and before/after counts; SU-7's runner includes it.
 
 ## After each task
 
