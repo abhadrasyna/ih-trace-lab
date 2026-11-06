@@ -3,7 +3,7 @@
 Work top-down. Find the first unchecked `- [ ]` and do only that task. Each task = one commit unless noted. See `prompt.md` for why the story exists; see `stories.md` for the per-task implementation
 spec and `spec.md` for the audit of existing code.
 
-**Open: SU-13, SU-14, SU-15.**
+**Open: SU-14, SU-15.**
 
 - [x] **SU-1** — config loader and before/after classifier | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: a7caa70
 - [x] **SU-2** — shared libs in src/lib (user agent, playback success, ranking) | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 12a7ec8
@@ -17,7 +17,7 @@ spec and `spec.md` for the audit of existing code.
 - [x] **SU-10** — 6001 cohort and playback-outcome data prep | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 0640fd0
 - [x] **SU-11** — 6001 recovery analysis | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: e5e2ebe
 - [x] **SU-12** — daily top 10 households and devices hit by 6001 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 42623fb
-- [ ] **SU-13** — daily top 10 device models hit by 6001 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
+- [x] **SU-13** — daily top 10 device models hit by 6001 | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: 4713665
 - [ ] **SU-14** — user tenure and stickiness vs success rate | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: code-reviewer | SHA: —
 - [ ] **SU-15** — step-registry runner, daily cron mode, docs and registry | Owner: Copilot CLI | Model: claude-sonnet-5.5 | Review: none | SHA: —
 

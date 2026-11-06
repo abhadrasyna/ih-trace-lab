@@ -49,9 +49,9 @@
   `README.md` lists sources; gitignored `data/athena/` and `data/lightstep/` hold fetched inputs. Story `docs/plan/shaka-6001-za-upgrade-analysis/` (ZA before/after the 2026-11-04 upgrade): SU-1..SU-4
   done — `scripts/lib/{analysis_config,period,local_data,athena_fetch}.py` (config in `config/analysis.yaml`, version-first before/after classifier, local loader with gap report, injected-client fetch
   of missing dates), `scripts/build_enriched_events.py` (deduped per-event table with UA fields and period, to `output/ZA/`); promoted shared libs `src/lib/{user_agent,playback,ranking,debug_events}/`
-  (`ctap-smvod` re-exports them); SU-5..SU-12 code done (`analyze_before_after.py`, `analyze_versions_devices.py`, `chart_before_after.py`, `fetch_guest_login_redirects.py` with two registered
-  queries, `analyze_guest_login_redirects.py`, `build_6001_cohort.py`, `analyze_6001_recovery.py`, `rank_daily_top_impacted.py` + `scripts/lib/day_basis.py`); real fetches for SU-8 (2026-11-02..05)
-  and SU-10 (2026-11-04..05) done, data local; SU-13..SU-15 open.
+  (`ctap-smvod` re-exports them); SU-5..SU-13 code done (`analyze_before_after.py`, `analyze_versions_devices.py`, `chart_before_after.py`, `fetch_guest_login_redirects.py` with two registered
+  queries, `analyze_guest_login_redirects.py`, `build_6001_cohort.py`, `analyze_6001_recovery.py`, `rank_daily_top_impacted.py` + `scripts/lib/day_basis.py`, `rank_daily_top_models.py`; the enriched
+  table carries eventdata `drmsupported` (the drmenabled source) and `eventdata_iswebview`); real fetches for SU-8 (2026-11-02..05) and SU-10 (2026-11-04..05) done, data local; SU-14, SU-15 open.
 - `investigations/inc-latency-shaka-1xxx/` (INC0256345 & INC0256143, latency + Shaka 1xxx errors) — HAR in gitignored `data/har/`; `scripts/analyze_har_latency.py --har --out` summarises MPD and
   audio/video/init segment timing phases (p50/p90/p95/max, slowest requests, throughput, repeated requests) into `output/har-latency-mpd-segments.md`; tests in `tests/`; findings in
   `docs/inc-latency-shaka-1xxx-notes.md`; shareable summary in `docs/har-latency-summary.md`.
