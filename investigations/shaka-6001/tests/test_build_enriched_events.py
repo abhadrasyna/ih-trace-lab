@@ -18,8 +18,8 @@ GOOD_UA = ("Mozilla/5.0 (Linux; Android 13; P11 Build/TP1A.220624.014; wv) Apple
            "Version/4.0 Chrome/156.0.8078.47 Mobile Safari/537.36")
 
 
-def _row(message_id, *, ts="2026-11-05T00:00:00.000Z", ua=GOOD_UA, version="v-new"):
-    desc = {"errordescription": "E86001", "shakaerror": {"code": 6001}, "app_version": version}
+def _row(message_id, *, ts="2026-11-05T00:00:00.000Z", ua=GOOD_UA, version="v-new", **flags):
+    desc = {"errordescription": "E86001", "shakaerror": {"code": 6001}, "app_version": version, **flags}
     if ua is not None:
         desc["user_agent"] = ua
     data = {"sessionid": "s-" + message_id, "errordescription": desc}
@@ -48,6 +48,24 @@ def test_unknown_and_conflict_periods_kept_and_counted():
     assert [r["period"] for r in result.rows] == ["before", "unknown", "unknown"]
     assert (result.conflicts, result.bad_timestamp) == (1, 1)
     assert result.period_counts == {"before": 1, "unknown": 2}
+
+
+def test_drmsupported_and_eventdata_webview_columns():
+    rows = [_row("a", drmsupported=False, iswebview=True), _row("b", drmsupported=True, iswebview=False),
+            _row("c")]
+    result = enrich_rows(rows, CONFIG)
+    assert [(r["drmsupported"], r["eventdata_iswebview"]) for r in result.rows] == [
+        ("false", "true"), ("true", "false"), ("", "")]
+    assert result.rows[0]["is_webview"] is True  # UA-derived column is kept
+
+
+def test_webview_disagreement_counted_only_when_both_known():
+    rows = [_row("a", iswebview=True),  # UA says wv -> agree
+            _row("b", iswebview=False),  # UA says wv -> disagree
+            _row("c"),  # no flag -> not comparable
+            _row("d", ua="curl/8", iswebview=True)]  # unparsed UA -> not comparable
+    result = enrich_rows(rows, CONFIG)
+    assert (result.webview_disagreements, result.webview_comparable) == (1, 2)
 
 
 def test_write_enriched_is_idempotent(tmp_path):

@@ -11,16 +11,17 @@ from scripts.analyze_versions_devices import (
     fail_then_success_devices,
     load_enriched,
     mixed_webview_devices,
+    outcomes_from_sessions,
     version_table,
     write_table,
 )
 
 
 def _row(device, *, period="before", chrome="156.0.8078.47", wv=True, ts="2026-11-05T00:00:00Z",
-         os_version="13", household="hh"):
+         os_version="13", household="hh", drm=""):
     return {"device_id": device, "household_id": household, "period": period, "chrome_version": chrome,
             "os_name": "Android", "os_version": os_version, "is_webview": str(wv), "datetime": ts,
-            "device_model": "P11"}
+            "device_model": "P11", "drmsupported": drm}
 
 
 def test_chrome_major_grouping():
@@ -56,12 +57,22 @@ def test_fail_then_success_uses_destroy_only_and_later_time():
     assert [r["device_id"] for r in result] == ["a"]
 
 
-def test_drm_summary_counts_and_rates():
-    rows = [_row("a"), _row("a"), _row("b"), _row("c")]
-    _, summary = drm_tables(rows, {"a": "true", "b": "false"}, "ZA")
+def test_drm_summary_counts_and_rates_from_drmsupported():
+    rows = [_row("a", drm="false"), _row("a", drm="true"), _row("b", drm="false"), _row("c")]
+    devices, summary = drm_tables(rows, "ZA")
+    assert {d["device_id"]: d["drmenabled"] for d in devices} == {"a": "true", "b": "false", "c": "unknown"}
     by_value = {s["drmenabled"]: s for s in summary}
     assert (by_value["true"]["devices"], by_value["true"]["events"]) == (1, 2)
     assert by_value["unknown"]["devices"] == 1 and by_value["false"]["device_share"] == pytest.approx(1 / 3, abs=1e-5)
+
+
+def test_session_rows_become_outcomes_for_fail_then_success():
+    sessions = [{"deviceId": "a", "sessionId": "1", "playback_outcome": "DESTROY", "event_start": "2026-11-05T11:00:00Z"}]
+    outcomes = outcomes_from_sessions(sessions)
+    assert outcomes[0]["datetime"] == "2026-11-05T11:00:00Z"
+    assert [r["device_id"] for r in fail_then_success_devices([_row("a", ts="2026-11-05T10:00:00Z")], outcomes, "ZA")] == ["a"]
+    with pytest.raises(VersionsDevicesError):
+        outcomes_from_sessions([{"device_id": "a"}])
 
 
 def test_missing_input_and_columns_raise(tmp_path):

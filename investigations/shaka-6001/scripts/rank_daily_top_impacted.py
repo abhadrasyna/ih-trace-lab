@@ -6,8 +6,10 @@ and devices are ranked separately by 6001 events (ties: distinct sessions, then 
 ``GUEST.*`` ids are per-install, so they get their own ``_guest_`` tables and are never mixed into the real ranking;
 events with no household/device id are counted per day in ``_unassigned.csv``, not dropped. Rates sit next to counts:
 ``top_share_pct`` is the top-N's share of that day's 6001 events (base: events, all ids incl. guests and unassigned).
-``recovery_flag`` is filled from the SU-11 output when ``--recovery-csv`` is given (columns ``id``, ``never_recovered``)
-and left empty otherwise. Charts failing never block the CSVs. Local files only; rerunning overwrites the outputs.
+``recovery_flag`` comes from the SU-11 members file ``<start>_<end>_6001_recovery_members.csv`` (default: the tenant
+output folder; override with ``--recovery-csv``). Members are device+household pairs, so an id's flag aggregates its
+scored members (status ``ok``): ``recovered`` if any recovered, else ``never_recovered``; empty when none was scored.
+When the file is absent the column stays empty and a console note says so. Charts failing never block the CSVs. Local files only; rerunning overwrites the outputs.
 """
 
 from __future__ import annotations
@@ -37,6 +39,9 @@ from src.lib.ranking import rank_by_count  # noqa: E402
 
 LOGGER = logging.getLogger("investigations.shaka_6001.scripts.rank_daily_top_impacted")
 INPUT_ARTIFACT = "shaka6001_enriched"
+RECOVERY_ARTIFACT = "6001_recovery_members"
+RECOVERY_COLUMNS = ("status", "recovered", "device_id", "household_id")
+SCORED_STATUS = "ok"
 GUEST_PREFIX = "GUEST."
 DEFAULT_TOP = 10
 UNKNOWN = "unknown"
@@ -113,7 +118,7 @@ def rank_day(events: list[dict], column: str, top: int, *, guests: bool, tz: Zon
 
 
 def build_tables(by_day: dict[date, list[dict]], top: int, tz: ZoneInfo, tenant: str, basis: DayBasis,
-                 recovery: dict[str, str] | None = None) -> tuple[dict[str, list[dict]], list[dict]]:
+                 recovery: dict[str, dict[str, str]] | None = None) -> tuple[dict[str, list[dict]], list[dict]]:
     """Tables keyed ``households|devices|guest_households|guest_devices`` plus the unassigned-event rows."""
     recovery = recovery or {}
     tables: dict[str, list[dict]] = {}
@@ -123,7 +128,7 @@ def build_tables(by_day: dict[date, list[dict]], top: int, tz: ZoneInfo, tenant:
         for kind, column in KINDS.items():
             for guests in (False, True):
                 name = f"guest_{kind}" if guests else kind
-                rows = rank_day(events, column, top, guests=guests, tz=tz, recovery=recovery)
+                rows = rank_day(events, column, top, guests=guests, tz=tz, recovery=recovery.get(column, {}))
                 top_n = sum(r["events_6001"] for r in rows)
                 for r in rows:
                     tables.setdefault(name, []).append(
@@ -155,14 +160,27 @@ def read_csv(path: Path, what: str) -> list[dict[str, str]]:
         raise RankImpactedError(f"cannot read {path}: {exc}") from exc
 
 
-def read_recovery(path: Path | None) -> dict[str, str]:
-    """``id -> never_recovered`` from the SU-11 output; empty when no file was given."""
-    if path is None:
+def read_recovery(path: Path | None) -> dict[str, dict[str, str]]:
+    """``{id column: {id: flag}}`` from the SU-11 members file; empty when the file is absent.
+
+    A device or household can have several members (device+household pairs): ``recovered`` if any scored member
+    recovered, ``never_recovered`` if scored members exist and none recovered, no entry when none was scored.
+    """
+    if path is None or not path.is_file():
         return {}
     rows = read_csv(path, "recovery file")
-    if rows and not {"id", "never_recovered"} <= set(rows[0]):
-        raise RankImpactedError("recovery file needs columns id, never_recovered")
-    return {r["id"]: r["never_recovered"] for r in rows}
+    if rows and not set(RECOVERY_COLUMNS) <= set(rows[0]):
+        raise RankImpactedError(f"recovery file needs columns {', '.join(RECOVERY_COLUMNS)}")
+    flags: dict[str, dict[str, str]] = {"household_id": {}, "device_id": {}}
+    for row in rows:
+        if row["status"] != SCORED_STATUS:
+            continue
+        recovered = row["recovered"].strip().lower() == "true"
+        for column, known in flags.items():
+            ident = row[column].strip()
+            if ident and (recovered or ident not in known):
+                known[ident] = "recovered" if recovered else "never_recovered"
+    return flags
 
 
 def write_rows(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
@@ -265,7 +283,7 @@ def build_parser(default_start: date, default_tenant: str) -> argparse.ArgumentP
     parser.add_argument("--paths-config", type=Path, default=REPO_ROOT / "config" / "data_paths.yaml")
     parser.add_argument("--input", type=Path, default=None, help="enriched CSV (default: SU-4 output for the range)")
     parser.add_argument("--output-dir", type=Path, default=None, help="override the output folder (default: tenant output)")
-    parser.add_argument("--recovery-csv", type=Path, default=None, help="optional SU-11 output (id, never_recovered)")
+    parser.add_argument("--recovery-csv", type=Path, default=None, help="SU-11 members file (default: <start>_<end>_6001_recovery_members.csv in the tenant output)")
     parser.add_argument("--no-charts", action="store_true")
     return parser
 
@@ -283,6 +301,8 @@ def main(argv: list[str] | None = None) -> int:
     in_dir = resolver.resolve_investigation_output_dir(SLUG, tenant=args.tenant)
     in_path = args.input or in_dir / resolver.format_range_filename(args.start_date, args.end_date, INPUT_ARTIFACT)
     basis = DayBasis(args.day_basis)
+    recovery_path = args.recovery_csv or in_dir / resolver.format_range_filename(
+        args.start_date, args.end_date, RECOVERY_ARTIFACT)
     try:
         if args.top < 1:
             raise RankImpactedError(f"--top must be >= 1, got {args.top}")
@@ -290,11 +310,13 @@ def main(argv: list[str] | None = None) -> int:
         validate(rows)
         by_day = assign_days(rows, basis, config.timezone, args.start_date, args.end_date)
         tables, unassigned = build_tables(by_day, args.top, config.timezone, args.tenant, basis,
-                                          read_recovery(args.recovery_csv))
+                                          read_recovery(recovery_path))
     except RankImpactedError as exc:
         LOGGER.error("%s", exc)
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
+    if not recovery_path.is_file():
+        print(f"recovery_flag left empty: {recovery_path.name} not found (run analyze_6001_recovery.py)")
     for name, table in tables.items():
         artifact = f"6001_top{args.top}_{name}"
         write_rows(out_dir / resolver.format_range_filename(args.start_date, args.end_date, artifact), table, FIELDS)

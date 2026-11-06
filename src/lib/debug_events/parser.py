@@ -103,6 +103,14 @@ def extract_error_app_version(data):
     return None
 
 
+def extract_error_client_flags(data):
+    """`drmsupported` and `iswebview` of a PLAYER_ERROR row (booleans inside the nested `errordescription`
+    object); each is None when absent or not a boolean."""
+    errordescription = data.get("errordescription")
+    flags = errordescription if isinstance(errordescription, dict) else {}
+    return {key: flags[key] if isinstance(flags.get(key), bool) else None for key in ("drmsupported", "iswebview")}
+
+
 def extract_player_state_change(data):
     return {"state": data.get("state"), "position": data.get("position")}
 

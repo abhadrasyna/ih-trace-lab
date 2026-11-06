@@ -77,3 +77,47 @@ def test_main_writes_csvs_and_is_idempotent(tmp_path: Path):
     assert "2026-11-04_2026-11-04_6001_top10_households.csv" in names
     assert "2026-11-04_2026-11-04_6001_top10_devices.csv" in names
     assert not any(n.endswith(".tmp") for n in names)
+
+
+def _members(path: Path, rows: list[dict]) -> Path:
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=["device_id", "household_id", "status", "recovered", "never_recovered"])
+        w.writeheader()
+        w.writerows(rows)
+    return path
+
+
+def test_read_recovery_aggregates_members_per_id(tmp_path: Path):
+    path = _members(tmp_path / "m.csv", [
+        {"device_id": "d1", "household_id": "h1", "status": "ok", "recovered": "False", "never_recovered": "True"},
+        {"device_id": "d2", "household_id": "h1", "status": "ok", "recovered": "True", "never_recovered": "False"},
+        {"device_id": "d3", "household_id": "h2", "status": "no_session_rows", "recovered": "False",
+         "never_recovered": "False"},
+    ])
+    flags = mod.read_recovery(path)
+    assert flags["household_id"] == {"h1": "recovered"}  # any recovered member wins; unscored h2 has no flag
+    assert flags["device_id"] == {"d1": "never_recovered", "d2": "recovered"}
+    assert mod.read_recovery(tmp_path / "absent.csv") == {} and mod.read_recovery(None) == {}
+    bad = _members(tmp_path / "bad.csv", [])
+    bad.write_text("id,never_recovered\nx,True\n")
+    with pytest.raises(mod.RankImpactedError):
+        mod.read_recovery(bad)
+
+
+def test_main_fills_recovery_flag_from_members_file(tmp_path: Path):
+    src = tmp_path / "in.csv"
+    rows = [ev("2026-11-04T05:00:00Z"), ev("2026-11-04T05:01:00Z", dev="d2", hh="h2")]
+    with src.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    out = tmp_path / "out"
+    flags = {"device_id": "d1", "household_id": "h1", "status": "ok", "recovered": "True", "never_recovered": "False"}
+    out.mkdir()
+    members = tmp_path / "members.csv"
+    _members(members, [flags])
+    argv = ["--start-date", "2026-11-04", "--end-date", "2026-11-04", "--input", str(src),
+            "--output-dir", str(out), "--no-charts", "--recovery-csv", str(members)]
+    assert mod.main(argv) == 0
+    devices = list(csv.DictReader((out / "2026-11-04_2026-11-04_6001_top10_devices.csv").open()))
+    assert {r["id"]: r["recovery_flag"] for r in devices} == {"d1": "recovered", "d2": ""}

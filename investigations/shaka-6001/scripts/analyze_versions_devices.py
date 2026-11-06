@@ -5,10 +5,13 @@ UTC table timestamps, ``period`` already classified in IST) and writes under ``o
 
 * ``..._6001_by_chrome.csv`` / ``..._6001_by_android.csv`` -- events and distinct devices per version,
   before vs after, with each period's share of that period's events and the change in share;
-* ``..._6001_drm_devices.csv`` + ``..._6001_drm_summary.csv`` -- impacted devices by ``drmenabled`` (from the
-  enriched column or ``--drm-input``; skipped, and said so, when neither exists);
+* ``..._6001_drm_devices.csv`` + ``..._6001_drm_summary.csv`` -- impacted devices by ``drmenabled``. The story's
+  ``drmenabled`` is the ``drmsupported`` key of the 6001 ``eventdata`` (SU-4 column ``drmsupported``; any true
+  event makes the device true); the output keeps the name ``drmenabled``. Skipped, and said so, when the enriched
+  CSV has no ``drmsupported`` column (rebuild it with SU-4);
 * ``..._6001_fail_then_success_devices.csv`` -- devices with a 6001 followed by a successful session
-  (``is_success``, i.e. ``DESTROY``) from ``--outcome-input``; skipped when not given;
+  (``is_success``, i.e. ``DESTROY``), read from the local per-date ``<date>_session.csv`` playback outcomes
+  (SU-10; ``event_start`` is the session time); skipped, and said so, when no such file exists;
 * ``..._6001_mixed_webview_devices.csv`` -- devices whose 6001 events appear both in and outside a webview.
 
 Rows with an ``unknown`` period are not in the before/after tables (counted in the summary). ``GUEST.*``
@@ -35,7 +38,7 @@ for _path in (REPO_ROOT, INVESTIGATION_ROOT):
         sys.path.insert(0, str(_path))
 
 from scripts.lib.analysis_config import DEFAULT_CONFIG_PATH, load_config  # noqa: E402
-from scripts.lib.local_data import SLUG  # noqa: E402
+from scripts.lib.local_data import SLUG, LocalDataError, date_range, default_sources, load_daily  # noqa: E402
 from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter  # noqa: E402
 from src.lib.paths import YamlPathResolver  # noqa: E402
 from src.lib.playback import is_success  # noqa: E402
@@ -45,6 +48,7 @@ PERIODS = ("before", "after")
 UNKNOWN = "unknown"
 BASE_EVENTS = "6001 events"
 INPUT_ARTIFACT = "shaka6001_enriched"
+SESSION_ARTIFACT = "session"
 VERSION_FIELDS = [
     "tenant", "base", "group", "before_events", "before_share", "before_devices",
     "after_events", "after_share", "after_devices", "share_change",
@@ -177,20 +181,18 @@ def mixed_webview_devices(rows: list[dict[str, str]], tenant: str) -> list[dict]
     return out
 
 
-def drm_by_device(rows: list[dict[str, str]], drm_map: dict[str, str]) -> dict[str, str]:
-    """Per device: the enriched ``drmenabled`` column (any true wins) else the side file, else unknown."""
+def drm_by_device(rows: list[dict[str, str]]) -> dict[str, str]:
+    """Per device: the enriched ``drmsupported`` column (any true wins), else unknown."""
     result: dict[str, str] = {}
     for device_id, device_rows in group_devices(rows).items():
-        values = {normalize_drm(r.get("drmenabled")) for r in device_rows} - {UNKNOWN}
-        if not values:
-            values = {normalize_drm(drm_map.get(device_id))}
-        result[device_id] = "true" if "true" in values else next(iter(values))
+        values = {normalize_drm(r.get("drmsupported")) for r in device_rows} - {UNKNOWN}
+        result[device_id] = "true" if "true" in values else next(iter(values), UNKNOWN)
     return result
 
 
-def drm_tables(rows: list[dict[str, str]], drm_map: dict[str, str], tenant: str) -> tuple[list[dict], list[dict]]:
+def drm_tables(rows: list[dict[str, str]], tenant: str) -> tuple[list[dict], list[dict]]:
     by_device = group_devices(rows)
-    drm = drm_by_device(rows, drm_map)
+    drm = drm_by_device(rows)
     device_rows_out = [
         {"tenant": tenant, "device_id": d, "device_model": _device_model(r), "events": len(r),
          "drmenabled": drm[d], "guest_household": _is_guest(r)}
@@ -221,21 +223,16 @@ def _first_present(row: dict[str, str], names: tuple[str, ...]) -> str:
     return next((row[n] for n in names if row.get(n)), "")
 
 
-def load_outcomes(path: Path) -> list[dict[str, str]]:
-    """Outcome rows normalised to device_id, session_id, playback_outcome, datetime (UTC)."""
-    rows = _read_csv(path)
+def outcomes_from_sessions(session_rows: Iterable[dict[str, str]]) -> list[dict[str, str]]:
+    """SU-10 session rows (``deviceId``, ``sessionId``, ``playback_outcome``, ``event_start`` UTC) as outcome rows."""
     out = []
-    for row in rows:
+    for row in session_rows:
+        if "deviceId" not in row or "playback_outcome" not in row:
+            raise VersionsDevicesError("session rows need deviceId and playback_outcome columns")
         out.append({
-            "device_id": _first_present(row, ("device_id", "deviceId")),
-            "session_id": _first_present(row, ("session_id", "sessionId")),
-            "playback_outcome": row.get("playback_outcome", ""),
-            "datetime": row.get("datetime", ""),
+            "device_id": row.get("deviceId", ""), "session_id": row.get("sessionId", ""),
+            "playback_outcome": row.get("playback_outcome", ""), "datetime": row.get("event_start", ""),
         })
-    if out and not all(k in rows[0] for k in ("playback_outcome", "datetime")):
-        raise VersionsDevicesError(f"{path} needs playback_outcome and datetime columns")
-    if out and not any(k in rows[0] for k in ("device_id", "deviceId")):
-        raise VersionsDevicesError(f"{path} needs a device_id (or deviceId) column")
     return out
 
 
@@ -262,12 +259,6 @@ def fail_then_success_devices(rows: list[dict[str, str]], outcomes: list[dict[st
     return out
 
 
-def load_drm_map(path: Path) -> dict[str, str]:
-    rows = _read_csv(path)
-    _require_columns(rows, ("device_id", "drmenabled"), str(path))
-    return {r["device_id"]: r["drmenabled"] for r in rows if r.get("device_id")}
-
-
 def write_table(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
     """Write via a sibling temp file so a failed run never leaves a half-written output."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -284,9 +275,6 @@ def build_parser(default_tenant: str, default_start: date) -> argparse.ArgumentP
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH)
     parser.add_argument("--paths-config", type=Path, default=REPO_ROOT / "config" / "data_paths.yaml")
     parser.add_argument("--input", type=Path, default=None, help="enriched CSV (default: SU-4 output for the range)")
-    parser.add_argument("--drm-input", type=Path, default=None, help="CSV with device_id,drmenabled")
-    parser.add_argument("--outcome-input", type=Path, default=None,
-                        help="CSV with device_id,session_id,playback_outcome,datetime (UTC)")
     return parser
 
 
@@ -306,9 +294,10 @@ def main(argv: list[str] | None = None) -> int:
     name = lambda artifact: out_dir / resolver.format_range_filename(args.start_date, args.end_date, artifact)  # noqa: E731
     try:
         rows = load_enriched(args.input or name(INPUT_ARTIFACT))
-        drm_map = load_drm_map(args.drm_input) if args.drm_input else {}
-        outcomes = load_outcomes(args.outcome_input) if args.outcome_input else None
-    except VersionsDevicesError as exc:
+        loaded = load_daily(default_sources(resolver, REPO_ROOT, args.tenant), SESSION_ARTIFACT,
+                            date_range(args.start_date, args.end_date))
+        outcomes = outcomes_from_sessions(loaded.rows) if loaded.found else None
+    except (VersionsDevicesError, LocalDataError) as exc:
         LOGGER.error("%s", exc)
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
@@ -321,19 +310,20 @@ def main(argv: list[str] | None = None) -> int:
     write_table(name("6001_mixed_webview_devices"), mixed, MIXED_FIELDS)
     devices = len(group_devices(rows))
     print(f"devices_with_6001={devices} mixed_webview_devices={len(mixed)} ({_share(len(mixed), devices):.1%} of devices)")
-    if drm_map or (rows and "drmenabled" in rows[0]):
-        device_rows, summary = drm_tables(rows, drm_map, tenant)
+    if rows and "drmsupported" in rows[0]:
+        device_rows, summary = drm_tables(rows, tenant)
         write_table(name("6001_drm_devices"), device_rows, DRM_DEVICE_FIELDS)
         write_table(name("6001_drm_summary"), summary, DRM_SUMMARY_FIELDS)
         print("drmenabled " + " ".join(f"{s['drmenabled']}={s['devices']} ({s['device_share']:.1%})" for s in summary))
     else:
-        print("drm tables skipped: no drmenabled column in the enriched CSV and no --drm-input")
+        print("drm tables skipped: no drmsupported column in the enriched CSV (rebuild it with build_enriched_events.py)")
     if outcomes is not None:
         recovered = fail_then_success_devices(rows, outcomes, tenant)
         write_table(name("6001_fail_then_success_devices"), recovered, FAIL_SUCCESS_FIELDS)
-        print(f"fail_then_success_devices={len(recovered)} ({_share(len(recovered), devices):.1%} of devices with 6001)")
+        print(f"fail_then_success_devices={len(recovered)} ({_share(len(recovered), devices):.1%} of devices with 6001) "
+              f"session_dates_missing=" + (",".join(d.isoformat() for d in loaded.missing) or "none"))
     else:
-        print("fail-then-success table skipped: no --outcome-input")
+        print("fail-then-success table skipped: no local <date>_session.csv files for the range (run build_6001_cohort.py)")
     LOGGER.info("Wrote version/device cuts to %s", out_dir)
     return 0
 

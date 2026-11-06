@@ -2,9 +2,11 @@
 
 Reads the daily ``*_error_eventdata_codes-6001.csv`` files (table ``ccl_debug_events``, UTC timestamps, one row
 per event) for ``--start-date``..``--end-date``, drops exact duplicates by ``messageid`` (first occurrence kept),
-flattens ``eventdata``, adds the parsed user-agent fields and the before/after ``period`` (UTC converted to IST
+flattens ``eventdata`` (including ``drmsupported`` and ``iswebview``, both nested in ``errordescription``;
+empty when absent), adds the parsed user-agent fields and the before/after ``period`` (UTC converted to IST
 inside the classifier; the version wins over the timestamp, ``period_conflict`` flags a disagreement).
-Rows with an unparsed user agent or an ``unknown`` period are kept and only counted. Base: events; tenant: see
+``eventdata_iswebview`` is kept next to the UA-derived ``is_webview`` and the rows where both are known but
+disagree are counted. Rows with an unparsed user agent or an ``unknown`` period are kept and only counted. Base: events; tenant: see
 ``--tenant``. Reads local files only (missing dates are reported, nothing is fetched); rerunning overwrites.
 """
 
@@ -30,7 +32,7 @@ from scripts.lib.analysis_config import DEFAULT_CONFIG_PATH, AnalysisConfig, loa
 from scripts.lib.local_data import SLUG, date_range, default_sources, load_daily  # noqa: E402
 from scripts.lib.period import Period, classify_period  # noqa: E402
 from src.lib.csv_io.csv_file import CsvFileWriter  # noqa: E402
-from src.lib.debug_events import extract_error_app_version, flatten_row, parse_eventdata  # noqa: E402
+from src.lib.debug_events import extract_error_app_version, extract_error_client_flags, flatten_row, parse_eventdata  # noqa: E402
 from src.lib.paths import YamlPathResolver  # noqa: E402
 from src.lib.user_agent import parse_user_agent  # noqa: E402
 
@@ -42,7 +44,7 @@ FIELDNAMES = [
     "datetime", "messageid", "clibversion", "device_id", "household_id", "eventclass", "eventid", "session_id",
     "errorcode", "error_text", "shaka_code", "shaka_message", "position", "app_version", "user_agent",
     "os_name", "os_version", "device_model", "build_id", "chrome_version", "is_webview", "ua_shape",
-    "period", "period_conflict",
+    "drmsupported", "eventdata_iswebview", "period", "period_conflict",
 ]
 UA_FIELDS = ("os_name", "os_version", "device_model", "build_id", "chrome_version", "is_webview", "ua_shape")
 
@@ -56,6 +58,12 @@ class EnrichResult:
     bad_timestamp: int
     period_counts: dict[str, int]
     conflicts: int
+    webview_disagreements: int
+    webview_comparable: int
+
+
+def _flag_text(value: bool | None) -> str:
+    return "" if value is None else str(value).lower()
 
 
 def parse_utc(value: str | None) -> datetime | None:
@@ -90,7 +98,9 @@ def dedupe_by_messageid(rows: Iterable[dict[str, str]]) -> tuple[list[dict[str, 
 def enrich_row(row: dict[str, str], config: AnalysisConfig) -> tuple[dict, bool]:
     """One flat enriched row plus whether its timestamp was unusable."""
     flat = flatten_row(row)
-    app_version = extract_error_app_version(parse_eventdata(row.get("eventdata", ""))) or ""
+    data = parse_eventdata(row.get("eventdata", ""))
+    app_version = extract_error_app_version(data) or ""
+    flags = extract_error_client_flags(data)
     ua = parse_user_agent(flat.get("user_agent"))
     ts = parse_utc(flat.get("datetime"))
     if ts is None:
@@ -100,8 +110,17 @@ def enrich_row(row: dict[str, str], config: AnalysisConfig) -> tuple[dict, bool]
     out = {name: flat.get(name) for name in FIELDNAMES if name in flat}
     out.update(messageid=row.get("messageid", ""), clibversion=row.get("clibversion", ""), app_version=app_version)
     out.update({name: ua[name] for name in UA_FIELDS})
+    out.update(drmsupported=_flag_text(flags["drmsupported"]), eventdata_iswebview=_flag_text(flags["iswebview"]))
     out.update(period=period.value, period_conflict=conflict)
     return {name: out.get(name, "") for name in FIELDNAMES}, ts is None
+
+
+def webview_disagrees(row: dict) -> bool:
+    """True when the eventdata ``iswebview`` flag and the UA-derived ``is_webview`` are both known and differ."""
+    flag = row["eventdata_iswebview"]
+    if not flag or row["ua_shape"] == UA_SHAPE_UNPARSED:
+        return False
+    return (flag == "true") != bool(row["is_webview"])
 
 
 def enrich_rows(raw_rows: Iterable[dict[str, str]], config: AnalysisConfig) -> EnrichResult:
@@ -121,6 +140,8 @@ def enrich_rows(raw_rows: Iterable[dict[str, str]], config: AnalysisConfig) -> E
         bad_timestamp=bad_ts,
         period_counts=dict(Counter(r["period"] for r in enriched)),
         conflicts=sum(bool(r["period_conflict"]) for r in enriched),
+        webview_disagreements=sum(webview_disagrees(r) for r in enriched),
+        webview_comparable=sum(bool(r["eventdata_iswebview"]) and r["ua_shape"] != UA_SHAPE_UNPARSED for r in enriched),
     )
 
 
@@ -134,12 +155,17 @@ def write_enriched(path: Path, rows: list[dict]) -> None:
 
 def summary_lines(result: EnrichResult, tenant: str, missing: list[date], out_path: Path) -> list[str]:
     counts = result.period_counts
+    drm = Counter(r["drmsupported"] for r in result.rows)
+    drm.update({"true": 0, "false": 0, "": 0})
     return [
         f"tenant={tenant} base=events rows={len(result.rows)} -> {out_path}",
         f"duplicates_removed_by_messageid={result.duplicates_removed} rows_without_messageid_kept={result.missing_messageid}",
         f"unparsed_user_agents={result.unparsed_ua} (kept)",
         f"period before={counts.get('before', 0)} after={counts.get('after', 0)} unknown={counts.get('unknown', 0)} "
         f"conflict={result.conflicts} bad_timestamp={result.bad_timestamp} (all kept)",
+        f"drmsupported true={drm['true']} false={drm['false']} empty={drm['']} (eventdata)",
+        f"eventdata_iswebview_vs_ua_is_webview disagree={result.webview_disagreements} "
+        f"of {result.webview_comparable} rows with both known",
         "missing_dates=" + (",".join(d.isoformat() for d in missing) or "none"),
     ]
 
