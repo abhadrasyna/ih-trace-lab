@@ -3,13 +3,10 @@
 Reads ``<start>_<end>_session_error_impact.csv`` from the tenant output folder and writes three PNGs to
 ``output/<tenant>/charts/``. Base on every chart: tenant, UTC days, unique sessions per day's session file.
 
-* ``<start>_<end>_session_error_impact_counts.png`` -- per UTC day, unique sessions next to 6001-impacted sessions (the
-  shared lib has no grouped bar, so it is a one-series bar per day and measure; 6001 is tiny next to the sessions, so
-  every bar is labelled with its count).
-* ``<start>_<end>_session_error_impact_pct_stacked.png`` -- 100% stack per day of unique sessions: 6001-impacted,
-  other-error and no-error. Uses the sessions found in the session file, so it adds up to 100%.
-* ``<start>_<end>_session_error_impact_6001_share.png`` -- per day, 6001 vs other-error split of all error-impacted
-  sessions (counts and share in the labels).
+* ``<start>_<end>_session_error_impact_counts.png`` -- trend, 6001 sessions vs all sessions, each indexed to the first
+  day = 100.
+* ``<start>_<end>_session_error_impact_pct_stacked.png`` -- columns, 6001-impacted share of each day's unique sessions.
+* ``<start>_<end>_session_error_impact_6001_share.png`` -- trend, 6001's share of each day's error-impacted sessions.
 
 Charts are additive: a missing input or a ``ChartError`` is logged and skipped, never raised. Local files only;
 rerunning overwrites the PNGs. The ``all`` row of the table is not charted.
@@ -21,7 +18,7 @@ import argparse
 import logging
 import sys
 from collections.abc import Callable, Iterable
-from datetime import date
+from datetime import date, datetime
 from functools import partial
 from pathlib import Path
 
@@ -34,10 +31,10 @@ for _path in (REPO_ROOT, INVESTIGATION_ROOT):
 from scripts.analyze_session_error_impact import ALL_DAY, OUTPUT_ARTIFACT  # noqa: E402
 from scripts.lib.analysis_config import DEFAULT_CONFIG_PATH, load_config  # noqa: E402
 from scripts.lib.local_data import SLUG  # noqa: E402
+from src.lib.charts.columns import Column, render_columns  # noqa: E402
 from src.lib.charts.errors import ChartError  # noqa: E402
 from src.lib.charts.output import write_chart_png  # noqa: E402
-from src.lib.charts.stacked_bar import render_stacked_bar  # noqa: E402
-from src.lib.charts.theme import DARK  # noqa: E402
+from src.lib.charts.trend import TrendReference, TrendSeries, render_trend  # noqa: E402
 from src.lib.csv_io.csv_file import CsvFileReader  # noqa: E402
 from src.lib.paths import YamlPathResolver  # noqa: E402
 
@@ -64,75 +61,85 @@ def day_rows(rows: Iterable[dict[str, str]]) -> list[dict[str, str]]:
     return sorted((r for r in rows if r.get("day") != ALL_DAY), key=lambda r: r["day"])
 
 
-def counts_values(rows: list[dict[str, str]]) -> tuple[list[str], list[float], list[str]]:
-    """Bar labels (one per day and measure), their counts and per-bar colours."""
-    labels: list[str] = []
-    values: list[float] = []
-    colours: list[str] = []
-    for row in day_rows(rows):
-        labels += [f"{row['day'][5:]} all", f"{row['day'][5:]} 6001"]
-        values += [float(_int(row, "unique_sessions")), float(_int(row, "sessions_6001"))]
-        colours += [DARK.ink, DARK.red]
-    return labels, values, colours
+def _day_labels(days: list[dict[str, str]]) -> list[str]:
+    return [datetime.fromisoformat(r["day"]).strftime("%-d %b") for r in days]
 
 
-def pct_stacked_values(rows: list[dict[str, str]]) -> tuple[list[str], dict[str, list[float]]]:
-    """Per-day stacks that sum to the day's unique sessions: 6001, other-error, no-error (all in the session file)."""
+def session_share_values(rows: list[dict[str, str]]) -> tuple[list[str], list[float], list[int]]:
+    """Day labels, 6001-impacted share (%) of each day's unique sessions, and each day's 6001 session count."""
     days = day_rows(rows)
     code = [_int(r, "sessions_6001_in_session_file") for r in days]
-    error = [_int(r, "error_sessions_in_session_file") for r in days]
     unique = [_int(r, "unique_sessions") for r in days]
-    series = {
-        "6001-impacted": [float(c) for c in code],
-        "other error": [float(e - c) for e, c in zip(error, code, strict=True)],
-        "no error": [float(u - e) for u, e in zip(unique, error, strict=True)],
-    }
-    if any(v < 0 for values in series.values() for v in values):
-        raise ChartInputError("matched error sessions exceed unique sessions; inconsistent table")
-    return [f"{r['day'][5:]}\n{u:,} sessions" for r, u in zip(days, unique, strict=True)], series
+    if any(u <= 0 or c < 0 or c > u for c, u in zip(code, unique, strict=True)):
+        raise ChartInputError("6001 sessions exceed unique sessions; inconsistent table")
+    return _day_labels(days), [100 * c / u for c, u in zip(code, unique, strict=True)], code
 
 
-def share_values(rows: list[dict[str, str]]) -> tuple[list[str], dict[str, list[float]]]:
-    """Per-day stacks of all error-impacted sessions: 6001 vs other-error."""
+def error_share_values(rows: list[dict[str, str]]) -> tuple[list[str], list[float]]:
+    """Day labels and 6001's share (%) of each day's error-impacted sessions."""
     days = day_rows(rows)
-    labels = [f"{r['day'][5:]}\n{_int(r, 'error_sessions'):,} errors" for r in days]
-    return labels, {
-        "6001-impacted": [float(_int(r, "sessions_6001")) for r in days],
-        "other error": [float(_int(r, "other_error_sessions")) for r in days],
-    }
+    errors = [_int(r, "error_sessions") for r in days]
+    code = [_int(r, "sessions_6001") for r in days]
+    if any(e <= 0 or c > e for c, e in zip(code, errors, strict=True)):
+        raise ChartInputError("6001 sessions exceed error sessions; inconsistent table")
+    return _day_labels(days), [100 * c / e for c, e in zip(code, errors, strict=True)]
 
 
-def _counts_chart(rows: list[dict[str, str]], scope: str) -> bytes:
-    labels, values, colours = counts_values(rows)
-    return render_stacked_bar(
-        labels, {"sessions": values}, bar_colours=colours, horizontal=True, legend=False,
-        title="Unique sessions vs 6001-impacted sessions per day",
-        subtitle=f"Base: unique sessions per UTC day, {scope}")
+def indexed_values(rows: list[dict[str, str]]) -> tuple[list[str], list[float], list[float]]:
+    """Day labels and, indexed to the first day = 100, the 6001 session counts and all unique sessions."""
+    days = day_rows(rows)
+    code = [_int(r, "sessions_6001") for r in days]
+    unique = [_int(r, "unique_sessions") for r in days]
+    if not days or code[0] <= 0 or unique[0] <= 0:
+        raise ChartInputError("the first day needs sessions to index against")
+    return _day_labels(days), [100 * c / code[0] for c in code], [100 * u / unique[0] for u in unique]
 
 
-def _pct_chart(rows: list[dict[str, str]], scope: str) -> bytes:
-    labels, series = pct_stacked_values(rows)
-    return render_stacked_bar(
-        labels, series, normalize=True, legend="above", colours={"6001-impacted": "red", "other error": "amber", "no error": "green"},
-        title="Share of unique sessions by error impact per day",
-        subtitle=f"Base: unique sessions per UTC day, {scope}")
+def _span(values: list[float], pad: float, step: float) -> tuple[float, float, list[float]]:
+    lo = step * ((min(values) - pad) // step)
+    hi = step * (-(-(max(values) + pad) // step))
+    return lo, hi, [lo + step * i for i in range(int((hi - lo) / step) + 1)]
 
 
 def _share_chart(rows: list[dict[str, str]], scope: str) -> bytes:
-    labels, series = share_values(rows)
-    return render_stacked_bar(
-        labels, series, normalize=True, legend="above", colours={"6001-impacted": "red", "other error": "amber"},
-        title="6001 share of error-impacted sessions per day",
-        subtitle=f"Base: error sessions per UTC day, {scope}")
+    labels, shares, _ = session_share_values(rows)
+    return render_columns(
+        [Column(label, v, f"{v:.1f}%", "red" if i == len(shares) - 1 else "dim_red") for i, (label, v) in enumerate(zip(labels, shares))],
+        title=f"6001 now touches {shares[-1]:.0f}% of sessions, up from {shares[0]:.0f}%",
+        subtitle="Share of each day's unique sessions that hit a 6001 error", footer=scope)
+
+
+def _error_share_chart(rows: list[dict[str, str]], scope: str) -> bytes:
+    labels, shares = error_share_values(rows)
+    lo, hi, ticks = _span(shares, 5.0, 5.0)
+    fmt = lambda v: f"{v:.0f}%"  # noqa: E731
+    return render_trend(
+        labels, [TrendSeries("6001", shares, "red", end_text=f"{shares[-1]:.1f}%", label_points=range(len(shares) - 1))],
+        title=f"6001 is {shares[-1]:.0f}% of all error-impacted sessions",
+        subtitle="Share of each day's error-impacted sessions that carry a 6001 error",
+        footer=scope, lo=lo, hi=hi, ticks=ticks, value_fmt=lambda v: f"{v:.1f}%", tick_fmt=fmt)
+
+
+def _indexed_chart(rows: list[dict[str, str]], scope: str) -> bytes:
+    labels, code, total = indexed_values(rows)
+    lo, hi, ticks = _span(code + total, 10.0, 25.0)
+    fmt = lambda v: f"{v:.0f}"  # noqa: E731
+    return render_trend(
+        labels,
+        [TrendSeries("6001 sessions", code, "red", end_text=f"6001 sessions  {fmt(code[-1])}"),
+         TrendSeries("all sessions", total, "slate", end_text=f"all sessions  {fmt(total[-1])}")],
+        title=f"6001 sessions grew {code[-1] - 100:.0f}% while all sessions moved {total[-1] - 100:+.0f}%",
+        subtitle=f"Unique sessions per day, indexed to {labels[0]} = 100",
+        footer=scope, lo=lo, hi=hi, ticks=ticks, value_fmt=fmt, reference=TrendReference(100.0, f"{labels[0]} level"))
 
 
 def build_charts(rows: list[dict[str, str]], *, tenant: str, start: date, end: date) -> dict[str, Callable[[], bytes]]:
     """Artifact suffix -> render callable; nothing is drawn until called, so one bad chart cannot block the others."""
     scope = f"tenant {tenant}, {start.isoformat()} to {end.isoformat()}"
     return {
-        f"{OUTPUT_ARTIFACT}_counts": partial(_counts_chart, rows, scope),
-        f"{OUTPUT_ARTIFACT}_pct_stacked": partial(_pct_chart, rows, scope),
-        f"{OUTPUT_ARTIFACT}_6001_share": partial(_share_chart, rows, scope),
+        f"{OUTPUT_ARTIFACT}_counts": partial(_indexed_chart, rows, scope),
+        f"{OUTPUT_ARTIFACT}_pct_stacked": partial(_share_chart, rows, scope),
+        f"{OUTPUT_ARTIFACT}_6001_share": partial(_error_share_chart, rows, scope),
     }
 
 

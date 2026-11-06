@@ -76,10 +76,11 @@
 - `docs/guides/lightstep-querying.md` — read-first checklist for any Lightstep MCP query: resolve tenant, read `knowledge/mtn-sa-lightstep-{span-attributes-by-service,query-templates}.md` and
   `queries/lightstep/index.md`, topic-doc table, recurring pitfalls. Pointed to from `AGENTS.md` Domain conventions and audited by `session-close` row 6.
 - `docs/guides/chart-guidelines.md` — matplotlib chart standard (dark theme, palette, font fallback, headless figure recipe) matching the shared `src/lib/charts/` package (`theme`, `fig`, `axes`,
-  `title`, `header`, `signed_line`, `bar`, `stacked_bar`, `pie`, `errors`, `output`). `ChartTheme.series` is an ordered 5-colour palette (status colours `green`/`red`/`amber` stay out of it) for
-  multi-series charts; `render_stacked_bar` (MDRM-2a) draws stacked bars with `green`/`red` reserved for success/failure. `output.write_chart_png` saves PNGs to
-  `<investigation>/output/<TENANT>/charts/`, apart from the CSV/XLSX reports. Pilot: ctap-smvod `chart_concurrent_playback.py`/`chart_playback_attempts.py`; other investigations adopt the layer in
-  their own stories (story `docs/archive/shared-chart-infra/`).
+  `title`, `header`, `signed_line`, `bar`, `stacked_bar`, `pie`, `errors`, `output`, plus the 2026 story layer: `shapes` (rounded bars), `canvas`, `rate_bars`, `columns`, `trend`, `composition`; new
+  charts use a story renderer with a finding title, measure subtitle, scope footer and direct labels, and old callers draw rounded bars). `ChartTheme.series` is an ordered 5-colour palette (status
+  colours `green`/`red`/`amber` stay out of it) for multi-series charts; `render_stacked_bar` (MDRM-2a) draws stacked bars with `green`/`red` reserved for success/failure. `output.write_chart_png`
+  saves PNGs to `<investigation>/output/<TENANT>/charts/`, apart from the CSV/XLSX reports. Pilot: ctap-smvod `chart_concurrent_playback.py`/`chart_playback_attempts.py`; other investigations adopt
+  the layer in their own stories (story `docs/archive/shared-chart-infra/`).
 - `docs/archive/chart-guide-code-alignment/` (done, archived 2026-10-25) and `docs/archive/chart-funnel-visual-consistency/` (open) — chart-improvement stories: the first aligned shared title/axis
   code and the guide (CA-1 `title.draw_title` at 16/10 pt, CA-2 `axes.format_value_axis`, CA-3 guide/CONTEXT alignment, CA-4 `amber` status colour and 5-colour palette); the second brings the
   ctap-smvod DRM funnel charts to the look of the (AI-generated, uncommitted) mockups in `investigations/ctap-smvod/output/ZA/charts/modified/`.

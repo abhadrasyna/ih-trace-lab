@@ -25,6 +25,7 @@ from lib.bandwidth_stats import (
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import new_figure, render_png
 from src.lib.charts.output import write_chart_png
+from src.lib.charts.shapes import add_bars
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
 from src.lib.logging.bootstrap import init_logging
 from src.lib.charts.axes import style_axes
@@ -56,6 +57,16 @@ def _finish(fig, ax, theme: ChartTheme, family: str, footnote: str) -> bytes:
     style_axes(ax, theme, family)
     fig.text(0.12, 0.02, footnote, color=theme.muted, fontsize=7.5, family=family)
     return render_png(fig, theme)
+
+
+def _rounded_bars(ax, labels: Sequence[str], vals: Sequence[float], colours, theme: ChartTheme) -> list[int]:
+    """Rounded vertical bars at integer positions with ``labels`` as ticks; the caller sets the y range."""
+    positions = list(range(len(labels)))
+    add_bars(ax, positions, vals, colours, theme.corner_radius_in)
+    ax.set_xticks(positions, labels)
+    ax.set_xlim(-0.6, len(labels) - 0.4)
+    ax.set_ylim(0, max(max(vals), 1e-9) * 1.18)
+    return positions
 
 
 def bandwidth_samples(rows: Sequence[Mapping[str, str]], min_n: int = MIN_N) -> dict[str, list[float]]:
@@ -97,9 +108,8 @@ def render_coverage(rows: Sequence[Mapping[str, str]], title: str, theme: ChartT
         fig, ax, family = _canvas("How many failing sessions have a bandwidth reading?", title, theme)
         labels = [f"{c}\nn={s['sessions']}" for c, s in stats.items()]
         vals = [s["coverage_pct"] for s in stats.values()]
-        bars = ax.bar(labels, vals, color=theme.series[0])
-        for rect, v in zip(bars, vals):
-            ax.text(rect.get_x() + rect.get_width() / 2, v + 1.5, f"{v:.0f}%", ha="center", color=theme.ink, fontsize=9, family=family)
+        for x, v in zip(_rounded_bars(ax, labels, vals, theme.series[0], theme), vals):
+            ax.text(x, v + 1.5, f"{v:.0f}%", ha="center", color=theme.ink, fontsize=9, family=family)
         ax.set_ylim(0, 110)
         ax.set_ylabel("% of sessions with a bandwidth estimate", color=theme.muted, fontsize=9)
         return _finish(fig, ax, theme, family, "Codes at 0% fail before downloading starts, so bandwidth cannot explain them either way.")
@@ -119,9 +129,8 @@ def render_buffering(rows: Sequence[Mapping[str, str]], title: str, theme: Chart
         labels = [f"{c}\nn={len(groups[c])}" for c in avgs] + [f"healthy\nn={len(healthy)}"]
         vals = list(avgs.values()) + [base]
         colors = [theme.red if v > base else theme.series[0] for v in avgs.values()] + [theme.green]
-        bars = ax.bar(labels, vals, color=colors)
-        for rect, v in zip(bars, vals):
-            ax.text(rect.get_x() + rect.get_width() / 2, v + 0.4, f"{v:.1f}", ha="center", color=theme.ink, fontsize=9, family=family)
+        for x, v in zip(_rounded_bars(ax, labels, vals, colors, theme), vals):
+            ax.text(x, v + 0.4, f"{v:.1f}", ha="center", color=theme.ink, fontsize=9, family=family)
         ax.axhline(base, color=theme.green, lw=1, ls="--")
         ax.set_ylabel("Average BUFFERING events per session", color=theme.muted, fontsize=9)
         return _finish(fig, ax, theme, family, "Red = more buffering than the healthy average (dashed line). Buffering is common in healthy sessions too.")
@@ -159,9 +168,8 @@ def render_abr_rate(rows: Sequence[Mapping[str, str]], title: str, theme: ChartT
         fig, ax, family = _canvas("Error rate by ABR bitrate (healthy-session proxy)", title, theme)
         labels = [f"{r['abr_bucket_mbps']} Mbps\nn={r['sessions']}" for r in table]
         vals = [r["error_rate_pct"] or 0.0 for r in table]
-        bars = ax.bar(labels, vals, color=theme.series[1])
-        for rect, v in zip(bars, vals):
-            ax.text(rect.get_x() + rect.get_width() / 2, v + 1, f"{v:.0f}%", ha="center", color=theme.ink, fontsize=9, family=family)
+        for x, v in zip(_rounded_bars(ax, labels, vals, theme.series[1], theme), vals):
+            ax.text(x, v + 1, f"{v:.0f}%", ha="center", color=theme.ink, fontsize=9, family=family)
         ax.set_ylim(0, max(vals + [10]) * 1.2)
         ax.set_ylabel("% of sessions with an error", color=theme.muted, fontsize=9)
         return _finish(fig, ax, theme, family, "Only sessions that logged a track change (a small sample): indicative, not conclusive.")

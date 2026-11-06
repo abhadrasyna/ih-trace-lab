@@ -53,9 +53,10 @@ from scripts.build_6001_cohort import GUEST_PREFIX, IST, SESSION_ARTIFACT, _pars
 from scripts.lib.analysis_config import DEFAULT_CONFIG_PATH, AnalysisConfig, load_config  # noqa: E402
 from scripts.lib.local_data import SLUG, LocalDataError, date_range, default_sources, load_daily  # noqa: E402
 from scripts.lib.period import classify_period  # noqa: E402
+from src.lib.charts.composition import Part, render_composition  # noqa: E402
 from src.lib.charts.errors import ChartError  # noqa: E402
 from src.lib.charts.output import write_chart_png  # noqa: E402
-from src.lib.charts.stacked_bar import render_stacked_bar  # noqa: E402
+from src.lib.charts.rate_bars import RateRow, render_rate_bars  # noqa: E402
 from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter  # noqa: E402
 from src.lib.paths import YamlPathResolver  # noqa: E402
 from src.lib.playback import is_success  # noqa: E402
@@ -357,22 +358,40 @@ def row_count_table(counts: Mapping[date, int], missing: Sequence[date], fractio
     return rows
 
 
+def _failure_chart(household: list[dict], footer: str) -> bytes:
+    rows = [b for b in household if b["attempts"]]
+    if not rows:
+        raise ChartError("no playback attempts in any tenure bucket")
+    rates = [100 * (b["attempts"] - b["successes"]) / b["attempts"] for b in rows]
+    newest, oldest = rates[0], rates[-1]
+    return render_rate_bars(
+        [RateRow(b["bucket"], r, f"{r:.1f}%   of {b['attempts']:,} attempts", "red" if r >= 0.8 * max(rates) else "dim_red")
+         for b, r in zip(rows, rates)],
+        title=f"Newest households fail {newest:.0f}% of playbacks; the oldest {oldest:.0f}%",
+        subtitle="Share of playback attempts that did not succeed, by how long the household has been seen",
+        footer=footer, vmax=100.0)
+
+
+def _households_chart(household: list[dict], footer: str) -> bytes:
+    rows = [b for b in household if b["households"]]
+    total = sum(b["households"] for b in rows)
+    if not total:
+        raise ChartError("no active households")
+    return render_composition(
+        [Part(b["bucket"], b["households"], f"{b['households']:,} households", "blue" if i else "violet")
+         for i, b in enumerate(rows)],
+        title=f"{100 * rows[0]['households'] / total:.0f}% of active households were first seen within a week",
+        subtitle=f"Active households by first-seen age bucket, {total:,} in total", footer=footer)
+
+
 def render_charts(buckets: list[dict], out_dir: Path, tenant: str, label: str, earliest: date) -> list[Path]:
-    """100% stacked success/failure by bucket and a sorted active-households bar; failures are logged, never raised."""
+    """Failure rate by tenure bucket and a household composition bar; failures are logged, never raised."""
     household = [b for b in buckets if b["cohort"] == COHORT_HOUSEHOLD]
-    sub = f"{tenant} {label} · base: households/sessions · first seen, not subscription; left-censored at {earliest}"
+    foot = f"{tenant} {label.replace('_', ' to ')}; age = days since first seen, not subscription; unknown before {earliest}"
     written: list[Path] = []
-    labels = [f"{b['bucket']} (n={b['attempts']})" for b in household]
-    ordered = sorted(household, key=lambda b: (-b["households"], b["bucket"]))
     jobs = {
-        f"{label}_user_tenure_success_by_bucket.png": lambda: render_stacked_bar(
-            labels, {"success": [b["successes"] for b in household],
-                     "not success": [b["attempts"] - b["successes"] for b in household]},
-            normalize=True, colours={"success": "green", "not success": "red"},
-            title="Playback success by household tenure bucket", subtitle=sub),
-        f"{label}_user_tenure_households_by_bucket.png": lambda: render_stacked_bar(
-            [f"{b['bucket']} (n={b['households']})" for b in ordered], {"households": [b["households"] for b in ordered]},
-            horizontal=True, title="Active households by tenure bucket", subtitle=sub),
+        f"{label}_user_tenure_success_by_bucket.png": lambda: _failure_chart(household, foot),
+        f"{label}_user_tenure_households_by_bucket.png": lambda: _households_chart(household, foot),
     }
     for name, make in jobs.items():
         try:

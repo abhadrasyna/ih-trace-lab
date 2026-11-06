@@ -3,10 +3,10 @@
 Reads, from the tenant output folder, the CSVs written by ``analyze_before_after.py`` and
 ``analyze_versions_devices.py`` plus the SU-4 enriched CSV, and writes PNGs to ``output/<tenant>/charts/``:
 
-* ``<start>_<end>_6001_webview_share.png`` -- 100% stacked bar, webview vs non-webview share of events before/after.
-* ``<start>_<end>_6001_top_models.png`` -- horizontal bar, top device models by 6001 events (6001 dominates, so no donut).
-* ``<start>_<end>_6001_webview_daily_trend.png`` -- signed line, each IST day's webview share of events minus the
-  before-period webview share (percentage points).
+* ``<start>_<end>_6001_webview_share.png`` -- rate bars, non-webview share of 6001 events before vs after.
+* ``<start>_<end>_6001_top_models.png`` -- rate bars, each top device model's share of all 6001 events.
+* ``<start>_<end>_6001_webview_daily_trend.png`` -- trend, each IST day's webview share of events minus the
+  before-period webview share (percentage points), against a before-upgrade reference line.
 * ``<start>_<end>_6001_chrome_versions.png`` -- stacked bar of events per Chrome major, before vs after.
 
 Base: events (``GUEST.*`` ids only matter for device counts, which are not charted). Charts are additive: a missing
@@ -36,8 +36,9 @@ from scripts.lib.analysis_config import DEFAULT_CONFIG_PATH, load_config  # noqa
 from scripts.lib.local_data import SLUG  # noqa: E402
 from src.lib.charts.errors import ChartError  # noqa: E402
 from src.lib.charts.output import write_chart_png  # noqa: E402
-from src.lib.charts.signed_line import render_signed_line  # noqa: E402
+from src.lib.charts.rate_bars import RateRow, render_rate_bars  # noqa: E402
 from src.lib.charts.stacked_bar import render_stacked_bar  # noqa: E402
+from src.lib.charts.trend import TrendReference, TrendSeries, render_trend  # noqa: E402
 from src.lib.csv_io.csv_file import CsvFileReader  # noqa: E402
 from src.lib.paths import YamlPathResolver  # noqa: E402
 
@@ -48,7 +49,7 @@ CHROME_ARTIFACT = "6001_by_chrome"
 ENRICHED_ARTIFACT = "shaka6001_enriched"
 PERIODS = ("before", "after")
 WEBVIEW_GROUPS = ("webview", "non_webview", "unknown")
-TOP_MODELS = 10
+TOP_MODELS = 6
 MAX_CHROME_VERSIONS = 12
 BASE = "6001 events"
 
@@ -64,13 +65,23 @@ def _int(value: str | None) -> int:
         raise ChartInputError(f"not a number: {value!r}") from exc
 
 
-def webview_share_values(rows: Iterable[dict[str, str]]) -> tuple[list[str], dict[str, list[float]], list[int]]:
-    """Stack labels (before, after), one event-count series per webview group, and each stack's event total."""
+def non_webview_counts(rows: Iterable[dict[str, str]]) -> tuple[list[int], list[int]]:
+    """Non-webview events and all events per period (before, after); unknown-group events count in the total."""
     by_group = {r["webview_group"]: r for r in rows}
-    series = {g: [float(_int(by_group.get(g, {}).get(f"events_{p}"))) for p in PERIODS] for g in WEBVIEW_GROUPS}
-    series = {g: v for g, v in series.items() if g != "unknown" or any(v)}
-    totals = [int(sum(v[i] for v in series.values())) for i in range(len(PERIODS))]
-    return [f"{p} ({totals[i]:,} events)" for i, p in enumerate(PERIODS)], series, totals
+    per_group = {g: [_int(by_group.get(g, {}).get(f"events_{p}")) for p in PERIODS] for g in WEBVIEW_GROUPS}
+    totals = [sum(v[i] for v in per_group.values()) for i in range(len(PERIODS))]
+    return per_group["non_webview"], totals
+
+
+def change_phrase(before: float, after: float) -> str:
+    """Plain-words size of a change between two positive rates: ``more than doubled``, ``rose``, ``fell``, ``held``."""
+    if before <= 0 or after <= 0 or abs(after - before) < 0.05 * before:
+        return "held steady"
+    if after >= 2 * before:
+        return "more than doubled"
+    if after <= before / 2:
+        return "more than halved"
+    return "rose" if after > before else "fell"
 
 
 def top_model_values(rows: Iterable[dict[str, str]], top: int = TOP_MODELS) -> tuple[list[str], list[float], int]:
@@ -141,29 +152,49 @@ def _title_range(tenant: str, start: date, end: date) -> str:
 
 
 def _webview_chart(rows: list[dict[str, str]], scope: str) -> bytes:
-    labels, series, _ = webview_share_values(rows)
-    return render_stacked_bar(
-        labels, series, normalize=True, legend="above",
-        title="6001 events: webview vs non-webview share, before vs after",
-        subtitle=f"Base: 6001 events, {scope}; labels show events and share of each period",
-        colours={"non_webview": "amber"})
+    other, totals = non_webview_counts(rows)
+    if not all(totals):
+        raise ChartInputError("non-webview share needs events in both periods")
+    shares = [100 * n / t for n, t in zip(other, totals)]
+    verb = change_phrase(shares[0], shares[1])
+    return render_rate_bars(
+        [RateRow(f"{p.title()} upgrade", shares[i], f"{shares[i]:.1f}%   {other[i]:,} of {totals[i]:,} events",
+                 "violet" if i else "dim_violet") for i, p in enumerate(PERIODS)],
+        title=f"Non-webview share of 6001 events {verb}",
+        subtitle="Share of 6001 events raised outside a webview player, before vs after",
+        footer=scope, vmax=max(10.0, 1.4 * max(shares)))
 
 
 def _models_chart(rows: list[dict[str, str]], scope: str) -> bytes:
     names, values, total = top_model_values(rows)
-    return render_stacked_bar(
-        names, {"events": values}, horizontal=True, total=float(total), legend=False,
-        title=f"Top {len(names)} device models by 6001 events",
-        subtitle=f"Base: 6001 events (before + after), {scope}; share of all {total:,} events")
+    if not total:
+        raise ChartInputError("no model events")
+    shown = 100 * sum(values) / total
+    return render_rate_bars(
+        [RateRow(n, 100 * v / total, f"{100 * v / total:.1f}%   {int(v):,}", "blue") for n, v in zip(names, values)],
+        title=f"Top {len(names)} device models carry {shown:.0f}% of 6001 events",
+        subtitle="Each model's share of all 6001 events, before and after combined",
+        footer=f"{scope}; {total:,} events in total", vmax=max(10.0, 1.3 * 100 * values[0] / total))
 
 
 def _trend_chart(rows: list[dict[str, str]], scope: str, tz: ZoneInfo) -> bytes:
     days, deltas, baseline = daily_webview_delta(rows, tz)
-    span = f"day 0 = {days[0]}, last = {days[-1]}" if days else "no days"
-    return render_signed_line(
-        list(range(len(days))), deltas,
-        title="Daily webview share of 6001 events vs before-period share (pp)",
-        subtitle=f"Base: 6001 events per IST day, {scope}; {span}; before-period share {baseline:.1f}%")
+    if not days:
+        raise ChartInputError("no dated events for the trend")
+    lo = min(-1.0, 1.4 * min(deltas))
+    hi = max(1.0, 1.4 * max(deltas))
+    step = 5.0 if hi - lo > 12 else 2.0
+    ticks = [t * step for t in range(int(lo // step), int(hi // step) + 2) if lo <= t * step <= hi]
+    labels = [datetime.fromisoformat(d).strftime("%-d %b") for d in days]
+    fmt = lambda v: f"{v:+.1f} pp"  # noqa: E731
+    return render_trend(
+        labels,
+        [TrendSeries("webview", deltas, "red", end_text=fmt(deltas[-1]),
+                     label_points=range(len(deltas) - 1), labels_below=True)],
+        title=f"Webview share moved {fmt(deltas[-1])} against the before-upgrade level",
+        subtitle=f"Daily webview share of 6001 events minus the before-period share ({baseline:.1f}%)",
+        footer=scope, lo=lo, hi=hi, ticks=ticks, value_fmt=fmt,
+        tick_fmt=lambda v: f"{v:+.0f}", reference=TrendReference(0.0, "before-upgrade level"))
 
 
 def _chrome_chart(rows: list[dict[str, str]], scope: str) -> bytes:

@@ -18,21 +18,20 @@ ROWS = [
 ]
 
 
-def test_values_are_sorted_skip_all_row_and_stacks_sum_to_unique():
-    labels, values, colours = csei.counts_values(ROWS)
-    assert labels[:2] == ["11-01 all", "11-01 6001"] and values == [100.0, 3.0, 200.0, 8.0]
-    assert colours[:2] == [csei.DARK.ink, csei.DARK.red] and len(colours) == 4
-    _, series = csei.pct_stacked_values(ROWS)
-    assert [sum(col) for col in zip(*series.values())] == [100.0, 200.0]
-    assert series["other error"] == [2.0, 3.0] and series["no error"] == [95.0, 190.0]
-    _, share = csei.share_values(ROWS)
-    assert share == {"6001-impacted": [3.0, 8.0], "other error": [2.0, 4.0]}
+def test_values_are_sorted_skip_all_row_and_derived_from_counts():
+    labels, shares, code = csei.session_share_values(ROWS)
+    assert labels == ["1 Nov", "2 Nov"] and code == [3, 7]
+    assert shares == pytest.approx([3.0, 3.5])
+    _, error_share = csei.error_share_values(ROWS)
+    assert error_share == pytest.approx([60.0, 100 * 8 / 12])
+    _, code_idx, all_idx = csei.indexed_values(ROWS)
+    assert code_idx == pytest.approx([100.0, 100 * 8 / 3]) and all_idx == [100.0, 200.0]
 
 
 def test_inconsistent_table_is_rejected():
-    bad = [{**ROWS[1], "error_sessions_in_session_file": "500"}]
+    bad = [{**ROWS[1], "sessions_6001_in_session_file": "500"}]
     with pytest.raises(csei.ChartInputError):
-        csei.pct_stacked_values(bad)
+        csei.session_share_values(bad)
 
 
 def test_charts_written_and_failures_skipped(tmp_path):

@@ -13,6 +13,7 @@ from src.lib.charts.axes import format_count, format_pct, style_axes
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import BASE_WIDTH, MARGIN_LEFT, MARGIN_RIGHT, TWO_ROW_HEIGHT, new_figure, render_png
 from src.lib.charts.header import UNDER_TITLE_AXES_TOP, UNDER_TITLE_SHIFT, HeaderCell, Tone, draw_header
+from src.lib.charts.shapes import add_bars
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
 from src.lib.charts.title import draw_title
 
@@ -86,7 +87,8 @@ def render_stages_chart(totals: Mapping[str, int], *, title: str, subtitle: str 
         longest = max(counts)
         colours = [getattr(theme, c) if c else theme.series[0] for c in STAGE_COLOURS]
         ys = list(range(len(counts)))
-        ax.barh(ys, counts, color=colours, height=BAR_HEIGHT)
+        add_bars(ax, ys, counts, colours, theme.corner_radius_in, horizontal=True, thickness=BAR_HEIGHT)
+        ax.set_ylim(-0.5, len(counts) - 0.5)
         for y, count in zip(ys, counts, strict=True):
             ax.annotate(bar_label(count, totals["sessions"]), xy=(count, y), xytext=(5, 0),
                         textcoords="offset points", ha="left", va="center", color=theme.ink, fontsize=8.5,

@@ -126,25 +126,31 @@ def day_split(table: list[dict]) -> tuple[list[str], list[int], list[int]]:
 
 
 def write_charts(table: list[dict], out_dir: Path, tenant: str, basis: DayBasis, top: int, stem: str) -> int:
-    """Latest-day sorted bar and per-day top-vs-other stack; a chart failure is logged and counted, never raised."""
+    """Latest-day share bars and per-day top-model share columns; a chart failure is logged and counted, never raised."""
+    from src.lib.charts.columns import Column, render_columns
     from src.lib.charts.errors import ChartError
     from src.lib.charts.output import CHARTS_SUBDIR
-    from src.lib.charts.stacked_bar import render_stacked_bar
+    from src.lib.charts.rate_bars import RateRow, render_rate_bars
 
     if not table:
         return 0
-    subtitle = f"{tenant}, base: 6001 events, day basis {basis.value.upper()}"
+    footer = f"{tenant}, base: 6001 events, day basis {basis.value.upper()}"
     latest = max(r["day"] for r in table)
-    rows = sorted((r for r in table if r["day"] == latest), key=lambda r: r["events_6001"], reverse=True)
+    rows = sorted((r for r in table if r["day"] == latest), key=lambda r: r["events_6001"], reverse=True)[:8]
+    day_total = rows[0]["day_events"] if rows else 0
     labels, tops, others = day_split(table)
+    shares = [100 * t / (t + o) if t + o else 0.0 for t, o in zip(tops, others)]
     jobs = [
-        (f"{stem}_models_latest_day.png", lambda: render_stacked_bar(
-            [f"#{r['rank']} {r['model']}"[:40] for r in rows], {"6001 events": [r["events_6001"] for r in rows]},
-            title=f"Top {top} device models by 6001 events, {latest}", subtitle=subtitle, horizontal=True,
-            total=rows[0]["day_events"])),
-        (f"{stem}_models_top_vs_other.png", lambda: render_stacked_bar(
-            labels, {f"Top {top} models": tops, OTHER_LABEL: others},
-            title=f"Top {top} models vs other, daily 6001 events", subtitle=subtitle, legend="above")),
+        (f"{stem}_models_latest_day.png", lambda: render_rate_bars(
+            [RateRow(str(r["model"]), 100 * r["events_6001"] / day_total, f"{100 * r['events_6001'] / day_total:.1f}%   {r['events_6001']:,}", "blue")
+             for r in rows],
+            title=f"{rows[0]['model']} alone is {100 * rows[0]['events_6001'] / day_total:.0f}% of 6001 events on {latest}",
+            subtitle="Each model's share of that day's 6001 events", footer=footer,
+            vmax=max(10.0, 1.3 * 100 * rows[0]["events_6001"] / day_total))),
+        (f"{stem}_models_top_vs_other.png", lambda: render_columns(
+            [Column(d, v, f"{v:.0f}%", "blue") for d, v in zip(labels, shares)],
+            title=f"The top {top} models hold {shares[-1]:.0f}% of 6001 events on {labels[-1]}",
+            subtitle="Share of each day's 6001 events from the day's top models", footer=footer, vmax=100.0)),
     ]
     failures = 0
     for filename, draw in jobs:

@@ -18,8 +18,9 @@ from src.lib.charts.axes import (
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import BASE_HEIGHT, TWO_ROW_HEIGHT, new_figure, render_png
 from src.lib.charts.header import UNDER_TITLE_AXES_TOP, UNDER_TITLE_SHIFT, HeaderCell, draw_header, require_single_row
-from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
-from src.lib.charts.title import draw_title
+from src.lib.charts.shapes import add_bars
+from src.lib.charts.theme import DARK, ChartTheme, chart_font_family, resolve_colour
+from src.lib.charts.title import draw_footer, draw_title
 
 logger = logging.getLogger(__name__)
 
@@ -92,9 +93,10 @@ def series_colours(names: Sequence[str], colours: Mapping[str, str] | None, them
     for i, name in enumerate(names):
         if name in colours:
             token = colours[name]
-            if token not in COLOUR_TOKENS:
-                raise ChartError(f"unknown colour token {token!r} for series {name!r}; use one of {COLOUR_TOKENS}")
-            out.append(getattr(theme, token))
+            try:
+                out.append(resolve_colour(token, theme))
+            except ValueError:
+                raise ChartError(f"unknown colour token {token!r} for series {name!r}; use one of {COLOUR_TOKENS}") from None
         else:
             out.append(theme.series[i % len(theme.series)])
     return out
@@ -119,6 +121,7 @@ def render_stacked_bar(
     normalize: bool = False,
     legend: bool | str = "auto",
     header: Sequence[HeaderCell] | None = None,
+    footer: str = "",
     theme: ChartTheme = DARK,
 ) -> bytes:
     """Renders stacked bars to PNG bytes; raises ``ChartError`` on bad input or any drawing failure.
@@ -156,10 +159,8 @@ def render_stacked_bar(
             values = list(plotted[name])
             drawn = [drawn_value(v, longest, single) for v in values]
             bar_colour = list(bar_colours) if bar_colours is not None else colour
-            if horizontal:
-                ax.barh(positions, drawn, left=base, color=bar_colour, height=0.65, label=name)
-            else:
-                ax.bar(positions, drawn, bottom=base, color=bar_colour, width=0.65, label=name)
+            add_bars(ax, positions, drawn, bar_colour, theme.corner_radius_in, bases=base, horizontal=horizontal,
+                     edge=theme.bg if not single else None, label=name)
             for i, v in enumerate(values):
                 if v <= 0:
                     continue
@@ -174,32 +175,35 @@ def render_stacked_bar(
                         fontsize=8.5, fontweight="bold", family=family)
             base = [b + v for b, v in zip(base, drawn, strict=True)]
         ticks = [str(label) for label in labels]
+        extent = max(base) * (1.12 if single else 1.05) or 1.0
+        n = len(labels)
         if horizontal:
+            ax.set_xlim(0, extent)
+            ax.set_ylim(n - 0.5, -0.5)
             ax.set_yticks(positions, ticks)
-            ax.invert_yaxis()
         else:
+            ax.set_ylim(0, extent)
+            ax.set_xlim(-0.6, n - 0.4)
             ax.set_xticks(positions, ticks)
         style_axes(ax, theme, family)
         format_value_axis(ax, horizontal)
         if horizontal:
             ax.yaxis.grid(False)
             ax.xaxis.grid(True, color=theme.faint, lw=0.6)
-        if single:
-            if horizontal:
-                ax.margins(x=0.12)
-            else:
-                ax.margins(y=0.12)
         if normalize:
             format_share_axis(ax, horizontal)
+        has_artists = bool(ax.get_legend_handles_labels()[0])
         if legend == "above":
             fig.subplots_adjust(top=LEGEND_TOP_MARGIN)
+        if legend == "above" and has_artists:
             key = ax.legend(loc="lower left", bbox_to_anchor=(0.0, 1.02), ncol=len(names), frameon=False,
                             labelcolor=theme.muted, prop={"family": family, "size": 8.5})
             key.set_zorder(10)
-        elif legend == "auto" and not single:
+        elif legend == "auto" and not single and has_artists:
             key = ax.legend(frameon=False, labelcolor=theme.muted, prop={"family": family, "size": 8.5})
             key.set_zorder(10)
         draw_title(fig, title, subtitle, theme, family)
+        draw_footer(fig, footer, theme, family)
         if header:
             draw_header(fig, header, theme, family, y_shift=UNDER_TITLE_SHIFT)
         png = render_png(fig, theme)

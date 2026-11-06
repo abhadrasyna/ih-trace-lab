@@ -15,7 +15,7 @@ TWO_ROW_HEIGHT = 5.7
 DPI = 170
 MARGIN_LEFT = 0.13
 MARGIN_RIGHT = 0.97
-MARGIN_BOTTOM = 0.11
+MARGIN_BOTTOM = 0.13
 # Top margin leaves room for the title/header: more when the figure is taller (two header rows).
 MARGIN_TOP_PLAIN = 0.88
 MARGIN_TOP_TWO_ROW = 0.80

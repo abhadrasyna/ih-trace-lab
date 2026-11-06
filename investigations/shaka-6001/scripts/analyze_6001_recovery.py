@@ -44,7 +44,7 @@ from scripts.lib.analysis_config import DEFAULT_CONFIG_PATH, AnalysisConfig, loa
 from scripts.lib.local_data import SLUG, LocalDataError, date_range, default_sources, load_daily  # noqa: E402
 from src.lib.charts.errors import ChartError  # noqa: E402
 from src.lib.charts.output import write_chart_png  # noqa: E402
-from src.lib.charts.stacked_bar import render_stacked_bar  # noqa: E402
+from src.lib.charts.rate_bars import RateRow, render_rate_bars  # noqa: E402
 from src.lib.csv_io.csv_file import CsvFileReader, CsvFileWriter  # noqa: E402
 from src.lib.paths import YamlPathResolver  # noqa: E402
 from src.lib.playback import is_success  # noqa: E402
@@ -261,21 +261,26 @@ def _summary_row(tenant: str, cohort: str, dimension: str, group: str, rows: lis
 
 
 def render_charts(summary: list[dict], out_dir: Path, tenant: str, range_label: str) -> list[Path]:
-    """100% stacked bars (recovered vs not) per cohort for period and webview; a failure is logged, never raised."""
+    """Rate bars (share recovered) per cohort for period and webview; a failure is logged, never raised."""
     written: list[Path] = []
     for cohort in (COHORT_HOUSEHOLD, COHORT_GUEST):
         for dimension in ("period", "webview"):
             rows = [r for r in summary if r["cohort"] == cohort and r["dimension"] == dimension and r["members"]]
             if not rows:
                 continue
-            labels = [f"{r['group']} (n={r['members']})" for r in rows]
-            series = {"recovered": [r["recovered"] for r in rows], "not recovered": [r["never_recovered"] for r in rows]}
+            rows.sort(key=lambda r: r["group"] != "before")  # before upgrade reads first
+            rates = [100 * r["recovered"] / r["members"] for r in rows]
+            top = max(rates)
             try:
-                png = render_stacked_bar(
-                    labels, series, normalize=True, colours={"recovered": "green", "not recovered": "red"},
-                    title=f"6001 recovery by {dimension} ({cohort} cohort)",
-                    subtitle=f"{tenant} {range_label} · base: {BASE}"
-                             + (" · GUEST ids are per-install, not households" if cohort == COHORT_GUEST else ""))
+                png = render_rate_bars(
+                    [RateRow(str(r["group"]), 100 * r["recovered"] / r["members"],
+                             f"{100 * r['recovered'] / r['members']:.1f}%   {r['recovered']:,} of {r['members']:,}", "green")
+                     for r in rows],
+                    title=f"Recovery after a 6001 error runs {min(rates):.1f}% to {top:.1f}% by {dimension}",
+                    subtitle="Share of members who later played successfully after their first 6001 error",
+                    footer=f"{tenant} {range_label.replace('_', ' to ')}; base: {BASE}"
+                           + ("; GUEST ids are per-install, not households" if cohort == COHORT_GUEST else ""),
+                    vmax=max(10.0, 1.5 * top))
                 written.append(write_chart_png(png, out_dir.parent, tenant, f"{range_label}_6001_recovery_{cohort}_by_{dimension}.png"))
             except (ChartError, OSError) as exc:
                 LOGGER.error("recovery chart %s/%s skipped: %s", cohort, dimension, exc)

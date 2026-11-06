@@ -195,48 +195,33 @@ def write_rows(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
 
 
 def _draw_bar(rows: list[dict], title: str, subtitle: str) -> bytes:
-    from src.lib.charts.axes import format_count, style_axes
     from src.lib.charts.errors import ChartError
-    from src.lib.charts.fig import new_figure, render_png
-    from src.lib.charts.theme import DARK, chart_font_family
-    from src.lib.charts.title import draw_title
+    from src.lib.charts.rate_bars import RateRow, render_rate_bars
 
-    try:
-        family = chart_font_family()
-        fig = new_figure(DARK)
-        ax = fig.add_subplot(111)
-        ordered = sorted(rows, key=lambda r: r["events_6001"])
-        ax.barh([f"#{r['rank']} {str(r['id'])[:14]}" for r in ordered], [r["events_6001"] for r in ordered],
-                color=DARK.ink, height=0.65)
-        ax.xaxis.set_major_formatter(lambda v, _pos: format_count(v))
-        style_axes(ax, DARK, family)
-        draw_title(fig, title, subtitle, DARK, family)
-        return render_png(fig, DARK)
-    except Exception as exc:  # noqa: BLE001 - boundary: nothing but ChartError escapes
-        raise ChartError(f"top-impacted bar failed: {exc}") from exc
+    ordered = sorted(rows, key=lambda r: -r["events_6001"])[:8]  # rate bars hold 8 rows
+    if not ordered or not ordered[0]["events_6001"]:
+        raise ChartError("top-impacted bar has no 6001 events")
+    top = ordered[0]["events_6001"]
+    return render_rate_bars(
+        [RateRow(f"#{r['rank']} {str(r['id'])[:14]}", float(r["events_6001"]), f"{r['events_6001']:,} events", "blue")
+         for r in ordered], title=title, subtitle="6001 events per id on the latest day", footer=subtitle,
+        vmax=float(top) * 1.25, track=False)
 
 
 def _draw_share_line(series: dict[str, list[tuple[str, float]]], title: str, subtitle: str) -> bytes:
-    from src.lib.charts.axes import format_pct, style_axes
     from src.lib.charts.errors import ChartError
-    from src.lib.charts.fig import new_figure, render_png
-    from src.lib.charts.theme import DARK, chart_font_family
-    from src.lib.charts.title import draw_title
+    from src.lib.charts.trend import TrendSeries, render_trend
 
-    try:
-        family = chart_font_family()
-        fig = new_figure(DARK)
-        ax = fig.add_subplot(111)
-        for colour, (label, points) in zip(DARK.series, series.items()):
-            ax.plot([p[0] for p in points], [p[1] for p in points], color=colour, lw=1.8, marker="o", label=label)
-        ax.set_ylim(0, 105)
-        ax.yaxis.set_major_formatter(lambda v, _pos: format_pct(v))
-        style_axes(ax, DARK, family)
-        ax.legend(frameon=False, labelcolor=DARK.ink, prop={"family": family})
-        draw_title(fig, title, subtitle, DARK, family)
-        return render_png(fig, DARK)
-    except Exception as exc:  # noqa: BLE001 - boundary: nothing but ChartError escapes
-        raise ChartError(f"top-share line failed: {exc}") from exc
+    days = [d for d, _ in next(iter(series.values()))]
+    if any([d for d, _ in pts] != days for pts in series.values()):
+        raise ChartError("top-share lines cover different days")
+    names = ("blue", "violet", "pink", "slate", "sand")
+    fmt = lambda v: f"{v:.0f}%"  # noqa: E731
+    return render_trend(
+        days, [TrendSeries(k, [v for _, v in pts], names[i % len(names)], end_text=f"{k}  {fmt(pts[-1][1])}")
+               for i, (k, pts) in enumerate(series.items())],
+        title=title, subtitle="Share of each day's 6001 events held by the top ids", footer=subtitle,
+        lo=0.0, hi=100.0, ticks=[0, 25, 50, 75, 100], value_fmt=fmt)
 
 
 def write_charts(tables: dict[str, list[dict]], out_dir: Path, tenant: str, basis: DayBasis, top: int,
@@ -255,7 +240,7 @@ def write_charts(tables: dict[str, list[dict]], out_dir: Path, tenant: str, basi
         latest = max(r["day"] for r in rows)
         jobs.append((f"{stem}_{kind}_latest_day.png",
                      lambda r=[x for x in rows if x["day"] == latest], k=kind, d=latest: _draw_bar(
-                         r, f"Top {top} {k} by 6001 events, {d}", base)))
+                         r, f"Top {min(top, 8)} {k} by 6001 events, {d}", base)))
     series = {k: [(r["day"], r["top_share_pct"]) for r in dict((r["day"], r) for r in tables[k]).values()]
               for k in KINDS if tables[k]}
     if series:

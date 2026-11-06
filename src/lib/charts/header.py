@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 from src.lib.charts.errors import ChartError
 from src.lib.charts.fig import BASE_HEIGHT, BASE_WIDTH, TWO_ROW_HEIGHT
 from src.lib.charts.theme import ChartTheme
+from src.lib.charts.title import LEFT_EDGE
 
 MAX_CELLS = 6
 # Width budget for one row, in figure inches, and the rough advance of one character per font size.
@@ -26,7 +27,7 @@ CHAR_WIDTH_PER_PT_IN = 0.0085
 ROW_LABEL_Y_ONE = 0.965
 ROW_LABEL_Y_TWO = (0.975, 0.895)
 VALUE_Y_OFFSET = 0.035
-LEFT_X = 0.13
+LEFT_X = LEFT_EDGE
 # One header row placed under the title block: its downward shift and the axes top that clears it.
 UNDER_TITLE_SHIFT = 0.095
 UNDER_TITLE_AXES_TOP = 0.76

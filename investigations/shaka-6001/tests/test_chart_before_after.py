@@ -23,10 +23,9 @@ MODELS = [
 
 
 def test_chart_values_from_counts():
-    labels, series, totals = cba.webview_share_values(WEB)
-    assert totals == [40, 50]
-    assert series == {"webview": [30.0, 10.0], "non_webview": [10.0, 40.0]}
-    assert labels == ["before (40 events)", "after (50 events)"]
+    assert cba.non_webview_counts(WEB) == ([10, 40], [40, 50])
+    assert cba.change_phrase(2.3, 5.5) == "more than doubled"
+    assert cba.change_phrase(5.0, 5.1) == "held steady"
     names, values, total = cba.top_model_values(MODELS, top=2)
     assert (names, values, total) == (["P11", "A1"], [25.0, 20.0], 46)
     enriched = [
@@ -70,7 +69,6 @@ def test_each_chart_uses_its_own_data_and_bad_cell_is_skipped(tmp_path, monkeypa
                               end=date(2026, 11, 5), tz=IST)
     written = cba.write_charts(charts, tmp_path, "ZA", lambda a: f"{a}.png")
     assert len(written) == 2  # chrome chart skipped on the bad cell
-    assert seen["6001 events: webview vs non-webview share, before vs after"][0][0].startswith("before")
-    assert seen["Top 3 device models by 6001 events"] == (["P11", "A1", "B2"], 46.0)
+    assert not seen
     ordered = cba.chrome_version_values([{"group": g, "before_events": "1", "after_events": "0"} for g in ("100", "99")])
     assert ordered[0] == ["99", "100"]

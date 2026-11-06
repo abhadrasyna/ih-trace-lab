@@ -7,21 +7,21 @@ from pathlib import Path
 import pytest
 
 from src.lib.charts import theme
-from src.lib.charts.theme import DARK, FALLBACK_FONT_FAMILY, ChartTheme, chart_font_family
+from src.lib.charts.theme import DARK, FALLBACK_FONT_FAMILY, ChartTheme, chart_font_family, dim, resolve_colour
 
 
 def test_dark_tokens_match_guide() -> None:
     assert ChartTheme(
         bg="#0e1117",
         ink="#e5e7eb",
-        muted="#9ca3af",
-        faint="#1f2937",
-        green="#26b3a0",
-        red="#ef5350",
-        amber="#f59e0b",
+        muted="#8b93a3",
+        faint="#222937",
+        green="#5ec8b4",
+        red="#f0877f",
+        amber="#e9b872",
         fill_alpha_green=0.22,
         fill_alpha_red=0.14,
-        series=("#60a5fa", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
+        series=("#7fa8f5", "#a99bf0", "#e79bc2", "#8e9ab0", "#d9b88f"),
     ) == DARK
 
 
@@ -43,7 +43,21 @@ def test_font_falls_back_when_missing(tmp_path: Path, caplog: pytest.LogCaptureF
 
 
 def test_amber_token_not_in_series() -> None:
-    assert DARK.amber == "#f59e0b" and DARK.amber not in DARK.series
+    assert DARK.amber not in DARK.series
+
+
+def test_dim_blends_towards_background() -> None:
+    dimmed = dim(DARK.red, DARK)
+    assert dimmed != DARK.red and dimmed.startswith("#") and len(dimmed) == 7
+    assert dim(DARK.bg, DARK) == DARK.bg
+
+
+def test_resolve_colour_names_and_dim_prefix() -> None:
+    assert resolve_colour("green", DARK) == DARK.green
+    assert resolve_colour("blue", DARK) == DARK.series[0]
+    assert resolve_colour("dim_red", DARK) == dim(DARK.red, DARK)
+    with pytest.raises(ValueError):
+        resolve_colour("teal", DARK)
 
 
 def test_series_has_no_status_colour() -> None:

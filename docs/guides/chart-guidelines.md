@@ -9,10 +9,35 @@ Charts are investigation evidence (counts, rates, error mix per tenant and day) 
 without the accompanying text. Minimise cognitive load, maximise data-ink, and use colour for meaning, never decoration. Every chart states its base (what the percentages are a share of) in the title,
 subtitle or label. Spelling in code and docs: `normalize` (US), as in `render_stacked_bar(..., normalize=True)`.
 
+## Story charts (the default for new work)
+
+A story chart answers one question and says the answer in its title. Every new chart is built with one of the story renderers below (`rate_bars`, `columns`, `trend`, `composition`); the older
+renderers (`stacked_bar`, `bar`, `signed_line`, `pie`) stay for dense multi-series cases and share the same palette and rounded bars. Rules, in order of importance:
+
+1. **Title = the finding**, a sentence with the number in it ("Newest households fail 65% of playbacks; the oldest 34%"), never a description of the chart. The title is computed from the data, so it
+   changes when the data does (`more than doubled`, `held steady`, `fell`).
+2. **Subtitle = the measure**: one line defining exactly what the bar or point is ("Share of playback attempts that did not succeed, by how long the household has been seen"). No dates, tenant or base
+   here.
+3. **Footer = scope**: one 8 pt line for tenant, date range, base and caveats (censoring, per-install ids). It is drawn by `title.draw_footer`.
+4. **Direct labels, no legend, no KPI strip.** The value sits at the end of the bar or point, the category name sits on its bar or line. If a legend seems needed, the chart has too many series: split
+   it.
+5. **One left edge.** Title, subtitle, header, labels and footer share `LEFT_EDGE = 0.05` of the figure width.
+6. **Chart type follows the data**: a few ranked categories use `rate_bars`; one value per period uses `columns`; change over time uses `trend` (indexed to 100 when the series differ in size); parts
+   of one whole use `composition`. Axes appear only when they carry information (`trend` keeps a light value axis, the bar charts none).
+7. **Colour carries meaning**: coral (`red`) is failure or the 6001 error, teal (`green`) is success or recovery, `violet` and `blue` are neutral categories, and `dim_<name>` is the "before" or the
+   non-focus bar. Highlight one bar, dim the rest.
+8. **No false precision**: one decimal for rates under 10%, none above; counts get thousands separators; percent change is rounded to whole numbers in titles.
+9. **Say when the sample is small** in the footer (for example, recovery rests on 6 events), and never chart a rate without its count in the label.
+10. Eight rows at most per bar chart and three series at most per trend; the renderer raises `ChartError` beyond that, so cut to the top N and say so in the title ("Top 6 device models carry 40%").
+
 ## Choosing a chart type
 
 | Insight goal | Chart | Reasoning |
 |---|---|---|
+| Ranked categories, one measure | `render_rate_bars` | Label above or beside each bar, value at the end, faint track shows the scale. Up to 8 rows. |
+| One value per period or day | `render_columns` | Latest period in full colour, earlier ones dimmed; value above each column. |
+| Change over time, 1 to 3 series | `render_trend` | Straight segments, direct end labels, optional reference line; index to 100 when comparing sizes. |
+| Share of a single whole | `render_composition` | One 100% bar with labelled segments; replaces a donut for 2 to 5 parts. |
 | Pipeline and drop-off | Funnel (stages read top to bottom) | Absolute volume per stage, with step-to-step conversion annotated (e.g. 98.9% of the previous stage), not just totals. |
 | Rates across segments of very different size | 100% stacked bar (`normalize=True`) | Compares success/failure/error efficiency, not scale; show absolute totals alongside so volume is not hidden. |
 | Absolute volume across categories | Bar or horizontal bar, sorted descending | Rank is instant; horizontal when labels are long. |
@@ -21,18 +46,24 @@ subtitle or label. Spelling in code and docs: `normalize` (US), as in `render_st
 
 ## Palette and fonts (default)
 
-Dark-only; there is no light variant. Once a shared `ChartTheme` exists, every colour comes from it and nowhere else.
+Dark-only; there is no light variant. Every colour comes from the shared `ChartTheme` and nowhere else; drawing code names a token (`"red"`, `"dim_blue"`) and resolves it with `resolve_colour(name,
+theme)`. The palette is soft (pastel on a deep navy) so that large rounded shapes read as calm rather than loud.
 
 | Token | Hex | Use |
 |---|---|---|
 | `bg` | `#0e1117` | Figure and axes background; also the fill of "hole" markers and label backing boxes |
 | `ink` | `#e5e7eb` | Primary text, reference lines, markers, emphasis |
-| `muted` | `#9ca3af` | Tick labels, zero/baseline line |
-| `faint` | `#1f2937` | Grid, spines, secondary vertical guides |
-| `green` | `#26b3a0` | Good / positive series |
-| `red` | `#ef5350` | Bad / negative series (errors, failures) |
-| `amber` | `#f59e0b` | Warning: retries, non-fatal or degraded states (`Tone.WARNING`) |
-| `series[0..4]` | `#60a5fa`, `#a78bfa`, `#f472b6`, `#94a3b8`, `#d4a373` | Ordered palette for multi-series charts (blue, violet, pink, slate, sand); `ChartTheme.series` |
+| `muted` | `#8b93a3` | Tick labels, labels above bars, zero/baseline line |
+| `faint` | `#222937` | Grid, spines, bar tracks, secondary vertical guides |
+| `green` | `#5ec8b4` | Good / positive series (success, recovery) |
+| `red` | `#f0877f` | Bad / negative series (errors, failures) |
+| `amber` | `#e9b872` | Warning: retries, non-fatal or degraded states (`Tone.WARNING`) |
+| `series[0..4]` | `#7fa8f5`, `#a99bf0`, `#e79bc2`, `#8e9ab0`, `#d9b88f` | Ordered palette for multi-series charts (blue, violet, pink, slate, sand); `ChartTheme.series` |
+| `dim_<name>` | blend of `<name>` towards `bg` (`dim_amount = 0.38`) | De-emphasised bars: the "before" period, non-focus columns. Built by `dim(colour, theme)` |
+| `corner_radius_in` | 0.09 in | Corner radius of every bar, in inches so corners stay circular whatever the data scale |
+
+`resolve_colour` accepts `ink`, `muted`, `faint`, `green`, `red`, `amber`, the series names `blue`, `violet`, `pink`, `slate`, `sand`, and a `dim_` prefix on any of them; anything else raises
+`ValueError`.
 
 `green`, `red` and `amber` are reserved for status (good, bad, warning): they never appear in `series`, and a multi-series chart gets them only by mapping a series to them explicitly (for example
 `render_stacked_bar`'s `colours={"success": "green", "failed": "red", "retried": "amber"}`). Any other series takes the palette in order, cycling after five; a chart with more segments than it can
@@ -47,8 +78,8 @@ Colour rules:
 Area fills reuse the line colour with alpha: `fill_alpha_green = 0.22`, `fill_alpha_red = 0.14` (the bad side is deliberately quieter). Font is Roboto when bundled, resolved only through one
 `chart_font_family()` helper that falls back to `"DejaVu Sans"` and never raises.
 
-Type scale (pt): title 16 bold, subtitle 10 (both drawn only by `title.draw_title`; a title wider than the figure is truncated with an ellipsis, measured on the rendered text), stat label 8.5, stat
-value 12 bold, stat sub 9, tick labels 9.5, annotations 9-10.
+Type scale (pt): title 15 bold, subtitle 9.5, footer 8 (drawn only by `title.draw_title` and `title.draw_footer`; a title wider than the figure is truncated with an ellipsis, measured on the rendered
+text), stat label 8.5, stat value 12 bold, stat sub 9, tick labels 9.5, annotations 9-10.
 
 ## Do
 
@@ -74,7 +105,8 @@ value 12 bold, stat sub 9, tick labels 9.5, annotations 9-10.
 - Don't write hex strings, named colours (`"red"`) or matplotlib default colour cycles (`C0`..`C9`) in drawing code.
 - Don't use `matplotlib.pyplot` (`plt.subplots`, `plt.figure`, `plt.show`, `plt.savefig`) in `src/` or `scripts/`. It drags in global state, a GUI backend and figure-leak bugs.
 - Don't rely on matplotlib's default font, and don't call `font_manager.addfont` outside `chart_font_family()`.
-- Don't add a light theme, gradients, drop shadows, 3D, or chart borders. Don't add a legend when direct labels do the job.
+- Don't add a light theme, gradients, drop shadows, 3D, or chart borders. Bars are rounded (`add_bars`/`RoundedBar`), never sharp rectangles: don't call `ax.bar`/`ax.barh` in new code. Don't add a
+  legend when direct labels do the job.
 - Don't use emoji, icons or pictographs; clean typography and geometric shapes only. Don't keep a legend for a single series or when segments are large enough for direct labels.
 - Don't use a rainbow or more than two hues for a signed series. Green and red carry sign; everything else is `ink`, `muted` or `faint`. Multi-series charts (not signed) use the `series` palette.
 - Don't draw a full box grid, vertical gridlines, or visible tick marks. Don't use thick lines (> 2 pt) or tiny markers (< 5 pt).
@@ -90,10 +122,13 @@ Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, spl
 
 | Module | Holds |
 |---|---|
-| `theme.py` | Frozen `ChartTheme`, `DARK`, `chart_font_family()` |
+| `theme.py` | Frozen `ChartTheme`, `DARK`, `dim`, `resolve_colour`, `chart_font_family()` |
 | `fig.py` | Figure creation and the PNG-bytes save recipe |
 | `axes.py` | `style_axes`, `format_count`/`format_pct`, `format_value_axis` (abbreviates value-axis ticks, e.g. `2k`), pure tick and range maths |
-| `title.py` | `draw_title`: the 16 pt bold title and 10 pt subtitle (`TITLE_FONT_SIZE`, `SUBTITLE_FONT_SIZE`); every chart module calls it, none draws its own |
+| `shapes.py` | `RoundedBar` patch (corners stay circular on screen), `add_rounded_bar`, `add_bars` (the `bar`/`barh` replacement; the caller sets the axes limits) |
+| `title.py` | `draw_title` (15 pt bold title, 9.5 pt subtitle) and `draw_footer` (8 pt scope line); `LEFT_EDGE` is the shared left edge. Every chart module calls them, none draws its own |
+| `canvas.py` | The story-chart drawing surface: a full-figure axes in inches (`new_canvas`, `frame`, `finish`, `Canvas.text/bar/hline`), shared layout constants and `require_values` |
+| `rate_bars.py`, `columns.py`, `trend.py`, `composition.py` | Story renderers (`render_*`); take frozen dataclasses (`RateRow`, `Column`, `TrendSeries`, `Part`), raise `ChartError` on bad input |
 | `header.py` | Optional stat header: `Tone`, `HeaderCell`, one- or two-row layout |
 | `signed_line.py`, `bar.py` | Thin drawing functions returning PNG bytes: `render_signed_line(xs, ys, *, title, subtitle="", theme=DARK)`, `render_bar(labels, values, *, title, ...)` (same kwargs) |
 | `stacked_bar.py` | `render_stacked_bar`: one stack per label; segment labels, optional legend (see below) |
@@ -101,12 +136,12 @@ Built by `docs/archive/shared-chart-infra/`. One package, `src/lib/charts/`, spl
 | `errors.py` | `ChartError`, the only exception that leaves the package |
 | `output.py` | `write_chart_png` / `chart_path`: saves PNGs under `<output>/<TENANT>/charts/`, creating the folder on first use |
 
-`render_stacked_bar(labels, series, *, title, subtitle="", horizontal=False, colours=None, bar_colours=None, total=None, normalize=False, legend="auto", theme=DARK)` takes `series` as a name-to-values
-map with one value per label. Each segment is labelled with its value, plus its share when `total` is given. `normalize=True` scales each stack to 100% (axis `0%`..`100%`, labels show the count and
-its share of that stack, a zero-total stack is drawn empty); put absolute totals in the labels. `legend="auto"` draws a legend inside the plot only for more than one series, `"above"` puts it above
-the plot outside the bars, `False` never draws one, and any other value raises `ChartError`. `bar_colours` (hex colours derived from the theme, one per label, single series only) colours each bar
-separately. In a single-series chart a bar under 5% of the longest is labelled above the bar, and one under 2% is also lifted to that minimum drawn height. Input that is empty, unequal in length,
-negative or non-finite raises `ChartError`.
+`render_stacked_bar(labels, series, *, title, subtitle="", footer="", horizontal=False, colours=None, bar_colours=None, total=None, normalize=False, legend="auto", theme=DARK)` takes `series` as a
+name-to-values map with one value per label. Each segment is labelled with its value, plus its share when `total` is given. `normalize=True` scales each stack to 100% (axis `0%`..`100%`, labels show
+the count and its share of that stack, a zero-total stack is drawn empty); put absolute totals in the labels. `legend="auto"` draws a legend inside the plot only for more than one series, `"above"`
+puts it above the plot outside the bars, `False` never draws one, and any other value raises `ChartError`. `bar_colours` (hex colours derived from the theme, one per label, single series only) colours
+each bar separately. In a single-series chart a bar under 5% of the longest is labelled above the bar, and one under 2% is also lifted to that minimum drawn height. Input that is empty, unequal in
+length, negative or non-finite raises `ChartError`.
 
 `render_pie(labels, values, *, title, subtitle="", donut=True, max_slices=5, theme=DARK)` draws a donut (a full pie with `donut=False`) and a legend below it. Slices beyond `max_slices - 1` merge into
 a muted `other` slice. Use it only for a handful of parts of a whole where no slice dominates; when one category is most of the total (e.g. error code 6001), use a horizontal bar instead. Empty,
@@ -157,8 +192,13 @@ Any investigation script follows the same shape:
 3. The script owns file I/O: save with `write_chart_png(png, output_dir, tenant, filename)` into `output/<TENANT>/charts/` (created on first write), not beside the CSV/XLSX it accompanies.
 4. Catch `ChartError`, log it and carry on; a failed chart must never block the CSV, XLSX or text report.
 
-Worked example: `investigations/ctap-smvod/scripts/chart_concurrent_playback.py` (pilot, CH-6) composes `new_figure`, `draw_header`, `style_axes` and `render_png` directly for a three-series line
-chart, because `render_signed_line` and `render_bar` draw a single series with no header; `write_chart` shows the `ChartError` handling. Other investigations adopt the layer in their own stories.
+Worked example (story charts): `investigations/shaka-6001/scripts/chart_before_after.py` builds each chart from a pure values helper (`non_webview_counts`, `change_phrase`), computes the finding title
+from the values, and hands `RateRow`/`TrendSeries` lists to the renderer. Worked example (composed figure): `investigations/ctap-smvod/scripts/chart_concurrent_playback.py` (pilot, CH-6) composes
+`new_figure`, `draw_header`, `style_axes` and `render_png` directly for a three-series line chart, because `render_signed_line` and `render_bar` draw a single series with no header; `write_chart`
+shows the `ChartError` handling. Other investigations adopt the layer in their own stories.
+
+A new chart must be a story chart unless it genuinely needs several series or a header strip; in that case use `stacked_bar`/`new_figure` and keep the shared title, palette and rounded bars. Never
+copy a renderer into an investigation script: if the shape is missing, add it to `src/lib/charts/` with a happy-path and an error test.
 
 Prototype new chart shapes in `scratch/` first (`SCRATCH.md` convergence rule) and promote into `src/lib/charts/` only once a second investigation needs them. The synchronous render needs no
 `asyncio.to_thread`; use it only when a chart is rendered inside an async service.

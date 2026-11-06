@@ -1,4 +1,4 @@
-"""Bar chart: neutral bars, sign colours only when the series has negative values."""
+"""Bar chart: soft rounded bars, neutral unless the series has negative values (then green/red by sign)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from src.lib.charts.axes import format_value_axis, style_axes
 from src.lib.charts.errors import ChartError, require_series
 from src.lib.charts.fig import new_figure, render_png
+from src.lib.charts.shapes import add_bars
 from src.lib.charts.theme import DARK, ChartTheme, chart_font_family
 from src.lib.charts.title import draw_title
 
@@ -30,7 +31,12 @@ def render_bar(
         family = chart_font_family()
         fig = new_figure(theme)
         ax = fig.add_subplot(111)
-        ax.bar(range(len(values)), values, color=bar_colors(values, theme), width=0.65)
+        top = max(max(values), 0.0)
+        bottom = min(min(values), 0.0)
+        pad = (top - bottom) * 0.12 or 1.0
+        add_bars(ax, range(len(values)), values, bar_colors(values, theme), theme.corner_radius_in)
+        ax.set_xlim(-0.6, len(values) - 0.4)
+        ax.set_ylim(bottom - (pad if bottom < 0 else 0), top + pad)
         ax.set_xticks(range(len(labels)), [str(label) for label in labels])
         ax.axhline(0, color=theme.muted, lw=0.8)
         style_axes(ax, theme, family)

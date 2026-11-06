@@ -34,20 +34,49 @@ class ChartTheme:
     fill_alpha_red: float
     # Ordered, distinguishable on ``bg``; ``green``, ``red`` and ``amber`` stay reserved for status meaning.
     series: tuple[str, ...] = ()
+    # Corner radius of bars, in inches; clamped per bar so a thin bar becomes a pill.
+    corner_radius_in: float = 0.09
+    # Share of ``bg`` blended into a colour by ``dim`` (the "before" / secondary look of a status colour).
+    dim_amount: float = 0.38
 
 
 DARK = ChartTheme(
     bg="#0e1117",
     ink="#e5e7eb",
-    muted="#9ca3af",
-    faint="#1f2937",
-    green="#26b3a0",
-    red="#ef5350",
-    amber="#f59e0b",
+    muted="#8b93a3",
+    faint="#222937",
+    green="#5ec8b4",
+    red="#f0877f",
+    amber="#e9b872",
     fill_alpha_green=0.22,
     fill_alpha_red=0.14,
-    series=("#60a5fa", "#a78bfa", "#f472b6", "#94a3b8", "#d4a373"),
+    series=("#7fa8f5", "#a99bf0", "#e79bc2", "#8e9ab0", "#d9b88f"),
 )
+
+
+def dim(colour: str, theme: ChartTheme) -> str:
+    """Blends ``colour`` towards ``bg`` by ``theme.dim_amount``: the quieter twin used for "before" or secondary data."""
+    mix = theme.dim_amount
+
+    def channel(c: str, i: int) -> int:
+        return round(int(c[i : i + 2], 16) * (1 - mix) + int(theme.bg[i : i + 2], 16) * mix)
+
+    return "#" + "".join(f"{channel(colour, i):02x}" for i in (1, 3, 5))
+
+
+STATUS_TOKENS = ("ink", "muted", "faint", "green", "red", "amber")
+SERIES_NAMES = ("blue", "violet", "pink", "slate", "sand")
+
+
+def resolve_colour(name: str, theme: ChartTheme) -> str:
+    """Maps a semantic name to a theme colour: a status token, a series name (``blue``..``sand``) or ``dim_<either>``."""
+    if name.startswith("dim_"):
+        return dim(resolve_colour(name[4:], theme), theme)
+    if name in STATUS_TOKENS:
+        return getattr(theme, name)
+    if name in SERIES_NAMES and SERIES_NAMES.index(name) < len(theme.series):
+        return theme.series[SERIES_NAMES.index(name)]
+    raise ValueError(f"unknown colour name {name!r}; use {STATUS_TOKENS + SERIES_NAMES} or dim_<name>")
 
 
 def _register_fonts(font_dir: Path) -> str:
